@@ -353,6 +353,31 @@ wheels = [
 ]
 
 [[package]]
+name = "now-classifier"
+version = "0.1.0"
+source = { editable = "../classifier" }
+dependencies = [
+    { name = "click" },
+    { name = "now-db" },
+    { name = "now-platform-db" },
+    { name = "now-taxonomy-evidence" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.1,<9" },
+    { name = "now-db", editable = "../db" },
+    { name = "now-platform-db", editable = "../platform-db" },
+    { name = "now-taxonomy-evidence", editable = "../taxonomy-evidence" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.1,<4" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "sqlalchemy", specifier = ">=2.0,<3" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "now-db"
 version = "0.1.0"
 source = { editable = "../db" }
@@ -381,13 +406,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
+    { name = "now-taxonomy-evidence" },
 ]
 
 [package.optional-dependencies]
 calibration = [
+    { name = "now-classifier" },
     { name = "now-db" },
     { name = "now-platform-db" },
-    { name = "now-taxonomy-evidence" },
     { name = "psycopg", extra = ["binary"] },
     { name = "requests" },
     { name = "sqlalchemy" },
@@ -399,9 +425,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1,<9" },
+    { name = "now-classifier", marker = "extra == 'calibration'", editable = "../classifier" },
     { name = "now-db", marker = "extra == 'calibration'", editable = "../db" },
     { name = "now-platform-db", marker = "extra == 'calibration'", editable = "../platform-db" },
-    { name = "now-taxonomy-evidence", marker = "extra == 'calibration'", editable = "../taxonomy-evidence" },
+    { name = "now-taxonomy-evidence", editable = "../taxonomy-evidence" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'calibration'", specifier = ">=3.1,<4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "requests", marker = "extra == 'calibration'", specifier = ">=2.31,<3" },

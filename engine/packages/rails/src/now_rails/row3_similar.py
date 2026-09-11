@@ -56,7 +56,7 @@ from datetime import datetime
 from now_blender.articles import fetch_article_meta
 from now_blender.blend import compute_blend
 from now_blender.components import BlendComponents
-from now_blender.decay import freshness_component
+from now_blender.decay import describe_format_trust, freshness_component
 from now_blender.mmr import diversify_ranked
 from now_blender.platform import DEFAULT_SITE_RANKING_CONFIG, SiteRankingConfig
 from now_blender.quality import fetch_quality
@@ -232,7 +232,7 @@ def compute_row3(
         conn, subject_vec, model=model, limit=rerank_pool, candidate_ids=eligible_ids
     )
 
-    meta_by_id = fetch_article_meta(conn, [int(h.entity_id) for h in ranked_hits])
+    meta_by_id = fetch_article_meta(conn, [int(h.entity_id) for h in ranked_hits], site_config.format_term_ids)
     quality_by_id = fetch_quality(conn, [int(h.entity_id) for h in ranked_hits])
 
     candidates: list[Candidate] = []
@@ -258,7 +258,13 @@ def compute_row3(
         candidates.append(candidate)
 
         semantic_sim = max(0.0, hit.raw_score)
-        fresh = freshness_component(fmt, candidate.published_at, site_config.decay, now=now)
+        format_confidence = meta.format_confidence if meta is not None else None
+        format_source = meta.format_source if meta is not None else None
+        fresh = freshness_component(
+            fmt, candidate.published_at, site_config.decay,
+            format_confidence=format_confidence, format_source=format_source, now=now,
+        )
+        fresh_reason = describe_format_trust(fmt, format_confidence, format_source, site_config.decay)
         components = BlendComponents(
             semantic=semantic_sim,
             covis=None,
@@ -266,6 +272,7 @@ def compute_row3(
             quality=quality_row.score if quality_row is not None else None,
             geo=None,
             promo=None,
+            freshness_explanation=fresh_reason,
         )
         blend = compute_blend(components, site_config.weights)
         relevance[candidate.key] = blend.normalized_score

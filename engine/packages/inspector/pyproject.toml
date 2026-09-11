@@ -14,6 +14,8 @@ dependencies = [
     "httpx>=0.27",
     "now-db",
     "now-search",
+    "now-blender",
+    "now-platform-db",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +29,8 @@ now-inspector = "now_inspector.cli:cli"
 [tool.uv.sources]
 now-db = { path = "../db", editable = true }
 now-search = { path = "../search", editable = true }
+now-blender = { path = "../blender", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
 
 [build-system]
 requires = ["hatchling"]

@@ -9,12 +9,40 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.engine import Connection
 
+from now_blender.decay import DecayPolicy, FALLBACK_DECAY_POLICY
+from now_blender.format_terms_cache import load_format_term_ids_cached
+
 from now_inspector import filters_adapter, filters_trace, generators
 from now_inspector.articles import fetch_article, fetch_articles, fetch_quality_bulk
 from now_inspector.blender import illustrative_blend
 from now_inspector.diversity import DiversityStub, stub as diversity_stub
 from now_inspector.freshness import classify as classify_freshness
 from now_inspector.models import ArticleRow, CandidateTrace, GeneratorPanel
+
+
+def _resolve_format_trust_context(
+    platform_conn: Connection | None, site_slug: str | None
+) -> tuple[frozenset[str], DecayPolicy]:
+    """F124/F125 (T2): resolves the format-facet term id set (for the
+    entity_terms join) and the site's real decay policy (for
+    `min_format_confidence`), or the package fallback (0.85) when no
+    platform connection was given -- an internal debug tool run without
+    `--platform-url` still works, it just cannot resolve any format
+    term's trust and reports every classified format as untrusted
+    (fails closed, same stance as `now_blender.platform
+    .DEFAULT_SITE_RANKING_CONFIG`), which is disclosed via
+    `FreshnessResult.withheld_reason` rather than silently skipped."""
+    if platform_conn is None:
+        return frozenset(), FALLBACK_DECAY_POLICY
+    format_term_ids = load_format_term_ids_cached(
+        platform_conn, cache_key=platform_conn.engine.url.database or "default"
+    )
+    decay_policy = FALLBACK_DECAY_POLICY
+    if site_slug is not None:
+        from now_blender.platform import load_site_ranking_config
+
+        decay_policy = load_site_ranking_config(platform_conn, site_slug).decay
+    return format_term_ids, decay_policy
 
 
 @dataclass(frozen=True)
@@ -31,14 +59,22 @@ class InspectReport:
     error: str | None = None
 
 
-def build_query_report(conn: Connection, query: str, *, limit: int = 15) -> InspectReport:
+def build_query_report(
+    conn: Connection, query: str, *, limit: int = 15, platform_conn: Connection | None = None, site_slug: str | None = None
+) -> InspectReport:
     raw = generators.run_query_mode(conn, query, limit=25)
     fused = generators.fuse(raw)[:limit]
-    return _assemble(conn, mode="query", query=query, article_id=None, raw=raw, fused=fused)
+    return _assemble(
+        conn, mode="query", query=query, article_id=None, raw=raw, fused=fused,
+        platform_conn=platform_conn, site_slug=site_slug,
+    )
 
 
-def build_article_report(conn: Connection, article_id: int, *, limit: int = 15) -> InspectReport:
-    seed = fetch_article(conn, article_id)
+def build_article_report(
+    conn: Connection, article_id: int, *, limit: int = 15, platform_conn: Connection | None = None, site_slug: str | None = None
+) -> InspectReport:
+    format_term_ids, _decay_policy = _resolve_format_trust_context(platform_conn, site_slug)
+    seed = fetch_article(conn, article_id, format_term_ids)
     if seed is None:
         return InspectReport(
             mode="article_id",
@@ -55,7 +91,8 @@ def build_article_report(conn: Connection, article_id: int, *, limit: int = 15) 
     raw = generators.run_article_id_mode(conn, article_id, limit=25)
     fused = generators.fuse(raw)[:limit]
     return _assemble(
-        conn, mode="article_id", query=None, article_id=article_id, raw=raw, fused=fused, seed=seed
+        conn, mode="article_id", query=None, article_id=article_id, raw=raw, fused=fused, seed=seed,
+        platform_conn=platform_conn, site_slug=site_slug,
     )
 
 
@@ -68,7 +105,10 @@ def _assemble(
     raw: generators.RawGenerators,
     fused,
     seed: ArticleRow | None = None,
+    platform_conn: Connection | None = None,
+    site_slug: str | None = None,
 ) -> InspectReport:
+    format_term_ids, decay_policy = _resolve_format_trust_context(platform_conn, site_slug)
     entity_ids = [h.entity_id for h in fused]
     numeric_ids = [int(e) for e in entity_ids]
 
@@ -79,8 +119,8 @@ def _assemble(
     raw_ids = {int(h.entity_id) for h in raw.lexical_hits} | {int(h.entity_id) for h in raw.semantic_hits}
     title_lookup_ids = sorted(raw_ids | set(numeric_ids))
 
-    article_map = fetch_articles(conn, numeric_ids)
-    title_map = fetch_articles(conn, title_lookup_ids) if raw_ids - set(numeric_ids) else article_map
+    article_map = fetch_articles(conn, numeric_ids, format_term_ids)
+    title_map = fetch_articles(conn, title_lookup_ids, format_term_ids) if raw_ids - set(numeric_ids) else article_map
     if seed is not None:
         article_map[seed.id] = seed
         title_map[seed.id] = seed
@@ -95,7 +135,13 @@ def _assemble(
         eid_int = int(hit.entity_id)
         article = article_map.get(eid_int)
         quality = quality_map.get(hit.entity_id)
-        freshness = classify_freshness(article.format if article else None, article.published_at if article else None)
+        freshness = classify_freshness(
+            article.format if article else None,
+            article.published_at if article else None,
+            format_confidence=article.format_confidence if article else None,
+            format_source=article.format_source if article else None,
+            trust_policy=decay_policy,
+        )
 
         trace = filters_trace.build_trace(
             article=article,

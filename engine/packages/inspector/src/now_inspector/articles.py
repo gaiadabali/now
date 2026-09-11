@@ -1,5 +1,14 @@
 """Read-only article/quality lookups against the city DB. No writes, no
 migration -- this package owns nothing in the schema, it only SELECTs.
+
+F124/F125 (T2 decay trust gate): also fetches the format term's
+`(confidence, source)` via the same LEFT JOIN shape as
+`now_blender.articles.fetch_article_meta` -- `format_term_ids` is required
+to disambiguate the format-facet `engine.entity_terms` row from
+type/subtype/location rows sharing the same `entity_id` (F92: no cross-DB
+FK; the caller resolves/caches these ids from the platform vocabulary, see
+`now_inspector.connections.platform_engine` / `now_blender
+.format_terms_cache`).
 """
 
 from __future__ import annotations
@@ -11,21 +20,31 @@ from now_inspector.models import ArticleRow, QualityBreakdown
 
 _ARTICLE_SQL = text(
     """
-    SELECT id, title, dek, legacy_wp_id, legacy_permalink,
-           primary_type::text AS primary_type, format::text AS format,
-           series_key, _status::text AS status, published_at::text AS published_at
-      FROM public.articles
-     WHERE id = :id
+    SELECT a.id, a.title, a.dek, a.legacy_wp_id, a.legacy_permalink,
+           a.primary_type::text AS primary_type, a.format::text AS format,
+           a.series_key, a._status::text AS status, a.published_at::text AS published_at,
+           et.confidence::float8 AS format_confidence, et.source AS format_source
+      FROM public.articles a
+      LEFT JOIN engine.entity_terms et
+        ON et.entity_type = 'article'
+       AND et.entity_id = a.id::text
+       AND et.term_id = ANY(CAST(:format_term_ids AS uuid[]))
+     WHERE a.id = :id
     """
 )
 
 _ARTICLES_BY_IDS_SQL = text(
     """
-    SELECT id, title, dek, legacy_wp_id, legacy_permalink,
-           primary_type::text AS primary_type, format::text AS format,
-           series_key, _status::text AS status, published_at::text AS published_at
-      FROM public.articles
-     WHERE id = ANY(:ids)
+    SELECT a.id, a.title, a.dek, a.legacy_wp_id, a.legacy_permalink,
+           a.primary_type::text AS primary_type, a.format::text AS format,
+           a.series_key, a._status::text AS status, a.published_at::text AS published_at,
+           et.confidence::float8 AS format_confidence, et.source AS format_source
+      FROM public.articles a
+      LEFT JOIN engine.entity_terms et
+        ON et.entity_type = 'article'
+       AND et.entity_id = a.id::text
+       AND et.term_id = ANY(CAST(:format_term_ids AS uuid[]))
+     WHERE a.id = ANY(:ids)
     """
 )
 
@@ -50,18 +69,26 @@ def _row_to_article(r) -> ArticleRow:
         series_key=r.series_key,
         status=r.status,
         published_at=r.published_at,
+        format_confidence=r.format_confidence,
+        format_source=r.format_source,
     )
 
 
-def fetch_article(conn: Connection, article_id: int) -> ArticleRow | None:
-    row = conn.execute(_ARTICLE_SQL, {"id": article_id}).first()
+def fetch_article(
+    conn: Connection, article_id: int, format_term_ids: frozenset[str] = frozenset()
+) -> ArticleRow | None:
+    row = conn.execute(_ARTICLE_SQL, {"id": article_id, "format_term_ids": list(format_term_ids)}).first()
     return _row_to_article(row) if row else None
 
 
-def fetch_articles(conn: Connection, article_ids: list[int]) -> dict[int, ArticleRow]:
+def fetch_articles(
+    conn: Connection, article_ids: list[int], format_term_ids: frozenset[str] = frozenset()
+) -> dict[int, ArticleRow]:
     if not article_ids:
         return {}
-    rows = conn.execute(_ARTICLES_BY_IDS_SQL, {"ids": article_ids}).fetchall()
+    rows = conn.execute(
+        _ARTICLES_BY_IDS_SQL, {"ids": article_ids, "format_term_ids": list(format_term_ids)}
+    ).fetchall()
     return {r.id: _row_to_article(r) for r in rows}
 
 

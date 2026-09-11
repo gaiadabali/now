@@ -1492,7 +1492,10 @@
     "option": "offer prior, per-article override",
     "answer": "Bali Dining Offers: format per article with `offer` as the prior (the Yoast primary decides when Restaurants and Bars is primary); roughly a third will be relabelled news.",
     "rationale": "Bali's offer cue is weak (45%); many 2016-2019 pieces are menu/opening write-ups filed as offers.",
-    "conflicts": [],
+    "conflicts": [
+     "ORIGINAL (2026-09-10): resolution.answer stated that roughly a third of Bali's 487 'Dining Offers' articles would be relabelled `news` by the classifier, on the assumption that per-article format inference would override the `offer` prior once applied.",
+     "SUPERSEDED 2026-09-11 (F124/T5, PROGRESS.md): that expectation is unimplementable as written and the live data confirms it. Bali fixes `format` at 0.95 confidence (`inferred`), and `resolve.py` deliberately disables `_mixed_categories_override` for the `format` facet -- a measured decision (F124): enabling it made format accuracy worse (0.580 -> 0.500), so it stays off. No per-article relabelling of the `offer` prior to `news` occurs anywhere in the pipeline. The mechanism that will eventually correct mis-primed rows is the offline LLM batch (F121/F124), which scored 142/142 against Hansel's own adjudication on this exact facet -- not the mixed-categories override this decision's answer assumed. Original wording preserved above, unedited."
+    ],
     "applies": [
      "no change"
     ],
@@ -1533,7 +1536,10 @@
     "option": "accept",
     "answer": "Bali News (1,067): format `news` as the prior, type per article. Roughly a quarter will be relabelled event/offer by the classifier -- intended.",
     "rationale": "Same treatment E1.4 gave Jakarta News; the single largest lever on Bali's freshness curve.",
-    "conflicts": [],
+    "conflicts": [
+     "ORIGINAL (2026-09-10): resolution.answer stated that roughly a quarter of Bali's 1,067 'News' articles would be relabelled `event`/`offer` by the classifier -- intended, per this decision's own wording.",
+     "SUPERSEDED 2026-09-11 (F124/T5, PROGRESS.md): that expectation is unimplementable as written, and the live consequence is visible in the data: Bali carries `event`=24 against `news`=1,494. Bali fixes `format` at 0.95 confidence (`inferred`), and `resolve.py` deliberately disables `_mixed_categories_override` for the `format` facet -- a measured decision (F124): enabling it made format accuracy worse (0.580 -> 0.500), so it stays off. The `news` prior is not being reclassified to `event`/`offer` at anything like the assumed rate. The mechanism that now fixes this is the offline LLM batch (F121/F124), which scored 142/142 against Hansel's own adjudication on this exact facet. Original wording preserved above, unedited."
+    ],
     "applies": [
      "no change"
     ],

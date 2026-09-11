@@ -134,6 +134,9 @@
     <div class="k">days old</div><div class="mono-num">{{ "%.1f"|format(c.freshness.days_old) if c.freshness.days_old is not none else '—' }}</div>
     <div class="k">decay component</div><div class="mono-num">{% if c.freshness.decay_component is not none %}{{ "%.4f"|format(c.freshness.decay_component) }}{% else %}—{% endif %}</div>
   </div>
+  {% if c.freshness.withheld_reason %}
+  <p><span class="pill pill-warn">withheld</span> {{ c.freshness.withheld_reason }}</p>
+  {% endif %}
   <div class="section-note">{{ c.freshness.note }}</div>
   {% endif %}
 </div>

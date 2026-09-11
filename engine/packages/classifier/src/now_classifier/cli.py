@@ -118,6 +118,8 @@ def classify_cmd(city: str, dry_run: bool, limit: int | None) -> None:
     click.echo(f"[{city}] location accepted={stats.location_accepted} reviewed={stats.location_reviewed}")
     click.echo(f"[{city}] vocabulary misses={stats.vocabulary_misses}")
     click.echo(f"[{city}] stale facet terms removed={stats.stale_facet_terms_removed}")
+    click.echo(f"[{city}] F132 articles<->entity_terms synced={stats.articles_facets_synced} "
+               f"drift skipped={stats.articles_facet_drift_skipped}")
     if dry_run:
         click.echo(f"[{city}] DRY RUN -- nothing written to the database.")
 

@@ -35,6 +35,13 @@ calibration = [
     "requests>=2.31,<3",
     "now-db",
     "now-platform-db",
+    # Wave 18 ticket 3 (T3, LLM-batch apply step): `apply_llm_labels.py`
+    # reuses `now_classifier.embed_routing.ROUTED_CONFIDENCE` (F125's
+    # facet-scoped measured-accuracy provenance table) and
+    # `now_classifier.vocabulary` (slug <-> platform term uuid) rather than
+    # re-deriving band membership -- see docs/llm-batch-apply-design.md
+    # ("reads it, rather than re-deriving band membership itself").
+    "now-classifier",
 ]
 
 [project.scripts]
@@ -44,6 +51,7 @@ now-eval = "now_eval.cli:cli"
 now-db = { path = "../db", editable = true }
 now-platform-db = { path = "../platform-db", editable = true }
 now-taxonomy-evidence = { path = "../taxonomy-evidence", editable = true }
+now-classifier = { path = "../classifier", editable = true }
 
 [build-system]
 requires = ["hatchling"]

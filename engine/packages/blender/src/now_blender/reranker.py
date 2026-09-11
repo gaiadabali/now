@@ -35,7 +35,7 @@ from now_blender.articles import fetch_article_meta
 from now_blender.blend import BlendResult, compute_blend
 from now_blender.components import BlendComponents, ComponentScore
 from now_blender.covisitation import fetch_covis_scores
-from now_blender.decay import freshness_component
+from now_blender.decay import describe_format_trust, freshness_component
 from now_blender.feature_log import build_record, log_feature_vector
 from now_blender.features import build_stage4_features
 from now_blender.mmr import diversify_ranked
@@ -157,7 +157,7 @@ class BlenderReranker:
 
         t1 = time.perf_counter()
         article_ids = [int(h.entity_id) for h in fused_hits]
-        meta_by_id = fetch_article_meta(self._conn, article_ids)
+        meta_by_id = fetch_article_meta(self._conn, article_ids, self._site_config.format_term_ids)
         quality_by_id = fetch_quality(self._conn, article_ids)
         # Plain keyword search has no subject entity to co-visit against
         # (see covisitation.py's docstring) -- calling the real lookup
@@ -184,7 +184,13 @@ class BlenderReranker:
             format_is_synthetic[candidate.key] = synthetic_format_overlay and (meta is None or meta.format is None)
 
             semantic = max(0.0, hit.semantic_raw_score) if hit.semantic_raw_score is not None else None
-            fresh = freshness_component(candidate.format, candidate.published_at, self._site_config.decay, now=now)
+            format_confidence = meta.format_confidence if meta is not None else None
+            format_source = meta.format_source if meta is not None else None
+            fresh = freshness_component(
+                candidate.format, candidate.published_at, self._site_config.decay,
+                format_confidence=format_confidence, format_source=format_source, now=now,
+            )
+            fresh_reason = describe_format_trust(candidate.format, format_confidence, format_source, self._site_config.decay)
             components = BlendComponents(
                 semantic=semantic,
                 covis=covis_by_id.get(str(article_id)),
@@ -192,6 +198,7 @@ class BlenderReranker:
                 quality=quality_row.score if quality_row is not None else None,
                 geo=None,
                 promo=None,
+                freshness_explanation=fresh_reason,
             )
             blend_by_key[candidate.key] = compute_blend(components, self._site_config.weights)
 

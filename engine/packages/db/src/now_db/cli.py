@@ -10,6 +10,7 @@ from now_db import provisioning
 from now_db.partitions import drop_partitions_older_than, ensure_daily_partitions
 from now_db.schema_hash import compute_hash, diff_structures
 from now_db.settings import city_database_url
+from now_db.facet_sync import find_facet_drift, format_facet_drift_report, has_facet_drift
 from now_db.term_refs import find_orphaned_term_refs, format_orphan_report, has_live_orphans
 from now_platform_db.settings import platform_database_url
 
@@ -71,6 +72,7 @@ def migrate(all_sites: bool, url: str | None) -> None:
         click.echo(f"[now-db] migrated {url} to head")
         click.echo("[now-db] partitions created: " + (", ".join(created) if created else "(none needed)"))
         _echo_term_ref_orphans({url: _safe_find_term_ref_orphans(url, dsn)})
+        _echo_facet_drift({url: _safe_find_facet_drift(url, dsn)})
         return
     if not all_sites:
         raise click.UsageError("pass --all to migrate every registered city, or --url for a single DSN")
@@ -79,6 +81,7 @@ def migrate(all_sites: bool, url: str | None) -> None:
     for slug, created in result.partitions_created.items():
         click.echo(f"[now-db]   {slug}: partitions created = " + (", ".join(created) if created else "(none needed)"))
     _echo_term_ref_orphans(result.term_ref_orphans)
+    _echo_facet_drift(result.facet_drift)
 
 
 def _safe_find_term_ref_orphans(label: str, dsn: str) -> list | None:
@@ -119,6 +122,40 @@ def _echo_term_ref_orphans(orphans_by_label: dict[str, list | None]) -> None:
                 click.echo(f"[now-db]   {line}", err=True)
         else:
             click.echo(f"[now-db] vocabulary integrity: OK — {label} has no orphaned term references")
+
+
+def _safe_find_facet_drift(label: str, dsn: str) -> list | None:
+    """F132 check for `migrate --url`, best-effort — same defensiveness as
+    `_safe_find_term_ref_orphans` above (a platform-DB hiccup here must not
+    fail an otherwise-successful migration)."""
+    platform_engine = create_engine(platform_database_url())
+    city_engine = create_engine(dsn)
+    try:
+        with platform_engine.connect() as platform_conn, city_engine.connect() as city_conn:
+            return find_facet_drift(city_conn, platform_conn)
+    except Exception as exc:
+        click.echo(f"[now-db] facet-sync check skipped for {label} — could not complete: {exc}", err=True)
+        return None
+    finally:
+        platform_engine.dispose()
+        city_engine.dispose()
+
+
+def _echo_facet_drift(drift_by_label: dict[str, list | None]) -> None:
+    """F132 — print a loud, NON-FATAL articles/entity_terms drift summary
+    after a migration run. Non-fatal for the same reason as F92's
+    equivalent: this is a pre-existing data problem, not something
+    `migrate`/`migrate --all` caused or should refuse to complete over.
+    `None` means the check itself could not run."""
+    for label, groups in drift_by_label.items():
+        if groups is None:
+            continue
+        if groups:
+            click.echo(f"[now-db] FACET SYNC WARNING (F132) — {label}:", err=True)
+            for line in format_facet_drift_report(label, groups):
+                click.echo(f"[now-db]   {line}", err=True)
+        else:
+            click.echo(f"[now-db] facet sync: OK — {label} articles/entity_terms agree on type+format")
 
 
 @cli.command("hash")
@@ -188,6 +225,38 @@ def check_term_refs(url: str, platform_url: str | None) -> None:
     if has_live_orphans(orphans):
         raise SystemExit(1)
     click.echo(f"[now-db] no LIVE orphans — exit 0 (historical/snapshot-only references reported above)")
+
+
+@cli.command("check-facet-sync")
+@click.option("--url", required=True, help="City DSN, or a bare db_ref (e.g. now_jakarta).")
+@click.option("--platform-url", default=None, help="Override the platform DSN (default: NOW_PLATFORM_DATABASE_URL / now-platform-db's usual resolution).")
+def check_facet_sync(url: str, platform_url: str | None) -> None:
+    """F132 — fail (exit 1) if this city's `public.articles.primary_type`/
+    `.format` disagrees with `engine.entity_terms`, or is set with no
+    corresponding `entity_terms` row at all. Unlike `check-term-refs`,
+    every finding here is LIVE (this is the actual CMS-facing data, not a
+    historical snapshot), so any finding fails the check."""
+    dsn = city_database_url(url)
+    p_dsn = platform_url or platform_database_url()
+    city_engine = create_engine(dsn)
+    platform_engine = create_engine(p_dsn)
+    try:
+        with city_engine.connect() as city_conn, platform_engine.connect() as platform_conn:
+            groups = find_facet_drift(city_conn, platform_conn)
+    finally:
+        city_engine.dispose()
+        platform_engine.dispose()
+
+    if not groups:
+        click.echo(f"[now-db] OK — {url}: articles.{{primary_type,format}} agrees with entity_terms everywhere")
+        return
+
+    click.echo(f"[now-db] FACET SYNC ISSUE(S) in {url}:", err=True)
+    for line in format_facet_drift_report(url, groups):
+        click.echo(f"  {line}", err=True)
+
+    if has_facet_drift(groups):
+        raise SystemExit(1)
 
 
 @cli.command("ensure-partitions")

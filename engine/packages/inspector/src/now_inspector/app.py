@@ -21,20 +21,33 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from now_inspector import service
-from now_inspector.connections import city_engine
+from now_inspector.connections import city_engine, platform_engine
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
-def create_app(*, db_ref: str) -> FastAPI:
+def create_app(*, db_ref: str, site_slug: str | None = None) -> FastAPI:
     """`db_ref` has no default -- per ARCHITECTURE.md §3.5, every city is a
     separate DB on the same Postgres instance and this tool must never
     assume which one, so the caller (CLI `--url`) always states it
     explicitly (matches `now-search`'s own `--db` being `required=True`,
-    no default)."""
+    no default).
+
+    `site_slug` is new (F124/F125, T2 decay trust gate) and optional,
+    mirroring `now_blender.reranker.BlenderReranker.build`/`now_rails
+    .orchestrator.RailsOrchestrator.build`'s own "give both platform_conn
+    and site_slug for live config, or omit both for the package default"
+    contract: with it, this tool opens a platform-DB connection per
+    request and resolves the format facet's term ids plus the site's real
+    (possibly tuned) `min_format_confidence`; without it, the trust gate
+    still runs but falls back to the package default (0.85) and cannot
+    resolve any format's provenance (so it fails closed and discloses
+    that via `FreshnessResult.withheld_reason` -- never silently skipped).
+    """
     app = FastAPI(title="Engine Inspector")
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
     engine = city_engine(db_ref)
+    platform_eng = platform_engine() if site_slug is not None else None
 
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request):
@@ -54,7 +67,15 @@ def create_app(*, db_ref: str) -> FastAPI:
                 aid = None
 
         with engine.connect() as conn:
-            if aid is not None:
+            if platform_eng is not None:
+                with platform_eng.connect() as platform_conn:
+                    if aid is not None:
+                        report = service.build_article_report(conn, aid, platform_conn=platform_conn, site_slug=site_slug)
+                    elif q:
+                        report = service.build_query_report(conn, q, platform_conn=platform_conn, site_slug=site_slug)
+                    else:
+                        return templates.TemplateResponse(request, "index.html", {"query": None, "article_id": None})
+            elif aid is not None:
                 report = service.build_article_report(conn, aid)
             elif q:
                 report = service.build_query_report(conn, q)

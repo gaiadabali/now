@@ -59,6 +59,10 @@ def write_report(path: Path, city: str, results: list[ClassificationResult], sta
     lines.append(f"stale same-facet term rows removed (F120: a re-run's flipped type/format/subtype value "
                  f"retracting a PREVIOUS run's different accepted value for the same article): "
                  f"**{stats.stale_facet_terms_removed}**\n")
+    lines.append(f"F132: `articles.primary_type`/`.format` synced with `entity_terms` this run: "
+                 f"**{stats.articles_facets_synced}** (article,facet) pair(s); left untouched because "
+                 f"`articles` no longer demonstrably matched `entity_terms` (editor-owned or already "
+                 f"drifted -- never guessed at): **{stats.articles_facet_drift_skipped}**\n")
     lines.append(f"location term-rows written per article (avg): {n_locations / total:.2f}" if total else "")
     lines.append(f"articles with at least one auto-applied location: {location_accepted_articles} ({_pct(location_accepted_articles, total)})\n")
 

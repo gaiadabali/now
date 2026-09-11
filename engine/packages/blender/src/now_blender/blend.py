@@ -100,13 +100,20 @@ def compute_blend(components: BlendComponents, weights: BlendWeights) -> BlendRe
         if available:
             raw_weighted_sum += weight * value
             available_weight_sum += weight
+        # F124/F125 (T2): `freshness_explanation` overrides the static
+        # per-key text ONLY for `freshness`, and only when the caller
+        # supplied one (e.g. the decay trust gate withheld this candidate's
+        # value) -- every other key/candidate keeps the plain static text.
+        explanation = _EXPLANATIONS[key]
+        if key == "freshness" and components.freshness_explanation is not None:
+            explanation = components.freshness_explanation
         scored.append(
             ComponentScore(
                 key=key,
                 label=key,
                 value=value,
                 weight=weight,
-                explanation=_EXPLANATIONS[key],
+                explanation=explanation,
                 available=available,
             )
         )

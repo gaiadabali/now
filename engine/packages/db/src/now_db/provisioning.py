@@ -72,6 +72,7 @@ from sqlalchemy.engine import Connection
 from now_db import partitions
 from now_db.settings import admin_database_url, city_database_url
 from now_db.sites_registry import SiteRow, list_sites, upsert_site
+from now_db.facet_sync import FacetDriftGroup, find_facet_drift
 from now_db.term_refs import OrphanedTermRef, find_orphaned_term_refs
 from now_platform_db.settings import platform_database_url
 
@@ -336,6 +337,17 @@ def load_taxonomy_seed(seed_dir: Path | str | None = None) -> TaxonomySeed:
         if half_life is None and not policy.get("evergreen") and not policy.get("hard_expiry"):
             raise TaxonomySeedError(
                 f"format_decay.json: {slug!r} has no half-life but is neither evergreen nor hard-expiring"
+            )
+
+    # min_format_confidence — F124/F125's decay trust gate (ticket T2). Optional
+    # in the file's shape (older seeds/tests may omit it) but must be a real
+    # 0..1 probability when present — a typo here (e.g. "85" instead of
+    # "0.85") would silently make the gate withhold nothing, or everything.
+    if "min_format_confidence" in decay:
+        min_conf = decay["min_format_confidence"]
+        if not isinstance(min_conf, (int, float)) or not (0.0 <= min_conf <= 1.0):
+            raise TaxonomySeedError(
+                f"format_decay.json: min_format_confidence must be a number in [0, 1], got {min_conf!r}"
             )
 
     return TaxonomySeed(
@@ -666,6 +678,71 @@ def seed_site_decay_defaults(
         engine.dispose()
 
 
+# F124/F125 (decay trust gate, ticket T2): `min_format_confidence` is a NEW
+# key inside the ALREADY-SEEDED `decay` object. `_SET_DECAY_DEFAULTS` above
+# only fires `WHERE NOT jsonb_exists(ranking_weights, 'decay')` — every site
+# already has a `decay` key (written by an earlier `site:create`/`migrate`),
+# so simply adding `min_format_confidence` to `format_decay.json` and
+# re-running the ordinary seed is a NO-OP for every existing site: the outer
+# `decay` key exists, the guard never fires, the inner key is never written.
+# This is the exact trap F122 hit for `type_relations.json` (`ON CONFLICT DO
+# NOTHING` protects a site's own tuning from a seed re-run, so a vocabulary
+# fix there needed a direct UPDATE too) — named explicitly in this ticket's
+# own brief so it isn't rediscovered the hard way a second time.
+#
+# This is a data backfill, not DDL (`sites.ranking_weights` is plain jsonb,
+# no migration needed) — but it still must never clobber a site that has
+# already tuned `min_format_confidence` for itself, so it carries the same
+# "only if absent" guard as the outer key, just one level deeper via
+# `jsonb_set` on the `{decay,min_format_confidence}` path instead of
+# replacing the whole `decay` object.
+_SET_MIN_FORMAT_CONFIDENCE = text(
+    """
+    UPDATE engine.sites
+       SET ranking_weights = jsonb_set(
+               ranking_weights, '{decay,min_format_confidence}', to_jsonb(CAST(:min_conf AS numeric)), true
+           ),
+           updated_at = now()
+     WHERE slug = :slug
+       AND jsonb_exists(ranking_weights, 'decay')
+       AND NOT (ranking_weights #> '{decay}' ? 'min_format_confidence')
+    RETURNING slug
+    """
+)
+
+
+def _seed_site_min_format_confidence(conn: Connection, slug: str, seed: TaxonomySeed) -> bool:
+    min_conf = seed.decay.get("min_format_confidence")
+    if min_conf is None:
+        log.info("taxonomy seed (site %s): min_format_confidence not present in seed, skipped", slug)
+        return False
+    if conn.execute(text("SELECT 1 FROM engine.sites WHERE slug = :slug"), {"slug": slug}).first() is None:
+        raise RuntimeError(f"site {slug!r} is not in engine.sites; register it before seeding decay defaults")
+    row = conn.execute(_SET_MIN_FORMAT_CONFIDENCE, {"slug": slug, "min_conf": min_conf}).first()
+    written = row is not None
+    log.info(
+        "taxonomy seed (site %s): min_format_confidence %s",
+        slug, "written" if written else "already present (or 'decay' key itself missing)",
+    )
+    return written
+
+
+def seed_site_min_format_confidence(
+    slug: str, *, platform_dsn: str | None = None, seed: TaxonomySeed | None = None
+) -> bool:
+    """Backfill `sites.ranking_weights['decay']['min_format_confidence']` for
+    one already-provisioned site, unless that inner key already exists (see
+    module comment above for why the ordinary decay-defaults seed cannot do
+    this on its own). Returns True if written."""
+    seed = seed or load_taxonomy_seed()
+    engine = create_engine(platform_dsn or platform_database_url())
+    try:
+        with engine.begin() as conn:
+            return _seed_site_min_format_confidence(conn, slug, seed)
+    finally:
+        engine.dispose()
+
+
 # --------------------------------------------------------------------------
 # site:create / site:migrate
 # --------------------------------------------------------------------------
@@ -742,6 +819,7 @@ def create_site(
                 status="active",
             )
             decay_written = _seed_site_decay_defaults(conn, slug, seed)
+            _seed_site_min_format_confidence(conn, slug, seed)
     finally:
         platform_engine.dispose()
 
@@ -774,6 +852,10 @@ class MigrateAllResult:
     # only — see now_db.term_refs module docstring for why this is not a
     # hard failure of migrate_all() itself.
     term_ref_orphans: dict[str, list[OrphanedTermRef] | None] = field(default_factory=dict)
+    # F132: articles.primary_type/.format <-> entity_terms drift, per site.
+    # Same detection-only, never-fails-migrate contract as term_ref_orphans
+    # above -- `None` means "could not check", `[]` means "checked, clean".
+    facet_drift: dict[str, list[FacetDriftGroup] | None] = field(default_factory=dict)
 
 
 def migrate_all() -> MigrateAllResult:
@@ -803,6 +885,7 @@ def migrate_all() -> MigrateAllResult:
         partitions_created[site.slug] = ensure_city_partitions(dsn)
         if seed_site_decay_defaults(site.slug, seed=seed):
             decay_written.append(site.slug)
+        seed_site_min_format_confidence(site.slug, seed=seed)
         migrated.append(site.slug)
 
     # F92: run AFTER every site has migrated/seeded successfully, and
@@ -835,6 +918,32 @@ def migrate_all() -> MigrateAllResult:
         for site in sites:
             term_ref_orphans.setdefault(site.slug, None)
 
+    # F132: same best-effort, decoupled, never-fatal shape as the F92 check
+    # just above -- a drifted articles/entity_terms row is a pre-existing
+    # data problem, never a reason to fail an otherwise-successful migrate.
+    facet_drift: dict[str, list[FacetDriftGroup] | None] = {}
+    try:
+        check_platform_engine = create_engine(platform_database_url())
+        try:
+            with check_platform_engine.connect() as platform_conn:
+                for site in sites:
+                    dsn = city_database_url(site.db_ref)
+                    city_engine = create_engine(dsn)
+                    try:
+                        with city_engine.connect() as city_conn:
+                            facet_drift[site.slug] = find_facet_drift(city_conn, platform_conn)
+                    except Exception as exc:  # noqa: BLE001 - best-effort detection, never fatal
+                        log.warning("F132 facet-sync check failed for site %s: %s", site.slug, exc)
+                        facet_drift[site.slug] = None
+                    finally:
+                        city_engine.dispose()
+        finally:
+            check_platform_engine.dispose()
+    except Exception as exc:  # noqa: BLE001 - e.g. platform DB unreachable for the check itself
+        log.warning("F132 facet-sync check skipped entirely (platform DB unreachable): %s", exc)
+        for site in sites:
+            facet_drift.setdefault(site.slug, None)
+
     return MigrateAllResult(
         migrated=migrated,
         partitions_created=partitions_created,
@@ -842,4 +951,5 @@ def migrate_all() -> MigrateAllResult:
         city_seeds=city_seeds,
         decay_defaults_written=decay_written,
         term_ref_orphans=term_ref_orphans,
+        facet_drift=facet_drift,
     )

@@ -15,24 +15,28 @@ def cli() -> None:
 
 @cli.command()
 @click.option("--url", "db_ref", required=True, help="City db_ref (e.g. now_jakarta, now_bali) or a full DSN.")
+@click.option("--site-slug", "site_slug", default=None, help="Site slug (e.g. jakarta, bali) -- resolves live "
+              "sites.ranking_weights and the F124/F125 decay-trust format term ids. Omitted: gate falls back to "
+              "the 0.85 package default and cannot resolve format provenance (fails closed, disclosed).")
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", default=8899, type=int)
-def serve(db_ref: str, host: str, port: int) -> None:
+def serve(db_ref: str, site_slug: str | None, host: str, port: int) -> None:
     """Run the Inspector web UI."""
     import uvicorn
 
     from now_inspector.app import create_app
 
-    app = create_app(db_ref=db_ref)
+    app = create_app(db_ref=db_ref, site_slug=site_slug)
     uvicorn.run(app, host=host, port=port)
 
 
 @cli.command()
 @click.option("--url", "db_ref", required=True, help="City db_ref (e.g. now_jakarta, now_bali) or a full DSN.")
+@click.option("--site-slug", "site_slug", default=None, help="Site slug (e.g. jakarta, bali) -- see `serve --site-slug`.")
 @click.option("--query", "query", default=None, help="Free-text query to inspect.")
 @click.option("--article-id", "article_id", default=None, type=int, help="Article id to inspect.")
 @click.option("--out", "out_path", required=True, help="Path to write the rendered HTML to.")
-def capture(db_ref: str, query: str | None, article_id: int | None, out_path: str) -> None:
+def capture(db_ref: str, site_slug: str | None, query: str | None, article_id: int | None, out_path: str) -> None:
     """Render one report to a static HTML file, without running a server
     -- used to capture real evidence against real data for the ticket
     report (no browser needed)."""
@@ -43,7 +47,7 @@ def capture(db_ref: str, query: str | None, article_id: int | None, out_path: st
     if not query and article_id is None:
         raise click.UsageError("Pass --query or --article-id.")
 
-    app = create_app(db_ref=db_ref)
+    app = create_app(db_ref=db_ref, site_slug=site_slug)
     client = TestClient(app)
     params = {}
     if article_id is not None:

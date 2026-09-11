@@ -22,6 +22,11 @@ class ArticleRow:
     series_key: str | None
     status: str | None
     published_at: str | None
+    # F124/F125 (T2 decay trust gate): the format term's engine.entity_terms
+    # (confidence, source), None/None when no row matched -- see
+    # now_inspector.freshness.classify / now_blender.decay.is_format_trusted.
+    format_confidence: float | None = None
+    format_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +56,12 @@ class FreshnessResult:
     days_old: float | None
     decay_component: float | None
     note: str
+    # F124/F125 (T2): non-None only when the real decay gate
+    # (now_blender.decay.is_format_trusted) would withhold this candidate's
+    # freshness -- e.g. "freshness withheld: format trust 0.56 < 0.85
+    # (source=inferred)". None when format is untyped (already covered by
+    # `note`) or the value IS trusted.
+    withheld_reason: str | None = None
 
 
 @dataclass(frozen=True)

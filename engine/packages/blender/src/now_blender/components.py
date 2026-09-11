@@ -43,3 +43,11 @@ class BlendComponents:
     quality: float | None = None
     geo: float | None = None
     promo: float | None = None
+    # F124/F125 (T2): overrides `blend.py`'s static per-key explanation for
+    # `freshness` specifically, when the caller has a more specific,
+    # per-candidate reason to report (today: the decay trust gate withheld
+    # freshness for a classified-but-untrusted format -- see
+    # `now_blender.decay.describe_format_trust`). `None` (the default)
+    # means "use the static explanation", not "no explanation" -- every
+    # other component key is untouched by this field.
+    freshness_explanation: str | None = None

@@ -5,6 +5,8 @@
   "decay": {
     "version": 1,
     "unit": "days",
+    "min_format_confidence": 0.85,
+    "min_format_confidence_note": "F124/F125 decay trust gate (PROGRESS.md T2): freshness_component withholds (returns None, blend renormalises) whenever the format value's engine.entity_terms confidence is below this AND its source is not trustworthy (source='editor', or a future LLM-verified marker). A wrong format flips the entire w_fresh term (F124); NULL format is neutral. This does NOT change what format values are (F121's LLM batch owns that) — only whether a low-trust value is trusted for decay. See now_blender.decay.",
     "default": {"half_life_days": 365, "evergreen": false},
     "formats": {
       "news":       {"half_life_days": 21,   "evergreen": false, "spec_range": "14-30 days"},
