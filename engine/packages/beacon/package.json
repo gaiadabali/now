@@ -1,0 +1,20 @@
+{
+  "name": "@now-engine/beacon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vanilla-JS, zero-dependency behavioural beacon for the legacy WordPress site and the new NOW! Engine surfaces. See README.md for the payload contract.",
+  "license": "UNLICENSED",
+  "files": [
+    "dist/beacon.min.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "size": "node scripts/measure-size.js",
+    "test": "node test/beacon.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1",
+    "terser": "^5.51.2"
+  }
+}

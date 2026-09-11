@@ -1,0 +1,46 @@
+# NOW! Engine — Caddy routing (ARCHITECTURE.md §3.5).
+#
+# Hostnames come from env (see .env.example): in local dev these default to
+# *.localhost, which Caddy serves over HTTPS with its internal CA (no
+# certificate warnings needed to disable — trust the Caddy local CA, or use
+# `curl -k` / `--resolve` for smoke tests). In production, set the real
+# domains and Caddy issues public certs via ACME automatically.
+#
+# Placeholder upstreams (engine-api, web, cms-*) are wired here so routing is
+# provable even before those apps exist — Caddy will 502 until they're up,
+# which is the correct behavior, not a config error.
+
+{
+	admin off
+	email {$CADDY_ACME_EMAIL}
+}
+
+# --- Public sites -----------------------------------------------------
+{$NOW_JAKARTA_HOSTNAME} {
+	reverse_proxy web:3000
+}
+
+{$NOW_BALI_HOSTNAME} {
+	reverse_proxy web:3000
+}
+
+# --- CMS instances (one Payload deployment per city, same image) ------
+{$CMS_JAKARTA_HOSTNAME} {
+	reverse_proxy cms-jakarta:3000
+}
+
+{$CMS_BALI_HOSTNAME} {
+	reverse_proxy cms-bali:3000
+}
+
+# --- Engine API (single multi-tenant instance) -------------------------
+{$ENGINE_API_HOSTNAME} {
+	reverse_proxy engine-api:8000
+}
+
+# --- Media derivatives (imgproxy, sourced from Garage) ------------------
+# Not in ARCHITECTURE.md's routing table directly, but §14 puts imgproxy
+# behind the CDN/edge in the request path: Browser → CDN → imgproxy → Garage.
+{$MEDIA_HOSTNAME} {
+	reverse_proxy imgproxy:8080
+}

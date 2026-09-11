@@ -1,0 +1,337 @@
+# NOW! Engine — base compose stack.
+#
+# Scope of this file (E0.1 — see PROGRESS.md): infrastructure services only
+# (postgres, redis, garage, imgproxy, caddy). Application services
+# (engine-api, engine-worker, cms-jakarta, cms-bali, web, console) are wired
+# below as PLACEHOLDERS behind the `apps` profile so `docker compose up`
+# brings the infra layer up cleanly today, without depending on Dockerfiles
+# that other in-flight tasks (E0.2/E0.3 and later) haven't created yet.
+#
+# Once an app has a real Dockerfile, its owning task should: (1) fix the
+# `build.context`, (2) drop the `profiles: ["apps"]` line so it starts by
+# default, (3) leave healthcheck/depends_on/env wiring as-is unless the app
+# needs something different.
+#
+# Local dev overrides (port publishing, bind mounts, relaxed healthcheck
+# timings) live in docker-compose.override.yml, loaded automatically by
+# `docker compose` when present. Production deploys should run with
+# `docker compose -f docker-compose.yml up -d` to skip the override.
+
+name: now-engine
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  now-net:
+    name: now-net
+
+volumes:
+  postgres-data:
+  redis-data:
+  garage-meta:
+  garage-data:
+  caddy-data:
+  caddy-config:
+
+services:
+  # ---------------------------------------------------------------------
+  # Postgres 16 + pgvector + PostGIS. One instance, three databases
+  # (now_platform, now_jakarta, now_bali) — see ARCHITECTURE.md §2.
+  # ---------------------------------------------------------------------
+  postgres:
+    build:
+      context: ./engine/infra/postgres
+      dockerfile: Dockerfile
+    image: now-postgres:16-pgvector-postgis
+    container_name: now-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./engine/infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # ---------------------------------------------------------------------
+  # Redis — arq queue + cache.
+  # ---------------------------------------------------------------------
+  redis:
+    image: redis:7.4.11-alpine
+    container_name: now-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 640m
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ---------------------------------------------------------------------
+  # Garage — S3-compatible object store, single node (ARCHITECTURE.md §14).
+  # Distroless image: no shell, so config is a static file with secrets
+  # supplied via env (see engine/infra/garage/garage.toml). Cluster/bucket
+  # bootstrap is a one-time step: bash engine/infra/garage/init.sh
+  # ---------------------------------------------------------------------
+  garage:
+    image: dxflrs/garage:v1.3.1
+    container_name: now-garage
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN}
+    volumes:
+      - ./engine/infra/garage/garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ---------------------------------------------------------------------
+  # imgproxy — on-demand image derivatives, sourced from Garage over S3.
+  # ---------------------------------------------------------------------
+  imgproxy:
+    image: darthsim/imgproxy:v4.0.14
+    container_name: now-imgproxy
+    restart: unless-stopped
+    environment:
+      IMGPROXY_BIND: ":8080"
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: "http://garage:3900"
+      IMGPROXY_S3_REGION: ${GARAGE_S3_REGION:-garage}
+      AWS_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_TTL: "2592000"
+      IMGPROXY_MAX_SRC_RESOLUTION: "50"
+    depends_on:
+      garage:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ---------------------------------------------------------------------
+  # Caddy — TLS + routing (ARCHITECTURE.md §3.5).
+  # ---------------------------------------------------------------------
+  caddy:
+    image: caddy:2.11.4
+    container_name: now-caddy
+    restart: unless-stopped
+    environment:
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL}
+      NOW_JAKARTA_HOSTNAME: ${NOW_JAKARTA_HOSTNAME}
+      NOW_BALI_HOSTNAME: ${NOW_BALI_HOSTNAME}
+      CMS_JAKARTA_HOSTNAME: ${CMS_JAKARTA_HOSTNAME}
+      CMS_BALI_HOSTNAME: ${CMS_BALI_HOSTNAME}
+      ENGINE_API_HOSTNAME: ${ENGINE_API_HOSTNAME}
+      MEDIA_HOSTNAME: ${MEDIA_HOSTNAME}
+    volumes:
+      - ./engine/infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256m
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # =======================================================================
+  # PLACEHOLDERS — behind `apps` profile. Not started by plain
+  # `docker compose up`. See file header for activation instructions.
+  # =======================================================================
+
+  engine-api:
+    profiles: ["apps"]
+    build:
+      context: ./engine/apps/api
+    image: ${ENGINE_API_IMAGE:-now-engine-api:local}
+    container_name: now-engine-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL_PLATFORM: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      GARAGE_S3_ENDPOINT: http://garage:3900
+      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
+      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
+      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      garage:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  engine-worker:
+    profiles: ["apps"]
+    build:
+      context: ./engine/apps/worker
+    image: ${ENGINE_WORKER_IMAGE:-now-engine-worker:local}
+    container_name: now-engine-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL_PLATFORM: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      GARAGE_S3_ENDPOINT: http://garage:3900
+      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
+      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
+      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      garage:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+
+  cms-jakarta:
+    profiles: ["apps"]
+    build:
+      context: ./engine/packages/cms
+    image: ${CMS_IMAGE:-now-cms:local}
+    container_name: now-cms-jakarta
+    restart: unless-stopped
+    environment:
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
+      SITE_SLUG: jakarta
+      GARAGE_S3_ENDPOINT: http://garage:3900
+      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
+      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
+      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+
+  cms-bali:
+    profiles: ["apps"]
+    build:
+      context: ./engine/packages/cms
+    image: ${CMS_IMAGE:-now-cms:local}
+    container_name: now-cms-bali
+    restart: unless-stopped
+    environment:
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
+      SITE_SLUG: bali
+      GARAGE_S3_ENDPOINT: http://garage:3900
+      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
+      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
+      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+
+  web:
+    profiles: ["apps"]
+    build:
+      context: ./engine/apps/web
+    image: ${WEB_IMAGE:-now-web:local}
+    container_name: now-web
+    restart: unless-stopped
+    environment:
+      ENGINE_API_URL: http://engine-api:8000
+      MEDIA_BASE_URL: ${MEDIA_PUBLIC_URL:-http://localhost:8080}
+    depends_on:
+      engine-api:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging
+
+  console:
+    profiles: ["apps"]
+    build:
+      context: ./engine/apps/console
+    image: ${CONSOLE_IMAGE:-now-console:local}
+    container_name: now-console
+    restart: unless-stopped
+    environment:
+      DATABASE_URL_PLATFORM: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      ENGINE_API_URL: http://engine-api:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      engine-api:
+        condition: service_healthy
+    networks: [now-net]
+    logging: *default-logging

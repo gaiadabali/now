@@ -1,0 +1,1014 @@
+{
+  "hash": "173ac77c59f6f272c5a3650d8b74cb06220514adf41e4dac1692aee074ee2300",
+  "structure": {
+    "schema": "engine",
+    "tables": {
+      "alembic_version": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "version_num",
+            "nullable": "NO",
+            "type": "character varying",
+            "udt": "varchar"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "v",
+              "e",
+              "r",
+              "s",
+              "i",
+              "o",
+              "n",
+              "_",
+              "n",
+              "u",
+              "m",
+              "}"
+            ],
+            "name": "alembic_version_pkc",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX alembic_version_pkc ON engine.alembic_version USING btree (version_num)",
+            "method": "btree",
+            "name": "alembic_version_pkc"
+          }
+        ],
+        "partitioned": false
+      },
+      "article_search": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "tsv",
+            "nullable": "NO",
+            "type": "tsvector",
+            "udt": "tsvector"
+          },
+          {
+            "default": null,
+            "name": "body_text_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "article_search_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX article_search_pkey ON engine.article_search USING btree (entity_id)",
+            "method": "btree",
+            "name": "article_search_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_article_search_tsv ON engine.article_search USING gin (tsv)",
+            "method": "gin",
+            "name": "ix_article_search_tsv"
+          }
+        ],
+        "partitioned": false
+      },
+      "covisitation": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "entity_a",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_b",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "score",
+            "nullable": "NO",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "window",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "a",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "b",
+              ",",
+              "w",
+              "i",
+              "n",
+              "d",
+              "o",
+              "w",
+              "}"
+            ],
+            "name": "covisitation_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX covisitation_pkey ON engine.covisitation USING btree (entity_a, entity_b, \"window\")",
+            "method": "btree",
+            "name": "covisitation_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_covisitation_b ON engine.covisitation USING btree (entity_b, \"window\")",
+            "method": "btree",
+            "name": "ix_covisitation_b"
+          }
+        ],
+        "partitioned": false
+      },
+      "embeddings": {
+        "checks": [
+          {
+            "clause": "CHECK ((dim = vector_dims(vec)))",
+            "name": "ck_embeddings_dim_matches_vec"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "model",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "dim",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "text_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "vec",
+            "nullable": "NO",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "t",
+              "y",
+              "p",
+              "e",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              ",",
+              "m",
+              "o",
+              "d",
+              "e",
+              "l",
+              "}"
+            ],
+            "name": "embeddings_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX embeddings_pkey ON engine.embeddings USING btree (entity_type, entity_id, model)",
+            "method": "btree",
+            "name": "embeddings_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_embeddings_hnsw ON engine.embeddings USING hnsw (vec vector_cosine_ops)",
+            "method": "hnsw",
+            "name": "ix_embeddings_hnsw"
+          }
+        ],
+        "partitioned": false
+      },
+      "entity_terms": {
+        "checks": [
+          {
+            "clause": "CHECK ((source = ANY (ARRAY['ai'::text, 'editor'::text, 'inferred'::text])))",
+            "name": "entity_terms_source_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "term_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "1.0",
+            "name": "weight",
+            "nullable": "NO",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": "'ai'::text",
+            "name": "source",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "confidence",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "t",
+              "y",
+              "p",
+              "e",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              ",",
+              "t",
+              "e",
+              "r",
+              "m",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "entity_terms_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX entity_terms_pkey ON engine.entity_terms USING btree (entity_type, entity_id, term_id)",
+            "method": "btree",
+            "name": "entity_terms_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_entity_terms_term ON engine.entity_terms USING btree (term_id)",
+            "method": "btree",
+            "name": "ix_entity_terms_term"
+          }
+        ],
+        "partitioned": false
+      },
+      "impressions": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "session_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "anon_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "surface",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "rail",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "position",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              ",",
+              "t",
+              "s",
+              "}"
+            ],
+            "name": "impressions_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX impressions_pkey ON ONLY engine.impressions USING btree (id, ts)",
+            "method": "btree",
+            "name": "impressions_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_impressions_entity ON ONLY engine.impressions USING btree (entity_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_impressions_entity"
+          },
+          {
+            "def": "CREATE INDEX ix_impressions_rail ON ONLY engine.impressions USING btree (surface, rail, ts DESC)",
+            "method": "btree",
+            "name": "ix_impressions_rail"
+          },
+          {
+            "def": "CREATE INDEX ix_impressions_session ON ONLY engine.impressions USING btree (session_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_impressions_session"
+          }
+        ],
+        "partitioned": true
+      },
+      "interactions": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['view'::text, 'scroll'::text, 'dwell'::text, 'click'::text, 'outbound'::text, 'search'::text, 'exit'::text, 'thumbs_down'::text])))",
+            "name": "interactions_kind_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "anon_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "user_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "session_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "surface",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "rail",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "position",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "dwell_ms",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "scroll_pct",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "referrer",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "utm",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "device",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "query",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "target_url",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              ",",
+              "t",
+              "s",
+              "}"
+            ],
+            "name": "interactions_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX interactions_pkey ON ONLY engine.interactions USING btree (id, ts)",
+            "method": "btree",
+            "name": "interactions_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_interactions_anon ON ONLY engine.interactions USING btree (anon_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_interactions_anon"
+          },
+          {
+            "def": "CREATE INDEX ix_interactions_entity ON ONLY engine.interactions USING btree (entity_type, entity_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_interactions_entity"
+          },
+          {
+            "def": "CREATE INDEX ix_interactions_kind ON ONLY engine.interactions USING btree (kind, ts DESC)",
+            "method": "btree",
+            "name": "ix_interactions_kind"
+          },
+          {
+            "def": "CREATE INDEX ix_interactions_session ON ONLY engine.interactions USING btree (session_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_interactions_session"
+          }
+        ],
+        "partitioned": true
+      },
+      "quality_scores": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "score",
+            "nullable": "NO",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "components",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "t",
+              "y",
+              "p",
+              "e",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "quality_scores_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX quality_scores_pkey ON engine.quality_scores USING btree (entity_type, entity_id)",
+            "method": "btree",
+            "name": "quality_scores_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "rail_cache": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "article_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "segment_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "rail",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "candidates",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "1",
+            "name": "rung",
+            "nullable": "NO",
+            "type": "smallint",
+            "udt": "int2"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "a",
+              "r",
+              "t",
+              "i",
+              "c",
+              "l",
+              "e",
+              "_",
+              "i",
+              "d",
+              ",",
+              "s",
+              "e",
+              "g",
+              "m",
+              "e",
+              "n",
+              "t",
+              "_",
+              "i",
+              "d",
+              ",",
+              "r",
+              "a",
+              "i",
+              "l",
+              "}"
+            ],
+            "name": "rail_cache_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX rail_cache_pkey ON engine.rail_cache USING btree (article_id, segment_id, rail)",
+            "method": "btree",
+            "name": "rail_cache_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "travel_matrix": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "place_a",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "place_b",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "seconds",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "meters",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "'drive'::text",
+            "name": "mode",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "p",
+              "l",
+              "a",
+              "c",
+              "e",
+              "_",
+              "a",
+              ",",
+              "p",
+              "l",
+              "a",
+              "c",
+              "e",
+              "_",
+              "b",
+              ",",
+              "m",
+              "o",
+              "d",
+              "e",
+              "}"
+            ],
+            "name": "travel_matrix_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_travel_matrix_b ON engine.travel_matrix USING btree (place_b, mode)",
+            "method": "btree",
+            "name": "ix_travel_matrix_b"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX travel_matrix_pkey ON engine.travel_matrix USING btree (place_a, place_b, mode)",
+            "method": "btree",
+            "name": "travel_matrix_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "type_relations": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "true",
+            "name": "exclude_same",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": "'{}'::text[]",
+            "name": "complements",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "t",
+              "y",
+              "p",
+              "e",
+              "}"
+            ],
+            "name": "type_relations_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX type_relations_pkey ON engine.type_relations USING btree (type)",
+            "method": "btree",
+            "name": "type_relations_pkey"
+          }
+        ],
+        "partitioned": false
+      }
+    }
+  }
+}

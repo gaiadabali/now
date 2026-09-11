@@ -1,0 +1,5 @@
+Query,Page,Clicks,Impressions,CTR,Position
+dining news topic,https://nowjakarta.co.id/dining-news-0/,5,120,4.2,8.1
+dining news topic,https://nowjakarta.co.id/dining-news-3/,1,40,2.5,15.0
+events topic,https://nowjakarta.co.id/events-0/,0,60,0.0,25.0
+unrelated query,https://nowjakarta.co.id/no-such-page/,9,200,4.5,3.0

@@ -1,0 +1,2803 @@
+{
+  "version": 1,
+  "status": "draft-for-review",
+  "generated": "2026-09-08",
+  "source": "backup_2026-09-08-1336_NOW_Jakarta_cc5fbb88fa25-db.gz (published posts only; HTML entities decoded)",
+  "vocabulary": "engine/packages/taxonomy/seed (seeded into now_platform.engine.terms)",
+  "totals": {
+    "published_posts": 4772,
+    "categories_with_posts": 75,
+    "empty_containers": [
+      "Magazine Issue"
+    ]
+  },
+  "defaults": {
+    "location_when_unspecified": "jakarta",
+    "print_issue_format": "feature",
+    "listing_vs_guide": "period-stamped roundup => listing (+ series_key); timeless => guide",
+    "legacy_offer_expiry": "extracted end date, else publish_date + 90 days (proposed, needs decision)",
+    "legacy_event_expiry": "extracted ends_at, else publish_date + 30 days (proposed, needs decision)"
+  },
+  "categories": [
+    {
+      "wp_term_id": 2678,
+      "wp_term_taxonomy_id": 2678,
+      "name": "News",
+      "slug": "news",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 551,
+      "yoast_primary": 356,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 156,
+        "y2024plus": 253
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "news",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "type stay/hotel dominates (Pan Pacific, Citadines, Swiss-Belhotel, Club Med)",
+        "event/* when the news announces a dated happening"
+      ],
+      "series_key": null,
+      "notes": "Format is certain; type is per article — the biggest single bucket (356 Yoast-primary) and the most heterogeneous. Location defaults to the site node."
+    },
+    {
+      "wp_term_id": 2734,
+      "wp_term_taxonomy_id": 2734,
+      "name": "Dining Offers",
+      "slug": "dining-offers",
+      "parent": "Offers",
+      "is_print_issue": false,
+      "published": 402,
+      "yoast_primary": 238,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 134,
+        "y2024plus": 188
+      },
+      "prior": {
+        "type": "eat",
+        "subtype": "restaurant",
+        "format": "offer",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": true,
+      "decision": "Legacy offers have no campaign row, so `campaign.ends_at` (the §8.A hard filter) is undefined. Recommend: E1.8 extracts an end date from the text where present, else marks the offer expired at publish_date + 90 days. Offers must never surface in rails once expired; they remain searchable.",
+      "alternates": [],
+      "series_key": null,
+      "notes": "33 co-occur with Stay Offers = hotel F&B packages; the venue is still the restaurant/outlet, so type stays eat. 134 of 402 are from 2019 — all expired."
+    },
+    {
+      "wp_term_id": 2689,
+      "wp_term_taxonomy_id": 2689,
+      "name": "Events",
+      "slug": "events",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 396,
+      "yoast_primary": 201,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 170,
+        "y2024plus": 139
+      },
+      "prior": {
+        "type": "event",
+        "subtype": null,
+        "format": "event",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "subtype"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "subtype per article: festival | concert | exhibition | performance | screening | sports | community | conference | pop-up"
+      ],
+      "series_key": null,
+      "notes": "Type and format certain; subtype per article. `ends_at` must be extracted (324 tribe_events rows carry dates; the rest need text extraction) or the §8.A event-expiry filter has nothing to bite on."
+    },
+    {
+      "wp_term_id": 2760,
+      "wp_term_taxonomy_id": 2760,
+      "name": "Dining News",
+      "slug": "dining-news",
+      "parent": "Dining",
+      "is_print_issue": false,
+      "published": 388,
+      "yoast_primary": 184,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 177,
+        "y2024plus": 149
+      },
+      "prior": {
+        "type": "eat",
+        "subtype": "restaurant",
+        "format": "news",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format people for chef interviews (William Wongso)",
+        "type event/festival for food festivals (Jakarta Dessert Week)"
+      ],
+      "series_key": null,
+      "notes": "Matches the §4 worked example."
+    },
+    {
+      "wp_term_id": 2740,
+      "wp_term_taxonomy_id": 2740,
+      "name": "Stay Offers",
+      "slug": "stay-offers",
+      "parent": "Offers",
+      "is_print_issue": false,
+      "published": 261,
+      "yoast_primary": 82,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 119,
+        "y2024plus": 103
+      },
+      "prior": {
+        "type": "stay",
+        "subtype": "hotel",
+        "format": "offer",
+        "location": null,
+        "facets": {}
+      },
+      "per_article": [
+        "location"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "subtype resort | villa | serviced-apartment when explicit"
+      ],
+      "series_key": null,
+      "notes": "Type/format certain. Location is per article and often OUTSIDE Jakarta (Puncak, Surabaya, Bandung, Malang) — do not default to jakarta. Same expiry problem as Dining Offers."
+    },
+    {
+      "wp_term_id": 2669,
+      "wp_term_taxonomy_id": 2669,
+      "name": "Art",
+      "slug": "art",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 244,
+      "yoast_primary": 66,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 165,
+        "y2024plus": 56
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "art"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Approve the proposed `editorial/culture` subtype. Without it, exhibition reviews and artist profiles have no home except `news` or `people`.",
+      "alternates": [
+        "event/exhibition + format event (announcements: 'Mirage at ARTSPACE')",
+        "event/performance + event (theatre: 'Tadashi Suzuki's King Lear')",
+        "editorial/culture + review|feature (commentary)",
+        "editorial/people + people (artist profiles)"
+      ],
+      "series_key": null,
+      "notes": "244 posts, 165 from 2019. Topic art is the only certain facet; type/format split roughly between dated events and commentary."
+    },
+    {
+      "wp_term_id": 2701,
+      "wp_term_taxonomy_id": 2701,
+      "name": "Reviews",
+      "slug": "dining-reviews",
+      "parent": "Dining",
+      "is_print_issue": false,
+      "published": 230,
+      "yoast_primary": 54,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 152,
+        "y2024plus": 26
+      },
+      "prior": {
+        "type": "eat",
+        "subtype": "restaurant",
+        "format": "review",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "drink/rooftop-bar or drink/wine-bar when the venue is a bar ('Hakkasan Jakarta Rooftop', 'Good Wines, Good Times')"
+      ],
+      "series_key": null,
+      "notes": "152 of 230 are from 2019 — the 18-month half-life sinks them correctly without deleting them."
+    },
+    {
+      "wp_term_id": 2706,
+      "wp_term_taxonomy_id": 2706,
+      "name": "Experience Offers",
+      "slug": "experience-offers",
+      "parent": "Offers",
+      "is_print_issue": false,
+      "published": 207,
+      "yoast_primary": 104,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 72,
+        "y2024plus": 83
+      },
+      "prior": {
+        "type": "stay",
+        "subtype": "hotel",
+        "format": "offer",
+        "location": "jakarta",
+        "facets": {
+          "audience": [
+            "family"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Is 'Experience Offers' a stay category (hotel packages) or a do category (activities)? Evidence says hotel experience packages (staycations, festive programmes, kids' activities at ARTOTEL/Novotel/HARRIS). Recommend prior stay/hotel + offer, classifier may switch to do/* or event/*.",
+      "alternates": [
+        "do/attraction + offer",
+        "event/festival + event (festive programmes)"
+      ],
+      "series_key": null,
+      "notes": "10 co-occur with Bali Updates (Bali hotel packages -> location bali). Audience family is frequent but not universal."
+    },
+    {
+      "wp_term_id": 2770,
+      "wp_term_taxonomy_id": 2770,
+      "name": "Business",
+      "slug": "business-news",
+      "parent": "Features",
+      "is_print_issue": false,
+      "published": 186,
+      "yoast_primary": 32,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 122,
+        "y2024plus": 24
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "business",
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "business"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format news for appointments and expansions ('Subendi to Lead Surabaya Oakwood')",
+        "format opinion for columns ('Why Indonesian Companies Keep Failing to Change')"
+      ],
+      "series_key": null,
+      "notes": "122 of 186 from 2019. Type/subtype solid; format per article between feature/news/opinion."
+    },
+    {
+      "wp_term_id": 2703,
+      "wp_term_taxonomy_id": 2703,
+      "name": "Education",
+      "slug": "education",
+      "parent": "Lifestyle",
+      "is_print_issue": false,
+      "published": 169,
+      "yoast_primary": 74,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 77,
+        "y2024plus": 69
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "education",
+        "format": "news",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "education"
+          ],
+          "audience": [
+            "family"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format feature for explainers",
+        "event/community + event for open houses and tryouts"
+      ],
+      "series_key": null,
+      "notes": "Heavily school-sponsored (BINUS, ACG open houses) — these schools are E1.5 partner-roster candidates, not just content."
+    },
+    {
+      "wp_term_id": 2754,
+      "wp_term_taxonomy_id": 2754,
+      "name": "Explore Indonesia",
+      "slug": "explore-indonesia",
+      "parent": "Travel",
+      "is_print_issue": false,
+      "published": 154,
+      "yoast_primary": 63,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 88,
+        "y2024plus": 46
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "city-guide",
+        "format": "city-guide",
+        "location": null,
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [
+        "location"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "stay/resort + offer for hotel promos filed here ('Pullman Ciawi Vimala Hills')"
+      ],
+      "series_key": null,
+      "notes": "Location per article under `other/*` (Makassar, Yogyakarta, Belitung, Central Java) with `other` as the fallback when the destination has no node."
+    },
+    {
+      "wp_term_id": 2744,
+      "wp_term_taxonomy_id": 2744,
+      "name": "Community",
+      "slug": "community",
+      "parent": "Features",
+      "is_print_issue": false,
+      "published": 150,
+      "yoast_primary": 49,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 81,
+        "y2024plus": 37
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "news",
+        "format": "news",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "community"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "event/community + event for charity balls and fundraisers (BWA Jakarta)",
+        "editorial/people + people for community profiles",
+        "format feature for initiatives ('The Living Wall')"
+      ],
+      "series_key": null,
+      "notes": "Topic community is certain; type/format split between dated charity events and features."
+    },
+    {
+      "wp_term_id": 2685,
+      "wp_term_taxonomy_id": 2685,
+      "name": "Opinion",
+      "slug": "opinion",
+      "parent": "Features",
+      "is_print_issue": false,
+      "published": 148,
+      "yoast_primary": 45,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 86,
+        "y2024plus": 23
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "opinion",
+        "format": "opinion",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": true,
+      "decision": "Approve the proposed `opinion` format (half-life 540 d). Fallback if rejected: format feature (evergreen) — which would keep 2019 columns permanently fresh.",
+      "alternates": [
+        "topic sustainability for the 'Sustainability Matters' column"
+      ],
+      "series_key": null,
+      "notes": "148 posts, 86 from 2019."
+    },
+    {
+      "wp_term_id": 2768,
+      "wp_term_taxonomy_id": 2768,
+      "name": "Bali Updates",
+      "slug": "bali-updates",
+      "parent": "Travel",
+      "is_print_issue": false,
+      "published": 111,
+      "yoast_primary": 92,
+      "years": {
+        "first": 2020,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 52
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "bali",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "type stay/resort|hotel dominates (Six Senses, Sofitel, InterContinental, TRIBE)",
+        "wellness/retreat|spa (COMO Shambhala, Desa Potato Head)",
+        "format news OR offer — roughly half each"
+      ],
+      "series_key": null,
+      "notes": "Location bali is certain and the §4 example. §4 also says format news, but the titles are as often offers ('Enchanting Year-End Escape', 'Chic Beachfront Picnic Experience') — format per article. These 111 articles are the syndication set for now_bali (§3.5). 92 have Yoast primary = Bali Updates."
+    },
+    {
+      "wp_term_id": 2704,
+      "wp_term_taxonomy_id": 2704,
+      "name": "Shopping",
+      "slug": "shopping",
+      "parent": "Lifestyle",
+      "is_print_issue": false,
+      "published": 108,
+      "yoast_primary": 29,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 65,
+        "y2024plus": 23
+      },
+      "prior": {
+        "type": "shop",
+        "subtype": "boutique",
+        "format": "news",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "fashion"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format guide ('The Groom's Guide to Bespoke Style')",
+        "shop/mall for mall pieces",
+        "misfiled civic pieces exist ('Civic Engagement 3.0') -> classifier override"
+      ],
+      "series_key": null,
+      "notes": "Mostly fashion/brand news; treat type as a prior, not a rule."
+    },
+    {
+      "wp_term_id": 2721,
+      "wp_term_taxonomy_id": 2721,
+      "name": "Health",
+      "slug": "health",
+      "parent": "Lifestyle",
+      "is_print_issue": false,
+      "published": 99,
+      "yoast_primary": 28,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 61,
+        "y2024plus": 27
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "health"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Is 'Health' a venue category or a subject? Evidence is ~50/50: venue pieces (Siloam Hospitals -> wellness/clinic, Celebrity Fitness -> wellness/gym, Sepik -> wellness/spa) vs service journalism ('Are You Really Fit for Work?'). Recommend: topic health always; type per article — wellness/* when a venue is the subject, else editorial/lifestyle (proposed) + feature.",
+      "alternates": [
+        "wellness/clinic|gym|spa + news|review",
+        "editorial/lifestyle + feature"
+      ],
+      "series_key": null,
+      "notes": "Depends on approving `editorial/lifestyle`."
+    },
+    {
+      "wp_term_id": 2692,
+      "wp_term_taxonomy_id": 2692,
+      "name": "NOW! People",
+      "slug": "now-people",
+      "parent": "Features",
+      "is_print_issue": false,
+      "published": 99,
+      "yoast_primary": 26,
+      "years": {
+        "first": 2019,
+        "last": 2024,
+        "y2019": 64,
+        "y2024plus": 3
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "people",
+        "format": "people",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "topic diplomacy for ambassador interviews",
+        "topic business for founders"
+      ],
+      "series_key": null,
+      "notes": "Dormant: 64 of 99 from 2019, 3 since 2024. Evergreen format per §4."
+    },
+    {
+      "wp_term_id": 2757,
+      "wp_term_taxonomy_id": 2757,
+      "name": "World Traveller",
+      "slug": "world-traveller",
+      "parent": "Travel",
+      "is_print_issue": false,
+      "published": 94,
+      "yoast_primary": 11,
+      "years": {
+        "first": 2019,
+        "last": 2025,
+        "y2019": 82,
+        "y2024plus": 11
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "city-guide",
+        "format": "city-guide",
+        "location": "international",
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": true,
+      "decision": "Approve the proposed `international` location root. `location` is a required facet and 115 articles (World Traveller + part of Travel) are about Singapore, Australia, Bhutan, Hong Kong. Children can be added once E2.1 reports the destination distribution.",
+      "alternates": [],
+      "series_key": null,
+      "notes": "82 of 94 from 2019. Evergreen format."
+    },
+    {
+      "wp_term_id": 1,
+      "wp_term_taxonomy_id": 1,
+      "name": "Uncategorized",
+      "slug": "uncategorized",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 83,
+      "yoast_primary": 12,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 38,
+        "y2024plus": 3
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "low",
+      "decision_needed": true,
+      "decision": "No prior at all — the classifier decides every facet. Also contains non-editorial pages ('Order Form - NOW! Magazines'). Recommend: every Uncategorized post goes to the E2.8 review queue regardless of confidence, and E1.8 flags obvious non-articles for exclusion below the quality floor.",
+      "alternates": [
+        "wellness/gym + news",
+        "editorial/education",
+        "editorial/opinion",
+        "editorial/culture"
+      ],
+      "series_key": null,
+      "notes": "83 posts = the 1.7% 'uncovered' in ARCHITECTURE §6 (WP assigns Uncategorized when nothing else is chosen)."
+    },
+    {
+      "wp_term_id": 2697,
+      "wp_term_taxonomy_id": 2697,
+      "name": "History & Heritage",
+      "slug": "history-heritage",
+      "parent": "Discover Jakarta",
+      "is_print_issue": false,
+      "published": 74,
+      "yoast_primary": 41,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 34,
+        "y2024plus": 26
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "heritage",
+        "format": "heritage",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "heritage"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "location kota-tua | menteng | gambir when the piece is about a place",
+        "eat/street-food + heritage for food-heritage pieces ('Betawi Satay')"
+      ],
+      "series_key": null,
+      "notes": "Evergreen. One misfiled promo ('The Maj Senayan') -> classifier override."
+    },
+    {
+      "wp_term_id": 2690,
+      "wp_term_taxonomy_id": 2690,
+      "name": "Culture",
+      "slug": "culture",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 67,
+      "yoast_primary": 17,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 37,
+        "y2024plus": 11
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "culture",
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "culture"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Depends on approving `editorial/culture`.",
+      "alternates": [
+        "do/museum + guide (Museum Tekstil)",
+        "shop/boutique|artisan + news (Batik Corner, Gramedia)",
+        "format review for book pieces"
+      ],
+      "series_key": null,
+      "notes": "Textiles, books, magazines, dance — coverage of culture that is neither an event nor a venue."
+    },
+    {
+      "wp_term_id": 2708,
+      "wp_term_taxonomy_id": 2708,
+      "name": "Sports & Activities",
+      "slug": "sports-activities",
+      "parent": "Lifestyle",
+      "is_print_issue": false,
+      "published": 61,
+      "yoast_primary": 11,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 44,
+        "y2024plus": 14
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "sports"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Three different things share this category: spectator/charity fixtures (Asian Tigers Golf Tournament -> event/sports + event), participatory venues and clubs (Urban Climbers -> proposed do/sports-activity), and features about sport (traditional sports, Asian Games -> editorial/culture|lifestyle + feature). Recommend approving `do/sports-activity` and letting the classifier pick among the three.",
+      "alternates": [
+        "event/sports + event",
+        "do/sports-activity + guide|news",
+        "editorial/lifestyle + feature",
+        "wellness/gym for fitness venues"
+      ],
+      "series_key": null,
+      "notes": "44 of 61 from 2019."
+    },
+    {
+      "wp_term_id": 2705,
+      "wp_term_taxonomy_id": 2705,
+      "name": "Offers",
+      "slug": "offers",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 55,
+      "yoast_primary": 29,
+      "years": {
+        "first": 2020,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 22
+      },
+      "prior": {
+        "type": "stay",
+        "subtype": "hotel",
+        "format": "offer",
+        "location": null,
+        "facets": {}
+      },
+      "per_article": [
+        "location"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "event/conference + offer for MICE pieces ('Bekasi Means Business')"
+      ],
+      "series_key": null,
+      "notes": "The parent category used directly since 2020 (55 posts); overwhelmingly hotel festive packages. Location per article (Bandung, Gading Serpong, Kuningan, PIK). Same expiry problem as Dining Offers."
+    },
+    {
+      "wp_term_id": 2672,
+      "wp_term_taxonomy_id": 2672,
+      "name": "Music",
+      "slug": "music",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 49,
+      "yoast_primary": 4,
+      "years": {
+        "first": 2019,
+        "last": 2025,
+        "y2019": 38,
+        "y2024plus": 6
+      },
+      "prior": {
+        "type": "event",
+        "subtype": "concert",
+        "format": "event",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "music"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "editorial/culture + feature for scene pieces ('Hollywood in Jakarta')",
+        "event/festival for We The Fest / Papandayan Jazz Fest"
+      ],
+      "series_key": null,
+      "notes": "38 of 49 from 2019 — all expired events; the 14-day half-life plus ends_at expiry handles them."
+    },
+    {
+      "wp_term_id": 2752,
+      "wp_term_taxonomy_id": 2752,
+      "name": "Green Living",
+      "slug": "green-living",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 47,
+      "yoast_primary": 8,
+      "years": {
+        "first": 2019,
+        "last": 2025,
+        "y2019": 21,
+        "y2024plus": 5
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "sustainability"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "editorial/opinion + opinion (columns)",
+        "editorial/lifestyle + guide ('Going Green in Jakarta: Recycling, Composting...')",
+        "event/conference + event (MVB Sustainability Forum)",
+        "stay/hotel + news (Santika 'Spirit of Sustainability')"
+      ],
+      "series_key": null,
+      "notes": "Exactly the §4 worked example: a topic, not a type. Topic is certain; type and format per article."
+    },
+    {
+      "wp_term_id": 2751,
+      "wp_term_taxonomy_id": 2751,
+      "name": "Kids & Family",
+      "slug": "kids-family-life",
+      "parent": "Lifestyle",
+      "is_print_issue": false,
+      "published": 46,
+      "yoast_primary": 8,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 31,
+        "y2024plus": 7
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "audience": [
+            "family"
+          ],
+          "topic": [
+            "family"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "do/attraction + guide ('Jakarta for Kids', Taman Safari)",
+        "stay/hotel + offer (DoubleTree family getaway)",
+        "editorial/lifestyle + feature (summer ideas)"
+      ],
+      "series_key": null,
+      "notes": "Exactly the §4 worked example: an audience, not a type."
+    },
+    {
+      "wp_term_id": 2709,
+      "wp_term_taxonomy_id": 2709,
+      "name": "Made In Indonesia",
+      "slug": "made-in-indonesia",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 39,
+      "yoast_primary": 21,
+      "years": {
+        "first": 2019,
+        "last": 2025,
+        "y2019": 12,
+        "y2024plus": 17
+      },
+      "prior": {
+        "type": "shop",
+        "subtype": "artisan",
+        "format": "feature",
+        "location": "indonesia",
+        "facets": {
+          "topic": [
+            "local-brands"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "editorial/people + people ('Meet the Makers')",
+        "location per article when the maker is placed (North Sumatra coffee)"
+      ],
+      "series_key": null,
+      "notes": "Local makers and brands. Type shop/artisan when a brand or product is the subject (most), else editorial/people. Nationwide -> root node `indonesia`."
+    },
+    {
+      "wp_term_id": 2716,
+      "wp_term_taxonomy_id": 2716,
+      "name": "Film",
+      "slug": "film",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 35,
+      "yoast_primary": 6,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 28,
+        "y2024plus": 6
+      },
+      "prior": {
+        "type": "event",
+        "subtype": "screening",
+        "format": "event",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "film"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Approve the proposed `event/screening` subtype (film festivals are the majority: 100% Manusia, Festival Sinema Prancis, Europe on Screen, Balinale). Fallback if rejected: event/festival.",
+      "alternates": [
+        "editorial/culture + review for film reviews ('Daly City')"
+      ],
+      "series_key": null,
+      "notes": "28 of 35 from 2019."
+    },
+    {
+      "wp_term_id": 2671,
+      "wp_term_taxonomy_id": 2671,
+      "name": "Art & Culture",
+      "slug": "art-and-culture",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 28,
+      "yoast_primary": 26,
+      "years": {
+        "first": 2023,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 23
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": null,
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "art",
+            "culture"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype",
+        "format"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "event/performance|exhibition + event (SIPFest, Art Jakarta Papers)",
+        "editorial/culture + feature (Teater Keliling at 50)",
+        "editorial/heritage + heritage (Kali Besar, Borobudur)",
+        "stay/hotel + offer (Gaia Hotel weekend)"
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2023 (28 posts, 26 Yoast-primary). Only the topic is inferable; everything else per article."
+    },
+    {
+      "wp_term_id": 2731,
+      "wp_term_taxonomy_id": 2731,
+      "name": "Bar Guide",
+      "slug": "bar-guide",
+      "parent": "Dining",
+      "is_print_issue": false,
+      "published": 28,
+      "yoast_primary": 9,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 16,
+        "y2024plus": 5
+      },
+      "prior": {
+        "type": "drink",
+        "subtype": "bar",
+        "format": "guide",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "§4 maps this to format guide, but the titles are mostly year-stamped roundups ('The Best Cocktail Bars in Jakarta ... (2026)', '8 Best Beer Bars') plus bar news/reviews. Recommend the boundary: period-stamped roundup = `listing` (540 d, series_key dedup); timeless = `guide` (evergreen). Confirm this definition — it decides whether 2019 roundups stay evergreen.",
+      "alternates": [
+        "format listing (year-stamped roundups)",
+        "format news (openings: 'OZONE Bar & Karaoke is Now Open!')",
+        "format review (single-venue: 'En Par')",
+        "subtype cocktail-bar | pub | rooftop-bar per article",
+        "shop/boutique + news for product pieces (Manta Spiced Rum)"
+      ],
+      "series_key": null,
+      "notes": "Type drink is certain."
+    },
+    {
+      "wp_term_id": 2756,
+      "wp_term_taxonomy_id": 2756,
+      "name": "Design",
+      "slug": "design",
+      "parent": "Art & Culture",
+      "is_print_issue": false,
+      "published": 24,
+      "yoast_primary": 9,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 9,
+        "y2024plus": 8
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "culture",
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "design",
+            "architecture"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "event/exhibition + event (Indonesia Design Week)",
+        "shop/boutique + news (Melandas launch)",
+        "editorial/people + people (designer profiles)",
+        "editorial/heritage + heritage (architecture history)"
+      ],
+      "series_key": null,
+      "notes": "Depends on approving `editorial/culture`; topic design is the certain part."
+    },
+    {
+      "wp_term_id": 2700,
+      "wp_term_taxonomy_id": 2700,
+      "name": "Dining",
+      "slug": "dining",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 24,
+      "yoast_primary": 20,
+      "years": {
+        "first": 2023,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 18
+      },
+      "prior": {
+        "type": "eat",
+        "subtype": "restaurant",
+        "format": null,
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "format"
+      ],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format listing for '[Updated]' series ('New Restaurants in Jakarta 2026') + series_key",
+        "format guide for timeless roundups ('Breakfast in Jakarta')",
+        "format review (Henshin, Li Lian)",
+        "format offer (St. Regis Sunday ritual)"
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2023 (24 posts). Type certain; format per article. Contains recipes ('The Rice Table Recipe #5') which have no §4 format — low volume, recommend editorial/lifestyle + feature rather than a new format."
+    },
+    {
+      "wp_term_id": 2696,
+      "wp_term_taxonomy_id": 2696,
+      "name": "Discover Jakarta",
+      "slug": "discover-jakarta",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 24,
+      "yoast_primary": 24,
+      "years": {
+        "first": 2023,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 19
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "heritage",
+        "format": "heritage",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "heritage"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "editorial/city-guide + city-guide for neighbourhood pieces (Kemayoran, Jatinegara)",
+        "do/attraction + guide for places (Jakarta Library, Taman Doa)",
+        "location per article: gambir | kota-tua | menteng ..."
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2023 (24 posts, all Yoast-primary). Heritage-heavy; location often resolvable to a neighbourhood."
+    },
+    {
+      "wp_term_id": 2739,
+      "wp_term_taxonomy_id": 2739,
+      "name": "Travel",
+      "slug": "travel",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 21,
+      "yoast_primary": 20,
+      "years": {
+        "first": 2023,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 11
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "city-guide",
+        "format": "city-guide",
+        "location": null,
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [
+        "location"
+      ],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "stay/resort + review|offer (AYANA Komodo)",
+        "editorial/people + people (Evan Burns)",
+        "editorial/news + news (International SOS advertorial)",
+        "location other/* or international per article"
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2023 (21 posts)."
+    },
+    {
+      "wp_term_id": 2766,
+      "wp_term_taxonomy_id": 2766,
+      "name": "Features",
+      "slug": "features",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 20,
+      "yoast_primary": 17,
+      "years": {
+        "first": 2024,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 20
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "subtype"
+      ],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "subtype per article: culture | heritage | people | opinion | business",
+        "topic per article: architecture, heritage, culture, local-brands"
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2024 (20 posts). Format feature is certain (print-style long-form); subtype per article."
+    },
+    {
+      "wp_term_id": 2767,
+      "wp_term_taxonomy_id": 2767,
+      "name": "City Guides",
+      "slug": "city-guides",
+      "parent": "Discover Jakarta",
+      "is_print_issue": false,
+      "published": 19,
+      "yoast_primary": 15,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 3,
+        "y2024plus": 14
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "guide",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Naming trap: these are venue roundups ('Best Shopping Malls in Jakarta', '10 Best Spas in Jakarta', 'Things to do in Jakarta (2024)'), not destination guides. Recommend: NOT format city-guide; type = the roundup's venue type per article (shop/mall, wellness/spa, do/attraction); format guide, or listing when year-stamped. Confirm.",
+      "alternates": [
+        "shop/mall + guide",
+        "wellness/spa + listing",
+        "do/attraction + listing ('Things to do in Jakarta (2024)')",
+        "editorial/culture + feature (Library of Humor Studies)"
+      ],
+      "series_key": null,
+      "notes": "14 of 19 since 2024 — this is the current SEO-listicle programme."
+    },
+    {
+      "wp_term_id": 2769,
+      "wp_term_taxonomy_id": 2769,
+      "name": "Restaurant Guides",
+      "slug": "restaurant-guides",
+      "parent": "Dining",
+      "is_print_issue": false,
+      "published": 17,
+      "yoast_primary": 15,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 1,
+        "y2024plus": 13
+      },
+      "prior": {
+        "type": "eat",
+        "subtype": "restaurant",
+        "format": "guide",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": true,
+      "decision": "Same guide-vs-listing boundary as Bar Guide. 'New Restaurants in Jakarta 2025 [Updated]' and the Chinese New Year roundup are period-stamped -> `listing` + series_key; 'Destination Dim Sum' is a timeless `guide`. §4's worked example says guide for the whole category.",
+      "alternates": [
+        "format listing + series_key for '[Updated]' and seasonal roundups",
+        "format news ('BIKO Group's Next Round Begins', 2016 awards)"
+      ],
+      "series_key": null,
+      "notes": "Type certain. 13 of 17 since 2024."
+    },
+    {
+      "wp_term_id": 2748,
+      "wp_term_taxonomy_id": 2748,
+      "name": "Hidden Heritage",
+      "slug": "hidden-heritage",
+      "parent": "Explore Indonesia",
+      "is_print_issue": false,
+      "published": 16,
+      "yoast_primary": 5,
+      "years": {
+        "first": 2019,
+        "last": 2020,
+        "y2019": 15,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "heritage",
+        "format": "heritage",
+        "location": "other",
+        "facets": {
+          "topic": [
+            "heritage",
+            "culture"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "location: Kalimantan (Punan), Sulawesi (Makassar), Maluku (Banda, Seram), Belitung, Lombok — most have no node, so `other` is the honest fallback"
+      ],
+      "series_key": null,
+      "notes": "All 16 from 2019-2020; child of Explore Indonesia. Exposes a tree gap: `other` has city nodes but no regional nodes (Kalimantan, Maluku, Papua, Sulawesi). Evergreen format."
+    },
+    {
+      "wp_term_id": 2675,
+      "wp_term_taxonomy_id": 2675,
+      "name": "Lifestyle",
+      "slug": "lifestyle",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 13,
+      "yoast_primary": 10,
+      "years": {
+        "first": 2023,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 8
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "lifestyle",
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [],
+      "confidence": "low",
+      "decision_needed": true,
+      "decision": "Depends on approving `editorial/lifestyle`.",
+      "alternates": [
+        "event/community + event (Ascott Soiree)",
+        "do/workshop + people (tea lesson)",
+        "wellness/retreat + news (Kemang self-care centre)",
+        "editorial/culture + feature (gamelan)"
+      ],
+      "series_key": null,
+      "notes": "Parent category used directly since 2023 (13 posts); a grab-bag."
+    },
+    {
+      "wp_term_id": 2796,
+      "wp_term_taxonomy_id": 2796,
+      "name": "Sites & Destinations",
+      "slug": "sites-destinations",
+      "parent": "Discover Jakarta",
+      "is_print_issue": false,
+      "published": 12,
+      "yoast_primary": 8,
+      "years": {
+        "first": 2024,
+        "last": 2025,
+        "y2019": 0,
+        "y2024plus": 12
+      },
+      "prior": {
+        "type": "do",
+        "subtype": "attraction",
+        "format": "guide",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "heritage"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "format heritage for history-led pieces (Istiqlal, Cathedral, Immanuel Church)",
+        "do/museum + guide (Museum Nasional)",
+        "location per article: gambir | kota-tua | west-jakarta"
+      ],
+      "series_key": null,
+      "notes": "12 posts since 2024, each about ONE landmark — prime E2.3 place-extraction input (places, not just articles)."
+    },
+    {
+      "wp_term_id": 2797,
+      "wp_term_taxonomy_id": 2797,
+      "name": "Diplomatic Relations",
+      "slug": "diplomatic-relations",
+      "parent": "Features",
+      "is_print_issue": false,
+      "published": 11,
+      "yoast_primary": 5,
+      "years": {
+        "first": 2024,
+        "last": 2026,
+        "y2019": 0,
+        "y2024plus": 11
+      },
+      "prior": {
+        "type": "editorial",
+        "subtype": "people",
+        "format": "people",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "diplomacy"
+          ]
+        }
+      },
+      "per_article": [],
+      "confidence": "medium",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "editorial/news + news (KCCI cultural exchange)",
+        "event/conference + event if the Round Table is treated as a dated event"
+      ],
+      "series_key": "ambassadors-round-table",
+      "notes": "11 posts since 2024, 9 are the 'Ambassadors Round Table' series -> series_key candidate."
+    },
+    {
+      "wp_term_id": 2745,
+      "wp_term_taxonomy_id": 2745,
+      "name": "A Jakarta Smorgasbord",
+      "slug": "a-jakarta-smorgasbord",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 10,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 10,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "indonesian food; type eat per article"
+      ],
+      "series_key": "issue:a-jakarta-smorgasbord",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2737,
+      "wp_term_taxonomy_id": 2737,
+      "name": "Food The Music Of Love",
+      "slug": "food-the-music-of-love",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 10,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 10,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "food; type eat per article"
+      ],
+      "series_key": "issue:food-the-music-of-love",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2724,
+      "wp_term_taxonomy_id": 2724,
+      "name": "Love & Romance 2020",
+      "slug": "love-and-romance-2020",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 10,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "date-night"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:love-and-romance-2020",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2711,
+      "wp_term_taxonomy_id": 2711,
+      "name": "Indonesia S Creative Soul",
+      "slug": "indonesia-s-creative-soul",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 9,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 9,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "art",
+            "culture"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:indonesia-s-creative-soul",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2758,
+      "wp_term_taxonomy_id": 2758,
+      "name": "Property Architecture Design",
+      "slug": "property-architecture-design",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 9,
+      "yoast_primary": 2,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "property",
+            "architecture",
+            "design"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:property-architecture-design",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2688,
+      "wp_term_taxonomy_id": 2688,
+      "name": "Art Culture The Realm Of Contemporary Arts",
+      "slug": "art-culture-the-realm-of-contemporary-arts",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 8,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 8,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "art"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:art-culture-the-realm-of-contemporary-arts",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2694,
+      "wp_term_taxonomy_id": 2694,
+      "name": "Music & Nightlife",
+      "slug": "music-and-nightlife",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 8,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 8,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "music"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:music-and-nightlife",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2702,
+      "wp_term_taxonomy_id": 2702,
+      "name": "Capital Of Culture",
+      "slug": "capital-of-culture",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 7,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 7,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "art",
+            "culture"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:capital-of-culture",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2722,
+      "wp_term_taxonomy_id": 2722,
+      "name": "Its A Man's World",
+      "slug": "its-a-man-s-world",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 7,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 7,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "fashion"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:its-a-man-s-world",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2749,
+      "wp_term_taxonomy_id": 2749,
+      "name": "Staying Successful In Times Of Challenge",
+      "slug": "staying-successful-in-times-of-challenge",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 7,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "business"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:staying-successful-in-times-of-challenge",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2733,
+      "wp_term_taxonomy_id": 2733,
+      "name": "Tech Talk",
+      "slug": "tech-talk",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 7,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 7,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "technology"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:tech-talk",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2762,
+      "wp_term_taxonomy_id": 2762,
+      "name": "The Rhythm Of Life",
+      "slug": "the-rhythm-of-life",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 7,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 7,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "music"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:the-rhythm-of-life",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2710,
+      "wp_term_taxonomy_id": 2710,
+      "name": "Architecture Property & Design",
+      "slug": "architecture-property-and-design",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 2,
+      "years": {
+        "first": 2019,
+        "last": 2026,
+        "y2019": 3,
+        "y2024plus": 3
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "architecture",
+            "property",
+            "design"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:architecture-property-and-design",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2738,
+      "wp_term_taxonomy_id": 2738,
+      "name": "Building Future Leader",
+      "slug": "building-future-leader",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 6,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "education"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:building-future-leader",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2759,
+      "wp_term_taxonomy_id": 2759,
+      "name": "Jakarta S Music & Nightlife",
+      "slug": "jakarta-s-music-and-nightlife",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 6,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "music"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:jakarta-s-music-and-nightlife",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2693,
+      "wp_term_taxonomy_id": 2693,
+      "name": "Season Of Love",
+      "slug": "season-of-love",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 6,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "date-night"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:season-of-love",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2691,
+      "wp_term_taxonomy_id": 2691,
+      "name": "Staying In Style",
+      "slug": "staying-in-style",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 6,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "fashion"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:staying-in-style",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2732,
+      "wp_term_taxonomy_id": 2732,
+      "name": "The Culinary Issue",
+      "slug": "the-culinary-issue",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 1,
+      "years": {
+        "first": 2019,
+        "last": 2024,
+        "y2019": 5,
+        "y2024plus": 1
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [
+        "food; type eat per article"
+      ],
+      "series_key": "issue:the-culinary-issue",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2729,
+      "wp_term_taxonomy_id": 2729,
+      "name": "Travel & Holiday",
+      "slug": "travel-and-holiday",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 6,
+      "yoast_primary": 1,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 6,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:travel-and-holiday",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2707,
+      "wp_term_taxonomy_id": 2707,
+      "name": "Festive Issue",
+      "slug": "festive-issue",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 5,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "celebration"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:festive-issue",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2719,
+      "wp_term_taxonomy_id": 2719,
+      "name": "Health In An Era Of Urbanisation",
+      "slug": "health-in-an-era-of-urbanisation",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 5,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "health"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:health-in-an-era-of-urbanisation",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2735,
+      "wp_term_taxonomy_id": 2735,
+      "name": "Season Of Wonders",
+      "slug": "season-of-wonders",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 5,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "celebration"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:season-of-wonders",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2680,
+      "wp_term_taxonomy_id": 2680,
+      "name": "The Festive Season",
+      "slug": "the-festive-season",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2022,
+        "y2019": 4,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "celebration"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:the-festive-season",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2686,
+      "wp_term_taxonomy_id": 2686,
+      "name": "Travels Far & Near",
+      "slug": "travels-far-and-near",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 5,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:travels-far-and-near",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2765,
+      "wp_term_taxonomy_id": 2765,
+      "name": "Can Jakarta Really Change",
+      "slug": "can-jakarta-really-change",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 4,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "sustainability",
+            "transport"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:can-jakarta-really-change",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2684,
+      "wp_term_taxonomy_id": 2684,
+      "name": "In With The New",
+      "slug": "in-with-the-new",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:in-with-the-new",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2717,
+      "wp_term_taxonomy_id": 2717,
+      "name": "Love & Romance",
+      "slug": "love-and-romance",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 4,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "occasion": [
+            "date-night"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:love-and-romance",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2715,
+      "wp_term_taxonomy_id": 2715,
+      "name": "Money Finance",
+      "slug": "money-finance",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 4,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "finance"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:money-finance",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2764,
+      "wp_term_taxonomy_id": 2764,
+      "name": "The Plague Of Our Time",
+      "slug": "the-plague-of-our-time",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 1,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "health"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:the-plague-of-our-time",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2761,
+      "wp_term_taxonomy_id": 2761,
+      "name": "The Travel Issue",
+      "slug": "the-travel-issue",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 4,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 4,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "travel"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:the-travel-issue",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2728,
+      "wp_term_taxonomy_id": 2728,
+      "name": "City Of The Future",
+      "slug": "city-of-the-future",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 3,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 3,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "architecture",
+            "transport",
+            "sustainability"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:city-of-the-future",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2743,
+      "wp_term_taxonomy_id": 2743,
+      "name": "Embracing The New Normal",
+      "slug": "embracing-the-new-normal",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 3,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2020,
+        "last": 2020,
+        "y2019": 0,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "health",
+            "business"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:embracing-the-new-normal",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2755,
+      "wp_term_taxonomy_id": 2755,
+      "name": "Money & Finance",
+      "slug": "money-and-finance",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 3,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 3,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {
+          "topic": [
+            "finance"
+          ]
+        }
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:money-and-finance",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    },
+    {
+      "wp_term_id": 2712,
+      "wp_term_taxonomy_id": 2712,
+      "name": "10th Anniversary Issue",
+      "slug": "10th-anniversary-issue",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 2,
+      "yoast_primary": 0,
+      "years": {
+        "first": 2019,
+        "last": 2019,
+        "y2019": 2,
+        "y2024plus": 0
+      },
+      "prior": {
+        "type": null,
+        "subtype": null,
+        "format": "feature",
+        "location": "jakarta",
+        "facets": {}
+      },
+      "per_article": [
+        "type",
+        "subtype"
+      ],
+      "confidence": "low",
+      "decision_needed": false,
+      "decision": null,
+      "alternates": [],
+      "series_key": "issue:10th-anniversary-issue",
+      "notes": "Print-issue grouping (parent 'Magazine Issue'), not a subject. Keep as series_key for the print archive; facets come from the classifier. Format feature = magazine long-form prior."
+    }
+  ]
+}

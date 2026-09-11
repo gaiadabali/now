@@ -1,0 +1,75 @@
+# ── secrets — never commit ────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ── data & backups ────────────────────────────────────────
+backups/
+# media-mirror inventory/manifest/state (F-devops media mirror ticket):
+# URL inventories, per-URL fetch ledger, resume cursors. Regenerable from
+# content/extracted + a live re-crawl; not source, and can carry raw article
+# text/URLs at 30k-entry scale.
+media_mirror_state/
+*.dump
+*.sql.gz
+content/raw/
+uploads/
+# wp-harvest page cursors — transient resume state, never worth committing
+*.jsonl.state.json
+# live WordPress dumps pulled by scripts/wp-dump.* — large, and a full copy
+# of production data. *.sql.gz above already covers the databases; this
+# covers the media archives and the dump directories wholesale.
+*/db/dumps/
+*-uploads-*.tar.gz
+# derived content JSONL (F48 audit): extracted/harvested from the WXR dumps
+# above. Regenerable via wp-harvest/wp-extract against the (also-ignored)
+# dumps, but 200MB+ combined today across jakarta/bali — too large to carry
+# in git history. See docs/data-provenance.md for the regen path and the
+# call on why this stays untracked for now.
+*/content/extracted/
+*/content/harvested/
+
+# ── python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# ── node ──────────────────────────────────────────────────
+node_modules/
+.next/
+.turbo/
+*.tsbuildinfo
+dist/
+
+# ── docker volumes / local state ──────────────────────────
+.docker-data/
+garage-data/
+postgres-data/
+
+# ── editor / os ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# derived extractor output — regenerable from the (ignored) WXR dumps.
+# NOTE: must match every sibling variant, not just the exact names —
+# E1.9 added content/extracted-wxr/ after the F48 audit and it slipped
+# through patterns written for content/extracted/ alone. (QA.4)
+*/content/extracted*/
+*/content/harvested*/
+
+# In-flight batch output, written continuously by a detached process.
+# Committing it captures a torn partial state, and it is regenerable from
+# the same command (resumable, skips anything already recorded).
+# Commit the completed label set deliberately once the batch finishes.
+engine/packages/eval/data/llm_batch/

@@ -1,0 +1,56 @@
+name: engine-api OpenAPI -> TS client
+
+on:
+  pull_request:
+    paths:
+      - "engine/apps/api/app/**"
+      - "engine/apps/api/openapi/**"
+      - "engine/apps/api/client/**"
+      - "engine/packages/config/**"
+  push:
+    branches: [main]
+    paths:
+      - "engine/apps/api/app/**"
+      - "engine/apps/api/openapi/**"
+      - "engine/apps/api/client/**"
+      - "engine/packages/config/**"
+
+jobs:
+  openapi-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/apps/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install Python deps
+        run: uv sync --extra dev
+
+      - name: Export OpenAPI schema
+        run: uv run python openapi/export_openapi.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install client deps
+        working-directory: engine/apps/api/client
+        run: npm install
+
+      - name: Generate TS client from schema
+        working-directory: engine/apps/api/client
+        run: npm run generate
+
+      - name: Typecheck generated client compiles
+        working-directory: engine/apps/api/client
+        run: npm run typecheck
+
+      - name: Fail if generation produced an uncommitted diff
+        run: |
+          git diff --exit-code -- engine/apps/api/openapi/openapi.json engine/apps/api/client/src/schema.ts || \
+          (echo "OpenAPI schema or generated TS client is out of date -- run 'python openapi/export_openapi.py && (cd client && npm run generate)' and commit the result." && exit 1)

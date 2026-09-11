@@ -1,0 +1,41 @@
+[project]
+name = "now-blender"
+version = "0.1.0"
+description = "E3.3 -- Blender + MMR (ARCHITECTURE.md Sec.7/Sec.8.D). Reconciles E3.1's Reciprocal Rank Fusion (retrieval-fusion, rank-based) with Sec.7's weighted blend (score-based re-ranking) by running RRF unmodified to produce a candidate pool, then re-ranking that pool with the weighted sum -- weights read live from sites.ranking_weights['blend'] (platform DB), decay policy from sites.ranking_weights['decay'] (already seeded by now-db's site:create). Real MMR (lambda ~= 0.7) replaces now-filters' zero-dependency similarity stand-in with genuine cosine similarity over engine.embeddings. Type-aware freshness decay is exercised against synthetic format overlays (F50: articles.format is NULL for all real rows). Logs the Sec.10 stage-4 feature vector (nulls included) at serve time."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "now-db",
+    "now-platform-db",
+    "now-search",
+    "now-filters",
+    "now-quality",
+    "now-embeddings",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "now-eval",
+]
+
+[project.scripts]
+now-blender = "now_blender.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+now-search = { path = "../search", editable = true }
+now-filters = { path = "../filters", editable = true }
+now-quality = { path = "../quality", editable = true }
+now-embeddings = { path = "../embeddings", editable = true }
+now-eval = { path = "../eval", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_blender"]

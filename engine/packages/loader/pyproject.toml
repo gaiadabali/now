@@ -1,0 +1,31 @@
+[project]
+name = "now-loader"
+version = "0.1.0"
+description = "E1.8 — one-shot JSONL (E1.1 extraction) -> city DB `public` loader. Idempotent, legacy-id-keyed. Writes only Payload-owned `public` tables; never touches `engine`. No site-name literals — every city is `--city <db_ref>`."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "now-content-clean",
+    "now-platform-db",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-loader = "now_loader.cli:cli"
+
+[tool.uv.sources]
+now-content-clean = { path = "../content-clean" }
+now-platform-db = { path = "../platform-db" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_loader"]

@@ -1,0 +1,246 @@
+{
+  "facet": "vibe",
+  "source": "ARCHITECTURE.md §4 names romantic, luxury, hidden-gem as examples; the rest is the E1.4 proposal for review.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "terms": [
+    {
+      "slug": "romantic",
+      "label": "Romantic",
+      "from_spec": true
+    },
+    {
+      "slug": "luxury",
+      "label": "Luxury",
+      "from_spec": true,
+      "aliases": [
+        "opulent",
+        "five-star",
+        "luxurious",
+        "5-star"
+      ]
+    },
+    {
+      "slug": "hidden-gem",
+      "label": "Hidden gem",
+      "from_spec": true,
+      "aliases": [
+        "under the radar",
+        "local secret",
+        "secret",
+        "tucked away"
+      ]
+    },
+    {
+      "slug": "trendy",
+      "label": "Trendy",
+      "aliases": [
+        "hip",
+        "buzzing",
+        "see-and-be-seen",
+        "hipster",
+        "happening"
+      ]
+    },
+    {
+      "slug": "casual",
+      "label": "Casual",
+      "aliases": [
+        "relaxed",
+        "no-frills",
+        "laidback"
+      ]
+    },
+    {
+      "slug": "cozy",
+      "label": "Cozy",
+      "aliases": [
+        "intimate",
+        "homely",
+        "cosy"
+      ]
+    },
+    {
+      "slug": "lively",
+      "label": "Lively",
+      "aliases": [
+        "energetic",
+        "bustling",
+        "vibrant"
+      ]
+    },
+    {
+      "slug": "laid-back",
+      "label": "Laid-back",
+      "aliases": [
+        "chill",
+        "bohemian",
+        "beachy"
+      ]
+    },
+    {
+      "slug": "artsy",
+      "label": "Artsy",
+      "aliases": [
+        "creative",
+        "design-led"
+      ]
+    },
+    {
+      "slug": "scenic",
+      "label": "Scenic",
+      "aliases": [
+        "view",
+        "nature",
+        "sunset spot",
+        "breathtaking view",
+        "panoramic",
+        "stunning views",
+        "sweeping views"
+      ]
+    },
+    {
+      "slug": "party",
+      "label": "Party",
+      "aliases": [
+        "nightlife"
+      ]
+    },
+    {
+      "slug": "serene",
+      "label": "Serene",
+      "aliases": [
+        "tranquil",
+        "zen",
+        "peaceful",
+        "calm",
+        "sanctuary",
+        "oasis"
+      ]
+    },
+    {
+      "slug": "classic",
+      "label": "Classic",
+      "aliases": [
+        "heritage charm",
+        "old-world",
+        "institution",
+        "timeless",
+        "legendary",
+        "iconic"
+      ]
+    },
+    {
+      "slug": "instagrammable",
+      "label": "Instagrammable",
+      "aliases": [
+        "photogenic",
+        "aesthetic"
+      ]
+    },
+    {
+      "slug": "tropical",
+      "label": "Tropical",
+      "aliases": [
+        "island-style",
+        "resort-style"
+      ]
+    },
+    {
+      "slug": "authentic",
+      "label": "Authentic",
+      "aliases": [
+        "traditional"
+      ]
+    },
+    {
+      "slug": "modern",
+      "label": "Modern",
+      "aliases": [
+        "contemporary",
+        "minimalist",
+        "industrial",
+        "sleek"
+      ]
+    },
+    {
+      "slug": "exclusive",
+      "label": "Exclusive",
+      "aliases": [
+        "members-only",
+        "VIP"
+      ]
+    },
+    {
+      "slug": "chic",
+      "label": "Chic",
+      "aliases": [
+        "stylish",
+        "elegant",
+        "sophisticated",
+        "refined"
+      ]
+    },
+    {
+      "slug": "wholesome",
+      "label": "Wholesome",
+      "aliases": [
+        "mindful",
+        "conscious"
+      ]
+    },
+    {
+      "slug": "glamorous",
+      "label": "Glamorous",
+      "aliases": [
+        "glam",
+        "lavish",
+        "decadent",
+        "indulgent"
+      ]
+    },
+    {
+      "slug": "quirky",
+      "label": "Quirky",
+      "aliases": [
+        "whimsical",
+        "eclectic",
+        "playful"
+      ]
+    },
+    {
+      "slug": "edgy",
+      "label": "Edgy",
+      "aliases": [
+        "underground",
+        "alternative",
+        "cool"
+      ]
+    },
+    {
+      "slug": "rustic",
+      "label": "Rustic",
+      "aliases": [
+        "earthy"
+      ]
+    },
+    {
+      "slug": "nostalgic",
+      "label": "Nostalgic",
+      "aliases": [
+        "retro",
+        "vintage",
+        "colonial charm"
+      ]
+    },
+    {
+      "slug": "family-friendly",
+      "label": "Family-friendly",
+      "aliases": [
+        "kid-friendly"
+      ]
+    }
+  ]
+}

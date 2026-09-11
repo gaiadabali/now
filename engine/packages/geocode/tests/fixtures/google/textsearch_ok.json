@@ -1,0 +1,13 @@
+{
+  "status": "OK",
+  "results": [
+    {
+      "name": "Potato Head Beach Club",
+      "formatted_address": "Jl. Petitenget, Seminyak, Kuta Utara, Bali, Indonesia",
+      "place_id": "ChIJ_fixture_textsearch_003",
+      "geometry": {
+        "location": {"lat": -8.6801, "lng": 115.1553}
+      }
+    }
+  ]
+}

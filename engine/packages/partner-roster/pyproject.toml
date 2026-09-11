@@ -1,0 +1,27 @@
+[project]
+name = "now-partner-roster"
+version = "0.1.0"
+description = "E1.5 — clusters the archive's outbound links (via E1.2's now-content-clean link extractor) into a candidate partner-org roster, seeding orgs for E4 commerce and quantifying the rel=sponsored/nofollow SEO exposure for E4.3."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "now-content-clean",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-partner-roster = "now_partner_roster.cli:cli"
+
+[tool.uv.sources]
+now-content-clean = { path = "../content-clean" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_partner_roster"]

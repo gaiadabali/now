@@ -1,0 +1,324 @@
+{
+  "facet": "cuisine",
+  "source": "ARCHITECTURE.md §4 defines the facet but enumerates no terms; this list is the E1.4 proposal for review.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "note": "Dietary attributes (halal, vegetarian, vegan) are deliberately NOT cuisines — they are venue attributes and live in amenities.json, matching §8.B party constraints.",
+  "terms": [
+    {
+      "slug": "indonesian",
+      "label": "Indonesian",
+      "aliases": [
+        "nusantara",
+        "archipelago",
+        "Indonesian cuisine",
+        "Indonesian food"
+      ]
+    },
+    {
+      "slug": "padang",
+      "label": "Padang",
+      "aliases": [
+        "Minang",
+        "nasi padang"
+      ]
+    },
+    {
+      "slug": "sundanese",
+      "label": "Sundanese",
+      "aliases": [
+        "Sunda"
+      ]
+    },
+    {
+      "slug": "javanese",
+      "label": "Javanese",
+      "aliases": [
+        "Jawa",
+        "Jogja"
+      ]
+    },
+    {
+      "slug": "balinese",
+      "label": "Balinese",
+      "aliases": [
+        "babi guling",
+        "Balinese cuisine",
+        "Balinese food"
+      ]
+    },
+    {
+      "slug": "betawi",
+      "label": "Betawi",
+      "aliases": [
+        "Jakarta traditional"
+      ]
+    },
+    {
+      "slug": "manadonese",
+      "label": "Manadonese",
+      "aliases": [
+        "Manado",
+        "Minahasa"
+      ]
+    },
+    {
+      "slug": "peranakan",
+      "label": "Peranakan",
+      "aliases": [
+        "Nyonya",
+        "Chinese-Indonesian"
+      ]
+    },
+    {
+      "slug": "japanese",
+      "label": "Japanese",
+      "aliases": [
+        "sushi",
+        "ramen",
+        "izakaya",
+        "omakase",
+        "yakitori",
+        "teppanyaki"
+      ]
+    },
+    {
+      "slug": "korean",
+      "label": "Korean",
+      "aliases": [
+        "KBBQ"
+      ]
+    },
+    {
+      "slug": "chinese",
+      "label": "Chinese",
+      "aliases": [
+        "Cantonese",
+        "Sichuan",
+        "dim sum",
+        "Szechuan"
+      ]
+    },
+    {
+      "slug": "thai",
+      "label": "Thai"
+    },
+    {
+      "slug": "vietnamese",
+      "label": "Vietnamese",
+      "aliases": [
+        "pho"
+      ]
+    },
+    {
+      "slug": "indian",
+      "label": "Indian",
+      "aliases": [
+        "South Asian"
+      ]
+    },
+    {
+      "slug": "middle-eastern",
+      "label": "Middle Eastern",
+      "aliases": [
+        "Lebanese",
+        "Turkish",
+        "Persian",
+        "Arabic",
+        "Arab"
+      ]
+    },
+    {
+      "slug": "italian",
+      "label": "Italian",
+      "aliases": [
+        "pizza",
+        "pasta",
+        "trattoria"
+      ]
+    },
+    {
+      "slug": "french",
+      "label": "French",
+      "aliases": [
+        "bistro",
+        "brasserie"
+      ]
+    },
+    {
+      "slug": "spanish",
+      "label": "Spanish",
+      "aliases": [
+        "tapas"
+      ]
+    },
+    {
+      "slug": "mediterranean",
+      "label": "Mediterranean",
+      "aliases": [
+        "Greek",
+        "Levantine"
+      ]
+    },
+    {
+      "slug": "european",
+      "label": "European",
+      "aliases": [
+        "German",
+        "Dutch",
+        "British",
+        "Swiss"
+      ]
+    },
+    {
+      "slug": "american",
+      "label": "American",
+      "aliases": [
+        "burgers",
+        "diner",
+        "burger"
+      ]
+    },
+    {
+      "slug": "mexican",
+      "label": "Mexican",
+      "aliases": [
+        "taqueria",
+        "Tex-Mex",
+        "taco",
+        "tacos"
+      ]
+    },
+    {
+      "slug": "latin-american",
+      "label": "Latin American",
+      "aliases": [
+        "Peruvian",
+        "Brazilian",
+        "Argentinian",
+        "Nikkei"
+      ]
+    },
+    {
+      "slug": "western",
+      "label": "Western",
+      "aliases": [
+        "international",
+        "continental",
+        "Western food",
+        "Western cuisine"
+      ]
+    },
+    {
+      "slug": "asian-fusion",
+      "label": "Asian fusion",
+      "aliases": [
+        "pan-Asian",
+        "modern Asian"
+      ]
+    },
+    {
+      "slug": "seafood",
+      "label": "Seafood",
+      "aliases": [
+        "fish market",
+        "grilled seafood"
+      ]
+    },
+    {
+      "slug": "steakhouse",
+      "label": "Steakhouse",
+      "aliases": [
+        "grill",
+        "wagyu",
+        "steak"
+      ]
+    },
+    {
+      "slug": "coffee",
+      "label": "Coffee",
+      "aliases": [
+        "kopi",
+        "specialty coffee",
+        "espresso"
+      ]
+    },
+    {
+      "slug": "dessert",
+      "label": "Dessert",
+      "aliases": [
+        "gelato",
+        "ice cream",
+        "pastry",
+        "patisserie"
+      ]
+    },
+    {
+      "slug": "fusion",
+      "label": "Fusion",
+      "aliases": [
+        "fusion cuisine"
+      ]
+    },
+    {
+      "slug": "bbq",
+      "label": "BBQ & grill",
+      "aliases": [
+        "barbecue",
+        "smokehouse",
+        "BBQ"
+      ]
+    },
+    {
+      "slug": "acehnese",
+      "label": "Acehnese",
+      "aliases": [
+        "Aceh cuisine",
+        "mie Aceh"
+      ]
+    },
+    {
+      "slug": "portuguese",
+      "label": "Portuguese"
+    },
+    {
+      "slug": "singaporean",
+      "label": "Singaporean"
+    },
+    {
+      "slug": "hotpot",
+      "label": "Hotpot",
+      "aliases": [
+        "hot pot",
+        "shabu-shabu",
+        "steamboat"
+      ]
+    },
+    {
+      "slug": "nordic",
+      "label": "Nordic",
+      "aliases": [
+        "Scandinavian"
+      ]
+    },
+    {
+      "slug": "moroccan",
+      "label": "Moroccan"
+    },
+    {
+      "slug": "malaysian",
+      "label": "Malaysian"
+    },
+    {
+      "slug": "tea",
+      "label": "Tea",
+      "aliases": [
+        "tea house",
+        "teahouse",
+        "artisan tea"
+      ]
+    }
+  ]
+}

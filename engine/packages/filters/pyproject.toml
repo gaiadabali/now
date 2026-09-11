@@ -1,0 +1,31 @@
+[project]
+name = "now-filters"
+version = "0.1.0"
+description = "E3.2 -- filter pipeline + fallback ladder (ARCHITECTURE.md Sec.8): hard filters (tenancy/status/self/competitor/expiry/quality/series-dedup), contextual filters (already-read/session/itinerary/open-at/trip-window/party), soft down-weighting (personalization never hard-filters), MMR diversity (org/area/format/paid caps), and the starvation fallback ladder with rung tracking. Selective predicates (status, type, area) are pushed into SQL against public.places/articles/events; candidate_ids/active_filters feed now-search's search() unchanged (that package's internals are owned elsewhere this wave). F27: enforces status='active'-only place eligibility -- the sole guard standing between the 177-place 'editorial'/'pending_review' loader sentinel and a live competitor-exclusion failure."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "now-db",
+    "now-quality",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-filters = "now_filters.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-quality = { path = "../quality", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_filters"]

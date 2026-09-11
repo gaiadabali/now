@@ -1,0 +1,125 @@
+{
+  "slug": "jakarta",
+  "name": "NOW! Jakarta",
+  "hostname": "nowjakarta.co.id",
+  "locale": "en-ID",
+  "timezone": "Asia/Jakarta",
+  "currency": "IDR",
+  "tagline": "The city, read closely.",
+  "brand": {
+    "logo": "/brand/jakarta.svg",
+    "logoAlt": "NOW! Jakarta"
+  },
+  "nav": [
+    {
+      "label": "Dining",
+      "href": "/dining"
+    },
+    {
+      "label": "Stay",
+      "href": "/stay"
+    },
+    {
+      "label": "Culture",
+      "href": "/culture"
+    },
+    {
+      "label": "Wellness",
+      "href": "/wellness"
+    },
+    {
+      "label": "Things to Do",
+      "href": "/things-to-do"
+    },
+    {
+      "label": "Events",
+      "href": "/events"
+    },
+    {
+      "label": "Guides",
+      "href": "/guides"
+    }
+  ],
+  "footer": [
+    {
+      "head": "Sections",
+      "links": [
+        {
+          "label": "Dining",
+          "href": "/dining"
+        },
+        {
+          "label": "Stay",
+          "href": "/stay"
+        },
+        {
+          "label": "Culture",
+          "href": "/culture"
+        },
+        {
+          "label": "Wellness",
+          "href": "/wellness"
+        },
+        {
+          "label": "Things to Do",
+          "href": "/things-to-do"
+        }
+      ]
+    },
+    {
+      "head": "Discover",
+      "links": [
+        {
+          "label": "Guides",
+          "href": "/guides"
+        },
+        {
+          "label": "Events",
+          "href": "/events"
+        },
+        {
+          "label": "Areas",
+          "href": "/areas"
+        },
+        {
+          "label": "Places",
+          "href": "/places"
+        }
+      ]
+    },
+    {
+      "head": "NOW!",
+      "links": [
+        {
+          "label": "About Us",
+          "href": "/about"
+        },
+        {
+          "label": "Podcast",
+          "href": "/podcast"
+        },
+        {
+          "label": "Advertise",
+          "href": "/advertise"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact"
+        }
+      ]
+    },
+    {
+      "head": "Network",
+      "links": [
+        {
+          "label": "NOW! Bali",
+          "href": "https://www.nowbali.co.id"
+        },
+        {
+          "label": "Subscribe",
+          "href": "/subscribe"
+        }
+      ]
+    }
+  ]
+}

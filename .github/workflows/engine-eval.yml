@@ -1,0 +1,55 @@
+name: engine-eval
+
+on:
+  pull_request:
+    paths:
+      - "engine/packages/eval/**"
+      - "jakarta/content/extracted/articles.jsonl"
+      - "jakarta/site/taxonomy-mapping.json"
+  push:
+    branches: [main]
+    paths:
+      - "engine/packages/eval/**"
+      - "jakarta/content/extracted/articles.jsonl"
+      - "jakarta/site/taxonomy-mapping.json"
+
+jobs:
+  test-and-gate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/packages/eval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install deps
+        run: uv sync --extra dev
+
+      - name: Unit tests (metrics + dataset builders + harness + baseline gate logic)
+        run: uv run pytest -v
+
+      - name: Rebuild labelled sets from source (must be reproducible/idempotent)
+        run: |
+          uv run now-eval build-datasets --out-dir /tmp/now-eval-rebuilt
+          diff -rq data/related_articles.labelled.jsonl /tmp/now-eval-rebuilt/related_articles.labelled.jsonl
+          diff -rq data/search_queries.provisional.jsonl /tmp/now-eval-rebuilt/search_queries.provisional.jsonl
+          diff -rq data/facet_labels.holdout.jsonl /tmp/now-eval-rebuilt/facet_labels.holdout.jsonl
+          diff -rq data/type_labels.sample.jsonl /tmp/now-eval-rebuilt/type_labels.sample.jsonl
+          echo "labelled sets are byte-identical when rebuilt from source -- committed data/ is not stale"
+
+      # --gates no-regression: this step runs the *trivial* baseline, which
+      # is expected and required to fail the hard §17 minimums (facet
+      # tagging >=0.85, type accuracy >=0.95) -- that failure is what proves
+      # the metrics discriminate real signal from noise, not a defect to
+      # paper over. See tests/test_baseline.py for the hard-threshold gate
+      # logic exercised directly, and PROVENANCE.md for the full
+      # trivial-random / trivial-most-popular results. The full gate set
+      # (`--gates all`) is what E2.1/E2.2 run once a real classifier/tagger
+      # is wired in via the SystemUnderTest protocol (see sut.py).
+      - name: Run eval harness against the recorded baseline (no-regression gate)
+        run: uv run now-eval check --sut trivial-random --baseline data/baseline.json --gates no-regression

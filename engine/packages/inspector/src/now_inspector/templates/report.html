@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block body %}
+
+{% if error %}
+<div class="card"><span class="pill pill-removed">error</span> {{ error }}</div>
+{% endif %}
+
+{% if seed_article %}
+<div class="card">
+  <h3>Seed article #{{ seed_article.id }}</h3>
+  <div class="kv">
+    <div class="k">title</div><div>{{ seed_article.title }}</div>
+    <div class="k">dek</div><div>{{ seed_article.dek or '(none)' }}</div>
+    <div class="k">primary_type</div><div>{% if seed_article.primary_type %}{{ seed_article.primary_type }}{% else %}<span class="not-classified">not classified yet</span>{% endif %}</div>
+    <div class="k">format</div><div>{% if seed_article.format %}{{ seed_article.format }}{% else %}<span class="not-classified">not classified yet</span>{% endif %}</div>
+    <div class="k">series_key</div><div>{{ seed_article.series_key or '(none)' }}</div>
+    <div class="k">status</div><div>{{ seed_article.status }}</div>
+    <div class="k">published_at</div><div>{{ seed_article.published_at or '(none)' }}</div>
+    <div class="k">legacy_wp_id</div><div>{{ seed_article.legacy_wp_id or '(none)' }}</div>
+  </div>
+</div>
+{% endif %}
+
+{% if generator_panels %}
+<h2>1. Candidate generators -- raw output, before fusion</h2>
+<div class="grid">
+  {% for panel in generator_panels %}
+  <div class="card">
+    <h3>{{ panel.name }} <span class="badge-count">({{ panel.candidate_count }} hits)</span></h3>
+    <div class="section-note">{{ panel.description }}</div>
+    {% if panel.hits %}
+    <table>
+      <tr><th>rank</th><th>entity_id</th><th>title</th><th>raw score</th></tr>
+      {% for h in panel.hits %}
+      <tr><td>{{ h.rank }}</td><td>{{ h.entity_id }}</td><td>{{ h.title }}</td><td class="mono-num">{{ "%.5f"|format(h.raw_score) }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No hits from this generator.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<h2>2. RRF fusion -- input ranks + fused score</h2>
+<div class="section-note">score(doc) = sum over rails containing doc of 1/(k+rank), k=60. A doc missing from a rail contributes 0 for that rail (not a penalty rank). rrf.py, now-search.</div>
+<table>
+  <tr><th>fused rank</th><th>entity_id</th><th>title</th><th>lexical rank</th><th>lexical raw</th><th>semantic rank</th><th>semantic raw</th><th>rrf score</th><th>hard filters</th></tr>
+  {% for c in candidates %}
+  <tr>
+    <td>{{ loop.index }}</td>
+    <td>{{ c.entity_id }}</td>
+    <td>{{ c.article.title if c.article else '(article not found)' }}</td>
+    <td class="mono-num">{{ c.lexical_rank if c.lexical_rank is not none else '—' }}</td>
+    <td class="mono-num">{{ "%.5f"|format(c.lexical_raw_score) if c.lexical_raw_score is not none else '—' }}</td>
+    <td class="mono-num">{{ c.semantic_rank if c.semantic_rank is not none else '—' }}</td>
+    <td class="mono-num">{{ "%.5f"|format(c.semantic_raw_score) if c.semantic_raw_score is not none else '—' }}</td>
+    <td class="mono-num">{{ "%.5f"|format(c.rrf_score) }}</td>
+    <td>{% if c.survived %}<span class="pill pill-ok">survives</span>{% else %}<span class="pill pill-removed">removed</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>3. Per-candidate detail</h2>
+{% for c in candidates %}
+<div class="card">
+  <h3>#{{ c.entity_id }} -- {{ c.article.title if c.article else '(not found)' }}
+    {% if c.survived %}<span class="pill pill-ok">survives filters</span>{% else %}<span class="pill pill-removed">removed</span>{% endif %}
+  </h3>
+
+  <h3 style="margin-top:14px">Per-component scores</h3>
+  <table>
+    <tr><th>component</th><th>value</th><th>explanation</th></tr>
+    {% for comp in c.blend_components %}
+    <tr>
+      <td>{{ comp.label }}</td>
+      <td class="mono-num">{% if comp.available and comp.value is not none %}{{ "%.4f"|format(comp.value) }}{% else %}<span class="pill pill-gap">not available</span>{% endif %}</td>
+      <td class="muted">{{ comp.explanation }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td><strong>illustrative composite</strong></td>
+      <td class="mono-num"><strong>{% if c.blended_score is not none %}{{ "%.4f"|format(c.blended_score) }}{% else %}—{% endif %}</strong></td>
+      <td class="muted">Unweighted mean of available components. NOT E3.3's tuned blend -- see now_inspector.blender docstring.</td>
+    </tr>
+  </table>
+
+  <h3>Filter trace ({{ c.filter_trace|length }} rules evaluated, §8.A hard filters)</h3>
+  <table>
+    <tr><th>rule</th><th>verdict</th><th>data</th><th>reason</th><th>source</th></tr>
+    {% for f in c.filter_trace %}
+    <tr>
+      <td>{{ f.rule }}</td>
+      <td>{% if f.removed %}<span class="pill pill-removed">removed</span>{% else %}<span class="pill pill-ok">passed</span>{% endif %}</td>
+      <td>
+        {% if f.data_status == 'not classified yet' %}<span class="pill pill-warn">not classified yet</span>
+        {% elif f.data_status == 'not applicable' %}<span class="pill pill-gap">not applicable</span>
+        {% else %}<span class="muted">available</span>{% endif %}
+      </td>
+      <td>{{ f.reason }}</td>
+      <td class="muted">{{ f.rule_source }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="section-note">Verdict: {{ c.survival_reason }}</div>
+
+  <h3>Fallback rung (E3.2 <code class="small">now_filters</code>)</h3>
+  {% if filters_status.importable %}
+    <p class="muted">now_filters imported from {{ filters_status.module_name }} -- see per-rail rungs above where available.</p>
+  {% else %}
+    <p><span class="pill pill-gap">not available</span> {{ filters_status.detail }}</p>
+  {% endif %}
+
+  <h3>Quality-score components (engine.quality_scores)</h3>
+  {% if c.quality and c.quality.found %}
+  <div class="kv">
+    <div class="k">score</div><div class="mono-num">{{ "%.4f"|format(c.quality.score) }}</div>
+  </div>
+  <table>
+    <tr><th>component</th><th>detail</th></tr>
+    {% for k, v in c.quality.components.items() %}
+    <tr><td>{{ k }}</td><td><code class="small">{{ v }}</code></td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p><span class="pill pill-warn">not classified yet</span> {{ c.quality.note if c.quality else "No quality data." }}</p>
+  {% endif %}
+
+  <h3>Freshness / decay</h3>
+  {% if c.freshness %}
+  <div class="kv">
+    <div class="k">format</div><div>{% if c.freshness.format %}{{ c.freshness.format }}{% else %}<span class="not-classified">not classified yet</span>{% endif %}</div>
+    <div class="k">half-life</div><div>{{ c.freshness.half_life_label }}</div>
+    <div class="k">days old</div><div class="mono-num">{{ "%.1f"|format(c.freshness.days_old) if c.freshness.days_old is not none else '—' }}</div>
+    <div class="k">decay component</div><div class="mono-num">{% if c.freshness.decay_component is not none %}{{ "%.4f"|format(c.freshness.decay_component) }}{% else %}—{% endif %}</div>
+  </div>
+  <div class="section-note">{{ c.freshness.note }}</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<h2>4. MMR / diversity</h2>
+<div class="card">
+  {% if diversity.implemented %}
+    <p>{{ diversity.note }}</p>
+  {% else %}
+    <p><span class="pill pill-gap">not implemented</span> {{ diversity.note }}</p>
+    <p class="muted">Needs before this can light up:</p>
+    <ul class="muted">
+      {% for n in diversity.needs %}<li>{{ n }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+</div>
+
+{% else %}
+<p class="muted">No candidates to show.</p>
+{% endif %}
+
+{% endblock %}

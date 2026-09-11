@@ -1,0 +1,31 @@
+[project]
+name = "now-link-resolver"
+version = "0.1.0"
+description = "E4.2 -- ARCHITECTURE.md Sec.11's core mechanism: resolves an entity mention to a rendered link at read time from the *current* partnership (place-level, else org-level), never from anything written into the article. Owns no schema (E4.1 owns engine.orgs/partnerships) and no migration; composes now-db's city connection and now-platform-db's engine.partnerships_active / partnership_is_effective, per that package's explicit contract that liveness is never re-derived by a caller."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "now-db",
+    "now-platform-db",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-link-resolver = "now_link_resolver.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_link_resolver"]

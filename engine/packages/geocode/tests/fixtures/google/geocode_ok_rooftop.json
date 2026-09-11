@@ -1,0 +1,13 @@
+{
+  "status": "OK",
+  "results": [
+    {
+      "formatted_address": "Jl. Kemang Raya No.1, Bangka, Kec. Mampang Prpt., Kota Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12730, Indonesia",
+      "place_id": "ChIJ_fixture_rooftop_001",
+      "geometry": {
+        "location": {"lat": -6.2605, "lng": 106.8140},
+        "location_type": "ROOFTOP"
+      }
+    }
+  ]
+}

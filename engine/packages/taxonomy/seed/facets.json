@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "source": "ARCHITECTURE.md §4 'Facets' table",
+  "persisted_fields": ["key", "label", "cardinality", "required"],
+  "note": "Every other field is documentation for humans and for the E2.1/E2.2 classifiers; engine.facets has no column for it.",
+  "facets": [
+    {
+      "key": "type",
+      "label": "Type",
+      "cardinality": "single",
+      "required": true,
+      "applies_to": ["article", "place", "event"],
+      "drives": "competitor exclusion (operates at this level only) and the Row 1 complementary pool",
+      "notes": "Exactly the eight L1 nodes of the §4 type tree. Consumers that need the exclusion enum read the `type` facet's terms and must get eight rows."
+    },
+    {
+      "key": "subtype",
+      "label": "Subtype",
+      "cardinality": "single",
+      "required": true,
+      "applies_to": ["article", "place", "event"],
+      "parent_facet": "type",
+      "drives": "fine matching",
+      "notes": "L2 of the §4 type tree. Every subtype term's parent_id points at a `type` term (a cross-facet parent; the seed loader enforces it). Slugs are unique within this facet, hence `boutique-hotel` vs `boutique`."
+    },
+    {
+      "key": "location",
+      "label": "Location",
+      "cardinality": "multi",
+      "required": true,
+      "hierarchical": true,
+      "applies_to": ["article", "place", "event"],
+      "drives": "Row 2 nearby fallback when geo is missing, area clustering, reader filters, /{section}/{area} URLs",
+      "notes": "root (indonesia) -> city -> district -> neighbourhood. Selecting a parent includes its descendants (§9). The district/neighbourhood node is the fallback when geocoding is missing (§4)."
+    },
+    {
+      "key": "format",
+      "label": "Format",
+      "cardinality": "single",
+      "required": true,
+      "applies_to": ["article"],
+      "drives": "type-aware freshness decay (see format_decay.json) and layout",
+      "notes": "The shape of the piece, independent of what it is about. A hotel can be the subject of news, an offer, a review or a guide."
+    },
+    {
+      "key": "price_band",
+      "label": "Price",
+      "cardinality": "single",
+      "required": false,
+      "required_when": "the entity is a venue (places)",
+      "applies_to": ["place"],
+      "drives": "price-band compatibility in Row 1 (§7)"
+    },
+    {
+      "key": "cuisine",
+      "label": "Cuisine",
+      "cardinality": "multi",
+      "required": false,
+      "required_when": "type = eat",
+      "applies_to": ["place", "article"],
+      "drives": "restaurant matching, reader filter (shown only when type = eat)"
+    },
+    {
+      "key": "vibe",
+      "label": "Vibe",
+      "cardinality": "multi",
+      "required": false,
+      "applies_to": ["place", "article"],
+      "drives": "vibe overlap in Row 1 compatibility, reader filter"
+    },
+    {
+      "key": "occasion",
+      "label": "Occasion",
+      "cardinality": "multi",
+      "required": false,
+      "applies_to": ["place", "article", "event"],
+      "drives": "reader filter, itinerary slot hints"
+    },
+    {
+      "key": "audience",
+      "label": "Audience",
+      "cardinality": "multi",
+      "required": false,
+      "applies_to": ["article", "place", "event"],
+      "drives": "registration seed (§10 'You are...'), party constraints"
+    },
+    {
+      "key": "amenities",
+      "label": "Amenities",
+      "cardinality": "multi",
+      "required": false,
+      "required_when": "the entity is a venue (places)",
+      "applies_to": ["place"],
+      "drives": "reader filter, §8.B party constraints (kids, accessibility, halal, vegetarian)"
+    },
+    {
+      "key": "topic",
+      "label": "Topic",
+      "cardinality": "multi",
+      "required": false,
+      "applies_to": ["article"],
+      "drives": "subject-matter tagging across every type; most legacy WP categories that are not a venue type land here"
+    }
+  ]
+}

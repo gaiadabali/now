@@ -1,0 +1,61 @@
+[project]
+name = "now-search"
+version = "0.1.0"
+description = "E3.1/F41 -- hybrid search: Postgres full-text (ts_rank_cd, title>dek>body weighting) over the materialised engine.article_search (GIN-indexed tsvector, built by the real now_content_clean.metrics.visible_text_out extractor, kept fresh by a Redis-stream worker on its own consumer group) + pgvector kNN over engine.embeddings (BAAI/bge-small-en-v1.5, model-filtered), fused with Reciprocal Rank Fusion. Facet counts computed in one aggregate pass per the ecommerce 'apply every filter except F' rule -- unexercised until E2.1 populates primary_type/format/entity_terms."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "redis>=5.0,<6",
+    "now-db",
+    "now-platform-db",
+    "now-content-clean",
+    "now-embeddings",
+    # F60: query_embedder.py imports `fastembed` directly (needs its own
+    # `TextEmbedding(threads=4)` instance, distinct from now_embeddings'
+    # batch-tuned `threads=16` provider -- see that module's docstring),
+    # but this package never declared it as a direct dependency, only
+    # ever getting it transitively through now-embeddings. Declared
+    # directly now so this package's dependency surface matches what it
+    # actually imports.
+    "fastembed>=0.4,<1",
+    # F60: measured, not guessed -- onnxruntime is a transitive dependency
+    # with no version pin anywhere in this repo, so `uv sync`/`uv lock`
+    # silently picks up whatever the newest compatible release is at lock
+    # time. That drift is real: on this exact machine, with fastembed
+    # 0.8.0 and everything else held constant, single-query CPU inference
+    # of BAAI/bge-small-en-v1.5 measured p50 ~6-27ms across onnxruntime
+    # 1.19.2-1.24.2, and p50 ~99-112ms on 1.29.0 -- a 4-18x regression
+    # with zero code change on this package's side. Query embedding is
+    # this ticket's single largest latency contributor (F53/F60: ~80-100ms
+    # of a ~110ms p95), so this pin is the fix, not just a note. Upper
+    # bound set just above the last version this session measured fast;
+    # `!=1.24.0,!=1.24.1` mirrors fastembed's own exclusion for those two
+    # patch releases. Re-benchmark (see BENCHMARK.md) before raising this
+    # ceiling.
+    "onnxruntime>=1.21.0,<1.25,!=1.24.0,!=1.24.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "now-eval",
+]
+
+[project.scripts]
+now-search = "now_search.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+now-content-clean = { path = "../content-clean", editable = true }
+now-embeddings = { path = "../embeddings", editable = true }
+now-eval = { path = "../eval", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_search"]

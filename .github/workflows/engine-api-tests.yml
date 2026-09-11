@@ -1,0 +1,83 @@
+name: engine-api tests
+
+on:
+  pull_request:
+    paths:
+      - "engine/apps/api/**"
+      - "engine/packages/config/**"
+  push:
+    branches: [main]
+    paths:
+      - "engine/apps/api/**"
+      - "engine/packages/config/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/apps/api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: now
+          POSTGRES_PASSWORD: now
+          POSTGRES_DB: now_platform
+        ports:
+          - 55510:5432
+        options: >-
+          --health-cmd "pg_isready -U now"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install deps
+        run: uv sync --extra dev
+
+      - name: Seed platform + city test databases
+        env:
+          PGPASSWORD: now
+        run: |
+          psql -h localhost -p 55510 -U now -d now_platform -f tests/seed/schema.sql
+          psql -h localhost -p 55510 -U now -d now_platform -c "CREATE DATABASE now_alpha;"
+          psql -h localhost -p 55510 -U now -d now_platform -c "CREATE DATABASE now_beta;"
+          psql -h localhost -p 55510 -U now -d now_platform -f tests/seed/sites.sql
+          psql -h localhost -p 55510 -U now -d now_alpha -c "CREATE TABLE marker (city TEXT); INSERT INTO marker VALUES ('alpha');"
+          psql -h localhost -p 55510 -U now -d now_beta -c "CREATE TABLE marker (city TEXT); INSERT INTO marker VALUES ('beta');"
+          psql -h localhost -p 55510 -U now -d now_alpha -f tests/seed/events_schema.sql
+          psql -h localhost -p 55510 -U now -d now_beta -f tests/seed/events_schema.sql
+
+      - name: Zero site-name literals in configuration branching under engine/
+        run: |
+          # Check for site-name literals used in configuration/branching logic under engine/.
+          # Rule (ARCHITECTURE.md §3.5): application logic must not use site names to make decisions.
+          # We catch: if/elif/switch on site, dict keys (config['jakarta']), hardcoded defaults.
+          # We skip: geographic data processing, docstrings, comments, migrations, tests.
+          # Specific exclusions: known-good non-app paths.
+          if grep -RniE "(if|elif|switch|=|SITE_|site.*=|\[.*\].*=)" ../../engine \
+             --include="*.py" --include="*.ts" --include="*.tsx" | \
+             grep -E "['\"](jakarta|bali)['\"]" | \
+             grep -v "/migrations/" | \
+             grep -v "/tests/" | \
+             grep -v "engine/packages/db/src/now_db/migrations/versions/0001_baseline_engine_schema.py" | \
+             grep -v "engine/packages/wp-extract/src/wp_extract/config.py" | \
+             grep -v "engine/packages/geocode/" | \
+             grep -v "engine/packages/partner-roster/" | \
+             grep -v "/node_modules/" | \
+             grep -v '"""' | \
+             grep -v "'''" | \
+             grep -v "^[[:space:]]*#"; then
+            echo "Found a site-name literal in configuration/branching logic under engine/ — see ARCHITECTURE.md §3.5." && exit 1
+          fi
+          echo "clean"
+
+      - name: Run tests
+        run: uv run pytest -v

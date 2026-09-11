@@ -1,0 +1,2082 @@
+{
+  "n": 4772,
+  "median": 0.0,
+  "p95": 0.018,
+  "max": 1.201,
+  "nonzero": [
+    {
+      "wp_id": 47,
+      "chars_in": 12452,
+      "chars_out": 12451,
+      "delta": 1,
+      "loss_pct": 0.008
+    },
+    {
+      "wp_id": 96,
+      "chars_in": 3642,
+      "chars_out": 3640,
+      "delta": 2,
+      "loss_pct": 0.055
+    },
+    {
+      "wp_id": 120,
+      "chars_in": 5442,
+      "chars_out": 5441,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 166,
+      "chars_in": 3449,
+      "chars_out": 3447,
+      "delta": 2,
+      "loss_pct": 0.058
+    },
+    {
+      "wp_id": 170,
+      "chars_in": 6796,
+      "chars_out": 6795,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 227,
+      "chars_in": 6996,
+      "chars_out": 6995,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 239,
+      "chars_in": 5191,
+      "chars_out": 5190,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 264,
+      "chars_in": 3057,
+      "chars_out": 3056,
+      "delta": 1,
+      "loss_pct": 0.033
+    },
+    {
+      "wp_id": 373,
+      "chars_in": 7565,
+      "chars_out": 7564,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 393,
+      "chars_in": 5385,
+      "chars_out": 5384,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 411,
+      "chars_in": 4063,
+      "chars_out": 4059,
+      "delta": 4,
+      "loss_pct": 0.098
+    },
+    {
+      "wp_id": 455,
+      "chars_in": 6163,
+      "chars_out": 6160,
+      "delta": 3,
+      "loss_pct": 0.049
+    },
+    {
+      "wp_id": 472,
+      "chars_in": 4851,
+      "chars_out": 4850,
+      "delta": 1,
+      "loss_pct": 0.021
+    },
+    {
+      "wp_id": 476,
+      "chars_in": 5883,
+      "chars_out": 5866,
+      "delta": 17,
+      "loss_pct": 0.289
+    },
+    {
+      "wp_id": 482,
+      "chars_in": 5358,
+      "chars_out": 5357,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 487,
+      "chars_in": 2292,
+      "chars_out": 2291,
+      "delta": 1,
+      "loss_pct": 0.044
+    },
+    {
+      "wp_id": 498,
+      "chars_in": 4098,
+      "chars_out": 4095,
+      "delta": 3,
+      "loss_pct": 0.073
+    },
+    {
+      "wp_id": 516,
+      "chars_in": 2628,
+      "chars_out": 2627,
+      "delta": 1,
+      "loss_pct": 0.038
+    },
+    {
+      "wp_id": 580,
+      "chars_in": 2633,
+      "chars_out": 2632,
+      "delta": 1,
+      "loss_pct": 0.038
+    },
+    {
+      "wp_id": 687,
+      "chars_in": 2159,
+      "chars_out": 2157,
+      "delta": 2,
+      "loss_pct": 0.093
+    },
+    {
+      "wp_id": 744,
+      "chars_in": 1635,
+      "chars_out": 1634,
+      "delta": 1,
+      "loss_pct": 0.061
+    },
+    {
+      "wp_id": 770,
+      "chars_in": 7531,
+      "chars_out": 7529,
+      "delta": 2,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 784,
+      "chars_in": 7863,
+      "chars_out": 7859,
+      "delta": 4,
+      "loss_pct": 0.051
+    },
+    {
+      "wp_id": 785,
+      "chars_in": 9287,
+      "chars_out": 9285,
+      "delta": 2,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 807,
+      "chars_in": 4269,
+      "chars_out": 4268,
+      "delta": 1,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 823,
+      "chars_in": 3108,
+      "chars_out": 3107,
+      "delta": 1,
+      "loss_pct": 0.032
+    },
+    {
+      "wp_id": 832,
+      "chars_in": 7197,
+      "chars_out": 7195,
+      "delta": 2,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 841,
+      "chars_in": 3562,
+      "chars_out": 3561,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 851,
+      "chars_in": 5606,
+      "chars_out": 5605,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 860,
+      "chars_in": 3258,
+      "chars_out": 3257,
+      "delta": 1,
+      "loss_pct": 0.031
+    },
+    {
+      "wp_id": 864,
+      "chars_in": 1550,
+      "chars_out": 1548,
+      "delta": 2,
+      "loss_pct": 0.129
+    },
+    {
+      "wp_id": 899,
+      "chars_in": 1358,
+      "chars_out": 1356,
+      "delta": 2,
+      "loss_pct": 0.147
+    },
+    {
+      "wp_id": 900,
+      "chars_in": 3397,
+      "chars_out": 3396,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 904,
+      "chars_in": 2376,
+      "chars_out": 2374,
+      "delta": 2,
+      "loss_pct": 0.084
+    },
+    {
+      "wp_id": 905,
+      "chars_in": 3686,
+      "chars_out": 3685,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 921,
+      "chars_in": 4970,
+      "chars_out": 4969,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 982,
+      "chars_in": 4369,
+      "chars_out": 4368,
+      "delta": 1,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 983,
+      "chars_in": 2677,
+      "chars_out": 2676,
+      "delta": 1,
+      "loss_pct": 0.037
+    },
+    {
+      "wp_id": 984,
+      "chars_in": 1821,
+      "chars_out": 1820,
+      "delta": 1,
+      "loss_pct": 0.055
+    },
+    {
+      "wp_id": 987,
+      "chars_in": 2718,
+      "chars_out": 2715,
+      "delta": 3,
+      "loss_pct": 0.11
+    },
+    {
+      "wp_id": 988,
+      "chars_in": 2310,
+      "chars_out": 2309,
+      "delta": 1,
+      "loss_pct": 0.043
+    },
+    {
+      "wp_id": 989,
+      "chars_in": 3918,
+      "chars_out": 3917,
+      "delta": 1,
+      "loss_pct": 0.026
+    },
+    {
+      "wp_id": 991,
+      "chars_in": 6907,
+      "chars_out": 6906,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 1011,
+      "chars_in": 3550,
+      "chars_out": 3549,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 1013,
+      "chars_in": 5234,
+      "chars_out": 5233,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 1015,
+      "chars_in": 11079,
+      "chars_out": 11078,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 1018,
+      "chars_in": 5036,
+      "chars_out": 5034,
+      "delta": 2,
+      "loss_pct": 0.04
+    },
+    {
+      "wp_id": 1020,
+      "chars_in": 1230,
+      "chars_out": 1229,
+      "delta": 1,
+      "loss_pct": 0.081
+    },
+    {
+      "wp_id": 1028,
+      "chars_in": 5423,
+      "chars_out": 5422,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 1036,
+      "chars_in": 2939,
+      "chars_out": 2938,
+      "delta": 1,
+      "loss_pct": 0.034
+    },
+    {
+      "wp_id": 1046,
+      "chars_in": 5062,
+      "chars_out": 5061,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 1048,
+      "chars_in": 5236,
+      "chars_out": 5235,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 1049,
+      "chars_in": 5037,
+      "chars_out": 5036,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 1051,
+      "chars_in": 4753,
+      "chars_out": 4752,
+      "delta": 1,
+      "loss_pct": 0.021
+    },
+    {
+      "wp_id": 1052,
+      "chars_in": 2357,
+      "chars_out": 2355,
+      "delta": 2,
+      "loss_pct": 0.085
+    },
+    {
+      "wp_id": 1053,
+      "chars_in": 2209,
+      "chars_out": 2207,
+      "delta": 2,
+      "loss_pct": 0.091
+    },
+    {
+      "wp_id": 1054,
+      "chars_in": 4757,
+      "chars_out": 4755,
+      "delta": 2,
+      "loss_pct": 0.042
+    },
+    {
+      "wp_id": 1058,
+      "chars_in": 5159,
+      "chars_out": 5158,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 1060,
+      "chars_in": 3733,
+      "chars_out": 3732,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 1064,
+      "chars_in": 464,
+      "chars_out": 463,
+      "delta": 1,
+      "loss_pct": 0.216
+    },
+    {
+      "wp_id": 1068,
+      "chars_in": 578,
+      "chars_out": 577,
+      "delta": 1,
+      "loss_pct": 0.173
+    },
+    {
+      "wp_id": 1076,
+      "chars_in": 9408,
+      "chars_out": 9407,
+      "delta": 1,
+      "loss_pct": 0.011
+    },
+    {
+      "wp_id": 1078,
+      "chars_in": 10428,
+      "chars_out": 10426,
+      "delta": 2,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 1082,
+      "chars_in": 6823,
+      "chars_out": 6822,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 1092,
+      "chars_in": 3462,
+      "chars_out": 3461,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 1098,
+      "chars_in": 5085,
+      "chars_out": 5084,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 1115,
+      "chars_in": 4504,
+      "chars_out": 4503,
+      "delta": 1,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 1129,
+      "chars_in": 4810,
+      "chars_out": 4809,
+      "delta": 1,
+      "loss_pct": 0.021
+    },
+    {
+      "wp_id": 1135,
+      "chars_in": 3933,
+      "chars_out": 3932,
+      "delta": 1,
+      "loss_pct": 0.025
+    },
+    {
+      "wp_id": 1137,
+      "chars_in": 338,
+      "chars_out": 337,
+      "delta": 1,
+      "loss_pct": 0.296
+    },
+    {
+      "wp_id": 1140,
+      "chars_in": 3671,
+      "chars_out": 3670,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 1141,
+      "chars_in": 3335,
+      "chars_out": 3334,
+      "delta": 1,
+      "loss_pct": 0.03
+    },
+    {
+      "wp_id": 1146,
+      "chars_in": 4346,
+      "chars_out": 4345,
+      "delta": 1,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 1150,
+      "chars_in": 8081,
+      "chars_out": 8080,
+      "delta": 1,
+      "loss_pct": 0.012
+    },
+    {
+      "wp_id": 1171,
+      "chars_in": 272,
+      "chars_out": 271,
+      "delta": 1,
+      "loss_pct": 0.368
+    },
+    {
+      "wp_id": 1173,
+      "chars_in": 7643,
+      "chars_out": 7642,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 1180,
+      "chars_in": 6758,
+      "chars_out": 6757,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 4982,
+      "chars_in": 945,
+      "chars_out": 944,
+      "delta": 1,
+      "loss_pct": 0.106
+    },
+    {
+      "wp_id": 4987,
+      "chars_in": 1290,
+      "chars_out": 1289,
+      "delta": 1,
+      "loss_pct": 0.078
+    },
+    {
+      "wp_id": 5004,
+      "chars_in": 936,
+      "chars_out": 935,
+      "delta": 1,
+      "loss_pct": 0.107
+    },
+    {
+      "wp_id": 5007,
+      "chars_in": 1625,
+      "chars_out": 1624,
+      "delta": 1,
+      "loss_pct": 0.062
+    },
+    {
+      "wp_id": 5034,
+      "chars_in": 1282,
+      "chars_out": 1281,
+      "delta": 1,
+      "loss_pct": 0.078
+    },
+    {
+      "wp_id": 5039,
+      "chars_in": 1334,
+      "chars_out": 1333,
+      "delta": 1,
+      "loss_pct": 0.075
+    },
+    {
+      "wp_id": 5058,
+      "chars_in": 2524,
+      "chars_out": 2523,
+      "delta": 1,
+      "loss_pct": 0.04
+    },
+    {
+      "wp_id": 5105,
+      "chars_in": 1393,
+      "chars_out": 1392,
+      "delta": 1,
+      "loss_pct": 0.072
+    },
+    {
+      "wp_id": 5114,
+      "chars_in": 6765,
+      "chars_out": 6764,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 5116,
+      "chars_in": 1331,
+      "chars_out": 1326,
+      "delta": 5,
+      "loss_pct": 0.376
+    },
+    {
+      "wp_id": 5121,
+      "chars_in": 1072,
+      "chars_out": 1070,
+      "delta": 2,
+      "loss_pct": 0.187
+    },
+    {
+      "wp_id": 5144,
+      "chars_in": 1008,
+      "chars_out": 1007,
+      "delta": 1,
+      "loss_pct": 0.099
+    },
+    {
+      "wp_id": 5160,
+      "chars_in": 2919,
+      "chars_out": 2916,
+      "delta": 3,
+      "loss_pct": 0.103
+    },
+    {
+      "wp_id": 5161,
+      "chars_in": 4713,
+      "chars_out": 4712,
+      "delta": 1,
+      "loss_pct": 0.021
+    },
+    {
+      "wp_id": 5169,
+      "chars_in": 5568,
+      "chars_out": 5567,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 5210,
+      "chars_in": 2581,
+      "chars_out": 2580,
+      "delta": 1,
+      "loss_pct": 0.039
+    },
+    {
+      "wp_id": 5219,
+      "chars_in": 1851,
+      "chars_out": 1850,
+      "delta": 1,
+      "loss_pct": 0.054
+    },
+    {
+      "wp_id": 5228,
+      "chars_in": 2154,
+      "chars_out": 2153,
+      "delta": 1,
+      "loss_pct": 0.046
+    },
+    {
+      "wp_id": 5244,
+      "chars_in": 1757,
+      "chars_out": 1755,
+      "delta": 2,
+      "loss_pct": 0.114
+    },
+    {
+      "wp_id": 5263,
+      "chars_in": 21168,
+      "chars_out": 21167,
+      "delta": 1,
+      "loss_pct": 0.005
+    },
+    {
+      "wp_id": 5266,
+      "chars_in": 2545,
+      "chars_out": 2544,
+      "delta": 1,
+      "loss_pct": 0.039
+    },
+    {
+      "wp_id": 5267,
+      "chars_in": 1072,
+      "chars_out": 1070,
+      "delta": 2,
+      "loss_pct": 0.187
+    },
+    {
+      "wp_id": 5269,
+      "chars_in": 703,
+      "chars_out": 702,
+      "delta": 1,
+      "loss_pct": 0.142
+    },
+    {
+      "wp_id": 5279,
+      "chars_in": 3284,
+      "chars_out": 3283,
+      "delta": 1,
+      "loss_pct": 0.03
+    },
+    {
+      "wp_id": 5364,
+      "chars_in": 2192,
+      "chars_out": 2191,
+      "delta": 1,
+      "loss_pct": 0.046
+    },
+    {
+      "wp_id": 5385,
+      "chars_in": 2199,
+      "chars_out": 2198,
+      "delta": 1,
+      "loss_pct": 0.045
+    },
+    {
+      "wp_id": 5413,
+      "chars_in": 3486,
+      "chars_out": 3485,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 5423,
+      "chars_in": 976,
+      "chars_out": 975,
+      "delta": 1,
+      "loss_pct": 0.102
+    },
+    {
+      "wp_id": 5430,
+      "chars_in": 935,
+      "chars_out": 934,
+      "delta": 1,
+      "loss_pct": 0.107
+    },
+    {
+      "wp_id": 5437,
+      "chars_in": 3220,
+      "chars_out": 3219,
+      "delta": 1,
+      "loss_pct": 0.031
+    },
+    {
+      "wp_id": 5438,
+      "chars_in": 4355,
+      "chars_out": 4354,
+      "delta": 1,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 5439,
+      "chars_in": 5975,
+      "chars_out": 5971,
+      "delta": 4,
+      "loss_pct": 0.067
+    },
+    {
+      "wp_id": 5442,
+      "chars_in": 2218,
+      "chars_out": 2216,
+      "delta": 2,
+      "loss_pct": 0.09
+    },
+    {
+      "wp_id": 5497,
+      "chars_in": 6002,
+      "chars_out": 6000,
+      "delta": 2,
+      "loss_pct": 0.033
+    },
+    {
+      "wp_id": 5516,
+      "chars_in": 926,
+      "chars_out": 924,
+      "delta": 2,
+      "loss_pct": 0.216
+    },
+    {
+      "wp_id": 5519,
+      "chars_in": 4612,
+      "chars_out": 4611,
+      "delta": 1,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 5527,
+      "chars_in": 965,
+      "chars_out": 964,
+      "delta": 1,
+      "loss_pct": 0.104
+    },
+    {
+      "wp_id": 5538,
+      "chars_in": 1334,
+      "chars_out": 1333,
+      "delta": 1,
+      "loss_pct": 0.075
+    },
+    {
+      "wp_id": 5568,
+      "chars_in": 5693,
+      "chars_out": 5690,
+      "delta": 3,
+      "loss_pct": 0.053
+    },
+    {
+      "wp_id": 5600,
+      "chars_in": 3193,
+      "chars_out": 3190,
+      "delta": 3,
+      "loss_pct": 0.094
+    },
+    {
+      "wp_id": 5621,
+      "chars_in": 2514,
+      "chars_out": 2513,
+      "delta": 1,
+      "loss_pct": 0.04
+    },
+    {
+      "wp_id": 5649,
+      "chars_in": 4235,
+      "chars_out": 4229,
+      "delta": 6,
+      "loss_pct": 0.142
+    },
+    {
+      "wp_id": 5664,
+      "chars_in": 6535,
+      "chars_out": 6534,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 5679,
+      "chars_in": 1132,
+      "chars_out": 1131,
+      "delta": 1,
+      "loss_pct": 0.088
+    },
+    {
+      "wp_id": 5703,
+      "chars_in": 1332,
+      "chars_out": 1331,
+      "delta": 1,
+      "loss_pct": 0.075
+    },
+    {
+      "wp_id": 5705,
+      "chars_in": 944,
+      "chars_out": 943,
+      "delta": 1,
+      "loss_pct": 0.106
+    },
+    {
+      "wp_id": 5708,
+      "chars_in": 2834,
+      "chars_out": 2833,
+      "delta": 1,
+      "loss_pct": 0.035
+    },
+    {
+      "wp_id": 5727,
+      "chars_in": 1794,
+      "chars_out": 1793,
+      "delta": 1,
+      "loss_pct": 0.056
+    },
+    {
+      "wp_id": 5831,
+      "chars_in": 3474,
+      "chars_out": 3473,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 5837,
+      "chars_in": 2393,
+      "chars_out": 2392,
+      "delta": 1,
+      "loss_pct": 0.042
+    },
+    {
+      "wp_id": 5847,
+      "chars_in": 2198,
+      "chars_out": 2194,
+      "delta": 4,
+      "loss_pct": 0.182
+    },
+    {
+      "wp_id": 5865,
+      "chars_in": 1651,
+      "chars_out": 1650,
+      "delta": 1,
+      "loss_pct": 0.061
+    },
+    {
+      "wp_id": 5867,
+      "chars_in": 2605,
+      "chars_out": 2604,
+      "delta": 1,
+      "loss_pct": 0.038
+    },
+    {
+      "wp_id": 5898,
+      "chars_in": 1598,
+      "chars_out": 1596,
+      "delta": 2,
+      "loss_pct": 0.125
+    },
+    {
+      "wp_id": 5906,
+      "chars_in": 2283,
+      "chars_out": 2282,
+      "delta": 1,
+      "loss_pct": 0.044
+    },
+    {
+      "wp_id": 5908,
+      "chars_in": 2892,
+      "chars_out": 2891,
+      "delta": 1,
+      "loss_pct": 0.035
+    },
+    {
+      "wp_id": 5912,
+      "chars_in": 1579,
+      "chars_out": 1578,
+      "delta": 1,
+      "loss_pct": 0.063
+    },
+    {
+      "wp_id": 5940,
+      "chars_in": 943,
+      "chars_out": 942,
+      "delta": 1,
+      "loss_pct": 0.106
+    },
+    {
+      "wp_id": 5949,
+      "chars_in": 2231,
+      "chars_out": 2230,
+      "delta": 1,
+      "loss_pct": 0.045
+    },
+    {
+      "wp_id": 5950,
+      "chars_in": 2225,
+      "chars_out": 2224,
+      "delta": 1,
+      "loss_pct": 0.045
+    },
+    {
+      "wp_id": 5952,
+      "chars_in": 6493,
+      "chars_out": 6492,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 5958,
+      "chars_in": 943,
+      "chars_out": 941,
+      "delta": 2,
+      "loss_pct": 0.212
+    },
+    {
+      "wp_id": 5959,
+      "chars_in": 5524,
+      "chars_out": 5523,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 5960,
+      "chars_in": 2971,
+      "chars_out": 2970,
+      "delta": 1,
+      "loss_pct": 0.034
+    },
+    {
+      "wp_id": 5964,
+      "chars_in": 3531,
+      "chars_out": 3530,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 5970,
+      "chars_in": 2061,
+      "chars_out": 2060,
+      "delta": 1,
+      "loss_pct": 0.049
+    },
+    {
+      "wp_id": 5983,
+      "chars_in": 3377,
+      "chars_out": 3373,
+      "delta": 4,
+      "loss_pct": 0.118
+    },
+    {
+      "wp_id": 6024,
+      "chars_in": 3657,
+      "chars_out": 3654,
+      "delta": 3,
+      "loss_pct": 0.082
+    },
+    {
+      "wp_id": 6025,
+      "chars_in": 3481,
+      "chars_out": 3480,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 6040,
+      "chars_in": 3554,
+      "chars_out": 3553,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 6064,
+      "chars_in": 1021,
+      "chars_out": 1020,
+      "delta": 1,
+      "loss_pct": 0.098
+    },
+    {
+      "wp_id": 6090,
+      "chars_in": 1541,
+      "chars_out": 1540,
+      "delta": 1,
+      "loss_pct": 0.065
+    },
+    {
+      "wp_id": 6094,
+      "chars_in": 2677,
+      "chars_out": 2676,
+      "delta": 1,
+      "loss_pct": 0.037
+    },
+    {
+      "wp_id": 6107,
+      "chars_in": 3602,
+      "chars_out": 3601,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 6114,
+      "chars_in": 6838,
+      "chars_out": 6837,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 6130,
+      "chars_in": 7261,
+      "chars_out": 7260,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 6135,
+      "chars_in": 4289,
+      "chars_out": 4288,
+      "delta": 1,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 6139,
+      "chars_in": 1485,
+      "chars_out": 1484,
+      "delta": 1,
+      "loss_pct": 0.067
+    },
+    {
+      "wp_id": 6191,
+      "chars_in": 2164,
+      "chars_out": 2163,
+      "delta": 1,
+      "loss_pct": 0.046
+    },
+    {
+      "wp_id": 6262,
+      "chars_in": 9806,
+      "chars_out": 9805,
+      "delta": 1,
+      "loss_pct": 0.01
+    },
+    {
+      "wp_id": 6267,
+      "chars_in": 3827,
+      "chars_out": 3826,
+      "delta": 1,
+      "loss_pct": 0.026
+    },
+    {
+      "wp_id": 6279,
+      "chars_in": 1931,
+      "chars_out": 1930,
+      "delta": 1,
+      "loss_pct": 0.052
+    },
+    {
+      "wp_id": 6303,
+      "chars_in": 7287,
+      "chars_out": 7286,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 6312,
+      "chars_in": 2013,
+      "chars_out": 2011,
+      "delta": 2,
+      "loss_pct": 0.099
+    },
+    {
+      "wp_id": 6340,
+      "chars_in": 2897,
+      "chars_out": 2896,
+      "delta": 1,
+      "loss_pct": 0.035
+    },
+    {
+      "wp_id": 6342,
+      "chars_in": 2937,
+      "chars_out": 2936,
+      "delta": 1,
+      "loss_pct": 0.034
+    },
+    {
+      "wp_id": 6552,
+      "chars_in": 1214,
+      "chars_out": 1213,
+      "delta": 1,
+      "loss_pct": 0.082
+    },
+    {
+      "wp_id": 6620,
+      "chars_in": 2419,
+      "chars_out": 2418,
+      "delta": 1,
+      "loss_pct": 0.041
+    },
+    {
+      "wp_id": 6653,
+      "chars_in": 2254,
+      "chars_out": 2253,
+      "delta": 1,
+      "loss_pct": 0.044
+    },
+    {
+      "wp_id": 6678,
+      "chars_in": 7968,
+      "chars_out": 7959,
+      "delta": 9,
+      "loss_pct": 0.113
+    },
+    {
+      "wp_id": 6682,
+      "chars_in": 3823,
+      "chars_out": 3821,
+      "delta": 2,
+      "loss_pct": 0.052
+    },
+    {
+      "wp_id": 6695,
+      "chars_in": 6480,
+      "chars_out": 6475,
+      "delta": 5,
+      "loss_pct": 0.077
+    },
+    {
+      "wp_id": 6776,
+      "chars_in": 3161,
+      "chars_out": 3159,
+      "delta": 2,
+      "loss_pct": 0.063
+    },
+    {
+      "wp_id": 6780,
+      "chars_in": 4577,
+      "chars_out": 4575,
+      "delta": 2,
+      "loss_pct": 0.044
+    },
+    {
+      "wp_id": 6790,
+      "chars_in": 6056,
+      "chars_out": 6055,
+      "delta": 1,
+      "loss_pct": 0.017
+    },
+    {
+      "wp_id": 6856,
+      "chars_in": 2229,
+      "chars_out": 2228,
+      "delta": 1,
+      "loss_pct": 0.045
+    },
+    {
+      "wp_id": 6859,
+      "chars_in": 1455,
+      "chars_out": 1454,
+      "delta": 1,
+      "loss_pct": 0.069
+    },
+    {
+      "wp_id": 6882,
+      "chars_in": 2969,
+      "chars_out": 2967,
+      "delta": 2,
+      "loss_pct": 0.067
+    },
+    {
+      "wp_id": 6933,
+      "chars_in": 5803,
+      "chars_out": 5802,
+      "delta": 1,
+      "loss_pct": 0.017
+    },
+    {
+      "wp_id": 6939,
+      "chars_in": 2853,
+      "chars_out": 2852,
+      "delta": 1,
+      "loss_pct": 0.035
+    },
+    {
+      "wp_id": 6941,
+      "chars_in": 2792,
+      "chars_out": 2791,
+      "delta": 1,
+      "loss_pct": 0.036
+    },
+    {
+      "wp_id": 6962,
+      "chars_in": 1395,
+      "chars_out": 1394,
+      "delta": 1,
+      "loss_pct": 0.072
+    },
+    {
+      "wp_id": 6981,
+      "chars_in": 2377,
+      "chars_out": 2376,
+      "delta": 1,
+      "loss_pct": 0.042
+    },
+    {
+      "wp_id": 7014,
+      "chars_in": 3072,
+      "chars_out": 3068,
+      "delta": 4,
+      "loss_pct": 0.13
+    },
+    {
+      "wp_id": 7033,
+      "chars_in": 3686,
+      "chars_out": 3685,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 7042,
+      "chars_in": 3133,
+      "chars_out": 3130,
+      "delta": 3,
+      "loss_pct": 0.096
+    },
+    {
+      "wp_id": 7104,
+      "chars_in": 2118,
+      "chars_out": 2117,
+      "delta": 1,
+      "loss_pct": 0.047
+    },
+    {
+      "wp_id": 7223,
+      "chars_in": 1409,
+      "chars_out": 1408,
+      "delta": 1,
+      "loss_pct": 0.071
+    },
+    {
+      "wp_id": 7296,
+      "chars_in": 4875,
+      "chars_out": 4873,
+      "delta": 2,
+      "loss_pct": 0.041
+    },
+    {
+      "wp_id": 7314,
+      "chars_in": 7190,
+      "chars_out": 7188,
+      "delta": 2,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 7380,
+      "chars_in": 5596,
+      "chars_out": 5595,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 7407,
+      "chars_in": 5422,
+      "chars_out": 5421,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 7422,
+      "chars_in": 5543,
+      "chars_out": 5542,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 7490,
+      "chars_in": 4188,
+      "chars_out": 4187,
+      "delta": 1,
+      "loss_pct": 0.024
+    },
+    {
+      "wp_id": 7506,
+      "chars_in": 5025,
+      "chars_out": 5024,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 7550,
+      "chars_in": 4970,
+      "chars_out": 4968,
+      "delta": 2,
+      "loss_pct": 0.04
+    },
+    {
+      "wp_id": 7552,
+      "chars_in": 8762,
+      "chars_out": 8757,
+      "delta": 5,
+      "loss_pct": 0.057
+    },
+    {
+      "wp_id": 7683,
+      "chars_in": 2769,
+      "chars_out": 2768,
+      "delta": 1,
+      "loss_pct": 0.036
+    },
+    {
+      "wp_id": 7688,
+      "chars_in": 7566,
+      "chars_out": 7565,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 7693,
+      "chars_in": 1858,
+      "chars_out": 1857,
+      "delta": 1,
+      "loss_pct": 0.054
+    },
+    {
+      "wp_id": 7745,
+      "chars_in": 1479,
+      "chars_out": 1478,
+      "delta": 1,
+      "loss_pct": 0.068
+    },
+    {
+      "wp_id": 7762,
+      "chars_in": 5388,
+      "chars_out": 5387,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 7930,
+      "chars_in": 2641,
+      "chars_out": 2640,
+      "delta": 1,
+      "loss_pct": 0.038
+    },
+    {
+      "wp_id": 77437,
+      "chars_in": 4567,
+      "chars_out": 4523,
+      "delta": 44,
+      "loss_pct": 0.963
+    },
+    {
+      "wp_id": 78574,
+      "chars_in": 14035,
+      "chars_out": 14034,
+      "delta": 1,
+      "loss_pct": 0.007
+    },
+    {
+      "wp_id": 78808,
+      "chars_in": 3665,
+      "chars_out": 3621,
+      "delta": 44,
+      "loss_pct": 1.201
+    },
+    {
+      "wp_id": 80604,
+      "chars_in": 2943,
+      "chars_out": 2942,
+      "delta": 1,
+      "loss_pct": 0.034
+    },
+    {
+      "wp_id": 80610,
+      "chars_in": 1577,
+      "chars_out": 1574,
+      "delta": 3,
+      "loss_pct": 0.19
+    },
+    {
+      "wp_id": 80707,
+      "chars_in": 8767,
+      "chars_out": 8764,
+      "delta": 3,
+      "loss_pct": 0.034
+    },
+    {
+      "wp_id": 81014,
+      "chars_in": 2720,
+      "chars_out": 2719,
+      "delta": 1,
+      "loss_pct": 0.037
+    },
+    {
+      "wp_id": 81209,
+      "chars_in": 8674,
+      "chars_out": 8673,
+      "delta": 1,
+      "loss_pct": 0.012
+    },
+    {
+      "wp_id": 81676,
+      "chars_in": 4812,
+      "chars_out": 4811,
+      "delta": 1,
+      "loss_pct": 0.021
+    },
+    {
+      "wp_id": 81806,
+      "chars_in": 6091,
+      "chars_out": 6062,
+      "delta": 29,
+      "loss_pct": 0.476
+    },
+    {
+      "wp_id": 82261,
+      "chars_in": 5732,
+      "chars_out": 5731,
+      "delta": 1,
+      "loss_pct": 0.017
+    },
+    {
+      "wp_id": 82700,
+      "chars_in": 7023,
+      "chars_out": 7022,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 83584,
+      "chars_in": 9064,
+      "chars_out": 9061,
+      "delta": 3,
+      "loss_pct": 0.033
+    },
+    {
+      "wp_id": 84948,
+      "chars_in": 3071,
+      "chars_out": 3070,
+      "delta": 1,
+      "loss_pct": 0.033
+    },
+    {
+      "wp_id": 85231,
+      "chars_in": 6556,
+      "chars_out": 6553,
+      "delta": 3,
+      "loss_pct": 0.046
+    },
+    {
+      "wp_id": 85503,
+      "chars_in": 7682,
+      "chars_out": 7681,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 85536,
+      "chars_in": 3611,
+      "chars_out": 3610,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 85789,
+      "chars_in": 5011,
+      "chars_out": 5008,
+      "delta": 3,
+      "loss_pct": 0.06
+    },
+    {
+      "wp_id": 85901,
+      "chars_in": 5422,
+      "chars_out": 5421,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 87500,
+      "chars_in": 8451,
+      "chars_out": 8447,
+      "delta": 4,
+      "loss_pct": 0.047
+    },
+    {
+      "wp_id": 88403,
+      "chars_in": 8346,
+      "chars_out": 8339,
+      "delta": 7,
+      "loss_pct": 0.084
+    },
+    {
+      "wp_id": 88471,
+      "chars_in": 8725,
+      "chars_out": 8723,
+      "delta": 2,
+      "loss_pct": 0.023
+    },
+    {
+      "wp_id": 88829,
+      "chars_in": 2129,
+      "chars_out": 2128,
+      "delta": 1,
+      "loss_pct": 0.047
+    },
+    {
+      "wp_id": 88945,
+      "chars_in": 4949,
+      "chars_out": 4948,
+      "delta": 1,
+      "loss_pct": 0.02
+    },
+    {
+      "wp_id": 88978,
+      "chars_in": 6157,
+      "chars_out": 6154,
+      "delta": 3,
+      "loss_pct": 0.049
+    },
+    {
+      "wp_id": 89065,
+      "chars_in": 3740,
+      "chars_out": 3739,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 90666,
+      "chars_in": 11078,
+      "chars_out": 11072,
+      "delta": 6,
+      "loss_pct": 0.054
+    },
+    {
+      "wp_id": 91167,
+      "chars_in": 4544,
+      "chars_out": 4543,
+      "delta": 1,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 92428,
+      "chars_in": 10648,
+      "chars_out": 10645,
+      "delta": 3,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 92979,
+      "chars_in": 15493,
+      "chars_out": 15464,
+      "delta": 29,
+      "loss_pct": 0.187
+    },
+    {
+      "wp_id": 93242,
+      "chars_in": 3377,
+      "chars_out": 3371,
+      "delta": 6,
+      "loss_pct": 0.178
+    },
+    {
+      "wp_id": 93367,
+      "chars_in": 9559,
+      "chars_out": 9556,
+      "delta": 3,
+      "loss_pct": 0.031
+    },
+    {
+      "wp_id": 94570,
+      "chars_in": 4782,
+      "chars_out": 4780,
+      "delta": 2,
+      "loss_pct": 0.042
+    },
+    {
+      "wp_id": 95182,
+      "chars_in": 12922,
+      "chars_out": 12893,
+      "delta": 29,
+      "loss_pct": 0.224
+    },
+    {
+      "wp_id": 95335,
+      "chars_in": 5717,
+      "chars_out": 5714,
+      "delta": 3,
+      "loss_pct": 0.052
+    },
+    {
+      "wp_id": 96454,
+      "chars_in": 3392,
+      "chars_out": 3391,
+      "delta": 1,
+      "loss_pct": 0.029
+    },
+    {
+      "wp_id": 96819,
+      "chars_in": 4057,
+      "chars_out": 4056,
+      "delta": 1,
+      "loss_pct": 0.025
+    },
+    {
+      "wp_id": 96826,
+      "chars_in": 11024,
+      "chars_out": 11023,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 98687,
+      "chars_in": 9185,
+      "chars_out": 9182,
+      "delta": 3,
+      "loss_pct": 0.033
+    },
+    {
+      "wp_id": 98777,
+      "chars_in": 7527,
+      "chars_out": 7526,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 99248,
+      "chars_in": 5552,
+      "chars_out": 5551,
+      "delta": 1,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 100642,
+      "chars_in": 3434,
+      "chars_out": 3432,
+      "delta": 2,
+      "loss_pct": 0.058
+    },
+    {
+      "wp_id": 100864,
+      "chars_in": 9271,
+      "chars_out": 9242,
+      "delta": 29,
+      "loss_pct": 0.313
+    },
+    {
+      "wp_id": 100922,
+      "chars_in": 7540,
+      "chars_out": 7538,
+      "delta": 2,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 100969,
+      "chars_in": 6035,
+      "chars_out": 6032,
+      "delta": 3,
+      "loss_pct": 0.05
+    },
+    {
+      "wp_id": 100980,
+      "chars_in": 7793,
+      "chars_out": 7788,
+      "delta": 5,
+      "loss_pct": 0.064
+    },
+    {
+      "wp_id": 101406,
+      "chars_in": 5302,
+      "chars_out": 5301,
+      "delta": 1,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 101826,
+      "chars_in": 3525,
+      "chars_out": 3524,
+      "delta": 1,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 103076,
+      "chars_in": 6050,
+      "chars_out": 6049,
+      "delta": 1,
+      "loss_pct": 0.017
+    },
+    {
+      "wp_id": 103327,
+      "chars_in": 6584,
+      "chars_out": 6583,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 103587,
+      "chars_in": 7970,
+      "chars_out": 7968,
+      "delta": 2,
+      "loss_pct": 0.025
+    },
+    {
+      "wp_id": 104232,
+      "chars_in": 3207,
+      "chars_out": 3206,
+      "delta": 1,
+      "loss_pct": 0.031
+    },
+    {
+      "wp_id": 104491,
+      "chars_in": 8052,
+      "chars_out": 8050,
+      "delta": 2,
+      "loss_pct": 0.025
+    },
+    {
+      "wp_id": 105041,
+      "chars_in": 7053,
+      "chars_out": 7047,
+      "delta": 6,
+      "loss_pct": 0.085
+    },
+    {
+      "wp_id": 105791,
+      "chars_in": 8965,
+      "chars_out": 8963,
+      "delta": 2,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 106293,
+      "chars_in": 12329,
+      "chars_out": 12285,
+      "delta": 44,
+      "loss_pct": 0.357
+    },
+    {
+      "wp_id": 106360,
+      "chars_in": 12728,
+      "chars_out": 12667,
+      "delta": 61,
+      "loss_pct": 0.479
+    },
+    {
+      "wp_id": 108010,
+      "chars_in": 3382,
+      "chars_out": 3380,
+      "delta": 2,
+      "loss_pct": 0.059
+    },
+    {
+      "wp_id": 108057,
+      "chars_in": 13015,
+      "chars_out": 13014,
+      "delta": 1,
+      "loss_pct": 0.008
+    },
+    {
+      "wp_id": 108223,
+      "chars_in": 4127,
+      "chars_out": 4126,
+      "delta": 1,
+      "loss_pct": 0.024
+    },
+    {
+      "wp_id": 108578,
+      "chars_in": 7357,
+      "chars_out": 7354,
+      "delta": 3,
+      "loss_pct": 0.041
+    },
+    {
+      "wp_id": 109140,
+      "chars_in": 4470,
+      "chars_out": 4469,
+      "delta": 1,
+      "loss_pct": 0.022
+    },
+    {
+      "wp_id": 109168,
+      "chars_in": 4173,
+      "chars_out": 4172,
+      "delta": 1,
+      "loss_pct": 0.024
+    },
+    {
+      "wp_id": 109217,
+      "chars_in": 2977,
+      "chars_out": 2975,
+      "delta": 2,
+      "loss_pct": 0.067
+    },
+    {
+      "wp_id": 109304,
+      "chars_in": 5829,
+      "chars_out": 5824,
+      "delta": 5,
+      "loss_pct": 0.086
+    },
+    {
+      "wp_id": 109458,
+      "chars_in": 7665,
+      "chars_out": 7664,
+      "delta": 1,
+      "loss_pct": 0.013
+    },
+    {
+      "wp_id": 109544,
+      "chars_in": 7563,
+      "chars_out": 7559,
+      "delta": 4,
+      "loss_pct": 0.053
+    },
+    {
+      "wp_id": 110026,
+      "chars_in": 3653,
+      "chars_out": 3652,
+      "delta": 1,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 110237,
+      "chars_in": 7516,
+      "chars_out": 7514,
+      "delta": 2,
+      "loss_pct": 0.027
+    },
+    {
+      "wp_id": 110240,
+      "chars_in": 6174,
+      "chars_out": 6173,
+      "delta": 1,
+      "loss_pct": 0.016
+    },
+    {
+      "wp_id": 110294,
+      "chars_in": 12138,
+      "chars_out": 12131,
+      "delta": 7,
+      "loss_pct": 0.058
+    },
+    {
+      "wp_id": 111039,
+      "chars_in": 5495,
+      "chars_out": 5493,
+      "delta": 2,
+      "loss_pct": 0.036
+    },
+    {
+      "wp_id": 111447,
+      "chars_in": 11132,
+      "chars_out": 11131,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 111560,
+      "chars_in": 6663,
+      "chars_out": 6662,
+      "delta": 1,
+      "loss_pct": 0.015
+    },
+    {
+      "wp_id": 111668,
+      "chars_in": 7264,
+      "chars_out": 7263,
+      "delta": 1,
+      "loss_pct": 0.014
+    },
+    {
+      "wp_id": 111912,
+      "chars_in": 5286,
+      "chars_out": 5284,
+      "delta": 2,
+      "loss_pct": 0.038
+    },
+    {
+      "wp_id": 112334,
+      "chars_in": 11227,
+      "chars_out": 11225,
+      "delta": 2,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 112577,
+      "chars_in": 7250,
+      "chars_out": 7247,
+      "delta": 3,
+      "loss_pct": 0.041
+    },
+    {
+      "wp_id": 112695,
+      "chars_in": 10399,
+      "chars_out": 10398,
+      "delta": 1,
+      "loss_pct": 0.01
+    }
+  ],
+  "over10k_with_loss": [
+    {
+      "wp_id": 47,
+      "chars_in": 12452,
+      "chars_out": 12451,
+      "delta": 1,
+      "loss_pct": 0.008
+    },
+    {
+      "wp_id": 1015,
+      "chars_in": 11079,
+      "chars_out": 11078,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 1078,
+      "chars_in": 10428,
+      "chars_out": 10426,
+      "delta": 2,
+      "loss_pct": 0.019
+    },
+    {
+      "wp_id": 5263,
+      "chars_in": 21168,
+      "chars_out": 21167,
+      "delta": 1,
+      "loss_pct": 0.005
+    },
+    {
+      "wp_id": 78574,
+      "chars_in": 14035,
+      "chars_out": 14034,
+      "delta": 1,
+      "loss_pct": 0.007
+    },
+    {
+      "wp_id": 90666,
+      "chars_in": 11078,
+      "chars_out": 11072,
+      "delta": 6,
+      "loss_pct": 0.054
+    },
+    {
+      "wp_id": 92428,
+      "chars_in": 10648,
+      "chars_out": 10645,
+      "delta": 3,
+      "loss_pct": 0.028
+    },
+    {
+      "wp_id": 92979,
+      "chars_in": 15493,
+      "chars_out": 15464,
+      "delta": 29,
+      "loss_pct": 0.187
+    },
+    {
+      "wp_id": 95182,
+      "chars_in": 12922,
+      "chars_out": 12893,
+      "delta": 29,
+      "loss_pct": 0.224
+    },
+    {
+      "wp_id": 96826,
+      "chars_in": 11024,
+      "chars_out": 11023,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 106293,
+      "chars_in": 12329,
+      "chars_out": 12285,
+      "delta": 44,
+      "loss_pct": 0.357
+    },
+    {
+      "wp_id": 106360,
+      "chars_in": 12728,
+      "chars_out": 12667,
+      "delta": 61,
+      "loss_pct": 0.479
+    },
+    {
+      "wp_id": 108057,
+      "chars_in": 13015,
+      "chars_out": 13014,
+      "delta": 1,
+      "loss_pct": 0.008
+    },
+    {
+      "wp_id": 110294,
+      "chars_in": 12138,
+      "chars_out": 12131,
+      "delta": 7,
+      "loss_pct": 0.058
+    },
+    {
+      "wp_id": 111447,
+      "chars_in": 11132,
+      "chars_out": 11131,
+      "delta": 1,
+      "loss_pct": 0.009
+    },
+    {
+      "wp_id": 112334,
+      "chars_in": 11227,
+      "chars_out": 11225,
+      "delta": 2,
+      "loss_pct": 0.018
+    },
+    {
+      "wp_id": 112695,
+      "chars_in": 10399,
+      "chars_out": 10398,
+      "delta": 1,
+      "loss_pct": 0.01
+    }
+  ]
+}

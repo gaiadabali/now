@@ -1,0 +1,52 @@
+# Throwaway MariaDB container for the one-shot WordPress extraction (E1.1).
+#
+# Distinct from the main stack's Postgres (localhost:15432) — this runs on
+# its own port and its own compose project name so `docker compose down -v`
+# here never touches `now-postgres` or anything else.
+#
+# The UpdraftPlus dump is restored automatically on first boot via the
+# official MariaDB entrypoint's docker-entrypoint-initdb.d mechanism, which
+# natively gunzips *.sql.gz and pipes it straight into `mysql` — this is
+# what avoids the naive-stream-parser desync problem entirely: MariaDB's own
+# client reads the dump, not a hand-rolled parser.
+
+name: now-wp-extract
+
+volumes:
+  wp-extract-mariadb-data:
+
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: now-wp-extract-mariadb
+    restart: "no"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${WP_EXTRACT_DB_ROOT_PASSWORD:-wpextract_root}
+      MARIADB_DATABASE: ${WP_EXTRACT_DB_NAME:-nowjakarta_wp}
+      # Dump has no CREATE DATABASE / USE — it assumes the connected schema.
+      # MARIADB_DATABASE above creates it and the init scripts run against it.
+    ports:
+      - "${WP_EXTRACT_DB_PORT:-13306}:3306"
+    volumes:
+      - wp-extract-mariadb-data:/var/lib/mysql
+      # Mounted read-only; init scripts run once, only when the data dir is
+      # empty, so re-running `docker compose up` on an existing volume is a
+      # no-op restore (idempotent) and a fresh `down -v` gives a clean slate.
+      - ./dump/backup.sql.gz:/docker-entrypoint-initdb.d/01-dump.sql.gz:ro
+    command:
+      # utf8mb4 to match the dump's charset; generous packet size for the
+      # long serialized-PHP / longtext columns (post_content, mappress obj).
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_allowed_packet=256M
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

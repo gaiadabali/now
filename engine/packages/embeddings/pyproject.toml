@@ -1,0 +1,48 @@
+[project]
+name = "now-embeddings"
+version = "0.1.0"
+description = "E2.4 -- provider-abstracted embeddings for engine.embeddings: articles/places/terms -> vectors, HNSW-backed kNN, idempotent re-embed keyed on a text hash, worker that consumes `article.published` off Redis (now:domain-events / now:domain-events:stream) to re-embed on publish. No API key is assumed; the shipped real provider is local (fastembed/ONNX, no torch, CPU-only)."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "click>=8.1,<9",
+    "redis>=5.0,<6",
+    "fastembed>=0.4,<1",
+    # F60/F77: onnxruntime arrives transitively through fastembed, which does
+    # not pin it. Unpinned it resolved to 1.29.0, measured at 99-112 ms/call
+    # against 5.5-12.5 ms for 1.22-1.25 -- a 15-20x regression, and the single
+    # largest latency cost in the engine.
+    #
+    # F60 fixed this in `search/pyproject.toml` only. THIS package -- the one
+    # that runs the actual backfill, and where the regression was originally
+    # found and documented -- never got the pin, so Jakarta's 4,772-article
+    # backfill ran at the slow rate. Found by E2.4b refusing to start until it
+    # had verified the version, exactly as instructed.
+    #
+    # `!=1.24.0,!=1.24.1` mirrors fastembed's own exclusion of those two.
+    "onnxruntime>=1.21.0,<1.25,!=1.24.0,!=1.24.1",
+    "now-db",
+    "now-platform-db",
+    "now-content-clean",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-embeddings = "now_embeddings.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+now-content-clean = { path = "../content-clean", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_embeddings"]

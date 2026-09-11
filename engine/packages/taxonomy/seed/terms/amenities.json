@@ -1,0 +1,365 @@
+{
+  "facet": "amenities",
+  "source": "ARCHITECTURE.md §4 names pool, rooftop, beachfront; §8.B needs kids, accessibility, halal, vegetarian as party constraints. The rest is the E1.4 proposal for review.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "note": "`constraint` links an amenity to the §8.B party constraint it satisfies; documentation only.",
+  "terms": [
+    {
+      "slug": "pool",
+      "label": "Pool",
+      "from_spec": true,
+      "aliases": [
+        "infinity pool",
+        "rooftop pool"
+      ]
+    },
+    {
+      "slug": "rooftop",
+      "label": "Rooftop",
+      "from_spec": true
+    },
+    {
+      "slug": "beachfront",
+      "label": "Beachfront",
+      "from_spec": true,
+      "aliases": [
+        "beach access",
+        "on the beach"
+      ]
+    },
+    {
+      "slug": "spa",
+      "label": "Spa",
+      "aliases": [
+        "in-house spa"
+      ]
+    },
+    {
+      "slug": "gym",
+      "label": "Gym",
+      "aliases": [
+        "fitness centre",
+        "fitness center"
+      ]
+    },
+    {
+      "slug": "kids-club",
+      "label": "Kids club",
+      "aliases": [
+        "playground",
+        "kids menu",
+        "child-friendly",
+        "kids' club",
+        "kid's club",
+        "children's club"
+      ],
+      "constraint": "kids"
+    },
+    {
+      "slug": "outdoor-seating",
+      "label": "Outdoor seating",
+      "aliases": [
+        "al fresco",
+        "terrace",
+        "alfresco",
+        "garden seating"
+      ]
+    },
+    {
+      "slug": "garden",
+      "label": "Garden",
+      "aliases": [
+        "courtyard",
+        "greenery"
+      ]
+    },
+    {
+      "slug": "city-view",
+      "label": "City view",
+      "aliases": [
+        "skyline view"
+      ]
+    },
+    {
+      "slug": "ocean-view",
+      "label": "Ocean view",
+      "aliases": [
+        "sea view",
+        "clifftop",
+        "cliff-top",
+        "cliffside"
+      ]
+    },
+    {
+      "slug": "live-music",
+      "label": "Live music",
+      "aliases": [
+        "DJ",
+        "live band"
+      ]
+    },
+    {
+      "slug": "private-dining",
+      "label": "Private dining",
+      "aliases": [
+        "private room",
+        "function room"
+      ]
+    },
+    {
+      "slug": "coworking-space",
+      "label": "Coworking space",
+      "aliases": [
+        "laptop-friendly",
+        "meeting rooms",
+        "co-working",
+        "coworking"
+      ]
+    },
+    {
+      "slug": "parking",
+      "label": "Parking"
+    },
+    {
+      "slug": "valet",
+      "label": "Valet"
+    },
+    {
+      "slug": "wifi",
+      "label": "Wi-Fi",
+      "aliases": [
+        "wifi"
+      ]
+    },
+    {
+      "slug": "pet-friendly",
+      "label": "Pet-friendly",
+      "aliases": [
+        "dog-friendly"
+      ]
+    },
+    {
+      "slug": "halal-certified",
+      "label": "Halal certified",
+      "aliases": [
+        "halal",
+        "no pork no lard"
+      ],
+      "constraint": "halal"
+    },
+    {
+      "slug": "vegetarian-friendly",
+      "label": "Vegetarian-friendly",
+      "aliases": [
+        "vegetarian menu",
+        "vegetarian",
+        "vegetarian options"
+      ],
+      "constraint": "vegetarian"
+    },
+    {
+      "slug": "vegan-options",
+      "label": "Vegan options",
+      "aliases": [
+        "plant-based",
+        "vegan"
+      ],
+      "constraint": "vegetarian"
+    },
+    {
+      "slug": "wheelchair-accessible",
+      "label": "Wheelchair accessible",
+      "aliases": [
+        "step-free",
+        "accessible"
+      ],
+      "constraint": "accessibility"
+    },
+    {
+      "slug": "buffet",
+      "label": "Buffet",
+      "aliases": [
+        "buffet breakfast",
+        "brunch buffet"
+      ]
+    },
+    {
+      "slug": "organic",
+      "label": "Organic & farm-to-table",
+      "aliases": [
+        "organic menu",
+        "farm-to-table",
+        "farm to table"
+      ]
+    },
+    {
+      "slug": "jungle-view",
+      "label": "Jungle view",
+      "aliases": [
+        "rainforest view"
+      ]
+    },
+    {
+      "slug": "free-flow",
+      "label": "Free flow",
+      "aliases": [
+        "free-flow",
+        "bottomless"
+      ]
+    },
+    {
+      "slug": "sauna",
+      "label": "Sauna & steam",
+      "aliases": [
+        "steam room",
+        "jacuzzi",
+        "hot tub",
+        "onsen"
+      ]
+    },
+    {
+      "slug": "breakfast-included",
+      "label": "Breakfast included",
+      "aliases": [
+        "daily breakfast"
+      ]
+    },
+    {
+      "slug": "late-night",
+      "label": "Open late",
+      "aliases": [
+        "open late",
+        "24 hours",
+        "24-hour"
+      ]
+    },
+    {
+      "slug": "rice-field-view",
+      "label": "Rice-field view",
+      "aliases": [
+        "rice field view",
+        "paddy view",
+        "rice paddies"
+      ]
+    },
+    {
+      "slug": "private-pool",
+      "label": "Private pool",
+      "aliases": [
+        "plunge pool"
+      ]
+    },
+    {
+      "slug": "delivery",
+      "label": "Delivery & takeaway",
+      "aliases": [
+        "takeaway",
+        "take-away",
+        "GoFood",
+        "GrabFood"
+      ]
+    },
+    {
+      "slug": "lagoon-pool",
+      "label": "Lagoon pool",
+      "aliases": [
+        "lagoon"
+      ]
+    },
+    {
+      "slug": "river-view",
+      "label": "River view",
+      "aliases": [
+        "riverside",
+        "Ayung river"
+      ]
+    },
+    {
+      "slug": "cabanas",
+      "label": "Cabanas & day beds",
+      "aliases": [
+        "cabana",
+        "day bed",
+        "daybed",
+        "sunbed",
+        "sun lounger"
+      ]
+    },
+    {
+      "slug": "airport-transfer",
+      "label": "Airport transfer",
+      "aliases": [
+        "shuttle"
+      ]
+    },
+    {
+      "slug": "swim-up-bar",
+      "label": "Swim-up bar",
+      "aliases": [
+        "pool bar"
+      ]
+    },
+    {
+      "slug": "butler",
+      "label": "Butler service",
+      "aliases": [
+        "butler"
+      ]
+    },
+    {
+      "slug": "healthy-menu",
+      "label": "Healthy menu",
+      "aliases": [
+        "healthy food",
+        "health food",
+        "clean eating",
+        "superfood"
+      ]
+    },
+    {
+      "slug": "dive-centre",
+      "label": "Dive centre",
+      "aliases": [
+        "dive center",
+        "dive shop",
+        "PADI"
+      ]
+    },
+    {
+      "slug": "cold-plunge",
+      "label": "Cold plunge / ice bath",
+      "aliases": [
+        "ice bath"
+      ]
+    },
+    {
+      "slug": "gluten-free",
+      "label": "Gluten-free options",
+      "aliases": [
+        "gluten free"
+      ]
+    },
+    {
+      "slug": "cigar-lounge",
+      "label": "Cigar lounge",
+      "aliases": [
+        "cigar"
+      ]
+    },
+    {
+      "slug": "wine-cellar",
+      "label": "Wine cellar"
+    },
+    {
+      "slug": "sports-screening",
+      "label": "Sports screening",
+      "aliases": [
+        "big screen",
+        "live sports"
+      ]
+    }
+  ]
+}

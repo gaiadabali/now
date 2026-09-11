@@ -1,0 +1,13 @@
+{
+  "status": "OK",
+  "results": [
+    {
+      "formatted_address": "Ubud, Gianyar Regency, Bali, Indonesia",
+      "place_id": "ChIJ_fixture_approximate_002",
+      "geometry": {
+        "location": {"lat": -8.5069, "lng": 115.2625},
+        "location_type": "APPROXIMATE"
+      }
+    }
+  ]
+}

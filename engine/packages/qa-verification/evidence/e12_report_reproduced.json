@@ -1,0 +1,39 @@
+{
+  "articles": 4772,
+  "loss_pct": {
+    "median": 0.0,
+    "p95": 0.0,
+    "max": 1.207
+  },
+  "outliers_over_10k_chars": [],
+  "unhandled_tags": {
+    "table": 7
+  },
+  "gutenberg_block_types": {
+    "paragraph": 24166,
+    "image": 8926,
+    "gallery": 2312,
+    "spacer": 1831,
+    "heading": 1383,
+    "separator": 1126,
+    "column": 516,
+    "list-item": 326,
+    "columns": 251,
+    "tadv/classic-paragraph": 191,
+    "list": 82,
+    "group": 29,
+    "media-text": 14,
+    "html": 11,
+    "quote": 11,
+    "embed": 8,
+    "pullquote": 4,
+    "cover": 2,
+    "footnotes": 1,
+    "table": 1
+  },
+  "dropped": {
+    "dropped_empty": 1439,
+    "dropped_decorative": 1831,
+    "dropped_non_visible": 44
+  }
+}

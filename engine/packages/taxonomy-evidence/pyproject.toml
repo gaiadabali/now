@@ -1,0 +1,32 @@
+[project]
+name = "now-taxonomy-evidence"
+version = "0.1.0"
+description = "Taxonomy evidence pack (blocker #3 / F50): per-category evidence, embedding-based coherence, corpus-derived vocabulary and the flagged-vs-auto-accepted review surface for the WP-category -> facet mapping. Analysis tooling only -- writes jakarta/site/taxonomy-review.{md,json} and bali/site/taxonomy-review.{md,json} from ONE in-memory model; never writes to any database and never touches engine/packages/taxonomy/seed."
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=1.26,<3",
+    "scikit-learn>=1.4,<2",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "requests>=2.31,<3",
+    "click>=8.1,<9",
+    "now-db",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-taxonomy-evidence = "now_taxonomy_evidence.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_taxonomy_evidence"]

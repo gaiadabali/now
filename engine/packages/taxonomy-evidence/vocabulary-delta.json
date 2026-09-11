@@ -1,0 +1,7340 @@
+{
+ "version": 1,
+ "generated": "2026-09-10T03:14:29+00:00",
+ "decided_by": "Hansel",
+ "decided_on": "2026-09-10",
+ "decisions": [
+  "D03",
+  "D04",
+  "D05",
+  "D06",
+  "D11",
+  "D12",
+  "D13",
+  "D14",
+  "D15",
+  "D16",
+  "D22"
+ ],
+ "rule": {
+  "add_threshold_mentions": 20,
+  "method": "distinct articles whose title+body contain the term or one of its aliases (case-insensitive, word-boundary); lexical, so homonyms inflate a few counts (party, solo, classic, business, casual); title-only counts are the stricter signal",
+  "articles_scanned": {
+   "jakarta": 4772,
+   "bali": 4429
+  },
+  "below_threshold": "stays out",
+  "curation": "venue kinds become aliases of an existing subtype when one means the same thing, else a new subtype with an explicit L1 parent (exclusion is L1-only, so no competitor-exclusion change); dietary/approach terms go to amenities (D15); international destinations are named at country/region level with cities as aliases; duplicates merged",
+  "source_of_truth": "engine/packages/taxonomy-evidence/src/now_taxonomy_evidence/vocabulary_delta.py (CANDIDATE_ACTIONS); counts from vocabulary.analyse_vocabulary",
+  "seed_untouched": "engine/packages/taxonomy/seed/ is NOT modified by this package; the seed ticket applies this file"
+ },
+ "counts": {
+  "approve": 44,
+  "add_term": 140,
+  "add_alias_sets": 85,
+  "add_alias_forms": 232,
+  "merged": 8,
+  "skipped": 3,
+  "drop_term": 1,
+  "trim_alias": 9,
+  "match_hints": 8,
+  "candidates_at_or_above_threshold": 194,
+  "candidates_below_threshold": 23,
+  "add_term_by_facet": {
+   "amenities": 23,
+   "audience": 9,
+   "cuisine": 12,
+   "location": 54,
+   "occasion": 8,
+   "subtype": 11,
+   "topic": 11,
+   "vibe": 12
+  },
+  "add_term_requiring_migration": 112
+ },
+ "approve": [
+  {
+   "facet": "format",
+   "slug": "opinion",
+   "label": "Opinion",
+   "parent": null,
+   "decision": "D03",
+   "mentions": null,
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "denpasar",
+   "label": "Denpasar",
+   "parent": "south-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 407,
+    "jakarta": 49,
+    "bali": 358,
+    "titles": 19
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "solo",
+   "label": "Solo",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 293,
+    "jakarta": 187,
+    "bali": 106,
+    "titles": 20
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "surabaya",
+   "label": "Surabaya",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 282,
+    "jakarta": 235,
+    "bali": 47,
+    "titles": 42
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "legian",
+   "label": "Legian",
+   "parent": "south-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 281,
+    "jakarta": 42,
+    "bali": 239,
+    "titles": 79
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "gunawarman",
+   "label": "Gunawarman / Dharmawangsa",
+   "parent": "south-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 271,
+    "jakarta": 190,
+    "bali": 81,
+    "titles": 16
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "kuningan",
+   "label": "Kuningan",
+   "parent": "south-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 259,
+    "jakarta": 235,
+    "bali": 24,
+    "titles": 12
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "kota-tua",
+   "label": "Kota Tua",
+   "parent": "west-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 227,
+    "jakarta": 206,
+    "bali": 21,
+    "titles": 13
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "malang",
+   "label": "Malang",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 209,
+    "jakarta": 94,
+    "bali": 115,
+    "titles": 11
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "kerobokan",
+   "label": "Kerobokan",
+   "parent": "south-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 196,
+    "jakarta": 12,
+    "bali": 184,
+    "titles": 2
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "cikini",
+   "label": "Cikini",
+   "parent": "central-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 112,
+    "jakarta": 97,
+    "bali": 15,
+    "titles": 9
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "nusa-penida",
+   "label": "Nusa Penida",
+   "parent": "east-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 102,
+    "jakarta": 5,
+    "bali": 97,
+    "titles": 19
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "medan",
+   "label": "Medan",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 93,
+    "jakarta": 81,
+    "bali": 12,
+    "titles": 4
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "semarang",
+   "label": "Semarang",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 92,
+    "jakarta": 77,
+    "bali": 15,
+    "titles": 4
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "puncak",
+   "label": "Puncak",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 83,
+    "jakarta": 76,
+    "bali": 7,
+    "titles": 10
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "makassar",
+   "label": "Makassar",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 66,
+    "jakarta": 58,
+    "bali": 8,
+    "titles": 2
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "manado",
+   "label": "Manado",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 63,
+    "jakarta": 41,
+    "bali": 22,
+    "titles": 1
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "sumba",
+   "label": "Sumba",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 59,
+    "jakarta": 33,
+    "bali": 26,
+    "titles": 12
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "bintaro",
+   "label": "Bintaro",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 47,
+    "jakarta": 47,
+    "bali": 0,
+    "titles": 4
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "glodok",
+   "label": "Glodok",
+   "parent": "west-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 44,
+    "jakarta": 42,
+    "bali": 2,
+    "titles": 5
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "banyuwangi",
+   "label": "Banyuwangi",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 41,
+    "jakarta": 19,
+    "bali": 22,
+    "titles": 9
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "gading-serpong",
+   "label": "Gading Serpong",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 36,
+    "jakarta": 36,
+    "bali": 0,
+    "titles": 12
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "pererenan",
+   "label": "Pererenan",
+   "parent": "south-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 35,
+    "jakarta": 2,
+    "bali": 33,
+    "titles": 4
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "alam-sutera",
+   "label": "Alam Sutera",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 34,
+    "jakarta": 33,
+    "bali": 1,
+    "titles": 4
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "toraja",
+   "label": "Toraja",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 30,
+    "jakarta": 21,
+    "bali": 9,
+    "titles": 0
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "east-jakarta",
+   "label": "East Jakarta",
+   "parent": "jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 28,
+    "jakarta": 28,
+    "bali": 0,
+    "titles": 1
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "sentul",
+   "label": "Sentul",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 28,
+    "jakarta": 27,
+    "bali": 1,
+    "titles": 5
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "sidemen",
+   "label": "Sidemen",
+   "parent": "east-bali",
+   "decision": "D14",
+   "mentions": {
+    "total": 28,
+    "jakarta": 1,
+    "bali": 27,
+    "titles": 3
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "depok",
+   "label": "Depok",
+   "parent": "greater-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 27,
+    "jakarta": 27,
+    "bali": 0,
+    "titles": 2
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "tebet",
+   "label": "Tebet",
+   "parent": "south-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 25,
+    "jakarta": 25,
+    "bali": 0,
+    "titles": 0
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "pasar-baru",
+   "label": "Pasar Baru",
+   "parent": "central-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 24,
+    "jakarta": 24,
+    "bali": 0,
+    "titles": 3
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "location",
+   "slug": "belitung",
+   "label": "Belitung",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 18,
+    "jakarta": 17,
+    "bali": 1,
+    "titles": 7
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only (kept although below 20 mentions: only rawamangun was named for dropping -- see D14 conflicts)"
+  },
+  {
+   "facet": "location",
+   "slug": "bintan",
+   "label": "Bintan",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 18,
+    "jakarta": 14,
+    "bali": 4,
+    "titles": 5
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only (kept although below 20 mentions: only rawamangun was named for dropping -- see D14 conflicts)"
+  },
+  {
+   "facet": "location",
+   "slug": "lake-toba",
+   "label": "Lake Toba",
+   "parent": "other",
+   "decision": "D14",
+   "mentions": {
+    "total": 16,
+    "jakarta": 13,
+    "bali": 3,
+    "titles": 5
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only (kept although below 20 mentions: only rawamangun was named for dropping -- see D14 conflicts)"
+  },
+  {
+   "facet": "location",
+   "slug": "cibubur",
+   "label": "Cibubur",
+   "parent": "east-jakarta",
+   "decision": "D14",
+   "mentions": {
+    "total": 13,
+    "jakarta": 13,
+    "bali": 0,
+    "titles": 3
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only (kept although below 20 mentions: only rawamangun was named for dropping -- see D14 conflicts)"
+  },
+  {
+   "facet": "location",
+   "slug": "international",
+   "label": "International",
+   "parent": null,
+   "decision": "D06",
+   "mentions": null,
+   "attrs": {
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "culture",
+   "label": "Culture",
+   "parent": "editorial",
+   "decision": "D04",
+   "mentions": {
+    "total": 4324,
+    "jakarta": 2306,
+    "bali": 2018,
+    "titles": 306
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "lifestyle",
+   "label": "Lifestyle",
+   "parent": "editorial",
+   "decision": "D05",
+   "mentions": {
+    "total": 3334,
+    "jakarta": 1798,
+    "bali": 1536,
+    "titles": 173
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "performance",
+   "label": "Performance",
+   "parent": "event",
+   "decision": "D12",
+   "mentions": {
+    "total": 1682,
+    "jakarta": 887,
+    "bali": 795,
+    "titles": 99
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "salon",
+   "label": "Salon",
+   "parent": "wellness",
+   "decision": "D13",
+   "mentions": {
+    "total": 1010,
+    "jakarta": 444,
+    "bali": 566,
+    "titles": 63
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "retreat",
+   "label": "Retreat",
+   "parent": "wellness",
+   "decision": "D13",
+   "mentions": {
+    "total": 489,
+    "jakarta": 170,
+    "bali": 319,
+    "titles": 53
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "sports-activity",
+   "label": "Sports & activities",
+   "parent": "do",
+   "decision": "D11",
+   "mentions": {
+    "total": 305,
+    "jakarta": 203,
+    "bali": 102,
+    "titles": 39
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "screening",
+   "label": "Screening",
+   "parent": "event",
+   "decision": "D12",
+   "mentions": {
+    "total": 206,
+    "jakarta": 130,
+    "bali": 76,
+    "titles": 36
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  },
+  {
+   "facet": "subtype",
+   "slug": "pop-up",
+   "label": "Pop-up",
+   "parent": "event",
+   "decision": "D12",
+   "mentions": {
+    "total": 126,
+    "jakarta": 77,
+    "bali": 49,
+    "titles": 14
+   },
+   "attrs": null,
+   "requires_migration": false,
+   "note": "already seeded as `proposed`; already a value of the Payload enum where one exists -- approval changes documentation only"
+  }
+ ],
+ "add_term": [
+  {
+   "facet": "amenities",
+   "slug": "buffet",
+   "label": "Buffet",
+   "parent": null,
+   "aliases": [
+    "buffet breakfast",
+    "brunch buffet"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Buffet",
+   "mentions": {
+    "total": 629,
+    "jakarta": 405,
+    "bali": 224,
+    "titles": 10
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "organic",
+   "label": "Organic & farm-to-table",
+   "parent": null,
+   "aliases": [
+    "organic menu",
+    "farm-to-table",
+    "farm to table"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Organic",
+   "mentions": {
+    "total": 408,
+    "jakarta": 143,
+    "bali": 265,
+    "titles": 2
+   },
+   "merged_from": [
+    {
+     "candidate": "cuisine/Farm-to-table",
+     "total": 58,
+     "jakarta": 14,
+     "bali": 44,
+     "titles": 3
+    }
+   ],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": "approach term -> amenities (D15); merges Farm-to-table (58)"
+  },
+  {
+   "facet": "amenities",
+   "slug": "jungle-view",
+   "label": "Jungle view",
+   "parent": null,
+   "aliases": [
+    "rainforest view"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Jungle view",
+   "mentions": {
+    "total": 357,
+    "jakarta": 107,
+    "bali": 250,
+    "titles": 30
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": "bare 'jungle' / 'rainforest' inflate the count (every jungle-view villa); aliases kept to the view sense"
+  },
+  {
+   "facet": "amenities",
+   "slug": "free-flow",
+   "label": "Free flow",
+   "parent": null,
+   "aliases": [
+    "free-flow",
+    "bottomless"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Free flow",
+   "mentions": {
+    "total": 217,
+    "jakarta": 98,
+    "bali": 119,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "sauna",
+   "label": "Sauna & steam",
+   "parent": null,
+   "aliases": [
+    "steam room",
+    "jacuzzi",
+    "hot tub",
+    "onsen"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Sauna / steam",
+   "mentions": {
+    "total": 203,
+    "jakarta": 78,
+    "bali": 125,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "breakfast-included",
+   "label": "Breakfast included",
+   "parent": null,
+   "aliases": [
+    "daily breakfast"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Breakfast included",
+   "mentions": {
+    "total": 185,
+    "jakarta": 89,
+    "bali": 96,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "late-night",
+   "label": "Open late",
+   "parent": null,
+   "aliases": [
+    "open late",
+    "24 hours",
+    "24-hour"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Late night",
+   "mentions": {
+    "total": 185,
+    "jakarta": 90,
+    "bali": 95,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": "the opening-hours sense; 'late night' is trimmed from vibe/party"
+  },
+  {
+   "facet": "amenities",
+   "slug": "rice-field-view",
+   "label": "Rice-field view",
+   "parent": null,
+   "aliases": [
+    "rice field view",
+    "paddy view",
+    "rice paddies"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Rice-field view",
+   "mentions": {
+    "total": 173,
+    "jakarta": 26,
+    "bali": 147,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "private-pool",
+   "label": "Private pool",
+   "parent": null,
+   "aliases": [
+    "plunge pool"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Private pool",
+   "mentions": {
+    "total": 151,
+    "jakarta": 31,
+    "bali": 120,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "delivery",
+   "label": "Delivery & takeaway",
+   "parent": null,
+   "aliases": [
+    "takeaway",
+    "take-away",
+    "GoFood",
+    "GrabFood"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Delivery",
+   "mentions": {
+    "total": 146,
+    "jakarta": 89,
+    "bali": 57,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "lagoon-pool",
+   "label": "Lagoon pool",
+   "parent": null,
+   "aliases": [
+    "lagoon"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Lagoon",
+   "mentions": {
+    "total": 138,
+    "jakarta": 58,
+    "bali": 80,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "river-view",
+   "label": "River view",
+   "parent": null,
+   "aliases": [
+    "riverside",
+    "Ayung river"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/River view",
+   "mentions": {
+    "total": 133,
+    "jakarta": 19,
+    "bali": 114,
+    "titles": 22
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "cabanas",
+   "label": "Cabanas & day beds",
+   "parent": null,
+   "aliases": [
+    "cabana",
+    "day bed",
+    "daybed",
+    "sunbed",
+    "sun lounger"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Cabana / day bed",
+   "mentions": {
+    "total": 96,
+    "jakarta": 22,
+    "bali": 74,
+    "titles": 7
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "airport-transfer",
+   "label": "Airport transfer",
+   "parent": null,
+   "aliases": [
+    "shuttle"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Airport transfer",
+   "mentions": {
+    "total": 96,
+    "jakarta": 51,
+    "bali": 45,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "swim-up-bar",
+   "label": "Swim-up bar",
+   "parent": null,
+   "aliases": [
+    "pool bar"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Swim-up bar",
+   "mentions": {
+    "total": 94,
+    "jakarta": 37,
+    "bali": 57,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "butler",
+   "label": "Butler service",
+   "parent": null,
+   "aliases": [
+    "butler"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Butler",
+   "mentions": {
+    "total": 71,
+    "jakarta": 27,
+    "bali": 44,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "healthy-menu",
+   "label": "Healthy menu",
+   "parent": null,
+   "aliases": [
+    "healthy food",
+    "health food",
+    "clean eating",
+    "superfood"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Healthy",
+   "mentions": {
+    "total": 68,
+    "jakarta": 37,
+    "bali": 31,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": "approach term -> amenities (D15)"
+  },
+  {
+   "facet": "amenities",
+   "slug": "dive-centre",
+   "label": "Dive centre",
+   "parent": null,
+   "aliases": [
+    "dive center",
+    "dive shop",
+    "PADI"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Dive centre",
+   "mentions": {
+    "total": 61,
+    "jakarta": 19,
+    "bali": 42,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "cold-plunge",
+   "label": "Cold plunge / ice bath",
+   "parent": null,
+   "aliases": [
+    "ice bath"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Cold plunge / ice bath",
+   "mentions": {
+    "total": 44,
+    "jakarta": 13,
+    "bali": 31,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "gluten-free",
+   "label": "Gluten-free options",
+   "parent": null,
+   "aliases": [
+    "gluten free"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Gluten-free",
+   "mentions": {
+    "total": 40,
+    "jakarta": 11,
+    "bali": 29,
+    "titles": 0
+   },
+   "merged_from": [
+    {
+     "candidate": "cuisine/Gluten-free",
+     "total": 40,
+     "jakarta": 11,
+     "bali": 29,
+     "titles": 0
+    }
+   ],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": "dietary -> amenities (D15); merges the cuisine/Gluten-free candidate"
+  },
+  {
+   "facet": "amenities",
+   "slug": "cigar-lounge",
+   "label": "Cigar lounge",
+   "parent": null,
+   "aliases": [
+    "cigar"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Cigar lounge",
+   "mentions": {
+    "total": 33,
+    "jakarta": 16,
+    "bali": 17,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "wine-cellar",
+   "label": "Wine cellar",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "amenities/Wine cellar",
+   "mentions": {
+    "total": 32,
+    "jakarta": 15,
+    "bali": 17,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "sports-screening",
+   "label": "Sports screening",
+   "parent": null,
+   "aliases": [
+    "big screen",
+    "live sports"
+   ],
+   "geo": null,
+   "from_candidate": "amenities/Sports screening",
+   "mentions": {
+    "total": 24,
+    "jakarta": 11,
+    "bali": 13,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_amenities",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "women",
+   "label": "Women",
+   "parent": null,
+   "aliases": [
+    "female travellers",
+    "ladies"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Women",
+   "mentions": {
+    "total": 755,
+    "jakarta": 371,
+    "bali": 384,
+    "titles": 48
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "lexical count inflated by generic 'women'; 48 title hits support a segment"
+  },
+  {
+   "facet": "audience",
+   "slug": "students",
+   "label": "Students",
+   "parent": null,
+   "aliases": [
+    "teenagers",
+    "university students"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Students",
+   "mentions": {
+    "total": 588,
+    "jakarta": 430,
+    "bali": 158,
+    "titles": 31
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "foodies",
+   "label": "Foodies",
+   "parent": null,
+   "aliases": [
+    "foodie"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Foodies",
+   "mentions": {
+    "total": 147,
+    "jakarta": 84,
+    "bali": 63,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "seniors",
+   "label": "Seniors",
+   "parent": null,
+   "aliases": [
+    "elderly",
+    "retirees",
+    "retirement"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Seniors",
+   "mentions": {
+    "total": 63,
+    "jakarta": 40,
+    "bali": 23,
+    "titles": 0
+   },
+   "merged_from": [
+    {
+     "candidate": "audience/Retiree",
+     "total": 20,
+     "jakarta": 9,
+     "bali": 11,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "merges the Retiree candidate (20)"
+  },
+  {
+   "facet": "audience",
+   "slug": "surfers",
+   "label": "Surfers",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "audience/Surfers",
+   "mentions": {
+    "total": 56,
+    "jakarta": 12,
+    "bali": 44,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "divers",
+   "label": "Divers",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "audience/Divers",
+   "mentions": {
+    "total": 45,
+    "jakarta": 17,
+    "bali": 28,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "yogis",
+   "label": "Yogis",
+   "parent": null,
+   "aliases": [
+    "yogi"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Yogis",
+   "mentions": {
+    "total": 37,
+    "jakarta": 10,
+    "bali": 27,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "digital-nomads",
+   "label": "Digital nomads",
+   "parent": null,
+   "aliases": [
+    "digital nomad",
+    "remote workers"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Digital nomad",
+   "mentions": {
+    "total": 23,
+    "jakarta": 3,
+    "bali": 20,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "backpackers",
+   "label": "Backpackers",
+   "parent": null,
+   "aliases": [
+    "backpacker",
+    "budget travellers"
+   ],
+   "geo": null,
+   "from_candidate": "audience/Backpacker",
+   "mentions": {
+    "total": 20,
+    "jakarta": 9,
+    "bali": 11,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "coffee",
+   "label": "Coffee",
+   "parent": null,
+   "aliases": [
+    "kopi",
+    "specialty coffee",
+    "espresso"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Coffee",
+   "mentions": {
+    "total": 941,
+    "jakarta": 491,
+    "bali": 450,
+    "titles": 57
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "dessert",
+   "label": "Dessert",
+   "parent": null,
+   "aliases": [
+    "gelato",
+    "ice cream",
+    "pastry",
+    "patisserie"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Dessert",
+   "mentions": {
+    "total": 785,
+    "jakarta": 439,
+    "bali": 346,
+    "titles": 25
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "fusion",
+   "label": "Fusion",
+   "parent": null,
+   "aliases": [
+    "fusion cuisine"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Fusion",
+   "mentions": {
+    "total": 333,
+    "jakarta": 170,
+    "bali": 163,
+    "titles": 20
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "bbq",
+   "label": "BBQ & grill",
+   "parent": null,
+   "aliases": [
+    "barbecue",
+    "smokehouse",
+    "BBQ"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/BBQ",
+   "mentions": {
+    "total": 159,
+    "jakarta": 74,
+    "bali": 85,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": "'BBQ' trimmed from cuisine/american"
+  },
+  {
+   "facet": "cuisine",
+   "slug": "acehnese",
+   "label": "Acehnese",
+   "parent": null,
+   "aliases": [
+    "Aceh cuisine",
+    "mie Aceh"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Acehnese",
+   "mentions": {
+    "total": 73,
+    "jakarta": 48,
+    "bali": 25,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": "bare 'Aceh' is the location; not an alias here"
+  },
+  {
+   "facet": "cuisine",
+   "slug": "portuguese",
+   "label": "Portuguese",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "cuisine/Portuguese",
+   "mentions": {
+    "total": 53,
+    "jakarta": 39,
+    "bali": 14,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "singaporean",
+   "label": "Singaporean",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "cuisine/Singaporean",
+   "mentions": {
+    "total": 47,
+    "jakarta": 29,
+    "bali": 18,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "hotpot",
+   "label": "Hotpot",
+   "parent": null,
+   "aliases": [
+    "hot pot",
+    "shabu-shabu",
+    "steamboat"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Hotpot",
+   "mentions": {
+    "total": 41,
+    "jakarta": 23,
+    "bali": 18,
+    "titles": 8
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": "'hotpot' trimmed from cuisine/chinese"
+  },
+  {
+   "facet": "cuisine",
+   "slug": "nordic",
+   "label": "Nordic",
+   "parent": null,
+   "aliases": [
+    "Scandinavian"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Nordic",
+   "mentions": {
+    "total": 39,
+    "jakarta": 30,
+    "bali": 9,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "moroccan",
+   "label": "Moroccan",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "cuisine/Moroccan",
+   "mentions": {
+    "total": 34,
+    "jakarta": 19,
+    "bali": 15,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "malaysian",
+   "label": "Malaysian",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "cuisine/Malaysian",
+   "mentions": {
+    "total": 33,
+    "jakarta": 27,
+    "bali": 6,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "tea",
+   "label": "Tea",
+   "parent": null,
+   "aliases": [
+    "tea house",
+    "teahouse",
+    "artisan tea"
+   ],
+   "geo": null,
+   "from_candidate": "cuisine/Tea",
+   "mentions": {
+    "total": 22,
+    "jakarta": 19,
+    "bali": 3,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_cuisine",
+   "attrs": null,
+   "note": "the venue_kind Tea house candidate (24) goes to eat/cafe's alias set"
+  },
+  {
+   "facet": "location",
+   "slug": "europe",
+   "label": "Europe",
+   "parent": "international",
+   "aliases": [
+    "Paris",
+    "London",
+    "Amsterdam",
+    "Rome",
+    "Italy",
+    "France",
+    "Switzerland",
+    "Germany",
+    "Spain",
+    "Portugal",
+    "Vienna",
+    "Prague"
+   ],
+   "geo": {
+    "lat": 48.8566,
+    "lng": 2.3522
+   },
+   "from_candidate": "location_international/Europe",
+   "mentions": {
+    "total": 1247,
+    "jakarta": 825,
+    "bali": 422,
+    "titles": 67
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "region node; a country splits out once it reaches >= 20 on its own"
+  },
+  {
+   "facet": "location",
+   "slug": "java",
+   "label": "Java",
+   "parent": "other",
+   "aliases": [
+    "Central Java",
+    "East Java",
+    "West Java"
+   ],
+   "geo": {
+    "lat": -7.5,
+    "lng": 110.0
+   },
+   "from_candidate": "location_elsewhere/Java (general)",
+   "mentions": {
+    "total": 859,
+    "jakarta": 537,
+    "bali": 322,
+    "titles": 52
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node; re-parenting other/* cities under this and the other region nodes below is APPROVED (Hansel, follow-up #4, 2026-09-10; parent_id only) -- see resolutions.RULES['location']['reparenting']. Applied by the seed ticket, not by this delta."
+  },
+  {
+   "facet": "location",
+   "slug": "australia",
+   "label": "Australia",
+   "parent": "international",
+   "aliases": [
+    "Sydney",
+    "Melbourne",
+    "Perth",
+    "Brisbane"
+   ],
+   "geo": {
+    "lat": -33.8688,
+    "lng": 151.2093
+   },
+   "from_candidate": "location_international/Australia",
+   "mentions": {
+    "total": 508,
+    "jakarta": 285,
+    "bali": 223,
+    "titles": 37
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "singapore",
+   "label": "Singapore",
+   "parent": "international",
+   "aliases": [],
+   "geo": {
+    "lat": 1.3521,
+    "lng": 103.8198
+   },
+   "from_candidate": "location_international/Singapore",
+   "mentions": {
+    "total": 482,
+    "jakarta": 356,
+    "bali": 126,
+    "titles": 29
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "japan",
+   "label": "Japan",
+   "parent": "international",
+   "aliases": [
+    "Tokyo",
+    "Kyoto",
+    "Osaka",
+    "Hokkaido"
+   ],
+   "geo": {
+    "lat": 35.6762,
+    "lng": 139.6503
+   },
+   "from_candidate": "location_international/Tokyo",
+   "mentions": {
+    "total": 481,
+    "jakarta": 317,
+    "bali": 164,
+    "titles": 33
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "lexicon label 'Tokyo' relabelled to the country"
+  },
+  {
+   "facet": "location",
+   "slug": "usa",
+   "label": "United States",
+   "parent": "international",
+   "aliases": [
+    "New York",
+    "Los Angeles",
+    "San Francisco",
+    "Las Vegas",
+    "Hawaii",
+    "USA"
+   ],
+   "geo": {
+    "lat": 40.7128,
+    "lng": -74.006
+   },
+   "from_candidate": "location_international/USA",
+   "mentions": {
+    "total": 377,
+    "jakarta": 248,
+    "bali": 129,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "china",
+   "label": "China",
+   "parent": "international",
+   "aliases": [
+    "Shanghai",
+    "Beijing",
+    "Macau"
+   ],
+   "geo": {
+    "lat": 31.2304,
+    "lng": 121.4737
+   },
+   "from_candidate": "location_international/China",
+   "mentions": {
+    "total": 361,
+    "jakarta": 250,
+    "bali": 111,
+    "titles": 4
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "thailand",
+   "label": "Thailand",
+   "parent": "international",
+   "aliases": [
+    "Bangkok",
+    "Phuket",
+    "Chiang Mai",
+    "Koh Samui"
+   ],
+   "geo": {
+    "lat": 13.7563,
+    "lng": 100.5018
+   },
+   "from_candidate": "location_international/Bangkok",
+   "mentions": {
+    "total": 293,
+    "jakarta": 198,
+    "bali": 95,
+    "titles": 14
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "lexicon label 'Bangkok' relabelled to the country"
+  },
+  {
+   "facet": "location",
+   "slug": "india",
+   "label": "India",
+   "parent": "international",
+   "aliases": [
+    "Mumbai",
+    "Delhi",
+    "Kerala",
+    "Rajasthan"
+   ],
+   "geo": {
+    "lat": 19.076,
+    "lng": 72.8777
+   },
+   "from_candidate": "location_international/India",
+   "mentions": {
+    "total": 290,
+    "jakarta": 169,
+    "bali": 121,
+    "titles": 8
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "malaysia",
+   "label": "Malaysia",
+   "parent": "international",
+   "aliases": [
+    "Kuala Lumpur",
+    "Penang",
+    "Langkawi"
+   ],
+   "geo": {
+    "lat": 3.139,
+    "lng": 101.6869
+   },
+   "from_candidate": "location_international/Kuala Lumpur",
+   "mentions": {
+    "total": 228,
+    "jakarta": 176,
+    "bali": 52,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "lexicon label 'Kuala Lumpur' relabelled to the country"
+  },
+  {
+   "facet": "location",
+   "slug": "sumatra",
+   "label": "Sumatra",
+   "parent": "other",
+   "aliases": [],
+   "geo": {
+    "lat": -0.5,
+    "lng": 101.5
+   },
+   "from_candidate": "location_elsewhere/Sumatra (general)",
+   "mentions": {
+    "total": 206,
+    "jakarta": 127,
+    "bali": 79,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node"
+  },
+  {
+   "facet": "location",
+   "slug": "hong-kong",
+   "label": "Hong Kong",
+   "parent": "international",
+   "aliases": [],
+   "geo": {
+    "lat": 22.3193,
+    "lng": 114.1694
+   },
+   "from_candidate": "location_international/Hong Kong",
+   "mentions": {
+    "total": 182,
+    "jakarta": 125,
+    "bali": 57,
+    "titles": 12
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "sulawesi",
+   "label": "Sulawesi",
+   "parent": "other",
+   "aliases": [
+    "Wakatobi",
+    "Togean"
+   ],
+   "geo": {
+    "lat": -2.0,
+    "lng": 121.0
+   },
+   "from_candidate": "location_elsewhere/Sulawesi",
+   "mentions": {
+    "total": 179,
+    "jakarta": 124,
+    "bali": 55,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node"
+  },
+  {
+   "facet": "location",
+   "slug": "africa",
+   "label": "Africa",
+   "parent": "international",
+   "aliases": [
+    "Kenya",
+    "Tanzania",
+    "Cape Town",
+    "Morocco",
+    "Marrakech",
+    "Egypt"
+   ],
+   "geo": {
+    "lat": -1.2921,
+    "lng": 36.8219
+   },
+   "from_candidate": "location_international/Africa",
+   "mentions": {
+    "total": 163,
+    "jakarta": 111,
+    "bali": 52,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "region node"
+  },
+  {
+   "facet": "location",
+   "slug": "tabanan",
+   "label": "Tabanan",
+   "parent": "west-bali",
+   "aliases": [],
+   "geo": {
+    "lat": -8.5411,
+    "lng": 115.1256
+   },
+   "from_candidate": "location_bali/Tabanan",
+   "mentions": {
+    "total": 162,
+    "jakarta": 18,
+    "bali": 144,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "kalimantan",
+   "label": "Kalimantan",
+   "parent": "other",
+   "aliases": [
+    "Borneo",
+    "Derawan",
+    "Tanjung Puting"
+   ],
+   "geo": {
+    "lat": 0.0,
+    "lng": 114.0
+   },
+   "from_candidate": "location_elsewhere/Kalimantan",
+   "mentions": {
+    "total": 156,
+    "jakarta": 114,
+    "bali": 42,
+    "titles": 7
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node"
+  },
+  {
+   "facet": "location",
+   "slug": "turkey",
+   "label": "Turkey",
+   "parent": "international",
+   "aliases": [
+    "Istanbul",
+    "Cappadocia"
+   ],
+   "geo": {
+    "lat": 41.0082,
+    "lng": 28.9784
+   },
+   "from_candidate": "location_international/Turkey",
+   "mentions": {
+    "total": 154,
+    "jakarta": 103,
+    "bali": 51,
+    "titles": 4
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "kintamani",
+   "label": "Kintamani & Mount Batur",
+   "parent": "north-bali",
+   "aliases": [
+    "Mount Batur",
+    "Batur",
+    "Lake Batur"
+   ],
+   "geo": {
+    "lat": -8.25,
+    "lng": 115.35
+   },
+   "from_candidate": "location_bali/Kintamani",
+   "mentions": {
+    "total": 153,
+    "jakarta": 16,
+    "bali": 137,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "Bangli-regency highlands, grouped with the north for readers"
+  },
+  {
+   "facet": "location",
+   "slug": "gianyar",
+   "label": "Gianyar",
+   "parent": "central-bali",
+   "aliases": [
+    "Sukawati",
+    "Celuk",
+    "Batubulan",
+    "Keliki",
+    "Tampaksiring"
+   ],
+   "geo": {
+    "lat": -8.5446,
+    "lng": 115.3263
+   },
+   "from_candidate": "location_bali/Gianyar",
+   "mentions": {
+    "total": 150,
+    "jakarta": 6,
+    "bali": 144,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "the regency's towns outside Ubud; central-bali keeps 'Gianyar' as its own alias"
+  },
+  {
+   "facet": "location",
+   "slug": "south-korea",
+   "label": "South Korea",
+   "parent": "international",
+   "aliases": [
+    "Seoul",
+    "Korea",
+    "Jeju"
+   ],
+   "geo": {
+    "lat": 37.5665,
+    "lng": 126.978
+   },
+   "from_candidate": "location_international/Seoul",
+   "mentions": {
+    "total": 145,
+    "jakarta": 114,
+    "bali": 31,
+    "titles": 12
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "lexicon label 'Seoul' relabelled to the country"
+  },
+  {
+   "facet": "location",
+   "slug": "new-zealand",
+   "label": "New Zealand",
+   "parent": "international",
+   "aliases": [
+    "Auckland",
+    "Queenstown"
+   ],
+   "geo": {
+    "lat": -36.8485,
+    "lng": 174.7633
+   },
+   "from_candidate": "location_international/New Zealand",
+   "mentions": {
+    "total": 138,
+    "jakarta": 91,
+    "bali": 47,
+    "titles": 12
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "nusa-tenggara",
+   "label": "Nusa Tenggara",
+   "parent": "other",
+   "aliases": [
+    "NTT",
+    "Sumbawa",
+    "Alor",
+    "Kupang",
+    "Ende",
+    "Kelimutu"
+   ],
+   "geo": {
+    "lat": -8.7,
+    "lng": 120.0
+   },
+   "from_candidate": "location_elsewhere/Nusa Tenggara",
+   "mentions": {
+    "total": 133,
+    "jakarta": 90,
+    "bali": 43,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node; lombok, komodo and sumba stay their own leaves"
+  },
+  {
+   "facet": "location",
+   "slug": "vietnam",
+   "label": "Vietnam",
+   "parent": "international",
+   "aliases": [
+    "Hanoi",
+    "Ho Chi Minh",
+    "Da Nang",
+    "Hoi An"
+   ],
+   "geo": {
+    "lat": 21.0285,
+    "lng": 105.8542
+   },
+   "from_candidate": "location_international/Vietnam",
+   "mentions": {
+    "total": 123,
+    "jakarta": 88,
+    "bali": 35,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "west-bali",
+   "label": "West Bali",
+   "parent": "bali",
+   "aliases": [
+    "Menjangan",
+    "Pemuteran",
+    "Jembrana",
+    "Negara",
+    "Gilimanuk",
+    "Perancak"
+   ],
+   "geo": {
+    "lat": -8.36,
+    "lng": 114.63
+   },
+   "from_candidate": "location_bali/West Bali",
+   "mentions": {
+    "total": 109,
+    "jakarta": 11,
+    "bali": 98,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "new district -- Section 4 has no West Bali node; parent of tabanan, tanah-lot, jatiluwih"
+  },
+  {
+   "facet": "location",
+   "slug": "maluku",
+   "label": "Maluku",
+   "parent": "other",
+   "aliases": [
+    "Moluccas",
+    "Banda",
+    "Ambon",
+    "Ternate",
+    "Seram"
+   ],
+   "geo": {
+    "lat": -3.2,
+    "lng": 128.5
+   },
+   "from_candidate": "location_elsewhere/Maluku",
+   "mentions": {
+    "total": 109,
+    "jakarta": 78,
+    "bali": 31,
+    "titles": 6
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "region node"
+  },
+  {
+   "facet": "location",
+   "slug": "philippines",
+   "label": "Philippines",
+   "parent": "international",
+   "aliases": [
+    "Manila",
+    "Cebu",
+    "Palawan"
+   ],
+   "geo": {
+    "lat": 14.5995,
+    "lng": 120.9842
+   },
+   "from_candidate": "location_international/Philippines",
+   "mentions": {
+    "total": 105,
+    "jakarta": 82,
+    "bali": 23,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "kebayoran-baru",
+   "label": "Kebayoran Baru",
+   "parent": "south-jakarta",
+   "aliases": [
+    "Kebayoran"
+   ],
+   "geo": {
+    "lat": -6.2437,
+    "lng": 106.7995
+   },
+   "from_candidate": "location_jakarta/Kebayoran Baru",
+   "mentions": {
+    "total": 103,
+    "jakarta": 103,
+    "bali": 0,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "'Kebayoran Baru' trimmed from gunawarman (a strip inside the district)"
+  },
+  {
+   "facet": "location",
+   "slug": "bedugul",
+   "label": "Bedugul & Lake Bratan",
+   "parent": "north-bali",
+   "aliases": [
+    "Bratan",
+    "Beratan",
+    "Lake Bratan"
+   ],
+   "geo": {
+    "lat": -8.275,
+    "lng": 115.165
+   },
+   "from_candidate": "location_bali/Bedugul",
+   "mentions": {
+    "total": 87,
+    "jakarta": 7,
+    "bali": 80,
+    "titles": 9
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "highlands next to Munduk (a north-bali alias)"
+  },
+  {
+   "facet": "location",
+   "slug": "uae",
+   "label": "United Arab Emirates",
+   "parent": "international",
+   "aliases": [
+    "Dubai",
+    "Abu Dhabi",
+    "UAE"
+   ],
+   "geo": {
+    "lat": 25.2048,
+    "lng": 55.2708
+   },
+   "from_candidate": "location_international/Dubai",
+   "mentions": {
+    "total": 84,
+    "jakarta": 52,
+    "bali": 32,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "lexicon label 'Dubai' relabelled to the country"
+  },
+  {
+   "facet": "location",
+   "slug": "aceh",
+   "label": "Aceh",
+   "parent": "other",
+   "aliases": [
+    "Banda Aceh",
+    "Weh",
+    "Pulau Weh"
+   ],
+   "geo": {
+    "lat": 5.5483,
+    "lng": 95.3238
+   },
+   "from_candidate": "location_elsewhere/Aceh",
+   "mentions": {
+    "total": 70,
+    "jakarta": 46,
+    "bali": 24,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "bangli",
+   "label": "Bangli & Penglipuran",
+   "parent": "central-bali",
+   "aliases": [
+    "Penglipuran"
+   ],
+   "geo": {
+    "lat": -8.454,
+    "lng": 115.354
+   },
+   "from_candidate": "location_bali/Bangli",
+   "mentions": {
+    "total": 69,
+    "jakarta": 2,
+    "bali": 67,
+    "titles": 4
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "cilandak",
+   "label": "Cilandak",
+   "parent": "south-jakarta",
+   "aliases": [
+    "TB Simatupang",
+    "Simatupang"
+   ],
+   "geo": {
+    "lat": -6.2914,
+    "lng": 106.8006
+   },
+   "from_candidate": "location_jakarta/Cilandak",
+   "mentions": {
+    "total": 69,
+    "jakarta": 69,
+    "bali": 0,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "kemayoran",
+   "label": "Kemayoran",
+   "parent": "central-jakarta",
+   "aliases": [
+    "JIExpo"
+   ],
+   "geo": {
+    "lat": -6.1626,
+    "lng": 106.85
+   },
+   "from_candidate": "location_jakarta/Kemayoran",
+   "mentions": {
+    "total": 67,
+    "jakarta": 66,
+    "bali": 1,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "gatot-subroto",
+   "label": "Gatot Subroto",
+   "parent": "south-jakarta",
+   "aliases": [
+    "Jalan Gatot Subroto",
+    "Semanggi"
+   ],
+   "geo": {
+    "lat": -6.2297,
+    "lng": 106.8175
+   },
+   "from_candidate": "location_jakarta/Gatot Subroto",
+   "mentions": {
+    "total": 66,
+    "jakarta": 62,
+    "bali": 4,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "nusa-lembongan",
+   "label": "Nusa Lembongan",
+   "parent": "east-bali",
+   "aliases": [
+    "Lembongan",
+    "Ceningan",
+    "Nusa Ceningan"
+   ],
+   "geo": {
+    "lat": -8.68,
+    "lng": 115.45
+   },
+   "from_candidate": "location_bali/Nusa Lembongan",
+   "mentions": {
+    "total": 58,
+    "jakarta": 2,
+    "bali": 56,
+    "titles": 13
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "sibling of nusa-penida; 'Nusa Lembongan' / 'Nusa Ceningan' trimmed from nusa-penida"
+  },
+  {
+   "facet": "location",
+   "slug": "tanah-abang",
+   "label": "Tanah Abang",
+   "parent": "central-jakarta",
+   "aliases": [],
+   "geo": {
+    "lat": -6.1868,
+    "lng": 106.8118
+   },
+   "from_candidate": "location_jakarta/Tanah Abang",
+   "mentions": {
+    "total": 53,
+    "jakarta": 52,
+    "bali": 1,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "middle-east",
+   "label": "Middle East",
+   "parent": "international",
+   "aliases": [
+    "Qatar",
+    "Doha",
+    "Oman",
+    "Jordan"
+   ],
+   "geo": {
+    "lat": 25.2854,
+    "lng": 51.531
+   },
+   "from_candidate": "location_international/Middle East",
+   "mentions": {
+    "total": 50,
+    "jakarta": 40,
+    "bali": 10,
+    "titles": 7
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "region node for the Gulf and Levant outside the UAE and Turkey"
+  },
+  {
+   "facet": "location",
+   "slug": "cambodia",
+   "label": "Cambodia",
+   "parent": "international",
+   "aliases": [
+    "Siem Reap",
+    "Angkor",
+    "Laos",
+    "Luang Prabang"
+   ],
+   "geo": {
+    "lat": 13.3671,
+    "lng": 103.8448
+   },
+   "from_candidate": "location_international/Cambodia / Laos",
+   "mentions": {
+    "total": 47,
+    "jakarta": 37,
+    "bali": 10,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": "Laos rides along as an alias until it reaches >= 20 on its own (joint count 47)"
+  },
+  {
+   "facet": "location",
+   "slug": "taiwan",
+   "label": "Taiwan",
+   "parent": "international",
+   "aliases": [
+    "Taipei"
+   ],
+   "geo": {
+    "lat": 25.033,
+    "lng": 121.5654
+   },
+   "from_candidate": "location_international/Taiwan",
+   "mentions": {
+    "total": 47,
+    "jakarta": 36,
+    "bali": 11,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "casablanca",
+   "label": "Casablanca",
+   "parent": "south-jakarta",
+   "aliases": [
+    "Kota Kasablanka",
+    "Casablanca Raya"
+   ],
+   "geo": {
+    "lat": -6.2238,
+    "lng": 106.8433
+   },
+   "from_candidate": "location_jakarta/Casablanca",
+   "mentions": {
+    "total": 47,
+    "jakarta": 41,
+    "bali": 6,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "mengwi",
+   "label": "Mengwi",
+   "parent": "south-bali",
+   "aliases": [
+    "Taman Ayun"
+   ],
+   "geo": {
+    "lat": -8.543,
+    "lng": 115.17
+   },
+   "from_candidate": "location_bali/Mengwi",
+   "mentions": {
+    "total": 45,
+    "jakarta": 1,
+    "bali": 44,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "riau-islands",
+   "label": "Riau Islands",
+   "parent": "other",
+   "aliases": [
+    "Batam",
+    "Riau"
+   ],
+   "geo": {
+    "lat": 1.1,
+    "lng": 104.0
+   },
+   "from_candidate": "location_elsewhere/Riau Islands",
+   "mentions": {
+    "total": 44,
+    "jakarta": 40,
+    "bali": 4,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "bintan stays its own leaf"
+  },
+  {
+   "facet": "location",
+   "slug": "kebon-sirih",
+   "label": "Kebon Sirih & Sabang",
+   "parent": "central-jakarta",
+   "aliases": [
+    "Sabang",
+    "Jalan Sabang"
+   ],
+   "geo": {
+    "lat": -6.1836,
+    "lng": 106.828
+   },
+   "from_candidate": "location_jakarta/Kebon Sirih",
+   "mentions": {
+    "total": 41,
+    "jakarta": 36,
+    "bali": 5,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "tanah-lot",
+   "label": "Tanah Lot",
+   "parent": "west-bali",
+   "aliases": [],
+   "geo": {
+    "lat": -8.6212,
+    "lng": 115.0868
+   },
+   "from_candidate": "location_bali/Tanah Lot",
+   "mentions": {
+    "total": 40,
+    "jakarta": 2,
+    "bali": 38,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "palembang",
+   "label": "Palembang",
+   "parent": "other",
+   "aliases": [],
+   "geo": {
+    "lat": -2.9909,
+    "lng": 104.7566
+   },
+   "from_candidate": "location_elsewhere/Palembang",
+   "mentions": {
+    "total": 39,
+    "jakarta": 35,
+    "bali": 4,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "padang",
+   "label": "Padang",
+   "parent": "other",
+   "aliases": [
+    "Bukittinggi",
+    "West Sumatra"
+   ],
+   "geo": {
+    "lat": -0.9471,
+    "lng": 100.4172
+   },
+   "from_candidate": "location_elsewhere/Padang",
+   "mentions": {
+    "total": 38,
+    "jakarta": 24,
+    "bali": 14,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "homonym with cuisine/padang -- see match hint"
+  },
+  {
+   "facet": "location",
+   "slug": "cengkareng",
+   "label": "Cengkareng",
+   "parent": "west-jakarta",
+   "aliases": [
+    "Soekarno-Hatta",
+    "CGK"
+   ],
+   "geo": {
+    "lat": -6.1479,
+    "lng": 106.7383
+   },
+   "from_candidate": "location_jakarta/Cengkareng",
+   "mentions": {
+    "total": 38,
+    "jakarta": 37,
+    "bali": 1,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "lampung",
+   "label": "Lampung",
+   "parent": "other",
+   "aliases": [
+    "Krakatau",
+    "Krakatoa",
+    "Way Kambas"
+   ],
+   "geo": {
+    "lat": -5.4292,
+    "lng": 105.261
+   },
+   "from_candidate": "location_elsewhere/Lampung",
+   "mentions": {
+    "total": 37,
+    "jakarta": 27,
+    "bali": 10,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "maldives",
+   "label": "Maldives",
+   "parent": "international",
+   "aliases": [],
+   "geo": {
+    "lat": 4.1755,
+    "lng": 73.5093
+   },
+   "from_candidate": "location_international/Maldives",
+   "mentions": {
+    "total": 32,
+    "jakarta": 22,
+    "bali": 10,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "kepulauan-seribu",
+   "label": "Kepulauan Seribu",
+   "parent": "north-jakarta",
+   "aliases": [
+    "Thousand Islands",
+    "Pulau Seribu"
+   ],
+   "geo": {
+    "lat": -5.75,
+    "lng": 106.55
+   },
+   "from_candidate": "location_jakarta/Kepulauan Seribu",
+   "mentions": {
+    "total": 32,
+    "jakarta": 28,
+    "bali": 4,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": "its own regency administratively; filed under north-jakarta for readers"
+  },
+  {
+   "facet": "location",
+   "slug": "jatiluwih",
+   "label": "Jatiluwih",
+   "parent": "west-bali",
+   "aliases": [],
+   "geo": {
+    "lat": -8.37,
+    "lng": 115.13
+   },
+   "from_candidate": "location_bali/Jatiluwih",
+   "mentions": {
+    "total": 31,
+    "jakarta": 3,
+    "bali": 28,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "cirebon",
+   "label": "Cirebon",
+   "parent": "other",
+   "aliases": [],
+   "geo": {
+    "lat": -6.732,
+    "lng": 108.5523
+   },
+   "from_candidate": "location_elsewhere/Cirebon",
+   "mentions": {
+    "total": 30,
+    "jakarta": 28,
+    "bali": 2,
+    "titles": 0
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "sri-lanka",
+   "label": "Sri Lanka",
+   "parent": "international",
+   "aliases": [
+    "Colombo"
+   ],
+   "geo": {
+    "lat": 6.9271,
+    "lng": 79.8612
+   },
+   "from_candidate": "location_international/Sri Lanka",
+   "mentions": {
+    "total": 29,
+    "jakarta": 20,
+    "bali": 9,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": {
+    "inherits_from": "international",
+    "geo_scope": "abroad",
+    "inherited_by_descendants": true
+   },
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "tmii",
+   "label": "TMII / Taman Mini",
+   "parent": "east-jakarta",
+   "aliases": [
+    "Taman Mini",
+    "Taman Mini Indonesia Indah"
+   ],
+   "geo": {
+    "lat": -6.3024,
+    "lng": 106.8952
+   },
+   "from_candidate": "location_jakarta/TMII",
+   "mentions": {
+    "total": 25,
+    "jakarta": 25,
+    "bali": 0,
+    "titles": 4
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "festive",
+   "label": "Festive season",
+   "parent": null,
+   "aliases": [
+    "Christmas",
+    "New Year",
+    "New Year's Eve",
+    "festive season",
+    "year-end",
+    "Thanksgiving"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Festive",
+   "mentions": {
+    "total": 639,
+    "jakarta": 349,
+    "bali": 290,
+    "titles": 211
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "wedding",
+   "label": "Wedding",
+   "parent": null,
+   "aliases": [
+    "weddings",
+    "honeymoon",
+    "proposal",
+    "bridal",
+    "bachelorette",
+    "hen party"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Wedding",
+   "mentions": {
+    "total": 220,
+    "jakarta": 126,
+    "bali": 94,
+    "titles": 21
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "D22"
+  },
+  {
+   "facet": "occasion",
+   "slug": "ramadan",
+   "label": "Ramadan & Eid",
+   "parent": null,
+   "aliases": [
+    "iftar",
+    "buka puasa",
+    "Lebaran",
+    "Eid"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Ramadan",
+   "mentions": {
+    "total": 191,
+    "jakarta": 162,
+    "bali": 29,
+    "titles": 115
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "balinese-holy-days",
+   "label": "Balinese holy days",
+   "parent": null,
+   "aliases": [
+    "Nyepi",
+    "Galungan",
+    "Kuningan",
+    "Saraswati",
+    "Pagerwesi"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Nyepi / Galungan",
+   "mentions": {
+    "total": 179,
+    "jakarta": 17,
+    "bali": 162,
+    "titles": 56
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "'Kuningan' here is the holy day -- the location/kuningan hint points Bali text at this term"
+  },
+  {
+   "facet": "occasion",
+   "slug": "independence-day",
+   "label": "Independence Day",
+   "parent": null,
+   "aliases": [
+    "17 August",
+    "Hari Merdeka"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Independence Day",
+   "mentions": {
+    "total": 95,
+    "jakarta": 72,
+    "bali": 23,
+    "titles": 23
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "lunar-new-year",
+   "label": "Lunar New Year",
+   "parent": null,
+   "aliases": [
+    "Chinese New Year",
+    "Imlek"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Lunar New Year",
+   "mentions": {
+    "total": 91,
+    "jakarta": 72,
+    "bali": 19,
+    "titles": 44
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "road-trip",
+   "label": "Road trip",
+   "parent": null,
+   "aliases": [
+    "island hopping"
+   ],
+   "geo": null,
+   "from_candidate": "occasion/Road trip",
+   "mentions": {
+    "total": 82,
+    "jakarta": 39,
+    "bali": 43,
+    "titles": 10
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "'itinerary' inflates; not an alias"
+  },
+  {
+   "facet": "occasion",
+   "slug": "halloween",
+   "label": "Halloween",
+   "parent": null,
+   "aliases": [],
+   "geo": null,
+   "from_candidate": "occasion/Halloween",
+   "mentions": {
+    "total": 30,
+    "jakarta": 14,
+    "bali": 16,
+    "titles": 14
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "temple",
+   "label": "Temple",
+   "parent": "do",
+   "aliases": [
+    "temples",
+    "pura",
+    "klenteng",
+    "Chinese temple"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Temple",
+   "mentions": {
+    "total": 553,
+    "jakarta": 75,
+    "bali": 478,
+    "titles": 49
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "Bali's most-mentioned venue kind (553); a place to visit, hence `do`"
+  },
+  {
+   "facet": "subtype",
+   "slug": "bookshop",
+   "label": "Bookshop",
+   "parent": "shop",
+   "aliases": [
+    "bookstore",
+    "book shop",
+    "library"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Bookshop",
+   "mentions": {
+    "total": 302,
+    "jakarta": 214,
+    "bali": 88,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "libraries ride along: not a shop, but the only node close to one"
+  },
+  {
+   "facet": "subtype",
+   "slug": "dessert-shop",
+   "label": "Dessert shop",
+   "parent": "eat",
+   "aliases": [
+    "gelato",
+    "gelateria",
+    "ice cream parlour",
+    "dessert bar",
+    "patisserie"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Gelato / dessert",
+   "mentions": {
+    "total": 272,
+    "jakarta": 148,
+    "bali": 124,
+    "titles": 4
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "farm",
+   "label": "Farm & plantation",
+   "parent": "do",
+   "aliases": [
+    "organic farm",
+    "plantation",
+    "coffee plantation",
+    "agritourism"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Farm",
+   "mentions": {
+    "total": 238,
+    "jakarta": 104,
+    "bali": 134,
+    "titles": 18
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "zoo",
+   "label": "Zoo & safari park",
+   "parent": "do",
+   "aliases": [
+    "safari",
+    "bird park",
+    "butterfly park",
+    "elephant park",
+    "aquarium"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Zoo / safari",
+   "mentions": {
+    "total": 178,
+    "jakarta": 78,
+    "bali": 100,
+    "titles": 40
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "place-of-worship",
+   "label": "Church & mosque",
+   "parent": "do",
+   "aliases": [
+    "church",
+    "cathedral",
+    "mosque",
+    "masjid"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Church / mosque",
+   "mentions": {
+    "total": 141,
+    "jakarta": 109,
+    "bali": 32,
+    "titles": 7
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "temples have their own node"
+  },
+  {
+   "facet": "subtype",
+   "slug": "theatre",
+   "label": "Theatre & concert hall",
+   "parent": "do",
+   "aliases": [
+    "theater",
+    "concert hall",
+    "performing arts centre",
+    "Ciputra Artpreneur",
+    "Salihara",
+    "Aula Simfonia"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Theatre / concert hall",
+   "mentions": {
+    "total": 135,
+    "jakarta": 119,
+    "bali": 16,
+    "titles": 11
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "the venue; event/performance is the dated show"
+  },
+  {
+   "facet": "subtype",
+   "slug": "nature",
+   "label": "Nature spot",
+   "parent": "do",
+   "aliases": [
+    "waterfall",
+    "waterfalls",
+    "lake",
+    "hot spring",
+    "hot springs",
+    "mangrove",
+    "national park",
+    "rice terrace",
+    "rice terraces",
+    "viewpoint"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Waterfall",
+   "mentions": {
+    "total": 115,
+    "jakarta": 39,
+    "bali": 76,
+    "titles": 6
+   },
+   "merged_from": [
+    {
+     "candidate": "venue_kind/Rice terrace",
+     "total": 71,
+     "jakarta": 8,
+     "bali": 63,
+     "titles": 0
+    },
+    {
+     "candidate": "venue_kind/Hot spring",
+     "total": 28,
+     "jakarta": 9,
+     "bali": 19,
+     "titles": 2
+    }
+   ],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "merges Rice terrace (71) and Hot spring (28): the missing 'outdoor place to go' node Bali's Nature and Outdoors category needed"
+  },
+  {
+   "facet": "subtype",
+   "slug": "winery-distillery",
+   "label": "Winery & distillery",
+   "parent": "drink",
+   "aliases": [
+    "winery",
+    "vineyard",
+    "distillery",
+    "brewery",
+    "taproom",
+    "cellar door"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Winery",
+   "mentions": {
+    "total": 76,
+    "jakarta": 34,
+    "bali": 42,
+    "titles": 1
+   },
+   "merged_from": [
+    {
+     "candidate": "venue_kind/Distillery",
+     "total": 39,
+     "jakarta": 17,
+     "bali": 22,
+     "titles": 0
+    }
+   ],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "merges Distillery (39); Brewery / taproom (12) is below threshold and rides along as an alias"
+  },
+  {
+   "facet": "subtype",
+   "slug": "karaoke",
+   "label": "Karaoke",
+   "parent": "drink",
+   "aliases": [
+    "KTV",
+    "karaoke bar"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Karaoke",
+   "mentions": {
+    "total": 54,
+    "jakarta": 42,
+    "bali": 12,
+    "titles": 3
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "cinema",
+   "label": "Cinema",
+   "parent": "do",
+   "aliases": [
+    "movie theatre",
+    "movie theater",
+    "XXI",
+    "CGV"
+   ],
+   "geo": null,
+   "from_candidate": "venue_kind/Cinema",
+   "mentions": {
+    "total": 26,
+    "jakarta": 19,
+    "bali": 7,
+    "titles": 2
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_subtype",
+   "attrs": null,
+   "note": "the venue; event/screening is the dated showing"
+  },
+  {
+   "facet": "topic",
+   "slug": "food-drink",
+   "label": "Food & drink",
+   "parent": null,
+   "aliases": [
+    "culinary",
+    "gastronomy",
+    "recipe",
+    "recipes",
+    "cooking"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Food & drink",
+   "mentions": {
+    "total": 3713,
+    "jakarta": 1891,
+    "bali": 1822,
+    "titles": 444
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "'chef', 'wine', 'coffee', 'cocktail' inflate; not aliases"
+  },
+  {
+   "facet": "topic",
+   "slug": "weddings",
+   "label": "Weddings & romance",
+   "parent": null,
+   "aliases": [
+    "wedding",
+    "weddings",
+    "bridal",
+    "honeymoon",
+    "romance"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Weddings & romance",
+   "mentions": {
+    "total": 1384,
+    "jakarta": 722,
+    "bali": 662,
+    "titles": 148
+   },
+   "merged_from": [
+    {
+     "candidate": "topic/Weddings",
+     "total": 170,
+     "jakarta": 98,
+     "bali": 72,
+     "titles": 15
+    }
+   ],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "merges the Weddings topic candidate (170); 'love' inflates and is not an alias"
+  },
+  {
+   "facet": "topic",
+   "slug": "religion-spirituality",
+   "label": "Religion & spirituality",
+   "parent": null,
+   "aliases": [
+    "Hindu",
+    "Hinduism",
+    "Islam",
+    "Buddhism",
+    "spirituality",
+    "spiritual"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Religion & spirituality",
+   "mentions": {
+    "total": 956,
+    "jakarta": 351,
+    "bali": 605,
+    "titles": 35
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "'church' / 'mosque' belong to do/place-of-worship"
+  },
+  {
+   "facet": "topic",
+   "slug": "coffee-culture",
+   "label": "Coffee culture",
+   "parent": null,
+   "aliases": [
+    "barista",
+    "roastery",
+    "specialty coffee"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Coffee culture",
+   "mentions": {
+    "total": 899,
+    "jakarta": 477,
+    "bali": 422,
+    "titles": 60
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "urban-issues",
+   "label": "Urban issues",
+   "parent": null,
+   "aliases": [
+    "flooding",
+    "pollution",
+    "air quality",
+    "city planning",
+    "congestion"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Urban issues",
+   "mentions": {
+    "total": 821,
+    "jakarta": 584,
+    "bali": 237,
+    "titles": 47
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "governor names dropped from the aliases"
+  },
+  {
+   "facet": "topic",
+   "slug": "agriculture",
+   "label": "Agriculture & food systems",
+   "parent": null,
+   "aliases": [
+    "farmers",
+    "farming",
+    "fishermen",
+    "seaweed farming",
+    "permaculture"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Agriculture & food systems",
+   "mentions": {
+    "total": 736,
+    "jakarta": 287,
+    "bali": 449,
+    "titles": 22
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "covid-19",
+   "label": "Covid-19",
+   "parent": null,
+   "aliases": [
+    "Covid",
+    "pandemic",
+    "lockdown",
+    "PSBB",
+    "PPKM",
+    "new normal"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Covid-19",
+   "mentions": {
+    "total": 438,
+    "jakarta": 192,
+    "bali": 246,
+    "titles": 62
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "pets-animals",
+   "label": "Pets & animals",
+   "parent": null,
+   "aliases": [
+    "dogs",
+    "cats",
+    "animal welfare",
+    "wildlife",
+    "sea turtles"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Pets & animals",
+   "mentions": {
+    "total": 418,
+    "jakarta": 160,
+    "bali": 258,
+    "titles": 27
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "craft-spirits",
+   "label": "Craft spirits & brewing",
+   "parent": null,
+   "aliases": [
+    "arak",
+    "gin",
+    "rum",
+    "craft beer",
+    "distillery"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Craft spirits",
+   "mentions": {
+    "total": 393,
+    "jakarta": 142,
+    "bali": 251,
+    "titles": 41
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": "'winery' / 'vineyard' belong to drink/winery-distillery"
+  },
+  {
+   "facet": "topic",
+   "slug": "spa-beauty",
+   "label": "Spa & beauty",
+   "parent": null,
+   "aliases": [
+    "facial",
+    "skincare",
+    "beauty"
+   ],
+   "geo": null,
+   "from_candidate": "topic/Spa & beauty",
+   "mentions": {
+    "total": 190,
+    "jakarta": 56,
+    "bali": 134,
+    "titles": 8
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "tourism",
+   "label": "Tourism",
+   "parent": null,
+   "aliases": [
+    "mass tourism",
+    "overtourism",
+    "tourism history"
+   ],
+   "geo": null,
+   "from_candidate": "topic/History of tourism",
+   "mentions": {
+    "total": 34,
+    "jakarta": 6,
+    "bali": 28,
+    "titles": 1
+   },
+   "merged_from": [],
+   "requires_migration": false,
+   "payload_enum": null,
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "tropical",
+   "label": "Tropical",
+   "parent": null,
+   "aliases": [
+    "island-style",
+    "resort-style"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Tropical",
+   "mentions": {
+    "total": 2895,
+    "jakarta": 623,
+    "bali": 2272,
+    "titles": 148
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "bare 'island' inflates; not an alias"
+  },
+  {
+   "facet": "vibe",
+   "slug": "authentic",
+   "label": "Authentic",
+   "parent": null,
+   "aliases": [
+    "traditional"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Authentic",
+   "mentions": {
+    "total": 2831,
+    "jakarta": 1286,
+    "bali": 1545,
+    "titles": 109
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "modern",
+   "label": "Modern",
+   "parent": null,
+   "aliases": [
+    "contemporary",
+    "minimalist",
+    "industrial",
+    "sleek"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Modern",
+   "mentions": {
+    "total": 2573,
+    "jakarta": 1353,
+    "bali": 1220,
+    "titles": 114
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "'contemporary' also matches contemporary art -- 114 title hits still support it"
+  },
+  {
+   "facet": "vibe",
+   "slug": "exclusive",
+   "label": "Exclusive",
+   "parent": null,
+   "aliases": [
+    "members-only",
+    "VIP"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Exclusive",
+   "mentions": {
+    "total": 1996,
+    "jakarta": 1060,
+    "bali": 936,
+    "titles": 62
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "'private' inflates; not an alias"
+  },
+  {
+   "facet": "vibe",
+   "slug": "chic",
+   "label": "Chic",
+   "parent": null,
+   "aliases": [
+    "stylish",
+    "elegant",
+    "sophisticated",
+    "refined"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Chic",
+   "mentions": {
+    "total": 1608,
+    "jakarta": 724,
+    "bali": 884,
+    "titles": 67
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "wholesome",
+   "label": "Wholesome",
+   "parent": null,
+   "aliases": [
+    "mindful",
+    "conscious"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Wholesome",
+   "mentions": {
+    "total": 887,
+    "jakarta": 421,
+    "bali": 466,
+    "titles": 37
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "'healthy' belongs to amenities/healthy-menu"
+  },
+  {
+   "facet": "vibe",
+   "slug": "glamorous",
+   "label": "Glamorous",
+   "parent": null,
+   "aliases": [
+    "glam",
+    "lavish",
+    "decadent",
+    "indulgent"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Glamorous",
+   "mentions": {
+    "total": 791,
+    "jakarta": 343,
+    "bali": 448,
+    "titles": 45
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "quirky",
+   "label": "Quirky",
+   "parent": null,
+   "aliases": [
+    "whimsical",
+    "eclectic",
+    "playful"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Quirky",
+   "mentions": {
+    "total": 643,
+    "jakarta": 261,
+    "bali": 382,
+    "titles": 19
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "edgy",
+   "label": "Edgy",
+   "parent": null,
+   "aliases": [
+    "underground",
+    "alternative",
+    "cool"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Cool",
+   "mentions": {
+    "total": 522,
+    "jakarta": 207,
+    "bali": 315,
+    "titles": 9
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "relabelled from 'Cool' -- the bare word is a homonym; kept as an alias for the prompt"
+  },
+  {
+   "facet": "vibe",
+   "slug": "rustic",
+   "label": "Rustic",
+   "parent": null,
+   "aliases": [
+    "earthy"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Rustic",
+   "mentions": {
+    "total": 455,
+    "jakarta": 210,
+    "bali": 245,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "'raw' inflates; not an alias"
+  },
+  {
+   "facet": "vibe",
+   "slug": "nostalgic",
+   "label": "Nostalgic",
+   "parent": null,
+   "aliases": [
+    "retro",
+    "vintage",
+    "colonial charm"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Nostalgic",
+   "mentions": {
+    "total": 242,
+    "jakarta": 145,
+    "bali": 97,
+    "titles": 5
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "family-friendly",
+   "label": "Family-friendly",
+   "parent": null,
+   "aliases": [
+    "kid-friendly"
+   ],
+   "geo": null,
+   "from_candidate": "vibe/Family-friendly",
+   "mentions": {
+    "total": 176,
+    "jakarta": 92,
+    "bali": 84,
+    "titles": 9
+   },
+   "merged_from": [],
+   "requires_migration": true,
+   "payload_enum": "enum_places_vibe",
+   "attrs": null,
+   "note": "overlaps audience/family and amenities/kids-club by design: a vibe of the place, not who it is for"
+  }
+ ],
+ "add_alias": [
+  {
+   "facet": "amenities",
+   "slug": "coworking-space",
+   "aliases": [
+    "co-working",
+    "coworking"
+   ],
+   "from_candidates": [
+    "amenities/Co-working"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Co-working",
+     "total": 347,
+     "jakarta": 243,
+     "bali": 104,
+     "titles": 13
+    }
+   ],
+   "requires_migration": false,
+   "note": "'ballroom' and 'MICE' were lumped into this candidate by the lexicon and carry no separate count -- not added"
+  },
+  {
+   "facet": "amenities",
+   "slug": "gym",
+   "aliases": [
+    "fitness center"
+   ],
+   "from_candidates": [
+    "amenities/Gym (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Gym",
+     "total": 37,
+     "jakarta": 30,
+     "bali": 7,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "kids-club",
+   "aliases": [
+    "kids' club",
+    "kid's club",
+    "children's club"
+   ],
+   "from_candidates": [
+    "amenities/Kids club (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Kids club",
+     "total": 165,
+     "jakarta": 80,
+     "bali": 85,
+     "titles": 7,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "ocean-view",
+   "aliases": [
+    "cliff-top",
+    "cliffside"
+   ],
+   "from_candidates": [
+    "amenities/Ocean view (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Ocean view",
+     "total": 61,
+     "jakarta": 10,
+     "bali": 51,
+     "titles": 5,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "outdoor-seating",
+   "aliases": [
+    "alfresco",
+    "garden seating"
+   ],
+   "from_candidates": [
+    "amenities/Outdoor seating (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Outdoor seating",
+     "total": 70,
+     "jakarta": 23,
+     "bali": 47,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "amenities",
+   "slug": "vegan-options",
+   "aliases": [
+    "vegan"
+   ],
+   "from_candidates": [
+    "cuisine/Vegan",
+    "amenities/Vegan options (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Vegan",
+     "total": 152,
+     "jakarta": 32,
+     "bali": 120,
+     "titles": 7
+    },
+    {
+     "candidate": "amenities/Vegan options",
+     "total": 152,
+     "jakarta": 32,
+     "bali": 120,
+     "titles": 7,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": "dietary -> amenities (D15)"
+  },
+  {
+   "facet": "amenities",
+   "slug": "vegetarian-friendly",
+   "aliases": [
+    "vegetarian",
+    "vegetarian options"
+   ],
+   "from_candidates": [
+    "amenities/Vegetarian options"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Vegetarian options",
+     "total": 181,
+     "jakarta": 55,
+     "bali": 126,
+     "titles": 8
+    },
+    {
+     "candidate": "cuisine/Vegetarian",
+     "total": 181,
+     "jakarta": 55,
+     "bali": 126,
+     "titles": 8,
+     "merged": true
+    }
+   ],
+   "requires_migration": false,
+   "note": "dietary -> amenities (D15); merges the cuisine/Vegetarian candidate"
+  },
+  {
+   "facet": "amenities",
+   "slug": "wifi",
+   "aliases": [
+    "wifi"
+   ],
+   "from_candidates": [
+    "amenities/Wi-Fi (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "amenities/Wi-Fi",
+     "total": 60,
+     "jakarta": 30,
+     "bali": 30,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "business-traveller",
+   "aliases": [
+    "business travellers",
+    "business traveler",
+    "corporate travellers"
+   ],
+   "from_candidates": [
+    "audience/Business traveller (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Business traveller",
+     "total": 41,
+     "jakarta": 35,
+     "bali": 6,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "couples",
+   "aliases": [
+    "honeymooners",
+    "lovebirds"
+   ],
+   "from_candidates": [
+    "audience/Couples (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Couples",
+     "total": 62,
+     "jakarta": 21,
+     "bali": 41,
+     "titles": 3,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "expat",
+   "aliases": [
+    "expats",
+    "expatriates",
+    "international community"
+   ],
+   "from_candidates": [
+    "audience/Expat (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Expat",
+     "total": 142,
+     "jakarta": 90,
+     "bali": 52,
+     "titles": 3,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "family",
+   "aliases": [
+    "families",
+    "toddlers"
+   ],
+   "from_candidates": [
+    "audience/Family (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Family",
+     "total": 994,
+     "jakarta": 540,
+     "bali": 454,
+     "titles": 10,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "local",
+   "aliases": [
+    "locals",
+    "Jakartans",
+    "residents"
+   ],
+   "from_candidates": [
+    "audience/Local (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Local",
+     "total": 801,
+     "jakarta": 425,
+     "bali": 376,
+     "titles": 11,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "audience",
+   "slug": "tourist",
+   "aliases": [
+    "tourists",
+    "visitors",
+    "travellers",
+    "traveler",
+    "travelers"
+   ],
+   "from_candidates": [
+    "audience/Tourist (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "audience/Tourist",
+     "total": 1926,
+     "jakarta": 942,
+     "bali": 984,
+     "titles": 24,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "american",
+   "aliases": [
+    "burger"
+   ],
+   "from_candidates": [
+    "cuisine/Burgers"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Burgers",
+     "total": 115,
+     "jakarta": 43,
+     "bali": 72,
+     "titles": 2
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "balinese",
+   "aliases": [
+    "Balinese cuisine",
+    "Balinese food"
+   ],
+   "from_candidates": [
+    "cuisine/Balinese (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Balinese",
+     "total": 84,
+     "jakarta": 9,
+     "bali": 75,
+     "titles": 5,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "chinese",
+   "aliases": [
+    "Szechuan"
+   ],
+   "from_candidates": [
+    "cuisine/Sichuan"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Sichuan",
+     "total": 24,
+     "jakarta": 17,
+     "bali": 7,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "indonesian",
+   "aliases": [
+    "Indonesian cuisine",
+    "Indonesian food"
+   ],
+   "from_candidates": [
+    "cuisine/Indonesian (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Indonesian",
+     "total": 272,
+     "jakarta": 153,
+     "bali": 119,
+     "titles": 14,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "japanese",
+   "aliases": [
+    "teppanyaki"
+   ],
+   "from_candidates": [
+    "cuisine/Teppanyaki"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Teppanyaki",
+     "total": 98,
+     "jakarta": 48,
+     "bali": 50,
+     "titles": 9
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "latin-american",
+   "aliases": [
+    "Nikkei"
+   ],
+   "from_candidates": [
+    "cuisine/Peruvian"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Peruvian",
+     "total": 40,
+     "jakarta": 22,
+     "bali": 18,
+     "titles": 5
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "mexican",
+   "aliases": [
+    "taco",
+    "tacos"
+   ],
+   "from_candidates": [
+    "cuisine/Mexican (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Mexican",
+     "total": 87,
+     "jakarta": 29,
+     "bali": 58,
+     "titles": 1,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "middle-eastern",
+   "aliases": [
+    "Arab"
+   ],
+   "from_candidates": [
+    "cuisine/Middle Eastern (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Middle Eastern",
+     "total": 31,
+     "jakarta": 24,
+     "bali": 7,
+     "titles": 2,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "steakhouse",
+   "aliases": [
+    "steak"
+   ],
+   "from_candidates": [
+    "cuisine/Steak"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Steak",
+     "total": 266,
+     "jakarta": 137,
+     "bali": 129,
+     "titles": 8
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "cuisine",
+   "slug": "western",
+   "aliases": [
+    "Western food",
+    "Western cuisine"
+   ],
+   "from_candidates": [
+    "cuisine/Western (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Western",
+     "total": 36,
+     "jakarta": 26,
+     "bali": 10,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "cipete",
+   "aliases": [
+    "Antasari",
+    "Pangeran Antasari"
+   ],
+   "from_candidates": [
+    "location_jakarta/Antasari"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_jakarta/Antasari",
+     "total": 25,
+     "jakarta": 25,
+     "bali": 0,
+     "titles": 5
+    }
+   ],
+   "requires_migration": false,
+   "note": "parallel to Fatmawati, already a cipete alias"
+  },
+  {
+   "facet": "location",
+   "slug": "east-bali",
+   "aliases": [
+    "Amlapura",
+    "Tirta Gangga",
+    "Tenganan",
+    "Besakih",
+    "Padang Bai",
+    "Padangbai"
+   ],
+   "from_candidates": [
+    "location_bali/Karangasem"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Karangasem",
+     "total": 115,
+     "jakarta": 5,
+     "bali": 110,
+     "titles": 8
+    }
+   ],
+   "requires_migration": false,
+   "note": "'Karangasem' is already east-bali's alias -- the regency IS East Bali; its towns become aliases rather than a redundant node"
+  },
+  {
+   "facet": "location",
+   "slug": "gianyar",
+   "aliases": [
+    "Ketewel",
+    "Saba"
+   ],
+   "from_candidates": [
+    "location_bali/Sanur / Ketewel"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Sanur / Ketewel",
+     "total": 25,
+     "jakarta": 3,
+     "bali": 22,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": "Gianyar coast, not Sanur (the lexicon label was wrong)"
+  },
+  {
+   "facet": "location",
+   "slug": "jimbaran",
+   "aliases": [
+    "Kedonganan"
+   ],
+   "from_candidates": [
+    "location_bali/Kedonganan"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Kedonganan",
+     "total": 27,
+     "jakarta": 3,
+     "bali": 24,
+     "titles": 4
+    }
+   ],
+   "requires_migration": false,
+   "note": "adjacent beach on the same bay"
+  },
+  {
+   "facet": "location",
+   "slug": "komodo",
+   "aliases": [
+    "Komodo"
+   ],
+   "from_candidates": [
+    "location_elsewhere/Komodo & Labuan Bajo (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_elsewhere/Komodo & Labuan Bajo",
+     "total": 74,
+     "jakarta": 34,
+     "bali": 40,
+     "titles": 17,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "lombok",
+   "aliases": [
+    "Gili"
+   ],
+   "from_candidates": [
+    "location_elsewhere/Lombok (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_elsewhere/Lombok",
+     "total": 39,
+     "jakarta": 10,
+     "bali": 29,
+     "titles": 8,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "sanur",
+   "aliases": [
+    "Serangan"
+   ],
+   "from_candidates": [
+    "location_bali/Serangan"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Serangan",
+     "total": 21,
+     "jakarta": 0,
+     "bali": 21,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": "island off Sanur"
+  },
+  {
+   "facet": "location",
+   "slug": "ubud",
+   "aliases": [
+    "Peliatan"
+   ],
+   "from_candidates": [
+    "location_bali/Ubud (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Ubud",
+     "total": 24,
+     "jakarta": 1,
+     "bali": 23,
+     "titles": 1,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "location",
+   "slug": "uluwatu",
+   "aliases": [
+    "Balangan"
+   ],
+   "from_candidates": [
+    "location_bali/Uluwatu (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "location_bali/Uluwatu",
+     "total": 21,
+     "jakarta": 3,
+     "bali": 18,
+     "titles": 1,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "business-trip",
+   "aliases": [
+    "business dinner",
+    "team building",
+    "team-building",
+    "MICE"
+   ],
+   "from_candidates": [
+    "occasion/Business"
+   ],
+   "mentions": [
+    {
+     "candidate": "occasion/Business",
+     "total": 570,
+     "jakarta": 417,
+     "bali": 153,
+     "titles": 15
+    }
+   ],
+   "requires_migration": false,
+   "note": "the label duplicates business-trip, so an alias set, not a term; 'client' and 'meeting' inflate and are not added"
+  },
+  {
+   "facet": "occasion",
+   "slug": "date-night",
+   "aliases": [
+    "Valentine",
+    "romantic dinner"
+   ],
+   "from_candidates": [
+    "occasion/Date night (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "occasion/Date night",
+     "total": 136,
+     "jakarta": 69,
+     "bali": 67,
+     "titles": 38,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "family-day",
+   "aliases": [
+    "family outing",
+    "family getaway"
+   ],
+   "from_candidates": [
+    "occasion/Family day (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "occasion/Family day",
+     "total": 26,
+     "jakarta": 16,
+     "bali": 10,
+     "titles": 3,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "group-gathering",
+   "aliases": [
+    "large group",
+    "group booking",
+    "group of friends"
+   ],
+   "from_candidates": [
+    "occasion/Group"
+   ],
+   "mentions": [
+    {
+     "candidate": "occasion/Group",
+     "total": 49,
+     "jakarta": 21,
+     "bali": 28,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "occasion",
+   "slug": "night-out",
+   "aliases": [
+    "after-work",
+    "after work",
+    "girls' night",
+    "boys' night"
+   ],
+   "from_candidates": [
+    "occasion/Night out (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "occasion/Night out",
+     "total": 43,
+     "jakarta": 36,
+     "bali": 7,
+     "titles": 2,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "adventure",
+   "aliases": [
+    "volcano",
+    "Mount Batur",
+    "Mount Agung",
+    "sunrise trek",
+    "trek",
+    "trekking",
+    "hiking",
+    "ATV",
+    "quad bike",
+    "buggy",
+    "horse riding",
+    "horseback riding",
+    "helicopter tour",
+    "hot air balloon",
+    "rafting",
+    "white water rafting"
+   ],
+   "from_candidates": [
+    "venue_kind/Volcano",
+    "venue_kind/Trekking / hiking",
+    "venue_kind/ATV / buggy",
+    "venue_kind/Horse riding",
+    "venue_kind/Helicopter / balloon",
+    "venue_kind/Rafting"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Volcano",
+     "total": 121,
+     "jakarta": 6,
+     "bali": 115,
+     "titles": 3
+    },
+    {
+     "candidate": "venue_kind/Trekking / hiking",
+     "total": 69,
+     "jakarta": 24,
+     "bali": 45,
+     "titles": 0
+    },
+    {
+     "candidate": "venue_kind/ATV / buggy",
+     "total": 46,
+     "jakarta": 13,
+     "bali": 33,
+     "titles": 4
+    },
+    {
+     "candidate": "venue_kind/Horse riding",
+     "total": 32,
+     "jakarta": 17,
+     "bali": 15,
+     "titles": 2
+    },
+    {
+     "candidate": "venue_kind/Helicopter / balloon",
+     "total": 31,
+     "jakarta": 11,
+     "bali": 20,
+     "titles": 1
+    },
+    {
+     "candidate": "venue_kind/Rafting",
+     "total": 25,
+     "jakarta": 4,
+     "bali": 21,
+     "titles": 2
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "attraction",
+   "aliases": [
+    "palace",
+    "water palace",
+    "puri",
+    "waterpark",
+    "water park"
+   ],
+   "from_candidates": [
+    "venue_kind/Palace",
+    "venue_kind/Waterpark"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Palace",
+     "total": 249,
+     "jakarta": 136,
+     "bali": 113,
+     "titles": 16
+    },
+    {
+     "candidate": "venue_kind/Waterpark",
+     "total": 37,
+     "jakarta": 12,
+     "bali": 25,
+     "titles": 1
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "bakery",
+   "aliases": [
+    "sourdough",
+    "croissant"
+   ],
+   "from_candidates": [
+    "cuisine/Bakery"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Bakery",
+     "total": 68,
+     "jakarta": 30,
+     "bali": 38,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "beach-club",
+   "aliases": [
+    "beach clubs"
+   ],
+   "from_candidates": [
+    "venue_kind/Beach club (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Beach club",
+     "total": 55,
+     "jakarta": 10,
+     "bali": 45,
+     "titles": 4,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "cafe",
+   "aliases": [
+    "café",
+    "coffee shop",
+    "roastery",
+    "kopi",
+    "tea house",
+    "teahouse",
+    "tea room"
+   ],
+   "from_candidates": [
+    "venue_kind/Coffee shop",
+    "venue_kind/Tea house"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Coffee shop",
+     "total": 400,
+     "jakarta": 207,
+     "bali": 193,
+     "titles": 42
+    },
+    {
+     "candidate": "venue_kind/Tea house",
+     "total": 24,
+     "jakarta": 20,
+     "bali": 4,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "conference",
+   "aliases": [
+    "convention centre",
+    "convention center",
+    "exhibition hall",
+    "JCC",
+    "ICE BSD",
+    "JIExpo"
+   ],
+   "from_candidates": [
+    "venue_kind/Convention centre"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Convention centre",
+     "total": 112,
+     "jakarta": 94,
+     "bali": 18,
+     "titles": 5
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "education",
+   "aliases": [
+    "school",
+    "kindergarten",
+    "preschool",
+    "international school"
+   ],
+   "from_candidates": [
+    "venue_kind/School"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/School",
+     "total": 54,
+     "jakarta": 47,
+     "bali": 7,
+     "titles": 7
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "fine-dining",
+   "aliases": [
+    "degustation",
+    "Michelin",
+    "tasting menu"
+   ],
+   "from_candidates": [
+    "cuisine/Fine dining"
+   ],
+   "mentions": [
+    {
+     "candidate": "cuisine/Fine dining",
+     "total": 193,
+     "jakarta": 90,
+     "bali": 103,
+     "titles": 17
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "mall",
+   "aliases": [
+    "shopping mall",
+    "plaza"
+   ],
+   "from_candidates": [
+    "venue_kind/Mall (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Mall",
+     "total": 269,
+     "jakarta": 205,
+     "bali": 64,
+     "titles": 28,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "market",
+   "aliases": [
+    "night market"
+   ],
+   "from_candidates": [
+    "venue_kind/Market (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Market",
+     "total": 24,
+     "jakarta": 11,
+     "bali": 13,
+     "titles": 3,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "pop-up",
+   "aliases": [
+    "pop up"
+   ],
+   "from_candidates": [
+    "venue_kind/Pop-up (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Pop-up",
+     "total": 35,
+     "jakarta": 23,
+     "bali": 12,
+     "titles": 1,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "retreat",
+   "aliases": [
+    "retreat centre",
+    "retreat center",
+    "healing centre",
+    "wellness centre",
+    "wellness center"
+   ],
+   "from_candidates": [
+    "venue_kind/Retreat centre"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Retreat centre",
+     "total": 54,
+     "jakarta": 18,
+     "bali": 36,
+     "titles": 3
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "salon",
+   "aliases": [
+    "barber",
+    "nail salon",
+    "manicure"
+   ],
+   "from_candidates": [
+    "venue_kind/Barbershop",
+    "venue_kind/Nail bar"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Barbershop",
+     "total": 35,
+     "jakarta": 14,
+     "bali": 21,
+     "titles": 2
+    },
+    {
+     "candidate": "venue_kind/Nail bar",
+     "total": 29,
+     "jakarta": 7,
+     "bali": 22,
+     "titles": 2
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "serviced-apartment",
+   "aliases": [
+    "serviced apartments",
+    "residence"
+   ],
+   "from_candidates": [
+    "venue_kind/Serviced apartment (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Serviced apartment",
+     "total": 219,
+     "jakarta": 177,
+     "bali": 42,
+     "titles": 31,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "sports",
+   "aliases": [
+    "stadium",
+    "arena"
+   ],
+   "from_candidates": [
+    "venue_kind/Stadium"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Stadium",
+     "total": 81,
+     "jakarta": 56,
+     "bali": 25,
+     "titles": 1
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "sports-activity",
+   "aliases": [
+    "golf course",
+    "golf club",
+    "driving range",
+    "billiards",
+    "pool hall",
+    "arcade",
+    "trampoline park",
+    "escape room"
+   ],
+   "from_candidates": [
+    "venue_kind/Golf course",
+    "venue_kind/Billiards / bowling"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Golf course",
+     "total": 68,
+     "jakarta": 49,
+     "bali": 19,
+     "titles": 1
+    },
+    {
+     "candidate": "venue_kind/Billiards / bowling",
+     "total": 66,
+     "jakarta": 28,
+     "bali": 38,
+     "titles": 5
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "street-food",
+   "aliases": [
+    "warung",
+    "warungs"
+   ],
+   "from_candidates": [
+    "venue_kind/Warung"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Warung",
+     "total": 31,
+     "jakarta": 7,
+     "bali": 24,
+     "titles": 0
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "tour",
+   "aliases": [
+    "bike tour",
+    "cycling tour",
+    "bicycle tour",
+    "sunset cruise",
+    "dinner cruise",
+    "liveaboard",
+    "phinisi"
+   ],
+   "from_candidates": [
+    "venue_kind/Cycling",
+    "venue_kind/Cruise"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Cycling",
+     "total": 64,
+     "jakarta": 31,
+     "bali": 33,
+     "titles": 2
+    },
+    {
+     "candidate": "venue_kind/Cruise",
+     "total": 31,
+     "jakarta": 13,
+     "bali": 18,
+     "titles": 4
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "villa",
+   "aliases": [
+    "villas"
+   ],
+   "from_candidates": [
+    "venue_kind/Villa (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Villa",
+     "total": 483,
+     "jakarta": 113,
+     "bali": 370,
+     "titles": 39,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "watersports",
+   "aliases": [
+    "surf",
+    "surfing",
+    "surf school",
+    "surf camp",
+    "snorkelling",
+    "snorkeling",
+    "scuba",
+    "diving",
+    "freediving",
+    "kitesurfing",
+    "kitesurf",
+    "sailing",
+    "catamaran",
+    "yacht"
+   ],
+   "from_candidates": [
+    "venue_kind/Surfing",
+    "venue_kind/Snorkelling / diving",
+    "venue_kind/Kitesurfing / sailing"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Surfing",
+     "total": 154,
+     "jakarta": 32,
+     "bali": 122,
+     "titles": 9
+    },
+    {
+     "candidate": "venue_kind/Snorkelling / diving",
+     "total": 53,
+     "jakarta": 26,
+     "bali": 27,
+     "titles": 0
+    },
+    {
+     "candidate": "venue_kind/Kitesurfing / sailing",
+     "total": 37,
+     "jakarta": 10,
+     "bali": 27,
+     "titles": 6
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "workshop",
+   "aliases": [
+    "cooking class",
+    "cooking classes",
+    "culinary class"
+   ],
+   "from_candidates": [
+    "venue_kind/Cooking class"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Cooking class",
+     "total": 69,
+     "jakarta": 32,
+     "bali": 37,
+     "titles": 1
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "subtype",
+   "slug": "yoga",
+   "aliases": [
+    "yoga studio",
+    "yoga shala",
+    "shala",
+    "yoga barn"
+   ],
+   "from_candidates": [
+    "venue_kind/Yoga studio"
+   ],
+   "mentions": [
+    {
+     "candidate": "venue_kind/Yoga studio",
+     "total": 64,
+     "jakarta": 12,
+     "bali": 52,
+     "titles": 2
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "business",
+   "aliases": [
+    "entrepreneur",
+    "start-up"
+   ],
+   "from_candidates": [
+    "topic/Business (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Business",
+     "total": 80,
+     "jakarta": 55,
+     "bali": 25,
+     "titles": 0,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "community",
+   "aliases": [
+    "foundation",
+    "volunteer",
+    "fundraising"
+   ],
+   "from_candidates": [
+    "topic/Community (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Community",
+     "total": 654,
+     "jakarta": 383,
+     "bali": 271,
+     "titles": 35,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "culture",
+   "aliases": [
+    "ritual"
+   ],
+   "from_candidates": [
+    "topic/Culture (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Culture",
+     "total": 512,
+     "jakarta": 143,
+     "bali": 369,
+     "titles": 20,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "design",
+   "aliases": [
+    "architect"
+   ],
+   "from_candidates": [
+    "topic/Design (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Design",
+     "total": 138,
+     "jakarta": 77,
+     "bali": 61,
+     "titles": 1,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "education",
+   "aliases": [
+    "curriculum"
+   ],
+   "from_candidates": [
+    "topic/Education (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Education",
+     "total": 568,
+     "jakarta": 423,
+     "bali": 145,
+     "titles": 34,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "expat-life",
+   "aliases": [
+    "living in Bali",
+    "KITAS",
+    "moving to"
+   ],
+   "from_candidates": [
+    "topic/Expat life (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Expat life",
+     "total": 104,
+     "jakarta": 50,
+     "bali": 54,
+     "titles": 4,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "health",
+   "aliases": [
+    "well-being"
+   ],
+   "from_candidates": [
+    "topic/Health (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Health",
+     "total": 202,
+     "jakarta": 93,
+     "bali": 109,
+     "titles": 4,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "literature",
+   "aliases": [
+    "novel"
+   ],
+   "from_candidates": [
+    "topic/Literature (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Literature",
+     "total": 1003,
+     "jakarta": 503,
+     "bali": 500,
+     "titles": 28,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "music",
+   "aliases": [
+    "band"
+   ],
+   "from_candidates": [
+    "topic/Music (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Music",
+     "total": 292,
+     "jakarta": 166,
+     "bali": 126,
+     "titles": 2,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "photography",
+   "aliases": [
+    "photographer"
+   ],
+   "from_candidates": [
+    "topic/Photography (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Photography",
+     "total": 117,
+     "jakarta": 68,
+     "bali": 49,
+     "titles": 6,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "property",
+   "aliases": [
+    "apartment"
+   ],
+   "from_candidates": [
+    "topic/Property (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Property",
+     "total": 105,
+     "jakarta": 93,
+     "bali": 12,
+     "titles": 6,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "sports",
+   "aliases": [
+    "tennis",
+    "rugby",
+    "badminton",
+    "basketball",
+    "MotoGP",
+    "Formula"
+   ],
+   "from_candidates": [
+    "topic/Sports (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Sports",
+     "total": 213,
+     "jakarta": 125,
+     "bali": 88,
+     "titles": 7,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "sustainability",
+   "aliases": [
+    "sustainable",
+    "eco-friendly",
+    "zero-waste",
+    "plastic",
+    "recycling"
+   ],
+   "from_candidates": [
+    "topic/Sustainability (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Sustainability",
+     "total": 1022,
+     "jakarta": 533,
+     "bali": 489,
+     "titles": 105,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "technology",
+   "aliases": [
+    "artificial intelligence",
+    "fintech",
+    "e-commerce"
+   ],
+   "from_candidates": [
+    "topic/Technology (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Technology",
+     "total": 165,
+     "jakarta": 119,
+     "bali": 46,
+     "titles": 5,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "transport",
+   "aliases": [
+    "LRT",
+    "toll road",
+    "TransJakarta",
+    "flight",
+    "airline"
+   ],
+   "from_candidates": [
+    "topic/Transport (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Transport",
+     "total": 255,
+     "jakarta": 178,
+     "bali": 77,
+     "titles": 8,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "topic",
+   "slug": "travel",
+   "aliases": [
+    "itinerary",
+    "tourism"
+   ],
+   "from_candidates": [
+    "topic/Travel (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "topic/Travel",
+     "total": 809,
+     "jakarta": 391,
+     "bali": 418,
+     "titles": 62,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "casual",
+   "aliases": [
+    "laidback"
+   ],
+   "from_candidates": [
+    "vibe/Casual (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Casual",
+     "total": 117,
+     "jakarta": 19,
+     "bali": 98,
+     "titles": 4,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "classic",
+   "aliases": [
+    "timeless",
+    "legendary",
+    "iconic"
+   ],
+   "from_candidates": [
+    "vibe/Classic (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Classic",
+     "total": 1366,
+     "jakarta": 587,
+     "bali": 779,
+     "titles": 57,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "cozy",
+   "aliases": [
+    "cosy"
+   ],
+   "from_candidates": [
+    "vibe/Cozy (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Cozy",
+     "total": 276,
+     "jakarta": 92,
+     "bali": 184,
+     "titles": 8,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "hidden-gem",
+   "aliases": [
+    "secret",
+    "tucked away"
+   ],
+   "from_candidates": [
+    "vibe/Hidden gem (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Hidden gem",
+     "total": 306,
+     "jakarta": 137,
+     "bali": 169,
+     "titles": 12,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "lively",
+   "aliases": [
+    "vibrant"
+   ],
+   "from_candidates": [
+    "vibe/Lively (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Lively",
+     "total": 975,
+     "jakarta": 443,
+     "bali": 532,
+     "titles": 25,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "luxury",
+   "aliases": [
+    "luxurious",
+    "5-star"
+   ],
+   "from_candidates": [
+    "vibe/Luxury (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Luxury",
+     "total": 689,
+     "jakarta": 306,
+     "bali": 383,
+     "titles": 28,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "scenic",
+   "aliases": [
+    "breathtaking view",
+    "panoramic",
+    "stunning views",
+    "sweeping views"
+   ],
+   "from_candidates": [
+    "vibe/Scenic (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Scenic",
+     "total": 276,
+     "jakarta": 123,
+     "bali": 153,
+     "titles": 3,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "serene",
+   "aliases": [
+    "calm",
+    "sanctuary",
+    "oasis"
+   ],
+   "from_candidates": [
+    "vibe/Serene (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Serene",
+     "total": 765,
+     "jakarta": 293,
+     "bali": 472,
+     "titles": 49,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  },
+  {
+   "facet": "vibe",
+   "slug": "trendy",
+   "aliases": [
+    "hipster",
+    "happening"
+   ],
+   "from_candidates": [
+    "vibe/Trendy (alias suggestion)"
+   ],
+   "mentions": [
+    {
+     "candidate": "vibe/Trendy",
+     "total": 208,
+     "jakarta": 114,
+     "bali": 94,
+     "titles": 2,
+     "alias_suggestion": true
+    }
+   ],
+   "requires_migration": false,
+   "note": ""
+  }
+ ],
+ "alias_forms_not_added": [
+  {
+   "facet": "amenities",
+   "slug": "kids-club",
+   "form": "family-friendly",
+   "reason": "now vibe/family-friendly"
+  },
+  {
+   "facet": "audience",
+   "slug": "family",
+   "form": "teens",
+   "reason": "audience/students carries 'teenagers'"
+  },
+  {
+   "facet": "location",
+   "slug": "bsd",
+   "form": "BSD",
+   "reason": "already the term's label"
+  },
+  {
+   "facet": "occasion",
+   "slug": "weekend-getaway",
+   "form": "escape",
+   "reason": "inflates ('escape the city', 647 mentions)"
+  },
+  {
+   "facet": "topic",
+   "slug": "fashion",
+   "form": "collection",
+   "reason": "inflates (art collection, hotel collection)"
+  },
+  {
+   "facet": "topic",
+   "slug": "literature",
+   "form": "book",
+   "reason": "inflates ('book now', 'book a table')"
+  },
+  {
+   "facet": "topic",
+   "slug": "education",
+   "form": "students",
+   "reason": "audience/students"
+  },
+  {
+   "facet": "topic",
+   "slug": "technology",
+   "form": "app",
+   "reason": "inflates"
+  },
+  {
+   "facet": "topic",
+   "slug": "property",
+   "form": "developer",
+   "reason": "ambiguous (software developer)"
+  }
+ ],
+ "merged": [
+  {
+   "candidate": "audience/Retiree",
+   "into": "audience/Seniors",
+   "mentions": {
+    "total": 20,
+    "jakarta": 9,
+    "bali": 11,
+    "titles": 0
+   },
+   "note": ""
+  },
+  {
+   "candidate": "cuisine/Vegetarian",
+   "into": "amenities/Vegetarian options",
+   "mentions": {
+    "total": 181,
+    "jakarta": 55,
+    "bali": 126,
+    "titles": 8
+   },
+   "note": "dietary -> amenities (D15)"
+  },
+  {
+   "candidate": "cuisine/Farm-to-table",
+   "into": "cuisine/Organic",
+   "mentions": {
+    "total": 58,
+    "jakarta": 14,
+    "bali": 44,
+    "titles": 3
+   },
+   "note": ""
+  },
+  {
+   "candidate": "cuisine/Gluten-free",
+   "into": "amenities/Gluten-free",
+   "mentions": {
+    "total": 40,
+    "jakarta": 11,
+    "bali": 29,
+    "titles": 0
+   },
+   "note": ""
+  },
+  {
+   "candidate": "topic/Weddings",
+   "into": "topic/Weddings & romance",
+   "mentions": {
+    "total": 170,
+    "jakarta": 98,
+    "bali": 72,
+    "titles": 15
+   },
+   "note": ""
+  },
+  {
+   "candidate": "venue_kind/Rice terrace",
+   "into": "venue_kind/Waterfall",
+   "mentions": {
+    "total": 71,
+    "jakarta": 8,
+    "bali": 63,
+    "titles": 0
+   },
+   "note": ""
+  },
+  {
+   "candidate": "venue_kind/Distillery",
+   "into": "venue_kind/Winery",
+   "mentions": {
+    "total": 39,
+    "jakarta": 17,
+    "bali": 22,
+    "titles": 0
+   },
+   "note": ""
+  },
+  {
+   "candidate": "venue_kind/Hot spring",
+   "into": "venue_kind/Waterfall",
+   "mentions": {
+    "total": 28,
+    "jakarta": 9,
+    "bali": 19,
+    "titles": 2
+   },
+   "note": ""
+  }
+ ],
+ "skipped": [
+  {
+   "candidate": "amenities/Karaoke",
+   "mentions": {
+    "total": 54,
+    "jakarta": 42,
+    "bali": 12,
+    "titles": 3
+   },
+   "reason": "covered by the new venue subtype drink/karaoke (identical surface forms); a karaoke room as a hotel amenity is not evidenced separately"
+  },
+  {
+   "candidate": "amenities/Yoga shala",
+   "mentions": {
+    "total": 45,
+    "jakarta": 8,
+    "bali": 37,
+    "titles": 0
+   },
+   "reason": "covered by the alias set added to wellness/yoga (yoga studio, yoga shala, shala); not evidenced as a separate resort amenity"
+  },
+  {
+   "candidate": "venue_kind/Co-working",
+   "mentions": {
+    "total": 44,
+    "jakarta": 16,
+    "bali": 28,
+    "titles": 4
+   },
+   "reason": "a co-working space has no venue-type node; covered by the alias set added to amenities/coworking-space"
+  }
+ ],
+ "drop_term": [
+  {
+   "facet": "location",
+   "slug": "rawamangun",
+   "reason": "2 corpus mentions, 0 in titles -- below every threshold; named by Hansel (D14).",
+   "migration_note": "Postgres cannot remove a value from enum_places_area_term in place: leave the orphaned value (harmless, nothing references it) or recreate the type. Delete the engine.terms row after confirming no entity_terms row references it (cross-DB, check every city).",
+   "mentions": {
+    "total": 2,
+    "jakarta": 2,
+    "bali": 0,
+    "titles": 0
+   },
+   "requires_migration": true,
+   "payload_enum": "enum_places_area_term"
+  }
+ ],
+ "trim_alias": [
+  {
+   "facet": "cuisine",
+   "slug": "javanese",
+   "remove": [
+    "Solo"
+   ],
+   "reason": "the city homonym; Solo-style food is Javanese without naming the city (Hansel: `solo`).",
+   "current_forms": [
+    "Javanese",
+    "Jawa",
+    "Solo",
+    "Jogja"
+   ],
+   "keep": [
+    "Javanese",
+    "Jawa",
+    "Jogja"
+   ],
+   "mentions_before": {
+    "total": 725,
+    "jakarta": 448,
+    "bali": 277,
+    "titles": 33
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "occasion",
+   "slug": "celebration",
+   "remove": [
+    "party"
+   ],
+   "reason": "'third party', 'party of four'; vibe/party owns the nightlife sense (Hansel: `party`).",
+   "current_forms": [
+    "Celebration",
+    "birthday",
+    "wedding",
+    "party"
+   ],
+   "keep": [
+    "Celebration",
+    "birthday",
+    "wedding"
+   ],
+   "mentions_before": {
+    "total": 1641,
+    "jakarta": 926,
+    "bali": 715,
+    "titles": 182
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "audience",
+   "slug": "business-traveller",
+   "remove": [
+    "business"
+   ],
+   "reason": "the bare noun is a topic (topic/business), not an audience (Hansel: `business`-as-audience).",
+   "current_forms": [
+    "Business traveller",
+    "business",
+    "corporate visitor"
+   ],
+   "keep": [
+    "Business traveller",
+    "corporate visitor"
+   ],
+   "mentions_before": {
+    "total": 1218,
+    "jakarta": 895,
+    "bali": 323,
+    "titles": 60
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "location",
+   "slug": "malang",
+   "remove": [
+    "Batu"
+   ],
+   "reason": "Indonesian for 'stone': Batu Bolong, Batubulan, Mount Batur (Hansel: `Batu`).",
+   "current_forms": [
+    "Malang",
+    "Bromo",
+    "Batu"
+   ],
+   "keep": [
+    "Malang",
+    "Bromo"
+   ],
+   "mentions_before": {
+    "total": 209,
+    "jakarta": 94,
+    "bali": 115,
+    "titles": 11
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "location",
+   "slug": "gunawarman",
+   "remove": [
+    "Wijaya",
+    "Kebayoran Baru"
+   ],
+   "reason": "'Wijaya' is a common surname (Made Wijaya, the Stranger In Paradise author) and only one street of the strip (Hansel: `Wijaya`); Kebayoran Baru is now its own node.",
+   "current_forms": [
+    "Gunawarman / Dharmawangsa",
+    "Dharmawangsa",
+    "Wijaya",
+    "Wolter Monginsidi",
+    "Kebayoran Baru"
+   ],
+   "keep": [
+    "Gunawarman / Dharmawangsa",
+    "Dharmawangsa",
+    "Wolter Monginsidi"
+   ],
+   "mentions_before": {
+    "total": 271,
+    "jakarta": 190,
+    "bali": 81,
+    "titles": 16
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "vibe",
+   "slug": "party",
+   "remove": [
+    "late night"
+   ],
+   "reason": "an opening-hours amenity, now amenities/late-night.",
+   "current_forms": [
+    "Party",
+    "nightlife",
+    "late night"
+   ],
+   "keep": [
+    "Party",
+    "nightlife"
+   ],
+   "mentions_before": {
+    "total": 694,
+    "jakarta": 311,
+    "bali": 383,
+    "titles": 63
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "cuisine",
+   "slug": "american",
+   "remove": [
+    "BBQ"
+   ],
+   "reason": "now cuisine/bbq.",
+   "current_forms": [
+    "American",
+    "burgers",
+    "BBQ",
+    "diner"
+   ],
+   "keep": [
+    "American",
+    "burgers",
+    "diner"
+   ],
+   "mentions_before": {
+    "total": 627,
+    "jakarta": 314,
+    "bali": 313,
+    "titles": 27
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "cuisine",
+   "slug": "chinese",
+   "remove": [
+    "hotpot"
+   ],
+   "reason": "now cuisine/hotpot.",
+   "current_forms": [
+    "Chinese",
+    "Cantonese",
+    "Sichuan",
+    "dim sum",
+    "hotpot"
+   ],
+   "keep": [
+    "Chinese",
+    "Cantonese",
+    "Sichuan",
+    "dim sum"
+   ],
+   "mentions_before": {
+    "total": 539,
+    "jakarta": 373,
+    "bali": 166,
+    "titles": 67
+   },
+   "requires_migration": false
+  },
+  {
+   "facet": "location",
+   "slug": "nusa-penida",
+   "remove": [
+    "Nusa Lembongan",
+    "Nusa Ceningan"
+   ],
+   "reason": "now location/nusa-lembongan.",
+   "current_forms": [
+    "Nusa Penida",
+    "Nusa Lembongan",
+    "Nusa Ceningan",
+    "Nusa Islands"
+   ],
+   "keep": [
+    "Nusa Penida",
+    "Nusa Islands"
+   ],
+   "mentions_before": {
+    "total": 102,
+    "jakarta": 5,
+    "bali": 97,
+    "titles": 19
+   },
+   "requires_migration": false
+  }
+ ],
+ "match_hints": [
+  {
+   "facet": "location",
+   "slug": "solo",
+   "hint": "Match only title-case 'Solo' in a Central Java / Surakarta context; never 'solo traveller', 'solo exhibition', 'solo show'. Prefer 'Surakarta'."
+  },
+  {
+   "facet": "occasion",
+   "slug": "solo",
+   "hint": "The label is a homonym; 'solo traveller' / 'me time' are the evidence, never the bare word."
+  },
+  {
+   "facet": "location",
+   "slug": "kuningan",
+   "hint": "In Bali text 'Kuningan' is the holy day (occasion/balinese-holy-days), never the Jakarta district."
+  },
+  {
+   "facet": "location",
+   "slug": "padang",
+   "hint": "Bare 'Padang' is usually the cuisine (cuisine/padang); the city only in a travel context or via Bukittinggi / West Sumatra."
+  },
+  {
+   "facet": "location",
+   "slug": "java",
+   "hint": "Also matches Java Jazz and Java coffee; a region only when the piece travels there."
+  },
+  {
+   "facet": "vibe",
+   "slug": "party",
+   "hint": "The nightlife sense only ('party crowd', 'party scene'); not 'third party' or 'party of four'."
+  },
+  {
+   "facet": "vibe",
+   "slug": "edgy",
+   "hint": "'cool' is kept as an alias for the prompt but the bare word is a homonym ('cool down', 'cool drinks')."
+  },
+  {
+   "facet": "location",
+   "slug": "international",
+   "hint": "geo_scope=abroad: eligible for search and Row 3, never Row 2 or the itinerary; every child inherits. Only when the piece is about a destination outside Indonesia."
+  }
+ ],
+ "below_threshold": [
+  {
+   "candidate": "location_international/Nepal / Bhutan",
+   "facet": "location_international",
+   "label": "Nepal / Bhutan",
+   "mentions": {
+    "total": 18,
+    "jakarta": 13,
+    "bali": 5,
+    "titles": 2
+   }
+  },
+  {
+   "candidate": "venue_kind/Tattoo studio",
+   "facet": "venue_kind",
+   "label": "Tattoo studio",
+   "mentions": {
+    "total": 18,
+    "jakarta": 6,
+    "bali": 12,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "venue_kind/Padel / tennis",
+   "facet": "venue_kind",
+   "label": "Padel / tennis",
+   "mentions": {
+    "total": 18,
+    "jakarta": 13,
+    "bali": 5,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "venue_kind/Embassy",
+   "facet": "venue_kind",
+   "label": "Embassy",
+   "mentions": {
+    "total": 18,
+    "jakarta": 12,
+    "bali": 6,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "amenities/Shisha",
+   "facet": "amenities",
+   "label": "Shisha",
+   "mentions": {
+    "total": 17,
+    "jakarta": 7,
+    "bali": 10,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_jakarta/Sunda Kelapa",
+   "facet": "location_jakarta",
+   "label": "Sunda Kelapa",
+   "mentions": {
+    "total": 17,
+    "jakarta": 17,
+    "bali": 0,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "cuisine/Argentinian",
+   "facet": "cuisine",
+   "label": "Argentinian",
+   "mentions": {
+    "total": 16,
+    "jakarta": 11,
+    "bali": 5,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "cuisine/Raw food",
+   "facet": "cuisine",
+   "label": "Raw food",
+   "mentions": {
+    "total": 16,
+    "jakarta": 2,
+    "bali": 14,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_bali/Seseh / Cemagi",
+   "facet": "location_bali",
+   "label": "Seseh / Cemagi",
+   "mentions": {
+    "total": 16,
+    "jakarta": 1,
+    "bali": 15,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "location_jakarta/Karawaci",
+   "facet": "location_jakarta",
+   "label": "Karawaci",
+   "mentions": {
+    "total": 16,
+    "jakarta": 16,
+    "bali": 0,
+    "titles": 4
+   }
+  },
+  {
+   "candidate": "venue_kind/Food hall / court",
+   "facet": "venue_kind",
+   "label": "Food hall / court",
+   "mentions": {
+    "total": 16,
+    "jakarta": 8,
+    "bali": 8,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_bali/Tejakula",
+   "facet": "location_bali",
+   "label": "Tejakula",
+   "mentions": {
+    "total": 15,
+    "jakarta": 0,
+    "bali": 15,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "location_jakarta/Grogol",
+   "facet": "location_jakarta",
+   "label": "Grogol",
+   "mentions": {
+    "total": 15,
+    "jakarta": 15,
+    "bali": 0,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "location_jakarta/Mampang",
+   "facet": "location_jakarta",
+   "label": "Mampang",
+   "mentions": {
+    "total": 15,
+    "jakarta": 15,
+    "bali": 0,
+    "titles": 1
+   }
+  },
+  {
+   "candidate": "venue_kind/Climbing gym",
+   "facet": "venue_kind",
+   "label": "Climbing gym",
+   "mentions": {
+    "total": 15,
+    "jakarta": 10,
+    "bali": 5,
+    "titles": 2
+   }
+  },
+  {
+   "candidate": "venue_kind/Eco lodge",
+   "facet": "venue_kind",
+   "label": "Eco lodge",
+   "mentions": {
+    "total": 15,
+    "jakarta": 4,
+    "bali": 11,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_elsewhere/Anyer / Carita",
+   "facet": "location_elsewhere",
+   "label": "Anyer / Carita",
+   "mentions": {
+    "total": 14,
+    "jakarta": 13,
+    "bali": 1,
+    "titles": 6
+   }
+  },
+  {
+   "candidate": "audience/LGBTQ",
+   "facet": "audience",
+   "label": "LGBTQ",
+   "mentions": {
+    "total": 13,
+    "jakarta": 8,
+    "bali": 5,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "amenities/Surf break",
+   "facet": "amenities",
+   "label": "Surf break",
+   "mentions": {
+    "total": 12,
+    "jakarta": 3,
+    "bali": 9,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_jakarta/Pejaten",
+   "facet": "location_jakarta",
+   "label": "Pejaten",
+   "mentions": {
+    "total": 12,
+    "jakarta": 11,
+    "bali": 1,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "location_jakarta/Senen",
+   "facet": "location_jakarta",
+   "label": "Senen",
+   "mentions": {
+    "total": 12,
+    "jakarta": 12,
+    "bali": 0,
+    "titles": 0
+   }
+  },
+  {
+   "candidate": "venue_kind/Brewery / taproom",
+   "facet": "venue_kind",
+   "label": "Brewery / taproom",
+   "mentions": {
+    "total": 12,
+    "jakarta": 7,
+    "bali": 5,
+    "titles": 3
+   }
+  },
+  {
+   "candidate": "venue_kind/Dive centre",
+   "facet": "venue_kind",
+   "label": "Dive centre",
+   "mentions": {
+    "total": 12,
+    "jakarta": 6,
+    "bali": 6,
+    "titles": 0
+   }
+  }
+ ],
+ "migration": {
+  "f20": "Adding a TERM to a facet that is a Payload ENUM needs `migrate:create` + `migrate` on every city DB and a restart of every cms-<city>. Aliases, attrs, match hints and approvals of already-seeded proposed terms need no migration (aliases are not persisted; proposed terms are already enum values).",
+  "payload_enums": {
+   "type": "enum_places_type / enum_articles_primary_type",
+   "subtype": "enum_places_subtype",
+   "format": "enum_articles_format",
+   "location": "enum_places_area_term",
+   "cuisine": "enum_places_cuisine",
+   "amenities": "enum_places_amenities",
+   "vibe": "enum_places_vibe",
+   "price_band": "enum_places_price_band"
+  },
+  "platform_only_facets": [
+   "occasion",
+   "audience",
+   "topic"
+  ],
+  "new_enum_values": {
+   "amenities": [
+    "buffet",
+    "organic",
+    "jungle-view",
+    "free-flow",
+    "sauna",
+    "breakfast-included",
+    "late-night",
+    "rice-field-view",
+    "private-pool",
+    "delivery",
+    "lagoon-pool",
+    "river-view",
+    "cabanas",
+    "airport-transfer",
+    "swim-up-bar",
+    "butler",
+    "healthy-menu",
+    "dive-centre",
+    "cold-plunge",
+    "gluten-free",
+    "cigar-lounge",
+    "wine-cellar",
+    "sports-screening"
+   ],
+   "cuisine": [
+    "coffee",
+    "dessert",
+    "fusion",
+    "bbq",
+    "acehnese",
+    "portuguese",
+    "singaporean",
+    "hotpot",
+    "nordic",
+    "moroccan",
+    "malaysian",
+    "tea"
+   ],
+   "location": [
+    "europe",
+    "java",
+    "australia",
+    "singapore",
+    "japan",
+    "usa",
+    "china",
+    "thailand",
+    "india",
+    "malaysia",
+    "sumatra",
+    "hong-kong",
+    "sulawesi",
+    "africa",
+    "tabanan",
+    "kalimantan",
+    "turkey",
+    "kintamani",
+    "gianyar",
+    "south-korea",
+    "new-zealand",
+    "nusa-tenggara",
+    "vietnam",
+    "west-bali",
+    "maluku",
+    "philippines",
+    "kebayoran-baru",
+    "bedugul",
+    "uae",
+    "aceh",
+    "bangli",
+    "cilandak",
+    "kemayoran",
+    "gatot-subroto",
+    "nusa-lembongan",
+    "tanah-abang",
+    "middle-east",
+    "cambodia",
+    "taiwan",
+    "casablanca",
+    "mengwi",
+    "riau-islands",
+    "kebon-sirih",
+    "tanah-lot",
+    "palembang",
+    "padang",
+    "cengkareng",
+    "lampung",
+    "maldives",
+    "kepulauan-seribu",
+    "jatiluwih",
+    "cirebon",
+    "sri-lanka",
+    "tmii"
+   ],
+   "subtype": [
+    "temple",
+    "bookshop",
+    "dessert-shop",
+    "farm",
+    "zoo",
+    "place-of-worship",
+    "theatre",
+    "nature",
+    "winery-distillery",
+    "karaoke",
+    "cinema"
+   ],
+   "vibe": [
+    "tropical",
+    "authentic",
+    "modern",
+    "exclusive",
+    "chic",
+    "wholesome",
+    "glamorous",
+    "quirky",
+    "edgy",
+    "rustic",
+    "nostalgic",
+    "family-friendly"
+   ]
+  },
+  "drop_note": "Postgres cannot remove a value from enum_places_area_term in place: leave the orphaned value (harmless, nothing references it) or recreate the type. Delete the engine.terms row after confirming no entity_terms row references it (cross-DB, check every city).",
+  "attrs_note": "`attrs` (geo_scope on location/international) has no column yet: engine.terms.attrs jsonb is the taxonomy README's proposed DDL #1 -- an additive platform-DB migration; until it lands the attribute lives in the seed file as documentation and the rails read the international subtree by parent.",
+  "sequence": [
+   "1. edit engine/packages/taxonomy/seed/terms/*.json per this file (approve = drop the `proposed` flag; add_term/add_alias/trim as listed; delete rawamangun)",
+   "2. `now-db migrate --all` -- upserts platform engine.terms (type_relations untouched: no L1 change; format_decay untouched: opinion already listed)",
+   "3. Payload `migrate:create` + `migrate` on every city DB for the facets in new_enum_values",
+   "4. restart every cms-<city>",
+   "5. E2.1 reads its enums from the platform DB -- run it after step 2, or accept a second pass for the new terms"
+  ]
+ }
+}

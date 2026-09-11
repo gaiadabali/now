@@ -1,0 +1,628 @@
+/* ============================================================================
+   NOW! — magazine components
+   ----------------------------------------------------------------------------
+   Every class here is a documented part of the design system. If a page needs
+   something not in this file, it belongs in this file — pages carry no styles
+   of their own.
+   ========================================================================= */
+
+/* ==========================================================================
+   1. MASTHEAD
+   The three-rule masthead: heavy rule, name, hair rule, navigation, thin rule.
+   ========================================================================== */
+
+.masthead {
+  border-top: var(--rule-heavy);
+  background: var(--paper);
+}
+
+.masthead__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding-block: var(--space-xs);
+  border-bottom: var(--rule-hair);
+}
+
+.masthead__dateline {
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.masthead__utils {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  font-size: var(--t-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font-sans);
+}
+
+.masthead__utils a { color: var(--ink-mute); }
+.masthead__utils a:hover { color: var(--red); }
+
+.masthead__brand {
+  display: flex;
+  justify-content: center;
+  padding-block: clamp(var(--space-m), 3vw, var(--space-xl));
+}
+
+.masthead__logo { height: clamp(48px, 6vw, 84px); width: auto; }
+
+.masthead__nav {
+  border-top: var(--rule-thin);
+  border-bottom: var(--rule-thin);
+}
+
+.masthead__nav-list {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(var(--space-s), 2.2vw, var(--space-xl));
+  padding-block: var(--space-xs);
+}
+
+.masthead__nav-link {
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding-block: var(--space-3xs);
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.masthead__nav-link:hover,
+.masthead__nav-link[aria-current='page'] {
+  color: var(--red);
+  border-bottom-color: var(--red);
+}
+
+/* ==========================================================================
+   2. SECTION RULE
+   The labelled divider that opens every band on the page. This single
+   component does more work than any other to make the page read as print.
+   ========================================================================== */
+
+.section-rule {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
+  border-top: var(--rule-thin);
+  padding-top: var(--space-2xs);
+  margin-bottom: var(--space-l);
+}
+
+.section-rule__label {
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.section-rule__note {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--t-small);
+  color: var(--ink-mute);
+}
+
+.section-rule__more {
+  margin-left: auto;
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--red);
+  white-space: nowrap;
+}
+.section-rule__more:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ==========================================================================
+   3. FEATURE LEAD
+   The above-the-fold story. Asymmetric by default: type left, image right,
+   with the headline allowed to run wider than its column.
+   ========================================================================== */
+
+.lead {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gutter);
+  padding-block: clamp(var(--space-l), 4vw, var(--space-2xl));
+}
+
+@media (min-width: 62rem) {
+  .lead {
+    grid-template-columns: 1.05fr 1fr;
+    align-items: center;
+    gap: clamp(var(--space-l), 4vw, var(--space-2xl));
+  }
+}
+
+.lead__body { display: flex; flex-direction: column; gap: var(--space-m); }
+
+.lead__kicker { display: flex; align-items: center; gap: var(--space-2xs); }
+
+.lead__headline { font-size: var(--t-display); }
+
+.lead__dek { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem); max-width: 44ch; }
+
+.lead__figure { position: relative; }
+
+.lead__img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--paper-deep);
+}
+
+@media (max-width: 62rem) {
+  .lead__img { aspect-ratio: 3 / 2; }
+}
+
+/* ==========================================================================
+   4. BYLINE
+   ========================================================================== */
+
+.byline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-s);
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--ink-mute);
+}
+
+.byline__name { color: var(--ink); font-weight: 500; }
+.byline__sep { color: var(--ink-faint); }
+
+/* ==========================================================================
+   5. STORY CARD
+   Three variants, one component. No shadows, no borders, no rounded corners:
+   cards are separated by rules and whitespace only.
+   ========================================================================== */
+
+.card { display: flex; flex-direction: column; gap: var(--space-xs); }
+
+.card__figure { overflow: hidden; background: var(--paper-deep); }
+
+.card__img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  transition: transform 600ms var(--ease);
+}
+
+.card:hover .card__img { transform: scale(1.02); }
+
+.card__headline { font-size: var(--t-title); }
+
+.card:hover .card__headline { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+
+.card__dek {
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  font-style: normal;
+  color: var(--ink-mute);
+  line-height: 1.5;
+}
+
+.card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.card__foot .sep { color: var(--ink-faint); }
+.card__section { color: var(--red); font-weight: 500; }
+
+/* --- variant: portrait (tall image, used in the Edit strip) ------------- */
+.card--portrait .card__img { aspect-ratio: 4 / 5; }
+
+/* --- variant: horizontal (image beside type, used in indexes) ----------- */
+.card--horizontal {
+  flex-direction: row;
+  gap: var(--space-m);
+  align-items: flex-start;
+}
+.card--horizontal .card__figure { flex: 0 0 clamp(96px, 22vw, 220px); }
+.card--horizontal .card__img { aspect-ratio: 1 / 1; }
+.card--horizontal .card__headline { font-size: var(--t-subtitle); }
+.card--horizontal .card__body { display: flex; flex-direction: column; gap: var(--space-2xs); }
+
+/* --- variant: text-only (the numbered index) ---------------------------- */
+.card--index { flex-direction: row; gap: var(--space-s); align-items: baseline; }
+.card--index .card__num {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+.card--index .card__headline { font-size: var(--t-subtitle); }
+
+/* ==========================================================================
+   6. GRIDS
+   ========================================================================== */
+
+.grid {
+  display: grid;
+  gap: var(--gutter) var(--gutter);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+.grid--3 { grid-template-columns: repeat(3, 1fr); }
+.grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 62rem) { .grid--3, .grid--4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 36rem) { .grid--3, .grid--4 { grid-template-columns: 1fr; } }
+
+/* Column rules between grid children — the print signature. */
+.grid--ruled > * + * { position: relative; }
+@media (min-width: 36rem) {
+  .grid--ruled > * + *::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--gutter) / -2);
+    border-left: var(--rule-hair);
+  }
+}
+
+/* Two-column editorial split: main well + rail. */
+.split { display: grid; gap: var(--space-xl) var(--space-2xl); }
+@media (min-width: 62rem) { .split { grid-template-columns: minmax(0, 1fr) 20rem; } }
+
+.band { padding-block: clamp(var(--space-xl), 5vw, var(--space-2xl)); }
+
+/* ==========================================================================
+   7. RAIL (sidebar lists — Most Read, Events, Newsletter)
+   ========================================================================== */
+
+.rail { display: flex; flex-direction: column; gap: var(--space-xl); }
+
+.rail__list > li { padding-block: var(--space-s); border-bottom: var(--rule-hair); }
+.rail__list > li:first-child { padding-top: 0; }
+
+/* ==========================================================================
+   8. EVENT ROW
+   ========================================================================== */
+
+.event {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: var(--space-s);
+  align-items: baseline;
+  padding-block: var(--space-s);
+  border-bottom: var(--rule-hair);
+}
+
+.event__date { text-align: center; font-family: var(--font-sans); line-height: 1.1; }
+.event__day { display: block; font-family: var(--font-display); font-size: 1.75rem; color: var(--ink); }
+.event__mon {
+  display: block;
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.event__title { font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); line-height: 1.25; }
+.event__where { font-size: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+
+/* ==========================================================================
+   9. BADGES
+   Partner disclosure is a *product* requirement (ARCHITECTURE.md §11), not
+   decoration: sponsored content must be unmistakable at a glance.
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.2em 0.5em;
+  border: 1px solid currentColor;
+  color: var(--ink-mute);
+  line-height: 1.4;
+}
+
+.badge--partner { color: var(--red); background: var(--red-wash); border-color: currentColor; }
+.badge--live { color: var(--paper); background: var(--red); border-color: var(--red); }
+.badge--plain { border-color: var(--ink-faint); }
+
+/* ==========================================================================
+   10. PROSE — the article body
+   ========================================================================== */
+
+.prose {
+  max-width: var(--measure);
+  font-size: 1.1875rem;
+  line-height: 1.72;
+  color: var(--ink-body);
+}
+
+.prose > * + * { margin-top: 1.4em; }
+
+.prose p { text-wrap: pretty; }
+
+/* Drop cap on the first paragraph only. Cormorant, three lines deep. */
+.prose > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 4.1em;
+  line-height: 0.82;
+  padding-right: 0.08em;
+  margin-top: 0.06em;
+  color: var(--ink);
+}
+
+.prose h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.85rem;
+  line-height: 1.15;
+  color: var(--ink);
+  margin-top: 2em;
+}
+
+.prose h3 {
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-top: 2.2em;
+}
+
+.prose a {
+  color: var(--ink);
+  border-bottom: 1px solid var(--red);
+  transition: background var(--dur) var(--ease);
+}
+.prose a:hover { background: var(--red-wash); }
+
+.prose ul, .prose ol { padding-left: 1.4em; }
+.prose ul > li { list-style: none; position: relative; }
+.prose ul > li::before {
+  content: '—';
+  position: absolute;
+  left: -1.4em;
+  color: var(--red);
+}
+.prose ol { list-style: decimal; }
+.prose ol > li::marker { color: var(--red); font-family: var(--font-display); }
+.prose li + li { margin-top: 0.5em; }
+
+/* Pull quote — breaks the measure, which is the point. */
+.pullquote {
+  margin-block: 2.2em;
+  padding-block: var(--space-m);
+  border-top: var(--rule-thin);
+  border-bottom: var(--rule-thin);
+  max-width: none;
+}
+
+.pullquote__text {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.35rem);
+  line-height: 1.22;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.pullquote__attr {
+  margin-top: var(--space-s);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+/* Figures inside prose may exceed the measure. */
+.prose figure { max-width: none; }
+.figure__caption {
+  margin-top: var(--space-2xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  line-height: 1.5;
+  color: var(--ink-mute);
+  max-width: var(--measure-narrow);
+}
+.figure__credit { color: var(--ink-faint); }
+
+/* End mark. */
+.endmark { display: inline-block; width: 0.62em; height: 0.62em; background: var(--red); margin-left: 0.3em; vertical-align: baseline; }
+
+/* ==========================================================================
+   11. ARTICLE HEADER
+   ========================================================================== */
+
+.article-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+  max-width: 46rem;
+  padding-block: clamp(var(--space-l), 4vw, var(--space-2xl)) var(--space-l);
+}
+
+.article-head__title { font-size: var(--t-headline); }
+
+.article-hero__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper-deep); }
+
+/* ==========================================================================
+   12. FACET BAR — the engine made visible
+   ========================================================================== */
+
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-s);
+  padding-block: var(--space-s);
+  border-top: var(--rule-thin);
+  border-bottom: var(--rule-hair);
+}
+
+.facet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 0.45em 0.85em;
+  border: var(--rule-hair);
+  background: var(--paper-pure);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.facet:hover { border-color: var(--ink); }
+.facet[aria-pressed='true'] { background: var(--ink); color: var(--ink-invert); border-color: var(--ink); }
+.facet__count { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.facet[aria-pressed='true'] .facet__count { color: var(--ink-invert); opacity: 0.6; }
+
+.facets__result {
+  margin-left: auto;
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+/* ==========================================================================
+   13. GUIDE CARD — the recirculation unit
+   ========================================================================== */
+
+.guide {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 16rem;
+  padding: var(--space-m);
+  background: var(--ink);
+  color: var(--ink-invert);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.guide__img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.62;
+  z-index: -2;
+  transition: opacity var(--dur) var(--ease), transform 600ms var(--ease);
+}
+
+/* Scrim. Photographs vary wildly in luminance; without a guaranteed dark
+   floor under the type, white text on a bright hero drops below 4.5:1. */
+.guide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(12, 11, 10, 0.88) 0%, rgba(12, 11, 10, 0.45) 45%, rgba(12, 11, 10, 0.12) 100%);
+}
+
+.guide:hover .guide__img { opacity: 0.5; transform: scale(1.03); }
+
+/* Colour is set explicitly: .display carries --ink, which is invisible here. */
+.guide__count {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--ink-invert);
+}
+
+.guide__title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-top: var(--space-2xs);
+}
+
+/* ==========================================================================
+   14. PLACE PROFILE
+   ========================================================================== */
+
+.place-head { display: grid; gap: var(--gutter); padding-block: var(--space-xl); }
+@media (min-width: 62rem) { .place-head { grid-template-columns: 1.2fr 1fr; align-items: end; } }
+
+.place-head__title { font-size: var(--t-display); }
+
+.place-facts { border-top: var(--rule-thin); }
+.place-facts__row { display: grid; grid-template-columns: 8rem 1fr; gap: var(--space-s); padding-block: var(--space-xs); border-bottom: var(--rule-hair); }
+.place-facts__key { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
+.place-facts__val { font-size: var(--t-small); color: var(--ink); }
+
+.price { font-family: var(--font-sans); font-weight: 500; letter-spacing: 0.05em; }
+.price__off { color: var(--ink-faint); }
+
+/* ==========================================================================
+   15. NEWSLETTER
+   ========================================================================== */
+
+.signup { border: var(--rule-thin); padding: var(--space-l); background: var(--paper-deep); }
+.signup__title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; color: var(--ink); line-height: 1.15; }
+.signup__form { display: flex; gap: var(--space-2xs); margin-top: var(--space-m); }
+.signup__input { flex: 1; min-width: 0; border: 1px solid var(--ink); background: var(--paper-pure); padding: 0.7em 0.8em; font-size: var(--t-small); }
+.signup__input::placeholder { color: var(--ink-faint); }
+.signup__btn { background: var(--ink); color: var(--ink-invert); padding: 0.7em 1.1em; font-family: var(--font-sans); font-size: var(--t-meta); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: background var(--dur) var(--ease); }
+.signup__btn:hover { background: var(--red); }
+
+/* ==========================================================================
+   16. FOOTER
+   ========================================================================== */
+
+.footer { border-top: var(--rule-heavy); margin-top: var(--space-2xl); padding-block: var(--space-xl) var(--space-l); }
+.footer__cols { display: grid; gap: var(--space-l) var(--gutter); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.footer__head { font-family: var(--font-sans); font-size: var(--t-micro); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); margin-bottom: var(--space-s); }
+.footer__list li + li { margin-top: var(--space-2xs); }
+.footer__list a { font-size: var(--t-small); color: var(--ink-mute); }
+.footer__list a:hover { color: var(--red); }
+.footer__base { display: flex; flex-wrap: wrap; gap: var(--space-s) var(--space-m); justify-content: space-between; margin-top: var(--space-xl); padding-top: var(--space-s); border-top: var(--rule-hair); font-size: var(--t-micro); color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ==========================================================================
+   17. SPECIMEN (design-system page only)
+   ========================================================================== */
+
+.specimen { border-top: var(--rule-hair); padding-block: var(--space-m); }
+.specimen__label { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: var(--space-xs); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--space-s); }
+.swatch__chip { height: 4.5rem; border: var(--rule-hair); }
+.swatch__name { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; margin-top: var(--space-2xs); color: var(--ink); }
+.swatch__hex { font-family: var(--font-sans); font-size: var(--t-micro); color: var(--ink-faint); }

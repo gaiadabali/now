@@ -1,0 +1,24 @@
+[project]
+name = "now-content-clean"
+version = "0.1.0"
+description = "E1.2 — converts WordPress content_html (86% classic HTML, 44% Gutenberg, overlapping) into the structured block array consumed by the rest of the ingest pipeline. One-shot migration tool; no ongoing WP sync."
+requires-python = ">=3.12"
+dependencies = [
+    "lxml>=5.0,<7",
+    "click>=8.1,<9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-content-clean = "now_content_clean.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_content_clean"]

@@ -1,0 +1,250 @@
+# Schema-hash drift gate (E0.2 deliverable #4).
+#
+# What "DB-per-city" costs is discipline: one migration set, applied
+# identically everywhere. This workflow is the mechanical enforcement of
+# that — see ARCHITECTURE.md §2 "Migration discipline". It runs two jobs:
+#
+#   drift-gate       Provisions three fresh city DBs (jakarta, bali, test)
+#                     on one throwaway Postgres instance from HEAD of the
+#                     `now-db` migrations and asserts all three hash
+#                     identically to the committed baseline
+#                     (engine/packages/db/schema_baseline.json) and that
+#                     the platform DB matches its own baseline
+#                     (engine/packages/platform-db/schema_baseline.json).
+#                     This is the real gate: it fails the build the moment
+#                     a migration is added/edited without regenerating the
+#                     baseline, or — for anyone tempted to skip
+#                     `site:migrate` and hand-edit a real city DB — proves
+#                     the tool that would have caught it.
+#
+#   drift-gate-selftest   Meta-test: migrates one more throwaway DB, then
+#                     deliberately applies a manual ALTER TABLE outside
+#                     Alembic (the exact failure mode the gate exists to
+#                     catch) and asserts `now-db check` correctly exits
+#                     non-zero. If someone weakens the checker so it can no
+#                     longer detect drift, THIS job goes red — the overall
+#                     pipeline is not "green because we stopped checking."
+#
+#   vocabulary-integrity-selftest   PROGRESS.md F92's analogous meta-test:
+#                     Postgres cannot FK `engine.entity_terms.term_id`
+#                     (a city DB) across to `now_platform.engine.terms.id`
+#                     (a different database), so this is a detection check,
+#                     not a constraint — `now-db check-term-refs`. Same
+#                     "prove the checker actually works" shape as
+#                     drift-gate-selftest: migrate one clean city, confirm
+#                     the check passes, deliberately insert an
+#                     `entity_terms` row pointing at a term id that does
+#                     not exist (the exact failure mode a vocabulary trim
+#                     produces once `entity_terms` is populated — no longer
+#                     hypothetical, see engine/packages/db/README.md "F92"
+#                     for the real orphan this check caught live in
+#                     now_jakarta during development), and assert
+#                     `now-db check-term-refs` exits non-zero.
+#
+# Regenerating the baseline after an intentional schema change:
+#   now-db hash --url <fresh city db> --write-baseline
+#   now-platform-db hash --write-baseline
+# and commit the resulting schema_baseline.json files alongside the
+# migration that changed them.
+name: schema-gate
+
+on:
+  pull_request:
+    paths:
+      - "engine/packages/db/**"
+      - "engine/packages/platform-db/**"
+      - ".github/workflows/schema-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/packages/db/**"
+      - "engine/packages/platform-db/**"
+      - ".github/workflows/schema-gate.yml"
+
+env:
+  NOW_PG_HOST: localhost
+  NOW_PG_PORT: "55432"
+  NOW_PG_USER: postgres
+  NOW_PG_PASSWORD: postgres
+  NOW_PLATFORM_DATABASE_URL: "postgresql+psycopg://postgres:postgres@localhost:55432/now_platform"
+
+jobs:
+  drift-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build throwaway pgvector+postgis Postgres image
+        run: |
+          docker build -t now-pg-test:pg16 \
+            -f engine/packages/db/docker/Dockerfile.pg-test \
+            engine/packages/db/docker
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name now-pg \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 55432:5432 \
+            now-pg-test:pg16
+          for i in $(seq 1 30); do
+            docker exec now-pg pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install now-db + now-platform-db
+        run: |
+          pip install -e engine/packages/platform-db -e engine/packages/db
+
+      - name: Create + migrate platform DB
+        run: |
+          docker exec now-pg psql -U postgres -c "CREATE DATABASE now_platform;"
+          now-platform-db migrate
+
+      - name: Check platform schema against baseline
+        run: now-platform-db check
+
+      - name: site:create jakarta, bali, test (fresh, identical migrations)
+        run: |
+          now-db create jakarta --hostname nowjakarta.co.id --name "NOW! Jakarta" --timezone Asia/Jakarta --currency IDR
+          now-db create bali    --hostname nowbali.co.id    --name "NOW! Bali"    --timezone Asia/Makassar --currency IDR
+          now-db create test    --hostname now-test.internal --name "NOW! Test"   --timezone UTC --currency USD
+
+      - name: Check every city schema against the committed baseline
+        run: |
+          now-db check --url now_jakarta
+          now-db check --url now_bali
+          now-db check --url now_test
+
+      - name: site:migrate --all is idempotent (second run is a no-op)
+        run: |
+          now-db migrate --all | tee /tmp/migrate-run-2.log
+          if grep -q "Running upgrade" /tmp/migrate-run-2.log; then
+            echo "::error::site:migrate --all applied DDL on a second run — not idempotent"
+            exit 1
+          fi
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f now-pg || true
+
+  drift-gate-selftest:
+    # Proves the gate actually catches drift, on every run — not just the
+    # day someone manually verified it. See header comment.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build throwaway pgvector+postgis Postgres image
+        run: |
+          docker build -t now-pg-test:pg16 \
+            -f engine/packages/db/docker/Dockerfile.pg-test \
+            engine/packages/db/docker
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name now-pg-selftest \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 55432:5432 \
+            now-pg-test:pg16
+          for i in $(seq 1 30); do
+            docker exec now-pg-selftest pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install now-db + now-platform-db
+        run: pip install -e engine/packages/platform-db -e engine/packages/db
+
+      - name: Provision one clean city DB
+        run: |
+          docker exec now-pg-selftest psql -U postgres -c "CREATE DATABASE now_platform;"
+          now-platform-db migrate
+          now-db create driftcity --hostname drift.internal --name "Drift Test" --timezone UTC --currency USD
+
+      - name: Sanity check — clean DB passes before drifting it
+        run: now-db check --url now_driftcity
+
+      - name: Deliberately drift the schema outside Alembic
+        run: |
+          docker exec now-pg-selftest psql -U postgres -d now_driftcity \
+            -c "ALTER TABLE engine.quality_scores ADD COLUMN rogue_column text;"
+
+      - name: Assert the gate detects the drift (must exit non-zero)
+        run: |
+          if now-db check --url now_driftcity; then
+            echo "::error::schema-hash gate did NOT detect a deliberately drifted schema"
+            exit 1
+          fi
+          echo "confirmed: now-db check correctly failed on drifted now_driftcity"
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f now-pg-selftest || true
+
+  vocabulary-integrity-selftest:
+    # F92's analogous meta-test to drift-gate-selftest above: proves
+    # `now-db check-term-refs` actually catches a dangling
+    # engine.entity_terms.term_id, on every run — not just the day someone
+    # manually verified it. See this file's header comment.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build throwaway pgvector+postgis Postgres image
+        run: |
+          docker build -t now-pg-test:pg16 \
+            -f engine/packages/db/docker/Dockerfile.pg-test \
+            engine/packages/db/docker
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name now-pg-vocab-selftest \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 55432:5432 \
+            now-pg-test:pg16
+          for i in $(seq 1 30); do
+            docker exec now-pg-vocab-selftest pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install now-db + now-platform-db
+        run: pip install -e engine/packages/platform-db -e engine/packages/db
+
+      - name: Provision the platform DB (seeds the real 407-term vocabulary) and one clean city
+        run: |
+          docker exec now-pg-vocab-selftest psql -U postgres -c "CREATE DATABASE now_platform;"
+          now-platform-db migrate
+          now-db create vocabcity --hostname vocab.internal --name "Vocab Test" --timezone UTC --currency USD
+
+      - name: Sanity check — clean city passes before orphaning it
+        run: now-db check-term-refs --url now_vocabcity
+
+      - name: Deliberately orphan an entity_terms row (the exact shape a vocabulary trim produces)
+        run: |
+          docker exec now-pg-vocab-selftest psql -U postgres -d now_vocabcity -c "
+            INSERT INTO engine.entity_terms (entity_type, entity_id, term_id, weight, source, confidence)
+            VALUES ('article', 'ci-selftest-orphan', gen_random_uuid(), 1.0, 'ai', 0.9);
+          "
+
+      - name: Assert the guard detects the orphan (must exit non-zero)
+        run: |
+          if now-db check-term-refs --url now_vocabcity; then
+            echo "::error::now-db check-term-refs did NOT detect a deliberately orphaned entity_terms row"
+            exit 1
+          fi
+          echo "confirmed: now-db check-term-refs correctly failed on the orphaned row in now_vocabcity"
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f now-pg-vocab-selftest || true

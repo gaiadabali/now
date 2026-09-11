@@ -1,0 +1,23 @@
+{
+  "source": "ARCHITECTURE.md §4 'Format → decay half-life'. 48% of the archive is from 2019; a global decay either buries half the library or resurfaces dead events.",
+  "target": "engine.sites.ranking_weights -> 'decay' in the platform DB, written once per site by site:create / site:migrate and never overwritten (a site may tune it; §3.5 says Bali weights freshness differently).",
+  "contract": "Consumers (E3.3 blender) read SiteConfig.ranking_weights['decay']. `half_life_days: null` with `evergreen: true` means no decay. `hard_expiry` names the timestamp after which the item is a hard filter (§8.A), independent of decay. `default` applies to a format with no entry (should not happen — the loader requires every format term to be listed here).",
+  "decay": {
+    "version": 1,
+    "unit": "days",
+    "default": {"half_life_days": 365, "evergreen": false},
+    "formats": {
+      "news":       {"half_life_days": 21,   "evergreen": false, "spec_range": "14-30 days"},
+      "event":      {"half_life_days": 14,   "evergreen": false, "spec_range": "14-30 days", "hard_expiry": "event.ends_at"},
+      "offer":      {"half_life_days": null, "evergreen": false, "hard_expiry": "campaign.ends_at", "note": "hard expiry, not decay (§4)"},
+      "review":     {"half_life_days": 540,  "evergreen": false, "spec_range": "~18 months"},
+      "listing":    {"half_life_days": 540,  "evergreen": false, "spec_range": "~18 months", "note": "series_key dedup keeps only the current year of an [Updated] set (§8.A)"},
+      "guide":      {"half_life_days": null, "evergreen": true},
+      "feature":    {"half_life_days": null, "evergreen": true},
+      "heritage":   {"half_life_days": null, "evergreen": true},
+      "people":     {"half_life_days": null, "evergreen": true},
+      "city-guide": {"half_life_days": null, "evergreen": true},
+      "opinion":    {"half_life_days": 540,  "evergreen": false, "proposed": true, "note": "proposed format; columns date like reviews do, not like guides"}
+    }
+  }
+}

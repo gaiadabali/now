@@ -1,0 +1,413 @@
+{
+  "facet": "topic",
+  "source": "ARCHITECTURE.md §4 names sustainability, heritage, health; the rest is the E1.4 proposal for review, driven by the legacy WP categories that are subjects rather than venue types.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "note": "Topics deliberately overlap with editorial subtypes (business, education, heritage, culture): `type/subtype` says what kind of thing the article is about, `topic` tags the subject so a hotel article can also carry `sustainability`. Redundancy on editorial pieces is expected and harmless.",
+  "terms": [
+    {
+      "slug": "sustainability",
+      "label": "Sustainability",
+      "from_spec": true,
+      "aliases": [
+        "green living",
+        "eco",
+        "environment",
+        "zero waste",
+        "climate",
+        "sustainable",
+        "eco-friendly",
+        "zero-waste",
+        "plastic",
+        "recycling"
+      ]
+    },
+    {
+      "slug": "heritage",
+      "label": "Heritage",
+      "from_spec": true,
+      "aliases": [
+        "history",
+        "colonial",
+        "conservation",
+        "hidden heritage"
+      ]
+    },
+    {
+      "slug": "health",
+      "label": "Health",
+      "from_spec": true,
+      "aliases": [
+        "wellbeing",
+        "medical",
+        "fitness",
+        "mental health",
+        "nutrition",
+        "well-being"
+      ]
+    },
+    {
+      "slug": "education",
+      "label": "Education",
+      "aliases": [
+        "schools",
+        "international school",
+        "university",
+        "learning",
+        "curriculum"
+      ]
+    },
+    {
+      "slug": "business",
+      "label": "Business",
+      "aliases": [
+        "economy",
+        "industry",
+        "entrepreneurship",
+        "hospitality industry",
+        "entrepreneur",
+        "start-up"
+      ]
+    },
+    {
+      "slug": "finance",
+      "label": "Finance",
+      "aliases": [
+        "banking",
+        "investment",
+        "tax",
+        "insurance"
+      ]
+    },
+    {
+      "slug": "property",
+      "label": "Property",
+      "aliases": [
+        "real estate",
+        "housing",
+        "apartments",
+        "relocation",
+        "apartment"
+      ]
+    },
+    {
+      "slug": "art",
+      "label": "Art",
+      "aliases": [
+        "visual art",
+        "painting",
+        "sculpture",
+        "street art",
+        "artist"
+      ]
+    },
+    {
+      "slug": "design",
+      "label": "Design",
+      "aliases": [
+        "interior design",
+        "product design",
+        "graphic design",
+        "architect"
+      ]
+    },
+    {
+      "slug": "architecture",
+      "label": "Architecture",
+      "aliases": [
+        "urbanism",
+        "buildings"
+      ]
+    },
+    {
+      "slug": "music",
+      "label": "Music",
+      "aliases": [
+        "musician",
+        "album",
+        "jazz",
+        "gigs",
+        "band"
+      ]
+    },
+    {
+      "slug": "film",
+      "label": "Film",
+      "aliases": [
+        "cinema",
+        "movie",
+        "documentary",
+        "series"
+      ]
+    },
+    {
+      "slug": "fashion",
+      "label": "Fashion",
+      "aliases": [
+        "style",
+        "designer",
+        "runway"
+      ]
+    },
+    {
+      "slug": "photography",
+      "label": "Photography",
+      "aliases": [
+        "photo essay",
+        "photographer"
+      ]
+    },
+    {
+      "slug": "literature",
+      "label": "Literature",
+      "aliases": [
+        "books",
+        "author",
+        "poetry",
+        "writers festival",
+        "novel"
+      ]
+    },
+    {
+      "slug": "culture",
+      "label": "Culture",
+      "aliases": [
+        "tradition",
+        "ceremony",
+        "religion",
+        "customs",
+        "language",
+        "ritual"
+      ]
+    },
+    {
+      "slug": "sports",
+      "label": "Sports",
+      "aliases": [
+        "football",
+        "golf",
+        "running",
+        "fitness",
+        "tennis",
+        "rugby",
+        "badminton",
+        "basketball",
+        "MotoGP",
+        "Formula"
+      ]
+    },
+    {
+      "slug": "community",
+      "label": "Community",
+      "aliases": [
+        "charity",
+        "NGO",
+        "social impact",
+        "volunteering",
+        "expat community",
+        "foundation",
+        "volunteer",
+        "fundraising"
+      ]
+    },
+    {
+      "slug": "diplomacy",
+      "label": "Diplomacy",
+      "aliases": [
+        "embassy",
+        "ambassador",
+        "bilateral",
+        "diplomatic relations"
+      ]
+    },
+    {
+      "slug": "technology",
+      "label": "Technology",
+      "aliases": [
+        "digital",
+        "startup",
+        "apps",
+        "AI",
+        "artificial intelligence",
+        "fintech",
+        "e-commerce"
+      ]
+    },
+    {
+      "slug": "travel",
+      "label": "Travel",
+      "aliases": [
+        "destination",
+        "getaway",
+        "world traveller",
+        "explore",
+        "itinerary",
+        "tourism"
+      ]
+    },
+    {
+      "slug": "transport",
+      "label": "Transport",
+      "aliases": [
+        "traffic",
+        "MRT",
+        "airport",
+        "commuting",
+        "LRT",
+        "toll road",
+        "TransJakarta",
+        "flight",
+        "airline"
+      ]
+    },
+    {
+      "slug": "expat-life",
+      "label": "Expat life",
+      "aliases": [
+        "living in Jakarta",
+        "visa",
+        "relocation tips",
+        "living in Bali",
+        "KITAS",
+        "moving to"
+      ]
+    },
+    {
+      "slug": "local-brands",
+      "label": "Made in Indonesia",
+      "aliases": [
+        "local brands",
+        "Indonesian craft",
+        "homegrown"
+      ]
+    },
+    {
+      "slug": "family",
+      "label": "Family & parenting",
+      "aliases": [
+        "kids",
+        "parenting",
+        "family activities"
+      ]
+    },
+    {
+      "slug": "food-drink",
+      "label": "Food & drink",
+      "aliases": [
+        "culinary",
+        "gastronomy",
+        "recipe",
+        "recipes",
+        "cooking"
+      ]
+    },
+    {
+      "slug": "weddings",
+      "label": "Weddings & romance",
+      "aliases": [
+        "wedding",
+        "weddings",
+        "bridal",
+        "honeymoon",
+        "romance"
+      ]
+    },
+    {
+      "slug": "religion-spirituality",
+      "label": "Religion & spirituality",
+      "aliases": [
+        "Hindu",
+        "Hinduism",
+        "Islam",
+        "Buddhism",
+        "spirituality",
+        "spiritual"
+      ]
+    },
+    {
+      "slug": "coffee-culture",
+      "label": "Coffee culture",
+      "aliases": [
+        "barista",
+        "roastery",
+        "specialty coffee"
+      ]
+    },
+    {
+      "slug": "urban-issues",
+      "label": "Urban issues",
+      "aliases": [
+        "flooding",
+        "pollution",
+        "air quality",
+        "city planning",
+        "congestion"
+      ]
+    },
+    {
+      "slug": "agriculture",
+      "label": "Agriculture & food systems",
+      "aliases": [
+        "farmers",
+        "farming",
+        "fishermen",
+        "seaweed farming",
+        "permaculture"
+      ]
+    },
+    {
+      "slug": "covid-19",
+      "label": "Covid-19",
+      "aliases": [
+        "Covid",
+        "pandemic",
+        "lockdown",
+        "PSBB",
+        "PPKM",
+        "new normal"
+      ]
+    },
+    {
+      "slug": "pets-animals",
+      "label": "Pets & animals",
+      "aliases": [
+        "dogs",
+        "cats",
+        "animal welfare",
+        "wildlife",
+        "sea turtles"
+      ]
+    },
+    {
+      "slug": "craft-spirits",
+      "label": "Craft spirits & brewing",
+      "aliases": [
+        "arak",
+        "gin",
+        "rum",
+        "craft beer",
+        "distillery"
+      ]
+    },
+    {
+      "slug": "spa-beauty",
+      "label": "Spa & beauty",
+      "aliases": [
+        "facial",
+        "skincare",
+        "beauty"
+      ]
+    },
+    {
+      "slug": "tourism",
+      "label": "Tourism",
+      "aliases": [
+        "mass tourism",
+        "overtourism",
+        "tourism history"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# Garage single-node config (see ARCHITECTURE.md §14: Garage over MinIO,
+# ~100MB RAM idle, S3-compatible, portable to R2/S3 by endpoint change only).
+#
+# Secrets (rpc_secret, admin_token, metrics_token) are deliberately NOT in
+# this file — garage reads them from GARAGE_RPC_SECRET / GARAGE_ADMIN_TOKEN /
+# GARAGE_METRICS_TOKEN env vars (set in docker-compose.yml from .env), which
+# override the (absent) config.toml values. See .env.example.
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "garage:3901"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.local"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.local"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"

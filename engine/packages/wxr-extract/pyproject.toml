@@ -1,0 +1,24 @@
+[project]
+name = "now-wxr-extract"
+version = "0.1.0"
+description = "Streaming WXR (WordPress eXtended RSS) -> JSONL extraction, matching now-wp-extract's frozen contract field-for-field. Built for NOW! Bali (WXR-only source) and as a cross-check extractor for NOW! Jakarta. No ongoing sync, one-shot migration tooling."
+requires-python = ">=3.12"
+dependencies = [
+    "phpserialize>=1.3,<2",
+    "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+wxr-extract = "wxr_extract.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wxr_extract"]

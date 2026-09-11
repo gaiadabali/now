@@ -1,0 +1,164 @@
+# Payload-entity-typing gate (F69's enforcement mechanism).
+#
+# Same root bug shipped four times before anyone caught it (PROGRESS.md):
+#
+#   C4   beacon identifiers hashed into uuid columns          -> now_db migration 0003
+#   F33  four now_db engine tables                             -> now_db migration 0005
+#   F66  now_db interactions + impressions                     -> now_db migration 0007
+#   F69  now_platform_db partnerships.place_id + 3 siblings     -> now_platform_db migration 0005
+#
+# F69 was the first of the four to appear in schema written *after* the
+# first three had already documented the rule in migration docstrings and
+# package READMEs -- proof that "written down somewhere" does not stop the
+# pattern, because nobody reads every past migration's docstring before
+# writing a new one. This workflow is the version of the rule that runs
+# whether or not the next author read any of that history: it migrates a
+# fresh platform DB and a fresh city DB to HEAD, then asserts no live
+# column named like a Payload entity reference (`place_id`,
+# `origin_article_id`, `hero_media_id`, `logo_media_id`, ...) is typed
+# `uuid` -- Payload's real primary keys are plain serial integers, so
+# `'42'::uuid` always raises. See
+# engine/packages/platform-db/scripts/check_no_payload_uuid_refs.py for the
+# check itself (including its documented, deliberate blind spots) and
+# engine/packages/platform-db/src/now_platform_db/migrations/versions/
+# 0005_partnerships_place_id_and_sibling_entity_refs_text_widen.py for the
+# fix this gate exists to keep fixed.
+#
+# Two jobs, matching schema-gate.yml's own convention:
+#
+#   entity-typing-gate           The real gate -- migrates now_platform and
+#                                 one city DB to HEAD and runs the checker
+#                                 against both.
+#   entity-typing-gate-selftest  Meta-test: proves the checker actually
+#                                 catches a violation, on every run, by
+#                                 deliberately adding a uuid-typed
+#                                 `*_place_id` column outside Alembic and
+#                                 asserting the checker exits non-zero. If
+#                                 someone ever weakens the regex so it can
+#                                 no longer detect this, THIS job goes red.
+name: payload-entity-typing-gate
+
+on:
+  pull_request:
+    paths:
+      - "engine/packages/db/**"
+      - "engine/packages/platform-db/**"
+      - ".github/workflows/payload-entity-typing-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/packages/db/**"
+      - "engine/packages/platform-db/**"
+      - ".github/workflows/payload-entity-typing-gate.yml"
+
+env:
+  NOW_PG_HOST: localhost
+  NOW_PG_PORT: "55432"
+  NOW_PG_USER: postgres
+  NOW_PG_PASSWORD: postgres
+  NOW_PLATFORM_DATABASE_URL: "postgresql+psycopg://postgres:postgres@localhost:55432/now_platform"
+
+jobs:
+  entity-typing-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build throwaway pgvector+postgis Postgres image
+        run: |
+          docker build -t now-pg-test:pg16 \
+            -f engine/packages/db/docker/Dockerfile.pg-test \
+            engine/packages/db/docker
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name now-pg-entity \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 55432:5432 \
+            now-pg-test:pg16
+          for i in $(seq 1 30); do
+            docker exec now-pg-entity pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install now-db + now-platform-db
+        run: pip install -e engine/packages/platform-db -e engine/packages/db
+
+      - name: Create + migrate platform DB and one city DB to HEAD
+        run: |
+          docker exec now-pg-entity psql -U postgres -c "CREATE DATABASE now_platform;"
+          now-platform-db migrate
+          now-db create entityguard --hostname entityguard.internal --name "Entity Guard" --timezone UTC --currency USD
+
+      - name: Check for uuid-typed Payload-entity-reference columns
+        run: |
+          python engine/packages/platform-db/scripts/check_no_payload_uuid_refs.py \
+            "postgresql+psycopg://postgres:postgres@localhost:55432/now_platform" \
+            "postgresql+psycopg://postgres:postgres@localhost:55432/now_entityguard"
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f now-pg-entity || true
+
+  entity-typing-gate-selftest:
+    # Proves the checker actually catches a violation, on every run -- not
+    # just the day someone manually verified it. See header comment.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build throwaway pgvector+postgis Postgres image
+        run: |
+          docker build -t now-pg-test:pg16 \
+            -f engine/packages/db/docker/Dockerfile.pg-test \
+            engine/packages/db/docker
+
+      - name: Start Postgres
+        run: |
+          docker run -d --name now-pg-entity-selftest \
+            -e POSTGRES_PASSWORD=postgres \
+            -p 55432:5432 \
+            now-pg-test:pg16
+          for i in $(seq 1 30); do
+            docker exec now-pg-entity-selftest pg_isready -U postgres && break
+            sleep 1
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install now-platform-db
+        run: pip install -e engine/packages/platform-db
+
+      - name: Provision a clean platform DB
+        run: |
+          docker exec now-pg-entity-selftest psql -U postgres -c "CREATE DATABASE now_platform;"
+          now-platform-db migrate
+
+      - name: Sanity check — clean DB passes before drifting it
+        run: |
+          python engine/packages/platform-db/scripts/check_no_payload_uuid_refs.py \
+            "postgresql+psycopg://postgres:postgres@localhost:55432/now_platform"
+
+      - name: Deliberately add a uuid-typed Payload-entity-reference column outside Alembic
+        run: |
+          docker exec now-pg-entity-selftest psql -U postgres -d now_platform \
+            -c "ALTER TABLE engine.orgs ADD COLUMN sabotage_place_id uuid;"
+
+      - name: Assert the checker detects it (must exit non-zero)
+        run: |
+          if python engine/packages/platform-db/scripts/check_no_payload_uuid_refs.py \
+               "postgresql+psycopg://postgres:postgres@localhost:55432/now_platform"; then
+            echo "::error::check_no_payload_uuid_refs.py did NOT detect a deliberately added uuid-typed *_place_id column"
+            exit 1
+          fi
+          echo "confirmed: the checker correctly failed on the deliberately drifted schema"
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f now-pg-entity-selftest || true

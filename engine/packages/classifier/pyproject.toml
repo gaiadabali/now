@@ -1,0 +1,33 @@
+[project]
+name = "now-classifier"
+version = "0.1.0"
+description = "E2.1 -- type/subtype/format/location classifier. Reads jakarta|bali/site/taxonomy-review.json (the 27-answer, per-category resolved proposal pack) plus content/extracted + content/harvested JSONL, resolves the D10 category prior per article, overrides per-article-flagged facets with now_taxonomy_evidence's keyword cue instrument, gates every facet at rules.confidence_gate (0.85), and writes: public.articles.primary_type/format (only when NULL, never clobbers), engine.entity_terms (type/subtype/location, upsert, never clobbers an editor row), and public.classification_reviews + classification_reviews_rels for everything below the gate. Never writes to now_platform -- vocabulary slugs are resolved to term uuids read-only. Idempotent and re-runnable by construction."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "now-db",
+    "now-platform-db",
+    "now-taxonomy-evidence",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-classifier = "now_classifier.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+now-taxonomy-evidence = { path = "../taxonomy-evidence", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_classifier"]

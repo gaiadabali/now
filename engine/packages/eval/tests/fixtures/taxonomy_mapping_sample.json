@@ -1,0 +1,76 @@
+{
+  "version": "test-fixture",
+  "status": "fixture",
+  "generated": "2026-01-01",
+  "source": "synthetic fixture for now-eval tests, not real data",
+  "vocabulary": {},
+  "totals": {"published_posts": 30, "categories_with_posts": 4},
+  "defaults": {},
+  "categories": [
+    {
+      "wp_term_id": 1,
+      "name": "Dining News",
+      "slug": "dining-news",
+      "parent": "Dining",
+      "is_print_issue": false,
+      "published": 10,
+      "yoast_primary": 8,
+      "prior": {"type": "eat", "subtype": "restaurant", "format": "news", "location": "jakarta", "facets": {}},
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false
+    },
+    {
+      "wp_term_id": 2,
+      "name": "Events",
+      "slug": "events",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 10,
+      "yoast_primary": 6,
+      "prior": {"type": "event", "subtype": null, "format": "event", "location": "jakarta", "facets": {}},
+      "per_article": ["subtype"],
+      "confidence": "high",
+      "decision_needed": false
+    },
+    {
+      "wp_term_id": 3,
+      "name": "News",
+      "slug": "news",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 8,
+      "yoast_primary": 4,
+      "prior": {"type": null, "subtype": null, "format": "news", "location": "jakarta", "facets": {}},
+      "per_article": ["type", "subtype"],
+      "confidence": "high",
+      "decision_needed": false
+    },
+    {
+      "wp_term_id": 4,
+      "name": "A Jakarta Smorgasbord",
+      "slug": "a-jakarta-smorgasbord",
+      "parent": "Magazine Issue",
+      "is_print_issue": true,
+      "published": 5,
+      "yoast_primary": 2,
+      "prior": {"type": "editorial", "subtype": null, "format": "feature", "location": "jakarta", "facets": {}},
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false
+    },
+    {
+      "wp_term_id": 5,
+      "name": "Small Category",
+      "slug": "small-category",
+      "parent": null,
+      "is_print_issue": false,
+      "published": 3,
+      "yoast_primary": 3,
+      "prior": {"type": "do", "subtype": null, "format": "guide", "location": "jakarta", "facets": {}},
+      "per_article": [],
+      "confidence": "high",
+      "decision_needed": false
+    }
+  ]
+}

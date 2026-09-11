@@ -1,0 +1,2243 @@
+{
+  "hash": "8cddf51d06be11012f556e37b288e00520383f77b1454ff238dfe9194bff910f",
+  "structure": {
+    "schema": "engine",
+    "tables": {
+      "ad_events": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['impression'::text, 'click'::text, 'conversion'::text])))",
+            "name": "ad_events_kind_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "campaign_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "placement_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "session_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "c",
+              "a",
+              "m",
+              "p",
+              "a",
+              "i",
+              "g",
+              "n",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "ad_events_campaign_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "p",
+              "l",
+              "a",
+              "c",
+              "e",
+              "m",
+              "e",
+              "n",
+              "t",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "ad_events_placement_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              ",",
+              "t",
+              "s",
+              "}"
+            ],
+            "name": "ad_events_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX ad_events_pkey ON ONLY engine.ad_events USING btree (id, ts)",
+            "method": "btree",
+            "name": "ad_events_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_ad_events_campaign ON ONLY engine.ad_events USING btree (campaign_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_ad_events_campaign"
+          },
+          {
+            "def": "CREATE INDEX ix_ad_events_placement ON ONLY engine.ad_events USING btree (placement_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_ad_events_placement"
+          }
+        ],
+        "partitioned": true
+      },
+      "alembic_version": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "version_num",
+            "nullable": "NO",
+            "type": "character varying",
+            "udt": "varchar"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "v",
+              "e",
+              "r",
+              "s",
+              "i",
+              "o",
+              "n",
+              "_",
+              "n",
+              "u",
+              "m",
+              "}"
+            ],
+            "name": "alembic_version_pkc",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX alembic_version_pkc ON engine.alembic_version USING btree (version_num)",
+            "method": "btree",
+            "name": "alembic_version_pkc"
+          }
+        ],
+        "partitioned": false
+      },
+      "campaigns": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'paused'::text, 'ended'::text])))",
+            "name": "campaigns_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "org_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "objective",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "budget",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "pacing",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "targeting",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'draft'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "o",
+              "r",
+              "g",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "campaigns_org_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "campaigns_site_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "campaigns_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX campaigns_pkey ON engine.campaigns USING btree (id)",
+            "method": "btree",
+            "name": "campaigns_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_campaigns_org ON engine.campaigns USING btree (org_id)",
+            "method": "btree",
+            "name": "ix_campaigns_org"
+          },
+          {
+            "def": "CREATE INDEX ix_campaigns_site ON engine.campaigns USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_campaigns_site"
+          }
+        ],
+        "partitioned": false
+      },
+      "facets": {
+        "checks": [
+          {
+            "clause": "CHECK ((cardinality = ANY (ARRAY['single'::text, 'multi'::text])))",
+            "name": "facets_cardinality_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "key",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "label",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "cardinality",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "false",
+            "name": "required",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "facets_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "k",
+              "e",
+              "y",
+              "}"
+            ],
+            "name": "uq_facets_key",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX facets_pkey ON engine.facets USING btree (id)",
+            "method": "btree",
+            "name": "facets_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_facets_key ON engine.facets USING btree (key)",
+            "method": "btree",
+            "name": "uq_facets_key"
+          }
+        ],
+        "partitioned": false
+      },
+      "identities": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "email",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "stated_prefs",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "identities_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "e",
+              "m",
+              "a",
+              "i",
+              "l",
+              "}"
+            ],
+            "name": "uq_identities_email",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX identities_pkey ON engine.identities USING btree (id)",
+            "method": "btree",
+            "name": "identities_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_identities_email ON engine.identities USING btree (email)",
+            "method": "btree",
+            "name": "uq_identities_email"
+          }
+        ],
+        "partitioned": false
+      },
+      "itineraries": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "user_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "title",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "start_date",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "party",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "prefs",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "share_token",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itineraries_site_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "u",
+              "s",
+              "e",
+              "r",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itineraries_user_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itineraries_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "h",
+              "a",
+              "r",
+              "e",
+              "_",
+              "t",
+              "o",
+              "k",
+              "e",
+              "n",
+              "}"
+            ],
+            "name": "uq_itineraries_share_token",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX itineraries_pkey ON engine.itineraries USING btree (id)",
+            "method": "btree",
+            "name": "itineraries_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_itineraries_site ON engine.itineraries USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_itineraries_site"
+          },
+          {
+            "def": "CREATE INDEX ix_itineraries_user ON engine.itineraries USING btree (user_id)",
+            "method": "btree",
+            "name": "ix_itineraries_user"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_itineraries_share_token ON engine.itineraries USING btree (share_token)",
+            "method": "btree",
+            "name": "uq_itineraries_share_token"
+          }
+        ],
+        "partitioned": false
+      },
+      "itinerary_days": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "itinerary_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "day_index",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "area_term_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "a",
+              "r",
+              "e",
+              "a",
+              "_",
+              "t",
+              "e",
+              "r",
+              "m",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_days_area_term_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "t",
+              "i",
+              "n",
+              "e",
+              "r",
+              "a",
+              "r",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_days_itinerary_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_days_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "t",
+              "i",
+              "n",
+              "e",
+              "r",
+              "a",
+              "r",
+              "y",
+              "_",
+              "i",
+              "d",
+              ",",
+              "d",
+              "a",
+              "y",
+              "_",
+              "i",
+              "n",
+              "d",
+              "e",
+              "x",
+              "}"
+            ],
+            "name": "uq_itinerary_days_seq",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX itinerary_days_pkey ON engine.itinerary_days USING btree (id)",
+            "method": "btree",
+            "name": "itinerary_days_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_itinerary_days_seq ON engine.itinerary_days USING btree (itinerary_id, day_index)",
+            "method": "btree",
+            "name": "uq_itinerary_days_seq"
+          }
+        ],
+        "partitioned": false
+      },
+      "itinerary_stops": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "day_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "seq",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "slot",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "place_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "start_time",
+            "nullable": "YES",
+            "type": "time without time zone",
+            "udt": "time"
+          },
+          {
+            "default": null,
+            "name": "duration_min",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "note",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "source",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "campaign_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "c",
+              "a",
+              "m",
+              "p",
+              "a",
+              "i",
+              "g",
+              "n",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_stops_campaign_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "d",
+              "a",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_stops_day_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "itinerary_stops_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "d",
+              "a",
+              "y",
+              "_",
+              "i",
+              "d",
+              ",",
+              "s",
+              "e",
+              "q",
+              "}"
+            ],
+            "name": "uq_itinerary_stops_seq",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX itinerary_stops_pkey ON engine.itinerary_stops USING btree (id)",
+            "method": "btree",
+            "name": "itinerary_stops_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_itinerary_stops_seq ON engine.itinerary_stops USING btree (day_id, seq)",
+            "method": "btree",
+            "name": "uq_itinerary_stops_seq"
+          }
+        ],
+        "partitioned": false
+      },
+      "orgs": {
+        "checks": [
+          {
+            "clause": "CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))",
+            "name": "orgs_confidence_check"
+          },
+          {
+            "clause": "CHECK ((review_status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'rejected'::text])))",
+            "name": "orgs_review_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "parent_org_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "name",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "slug",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "website",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "booking_url",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "logo_media_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "type",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "type_guess",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "confidence",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": "'pending'::text",
+            "name": "review_status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "false",
+            "name": "synthesized",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": "'{}'::text[]",
+            "name": "domains",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": null,
+            "name": "link_count",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "article_count",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "first_seen",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
+            "name": "last_seen",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
+            "name": "rel_audit",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'{}'::text[]",
+            "name": "notes",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": null,
+            "name": "source",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "p",
+              "a",
+              "r",
+              "e",
+              "n",
+              "t",
+              "_",
+              "o",
+              "r",
+              "g",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "orgs_parent_org_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "orgs_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "l",
+              "u",
+              "g",
+              "}"
+            ],
+            "name": "uq_orgs_slug",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_orgs_parent ON engine.orgs USING btree (parent_org_id)",
+            "method": "btree",
+            "name": "ix_orgs_parent"
+          },
+          {
+            "def": "CREATE INDEX ix_orgs_review_status_pending ON engine.orgs USING btree (confidence) WHERE (review_status = 'pending'::text)",
+            "method": "btree",
+            "name": "ix_orgs_review_status_pending"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX orgs_pkey ON engine.orgs USING btree (id)",
+            "method": "btree",
+            "name": "orgs_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_orgs_slug ON engine.orgs USING btree (slug)",
+            "method": "btree",
+            "name": "uq_orgs_slug"
+          }
+        ],
+        "partitioned": false
+      },
+      "partnership_audit": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "partnership_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "actor_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "before",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "after",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "p",
+              "a",
+              "r",
+              "t",
+              "n",
+              "e",
+              "r",
+              "s",
+              "h",
+              "i",
+              "p",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "partnership_audit_partnership_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "partnership_audit_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_partnership_audit_partnership ON engine.partnership_audit USING btree (partnership_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_partnership_audit_partnership"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX partnership_audit_pkey ON engine.partnership_audit USING btree (id)",
+            "method": "btree",
+            "name": "partnership_audit_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "partnerships": {
+        "checks": [
+          {
+            "clause": "CHECK ((num_nonnulls(org_id, place_id) = 1))",
+            "name": "ck_partnerships_org_xor_place"
+          },
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['active'::text, 'paused'::text, 'ended'::text])))",
+            "name": "partnerships_status_check"
+          },
+          {
+            "clause": "CHECK ((tier = ANY (ARRAY['free'::text, 'listed'::text, 'paid'::text])))",
+            "name": "partnerships_tier_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "org_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "place_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "tier",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "starts_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "ends_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'active'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "link_policy",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "custom_url",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "utm_template",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "false",
+            "name": "show_badge",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": null,
+            "name": "badge_label",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "false",
+            "name": "itinerary_eligible",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": null,
+            "name": "boost_cap",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "o",
+              "r",
+              "g",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "partnerships_org_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "partnerships_site_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "partnerships_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_partnerships_org ON engine.partnerships USING btree (org_id)",
+            "method": "btree",
+            "name": "ix_partnerships_org"
+          },
+          {
+            "def": "CREATE INDEX ix_partnerships_org_active ON engine.partnerships USING btree (site_id, org_id) WHERE ((status = 'active'::text) AND (org_id IS NOT NULL))",
+            "method": "btree",
+            "name": "ix_partnerships_org_active"
+          },
+          {
+            "def": "CREATE INDEX ix_partnerships_place_active ON engine.partnerships USING btree (site_id, place_id) WHERE ((status = 'active'::text) AND (place_id IS NOT NULL))",
+            "method": "btree",
+            "name": "ix_partnerships_place_active"
+          },
+          {
+            "def": "CREATE INDEX ix_partnerships_place_lookup ON engine.partnerships USING btree (site_id, place_id) WHERE (place_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_partnerships_place_lookup"
+          },
+          {
+            "def": "CREATE INDEX ix_partnerships_site ON engine.partnerships USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_partnerships_site"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX partnerships_pkey ON engine.partnerships USING btree (id)",
+            "method": "btree",
+            "name": "partnerships_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "placements": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "campaign_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "surface",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "slot",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "1.0",
+            "name": "boost_factor",
+            "nullable": "NO",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "guaranteed_impressions",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "freq_cap",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "c",
+              "a",
+              "m",
+              "p",
+              "a",
+              "i",
+              "g",
+              "n",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "placements_campaign_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "placements_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_placements_campaign ON engine.placements USING btree (campaign_id)",
+            "method": "btree",
+            "name": "ix_placements_campaign"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX placements_pkey ON engine.placements USING btree (id)",
+            "method": "btree",
+            "name": "placements_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "sites": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['active'::text, 'provisioning'::text, 'disabled'::text])))",
+            "name": "sites_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "slug",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "hostname",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "name",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'en'::text",
+            "name": "locale",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "timezone",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "currency",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "brand_tokens",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "nav",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "home_rails",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "ranking_weights",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "db_ref",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{}'::text[]",
+            "name": "enabled_modules",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": "'provisioning'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "location_term_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "l",
+              "o",
+              "c",
+              "a",
+              "t",
+              "i",
+              "o",
+              "n",
+              "_",
+              "t",
+              "e",
+              "r",
+              "m",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "sites_location_term_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "sites_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "d",
+              "b",
+              "_",
+              "r",
+              "e",
+              "f",
+              "}"
+            ],
+            "name": "uq_sites_db_ref",
+            "type": "UNIQUE"
+          },
+          {
+            "columns": [
+              "{",
+              "h",
+              "o",
+              "s",
+              "t",
+              "n",
+              "a",
+              "m",
+              "e",
+              "}"
+            ],
+            "name": "uq_sites_hostname",
+            "type": "UNIQUE"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "l",
+              "u",
+              "g",
+              "}"
+            ],
+            "name": "uq_sites_slug",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_sites_location_term ON engine.sites USING btree (location_term_id) WHERE (location_term_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_sites_location_term"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX sites_pkey ON engine.sites USING btree (id)",
+            "method": "btree",
+            "name": "sites_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_sites_db_ref ON engine.sites USING btree (db_ref)",
+            "method": "btree",
+            "name": "uq_sites_db_ref"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_sites_hostname ON engine.sites USING btree (hostname)",
+            "method": "btree",
+            "name": "uq_sites_hostname"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_sites_slug ON engine.sites USING btree (slug)",
+            "method": "btree",
+            "name": "uq_sites_slug"
+          }
+        ],
+        "partitioned": false
+      },
+      "syndications": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "origin_site",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "origin_article_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "target_site",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "target_path",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "published_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "o",
+              "r",
+              "i",
+              "g",
+              "i",
+              "n",
+              "_",
+              "s",
+              "i",
+              "t",
+              "e",
+              "}"
+            ],
+            "name": "syndications_origin_site_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "t",
+              "a",
+              "r",
+              "g",
+              "e",
+              "t",
+              "_",
+              "s",
+              "i",
+              "t",
+              "e",
+              "}"
+            ],
+            "name": "syndications_target_site_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "syndications_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "o",
+              "r",
+              "i",
+              "g",
+              "i",
+              "n",
+              "_",
+              "s",
+              "i",
+              "t",
+              "e",
+              ",",
+              "o",
+              "r",
+              "i",
+              "g",
+              "i",
+              "n",
+              "_",
+              "a",
+              "r",
+              "t",
+              "i",
+              "c",
+              "l",
+              "e",
+              "_",
+              "i",
+              "d",
+              ",",
+              "t",
+              "a",
+              "r",
+              "g",
+              "e",
+              "t",
+              "_",
+              "s",
+              "i",
+              "t",
+              "e",
+              "}"
+            ],
+            "name": "uq_syndications_edge",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_syndications_target ON engine.syndications USING btree (target_site)",
+            "method": "btree",
+            "name": "ix_syndications_target"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX syndications_pkey ON engine.syndications USING btree (id)",
+            "method": "btree",
+            "name": "syndications_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_syndications_edge ON engine.syndications USING btree (origin_site, origin_article_id, target_site)",
+            "method": "btree",
+            "name": "uq_syndications_edge"
+          }
+        ],
+        "partitioned": false
+      },
+      "terms": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "facet_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "slug",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "label",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "parent_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "geo",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "geography"
+          },
+          {
+            "default": null,
+            "name": "embedding",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "attrs",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "f",
+              "a",
+              "c",
+              "e",
+              "t",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "terms_facet_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "p",
+              "a",
+              "r",
+              "e",
+              "n",
+              "t",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "terms_parent_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "terms_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "f",
+              "a",
+              "c",
+              "e",
+              "t",
+              "_",
+              "i",
+              "d",
+              ",",
+              "s",
+              "l",
+              "u",
+              "g",
+              "}"
+            ],
+            "name": "uq_terms_facet_slug",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_terms_embedding_hnsw ON engine.terms USING hnsw (embedding vector_cosine_ops) WHERE (embedding IS NOT NULL)",
+            "method": "hnsw",
+            "name": "ix_terms_embedding_hnsw"
+          },
+          {
+            "def": "CREATE INDEX ix_terms_facet ON engine.terms USING btree (facet_id)",
+            "method": "btree",
+            "name": "ix_terms_facet"
+          },
+          {
+            "def": "CREATE INDEX ix_terms_geo ON engine.terms USING gist (geo)",
+            "method": "gist",
+            "name": "ix_terms_geo"
+          },
+          {
+            "def": "CREATE INDEX ix_terms_parent ON engine.terms USING btree (parent_id)",
+            "method": "btree",
+            "name": "ix_terms_parent"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX terms_pkey ON engine.terms USING btree (id)",
+            "method": "btree",
+            "name": "terms_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_terms_facet_slug ON engine.terms USING btree (facet_id, slug)",
+            "method": "btree",
+            "name": "uq_terms_facet_slug"
+          }
+        ],
+        "partitioned": false
+      },
+      "user_profiles": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "user_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "taste_vec_long",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          },
+          {
+            "default": null,
+            "name": "taste_vec_short",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          },
+          {
+            "default": "'{}'::jsonb",
+            "name": "facet_affinity",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "0",
+            "name": "n_meaningful",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "user_profiles_site_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "u",
+              "s",
+              "e",
+              "r",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "user_profiles_user_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "u",
+              "s",
+              "e",
+              "r",
+              "_",
+              "i",
+              "d",
+              ",",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "user_profiles_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_user_profiles_taste_long_hnsw ON engine.user_profiles USING hnsw (taste_vec_long vector_cosine_ops) WHERE (taste_vec_long IS NOT NULL)",
+            "method": "hnsw",
+            "name": "ix_user_profiles_taste_long_hnsw"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX user_profiles_pkey ON engine.user_profiles USING btree (user_id, site_id)",
+            "method": "btree",
+            "name": "user_profiles_pkey"
+          }
+        ],
+        "partitioned": false
+      }
+    }
+  }
+}

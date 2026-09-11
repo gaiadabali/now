@@ -1,0 +1,27 @@
+{
+  "name": "@now-engine/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NOW! reader site. ONE Next.js app, instantiated per city (ARCHITECTURE.md §3.5) — differentiated only by SITE_SLUG + DATABASE_URI. Zero site-name literals in src/.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "typecheck": "tsc --noEmit",
+    "lint:site-literals": "node scripts/lint-site-literals.mjs"
+  },
+  "dependencies": {
+    "next": "15.4.11",
+    "react": "19.0.1",
+    "react-dom": "19.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "19.0.1",
+    "typescript": "5.7.2"
+  },
+  "engines": { "node": "^18.20.2 || >=20.9.0" }
+}

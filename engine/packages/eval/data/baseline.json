@@ -1,0 +1,45 @@
+{
+  "dataset_counts": {
+    "facet_tagging": 237,
+    "related_articles": 200,
+    "search": 200,
+    "type_classification": 200
+  },
+  "label": "E2.7 initial baseline -- trivial random SUT (seed=0), first recorded baseline for the no-regression gates on related_articles/search. Hard-threshold gates (facet>=0.85, type>=0.95) are enforced separately once a real SUT is wired in -- see README/baseline.py.",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python_version": "3.13.14",
+  "recorded_at": "2026-09-08T14:25:22.670298+00:00",
+  "results": {
+    "facet_tagging": {
+      "extra": {
+        "recall": 0.0
+      },
+      "metric": "precision",
+      "n": 237,
+      "surface": "facet_tagging",
+      "value": 0.0
+    },
+    "related_articles": {
+      "extra": {},
+      "metric": "precision@6",
+      "n": 200,
+      "surface": "related_articles",
+      "value": 0.0375
+    },
+    "search": {
+      "extra": {},
+      "metric": "ndcg@10",
+      "n": 200,
+      "surface": "search",
+      "value": 0.006034776401173491
+    },
+    "type_classification": {
+      "extra": {},
+      "metric": "accuracy",
+      "n": 200,
+      "surface": "type_classification",
+      "value": 0.145
+    }
+  },
+  "sut_name": "trivial-random"
+}

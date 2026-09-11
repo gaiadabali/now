@@ -1,0 +1,32 @@
+[project]
+name = "now-place-extraction"
+version = "0.1.0"
+description = "E2.3 -- place entity extraction + dedup. Extracts venue mentions from public.articles.body_blocks, reconciles them against each city's existing public.places, dedups new candidates with a precision bias (uncertain merges go to a file-based review queue, never auto-applied), and upserts public.place_mentions idempotently. See README.md for the two load-bearing findings this ticket surfaced."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "now-db",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+llm = [
+    "httpx>=0.27,<1",
+]
+
+[project.scripts]
+now-place-extract = "now_place_extraction.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_place_extraction"]

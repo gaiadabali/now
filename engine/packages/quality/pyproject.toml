@@ -1,0 +1,29 @@
+[project]
+name = "now-quality"
+version = "0.1.0"
+description = "E2.6 -- quality scoring (length/media/structure/author/Yoast components, stored as jsonb) and series clustering (annual-listicle title dedup -> articles.series_key) for now_jakarta. Also derives a popularity prior from the bot-contaminated wpb_post_views_count, using only the head of the distribution. Idempotent: never overwrites an existing series_key, always recomputes quality_scores deterministically."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "now-db",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-quality = "now_quality.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_quality"]

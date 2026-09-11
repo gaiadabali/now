@@ -1,0 +1,12 @@
+# Throwaway Postgres 16 + pgvector + PostGIS image for testing this package
+# (migrations, the CLI, the schema-hash gate) without depending on the infra
+# agent's compose stack or their engine/infra/postgres/Dockerfile.
+#
+# Recipe verified working: pgvector/pgvector:pg16 is Debian bookworm with the
+# PGDG apt repo pre-configured, so postgresql-16-postgis-3 installs cleanly
+# from the same repo pgvector was built from.
+FROM pgvector/pgvector:pg16
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-16-postgis-3 \
+    && rm -rf /var/lib/apt/lists/*

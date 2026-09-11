@@ -1,0 +1,32 @@
+# Local development overrides — loaded automatically by `docker compose`
+# alongside docker-compose.yml. Publishes ports to localhost so you can
+# reach services directly for debugging/smoke tests without going through
+# Caddy, and relaxes a couple of things that only make sense in prod.
+#
+# Production deploys should run:
+#   docker compose -f docker-compose.yml up -d
+# to skip this file entirely.
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  garage:
+    ports:
+      - "${GARAGE_S3_PORT:-3900}:3900" # S3 API
+      - "${GARAGE_WEB_PORT:-3902}:3902" # website endpoint (unused for now)
+      - "${GARAGE_ADMIN_PORT:-3903}:3903" # admin API
+
+  imgproxy:
+    ports:
+      - "${IMGPROXY_PORT:-8080}:8080"
+
+  caddy:
+    ports:
+      - "${CADDY_HTTP_PORT:-80}:80"
+      - "${CADDY_HTTPS_PORT:-443}:443"

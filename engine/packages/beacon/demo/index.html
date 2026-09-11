@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NOW! Beacon demo</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; line-height: 1.5; }
+  header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 8px 0; }
+  button { padding: 8px 12px; margin: 4px 4px 4px 0; cursor: pointer; }
+  .rail { display: flex; gap: 8px; margin: 12px 0; }
+  .rail-item { border: 1px solid #ccc; padding: 12px; flex: 1; }
+  .spacer { height: 1400px; background: linear-gradient(#fafafa, #eee); margin: 16px 0; padding: 8px; }
+  #log { background: #111; color: #6f6; font: 12px/1.4 monospace; padding: 12px; white-space: pre-wrap; max-height: 260px; overflow: auto; }
+  code { background: #f0f0f0; padding: 1px 4px; }
+</style>
+</head>
+<body>
+
+<!--
+  Queuing snippet: lets host pages call NOWB(...) before the async script
+  has finished loading. Not required (the demo below loads the script
+  synchronously-ish above the fold), but this is the documented pattern
+  for a real WordPress theme where the tag carries `async`.
+-->
+<script>
+  window.NOWB = window.NOWB || function () { (window.NOWB.q = window.NOWB.q || []).push(arguments); };
+</script>
+
+<header>
+  <strong>NOW! Beacon — live demo</strong>
+  <div>anon_id / session_id below refresh after each action.</div>
+  <div id="ids">anon_id: … · session_id: …</div>
+</header>
+
+<h1>Article: "10 Rooftop Bars in Senopati"</h1>
+<p>This page exercises every beacon event type. Open devtools console (data-debug is on)
+and/or watch the terminal running <code>demo/server.js</code> — every batch the beacon
+sends is logged there as parsed JSON.</p>
+
+<h2>1. view</h2>
+<p>Fired automatically on load. Check the log below.</p>
+
+<h2>2. impression (rail + position)</h2>
+<p>Simulates a "Complementary" suggestion rail rendering 3 cards. Click to register the
+impressions — this is what the algorithm needs to correct for position bias later.</p>
+<div class="rail" id="rail1">
+  <div class="rail-item">Place A</div>
+  <div class="rail-item">Place B</div>
+  <div class="rail-item">Place C</div>
+</div>
+<button id="btn-impressions">Register rail impressions</button>
+
+<h2>3. click (internal) / outbound (external)</h2>
+<p>
+  <a href="/places/viceroy-bali" data-nowb-entity="4821" data-nowb-rail="complementary" data-nowb-position="1">Internal: The Viceroy Bali (place page)</a>
+</p>
+<p>
+  <a href="https://example.com/book" data-nowb-entity="4821">External: Book on partner site</a>
+</p>
+
+<h2>4. search</h2>
+<form role="search" id="search-form">
+  <input type="search" name="q" placeholder="rooftop bar senopati" />
+  <button type="submit">Search</button>
+</form>
+
+<h2>5. thumbs_down</h2>
+<button id="btn-thumbsdown">Not interested in this rec</button>
+
+<h2>6. scroll (25/50/75/100%) + dwell/exit</h2>
+<p>Scroll the long block below to trigger the 25/50/75/100% milestones.
+<code>dwell</code> and <code>exit</code> fire on tab-hide / navigation-away — switch tabs,
+or click "Simulate exit" to force a flush now.</p>
+<div class="spacer">keep scrolling…</div>
+
+<button id="btn-flush">Flush now</button>
+<button id="btn-consent-deny">Set consent = denied (should no-op)</button>
+<button id="btn-consent-grant">Set consent = granted</button>
+
+<h2>Server-received batches</h2>
+<div id="log">(waiting for first flush — batches also print to the browser console)</div>
+
+<!--
+  Real integration snippet (see README.md):
+  <script src="https://engine.now.id/b.js" data-site="jakarta" data-entity="12345" async></script>
+  Locally this points at the built artifact and the mock endpoint below.
+-->
+<script
+  src="/dist/beacon.min.js"
+  data-site="demo"
+  data-entity="13"
+  data-entity-type="article"
+  data-surface="article"
+  data-endpoint="/v1/demo/events"
+  data-debug="true"
+  async
+></script>
+
+<script>
+  function $(id) { return document.getElementById(id); }
+
+  function refreshIds() {
+    // anon_id/session_id aren't part of the public API surface, so read
+    // them the same way the server would: from the cookie + sessionStorage.
+    var m = document.cookie.match(/(?:^|; )nowb_aid=([^;]+)/);
+    var anon = m ? decodeURIComponent(m[1]) : '(cookie blocked — memory-only)';
+    var sess = sessionStorage.getItem('nowb_sid') || '(not set yet)';
+    $('ids').textContent = 'anon_id: ' + anon + ' · session_id: ' + sess;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(refreshIds, 300);
+
+    $('btn-impressions').addEventListener('click', function () {
+      var items = document.querySelectorAll('#rail1 .rail-item');
+      items.forEach(function (el, i) {
+        NOWB('impression', {
+          surface: 'article',
+          rail: 'complementary',
+          entityId: 'place:demo-' + (i + 1),
+          position: i + 1
+        });
+      });
+      refreshIds();
+    });
+
+    $('btn-thumbsdown').addEventListener('click', function () {
+      NOWB('thumbsDown', { entityType: 'place', entityId: '4821', surface: 'article' });
+    });
+
+    $('btn-flush').addEventListener('click', function () {
+      NOWB('flush');
+    });
+
+    $('btn-consent-deny').addEventListener('click', function () {
+      NOWB('consent', 'denied');
+      alert('consent denied — further track()/impression() calls are now no-ops');
+    });
+    $('btn-consent-grant').addEventListener('click', function () {
+      NOWB('consent', 'granted');
+    });
+
+    $('search-form').addEventListener('submit', function (e) {
+      e.preventDefault(); // stay on page for the demo
+      NOWB('flush');
+    });
+
+    setInterval(refreshIds, 1000);
+  });
+
+  // Poll the server log so this page shows what the backend actually
+  // received, not just what the client attempted to send.
+  function pollLog() {
+    fetch('/demo/received-events.log.jsonl', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (text) {
+        if (!text) return;
+        var lines = text.trim().split('\n').slice(-5);
+        $('log').textContent = lines.map(function (l) {
+          try { return JSON.stringify(JSON.parse(l), null, 2); } catch (e) { return l; }
+        }).join('\n\n');
+      })
+      ['catch'](function () {});
+  }
+  setInterval(pollLog, 1500);
+</script>
+
+</body>
+</html>

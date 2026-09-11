@@ -1,0 +1,3 @@
+node_modules/
+demo/received-events.log.jsonl
+demo/server.out.log

@@ -1,0 +1,146 @@
+{
+  "facet": "audience",
+  "source": "ARCHITECTURE.md §4 names expat, tourist, local, family; §10 registration uses expat · local · visiting · business.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "note": "`tourist` is the §10 'visiting' choice and `business-traveller` the 'business' choice. Kids & Family maps to `family`.",
+  "terms": [
+    {
+      "slug": "expat",
+      "label": "Expat",
+      "from_spec": true,
+      "aliases": [
+        "expatriate",
+        "international resident",
+        "expats",
+        "expatriates",
+        "international community"
+      ]
+    },
+    {
+      "slug": "tourist",
+      "label": "Tourist",
+      "from_spec": true,
+      "aliases": [
+        "visitor",
+        "visiting",
+        "traveller",
+        "tourists",
+        "visitors",
+        "travellers",
+        "traveler",
+        "travelers"
+      ]
+    },
+    {
+      "slug": "local",
+      "label": "Local",
+      "from_spec": true,
+      "aliases": [
+        "resident",
+        "Jakartan",
+        "Balinese",
+        "locals",
+        "Jakartans",
+        "residents"
+      ]
+    },
+    {
+      "slug": "family",
+      "label": "Family",
+      "from_spec": true,
+      "aliases": [
+        "kids",
+        "parents",
+        "children",
+        "families",
+        "toddlers"
+      ]
+    },
+    {
+      "slug": "business-traveller",
+      "label": "Business traveller",
+      "aliases": [
+        "corporate visitor",
+        "business travellers",
+        "business traveler",
+        "corporate travellers"
+      ]
+    },
+    {
+      "slug": "couples",
+      "label": "Couples",
+      "aliases": [
+        "honeymoon",
+        "romantic getaway",
+        "honeymooners",
+        "lovebirds"
+      ]
+    },
+    {
+      "slug": "women",
+      "label": "Women",
+      "aliases": [
+        "female travellers",
+        "ladies"
+      ]
+    },
+    {
+      "slug": "students",
+      "label": "Students",
+      "aliases": [
+        "teenagers",
+        "university students"
+      ]
+    },
+    {
+      "slug": "foodies",
+      "label": "Foodies",
+      "aliases": [
+        "foodie"
+      ]
+    },
+    {
+      "slug": "seniors",
+      "label": "Seniors",
+      "aliases": [
+        "elderly",
+        "retirees",
+        "retirement"
+      ]
+    },
+    {
+      "slug": "surfers",
+      "label": "Surfers"
+    },
+    {
+      "slug": "divers",
+      "label": "Divers"
+    },
+    {
+      "slug": "yogis",
+      "label": "Yogis",
+      "aliases": [
+        "yogi"
+      ]
+    },
+    {
+      "slug": "digital-nomads",
+      "label": "Digital nomads",
+      "aliases": [
+        "digital nomad",
+        "remote workers"
+      ]
+    },
+    {
+      "slug": "backpackers",
+      "label": "Backpackers",
+      "aliases": [
+        "backpacker",
+        "budget travellers"
+      ]
+    }
+  ]
+}

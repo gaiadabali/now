@@ -1,0 +1,718 @@
+{
+  "facet": "type",
+  "children_facet": "subtype",
+  "source": "ARCHITECTURE.md §4 'Type tree'",
+  "persisted_fields": [
+    "slug",
+    "label",
+    "parent"
+  ],
+  "note": "L1 terms go to the `type` facet; every `children` entry goes to the `subtype` facet with parent_id -> the L1 term. `aliases`/`notes`/`proposed` are documentation for the E2.1 classifier prompt and the human review. `proposed: true` marks an addition beyond §4 that needs sign-off.",
+  "terms": [
+    {
+      "slug": "stay",
+      "label": "Stay",
+      "children": [
+        {
+          "slug": "hotel",
+          "label": "Hotel"
+        },
+        {
+          "slug": "resort",
+          "label": "Resort"
+        },
+        {
+          "slug": "villa",
+          "label": "Villa",
+          "aliases": [
+            "villas"
+          ]
+        },
+        {
+          "slug": "serviced-apartment",
+          "label": "Serviced apartment",
+          "aliases": [
+            "aparthotel",
+            "residences",
+            "serviced apartments",
+            "residence"
+          ]
+        },
+        {
+          "slug": "boutique-hotel",
+          "label": "Boutique hotel",
+          "notes": "§4 names this `boutique`; renamed because `shop/boutique` would collide on the (facet, slug) unique key inside the single `subtype` facet."
+        },
+        {
+          "slug": "glamping",
+          "label": "Glamping",
+          "aliases": [
+            "camping",
+            "eco-lodge"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "eat",
+      "label": "Eat",
+      "children": [
+        {
+          "slug": "restaurant",
+          "label": "Restaurant"
+        },
+        {
+          "slug": "cafe",
+          "label": "Cafe",
+          "aliases": [
+            "coffee shop",
+            "brunch spot",
+            "café",
+            "roastery",
+            "kopi",
+            "tea house",
+            "teahouse",
+            "tea room"
+          ]
+        },
+        {
+          "slug": "bakery",
+          "label": "Bakery",
+          "aliases": [
+            "patisserie",
+            "dessert shop",
+            "sourdough",
+            "croissant"
+          ]
+        },
+        {
+          "slug": "fine-dining",
+          "label": "Fine dining",
+          "aliases": [
+            "omakase",
+            "tasting menu",
+            "degustation",
+            "Michelin"
+          ]
+        },
+        {
+          "slug": "street-food",
+          "label": "Street food",
+          "aliases": [
+            "warung",
+            "kaki lima",
+            "hawker",
+            "warungs"
+          ]
+        },
+        {
+          "slug": "food-court",
+          "label": "Food court",
+          "aliases": [
+            "food hall"
+          ]
+        },
+        {
+          "slug": "dessert-shop",
+          "label": "Dessert shop",
+          "aliases": [
+            "gelato",
+            "gelateria",
+            "ice cream parlour",
+            "dessert bar",
+            "patisserie"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "drink",
+      "label": "Drink",
+      "children": [
+        {
+          "slug": "bar",
+          "label": "Bar"
+        },
+        {
+          "slug": "rooftop-bar",
+          "label": "Rooftop bar"
+        },
+        {
+          "slug": "cocktail-bar",
+          "label": "Cocktail bar",
+          "aliases": [
+            "speakeasy",
+            "mixology"
+          ]
+        },
+        {
+          "slug": "beach-club",
+          "label": "Beach club",
+          "aliases": [
+            "beach clubs"
+          ]
+        },
+        {
+          "slug": "nightclub",
+          "label": "Nightclub",
+          "aliases": [
+            "club",
+            "lounge"
+          ]
+        },
+        {
+          "slug": "pub",
+          "label": "Pub",
+          "aliases": [
+            "sports bar",
+            "brewery",
+            "taproom",
+            "beer garden"
+          ]
+        },
+        {
+          "slug": "wine-bar",
+          "label": "Wine bar"
+        },
+        {
+          "slug": "winery-distillery",
+          "label": "Winery & distillery",
+          "aliases": [
+            "winery",
+            "vineyard",
+            "distillery",
+            "brewery",
+            "taproom",
+            "cellar door"
+          ]
+        },
+        {
+          "slug": "karaoke",
+          "label": "Karaoke",
+          "aliases": [
+            "KTV",
+            "karaoke bar"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "do",
+      "label": "Do",
+      "children": [
+        {
+          "slug": "attraction",
+          "label": "Attraction",
+          "aliases": [
+            "theme park",
+            "zoo",
+            "landmark",
+            "park",
+            "temple",
+            "palace",
+            "water palace",
+            "puri",
+            "waterpark",
+            "water park"
+          ]
+        },
+        {
+          "slug": "museum",
+          "label": "Museum"
+        },
+        {
+          "slug": "gallery",
+          "label": "Gallery",
+          "aliases": [
+            "art space"
+          ]
+        },
+        {
+          "slug": "adventure",
+          "label": "Adventure",
+          "aliases": [
+            "hiking",
+            "trekking",
+            "rafting",
+            "volcano",
+            "Mount Batur",
+            "Mount Agung",
+            "sunrise trek",
+            "trek",
+            "ATV",
+            "quad bike",
+            "buggy",
+            "horse riding",
+            "horseback riding",
+            "helicopter tour",
+            "hot air balloon",
+            "white water rafting"
+          ]
+        },
+        {
+          "slug": "watersports",
+          "label": "Watersports",
+          "aliases": [
+            "surfing",
+            "diving",
+            "snorkelling",
+            "sailing",
+            "surf",
+            "surf school",
+            "surf camp",
+            "snorkeling",
+            "scuba",
+            "freediving",
+            "kitesurfing",
+            "kitesurf",
+            "catamaran",
+            "yacht"
+          ]
+        },
+        {
+          "slug": "tour",
+          "label": "Tour",
+          "aliases": [
+            "day trip",
+            "walking tour",
+            "cruise",
+            "bike tour",
+            "cycling tour",
+            "bicycle tour",
+            "sunset cruise",
+            "dinner cruise",
+            "liveaboard",
+            "phinisi"
+          ]
+        },
+        {
+          "slug": "workshop",
+          "label": "Workshop",
+          "aliases": [
+            "class",
+            "cooking class",
+            "course",
+            "cooking classes",
+            "culinary class"
+          ]
+        },
+        {
+          "slug": "sports-activity",
+          "label": "Sports & activities",
+          "aliases": [
+            "golf",
+            "padel",
+            "running club",
+            "cycling",
+            "bowling",
+            "golf course",
+            "golf club",
+            "driving range",
+            "billiards",
+            "pool hall",
+            "arcade",
+            "trampoline park",
+            "escape room"
+          ],
+          "notes": "Participatory sport venues and clubs (legacy 'Sports & Activities', 61 articles). Distinct from `event/sports`, which is a dated spectator fixture. Slug is not `sports` because that slug is taken by the event subtype in the same facet."
+        },
+        {
+          "slug": "temple",
+          "label": "Temple",
+          "aliases": [
+            "temples",
+            "pura",
+            "klenteng",
+            "Chinese temple"
+          ]
+        },
+        {
+          "slug": "farm",
+          "label": "Farm & plantation",
+          "aliases": [
+            "organic farm",
+            "plantation",
+            "coffee plantation",
+            "agritourism"
+          ]
+        },
+        {
+          "slug": "zoo",
+          "label": "Zoo & safari park",
+          "aliases": [
+            "safari",
+            "bird park",
+            "butterfly park",
+            "elephant park",
+            "aquarium"
+          ]
+        },
+        {
+          "slug": "place-of-worship",
+          "label": "Church & mosque",
+          "aliases": [
+            "church",
+            "cathedral",
+            "mosque",
+            "masjid"
+          ]
+        },
+        {
+          "slug": "theatre",
+          "label": "Theatre & concert hall",
+          "aliases": [
+            "theater",
+            "concert hall",
+            "performing arts centre",
+            "Ciputra Artpreneur",
+            "Salihara",
+            "Aula Simfonia"
+          ]
+        },
+        {
+          "slug": "nature",
+          "label": "Nature spot",
+          "aliases": [
+            "waterfall",
+            "waterfalls",
+            "lake",
+            "hot spring",
+            "hot springs",
+            "mangrove",
+            "national park",
+            "rice terrace",
+            "rice terraces",
+            "viewpoint"
+          ]
+        },
+        {
+          "slug": "cinema",
+          "label": "Cinema",
+          "aliases": [
+            "movie theatre",
+            "movie theater",
+            "XXI",
+            "CGV"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "wellness",
+      "label": "Wellness",
+      "children": [
+        {
+          "slug": "spa",
+          "label": "Spa",
+          "aliases": [
+            "massage",
+            "hammam"
+          ]
+        },
+        {
+          "slug": "gym",
+          "label": "Gym",
+          "aliases": [
+            "fitness studio",
+            "crossfit"
+          ]
+        },
+        {
+          "slug": "yoga",
+          "label": "Yoga",
+          "aliases": [
+            "pilates",
+            "meditation",
+            "yoga studio",
+            "yoga shala",
+            "shala",
+            "yoga barn"
+          ]
+        },
+        {
+          "slug": "clinic",
+          "label": "Clinic",
+          "aliases": [
+            "aesthetic clinic",
+            "dental",
+            "hospital",
+            "medical"
+          ]
+        },
+        {
+          "slug": "salon",
+          "label": "Salon",
+          "aliases": [
+            "barbershop",
+            "nail bar",
+            "beauty",
+            "barber",
+            "nail salon",
+            "manicure"
+          ],
+          "notes": "Beauty venues are a lifestyle-magazine staple with no §4 node."
+        },
+        {
+          "slug": "retreat",
+          "label": "Retreat",
+          "aliases": [
+            "wellness retreat",
+            "detox",
+            "retreat centre",
+            "retreat center",
+            "healing centre",
+            "wellness centre",
+            "wellness center"
+          ],
+          "notes": "Multi-day retreats are a Bali staple with no §4 node."
+        }
+      ]
+    },
+    {
+      "slug": "shop",
+      "label": "Shop",
+      "children": [
+        {
+          "slug": "mall",
+          "label": "Mall",
+          "aliases": [
+            "shopping centre",
+            "department store",
+            "shopping mall",
+            "plaza"
+          ]
+        },
+        {
+          "slug": "boutique",
+          "label": "Boutique",
+          "aliases": [
+            "fashion store",
+            "concept store"
+          ]
+        },
+        {
+          "slug": "market",
+          "label": "Market",
+          "aliases": [
+            "pasar",
+            "flea market",
+            "farmers market",
+            "night market"
+          ]
+        },
+        {
+          "slug": "artisan",
+          "label": "Artisan",
+          "aliases": [
+            "craft",
+            "homeware",
+            "local brand",
+            "batik"
+          ]
+        },
+        {
+          "slug": "bookshop",
+          "label": "Bookshop",
+          "aliases": [
+            "bookstore",
+            "book shop",
+            "library"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "event",
+      "label": "Event",
+      "children": [
+        {
+          "slug": "festival",
+          "label": "Festival"
+        },
+        {
+          "slug": "concert",
+          "label": "Concert",
+          "aliases": [
+            "gig",
+            "live music",
+            "DJ set"
+          ]
+        },
+        {
+          "slug": "exhibition",
+          "label": "Exhibition",
+          "aliases": [
+            "art show",
+            "art fair",
+            "biennale"
+          ]
+        },
+        {
+          "slug": "conference",
+          "label": "Conference",
+          "aliases": [
+            "summit",
+            "forum",
+            "expo",
+            "seminar",
+            "convention centre",
+            "convention center",
+            "exhibition hall",
+            "JCC",
+            "ICE BSD",
+            "JIExpo"
+          ]
+        },
+        {
+          "slug": "sports",
+          "label": "Sports",
+          "aliases": [
+            "match",
+            "marathon",
+            "race",
+            "tournament",
+            "stadium",
+            "arena"
+          ]
+        },
+        {
+          "slug": "community",
+          "label": "Community",
+          "aliases": [
+            "charity",
+            "gathering",
+            "bazaar",
+            "meet-up"
+          ]
+        },
+        {
+          "slug": "performance",
+          "label": "Performance",
+          "aliases": [
+            "theatre",
+            "dance",
+            "opera",
+            "comedy",
+            "ballet"
+          ],
+          "notes": "Performing arts — a large slice of the 244 legacy 'Art' articles; `concert` is music-only and `exhibition` is visual arts."
+        },
+        {
+          "slug": "screening",
+          "label": "Screening",
+          "aliases": [
+            "film festival",
+            "premiere",
+            "movie night"
+          ]
+        },
+        {
+          "slug": "pop-up",
+          "label": "Pop-up",
+          "aliases": [
+            "pop-up market",
+            "trunk show",
+            "guest chef",
+            "pop up"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "unknown",
+      "label": "Unknown",
+      "children": [],
+      "notes": "F49 (PROGRESS.md): a technical sentinel, not an editorial category. Deliberately has no `subtype` children -- it stands in for 'not yet classified', so there is nothing under it to select. type_relations.json gives it exclude_same=true and zero complements so an unclassified place fails closed on competitor exclusion regardless of `status`, unlike the old editorial/city-guide loader sentinel (F27) which had exclude_same=false and complemented every venue type. E2.1 reclassifies every place currently wearing this label into a real type; nothing should be left as `unknown` at launch."
+    },
+    {
+      "slug": "editorial",
+      "label": "Editorial",
+      "children": [
+        {
+          "slug": "news",
+          "label": "News"
+        },
+        {
+          "slug": "opinion",
+          "label": "Opinion",
+          "aliases": [
+            "column",
+            "op-ed",
+            "editor's letter"
+          ]
+        },
+        {
+          "slug": "people",
+          "label": "People",
+          "aliases": [
+            "profile",
+            "interview",
+            "Q&A"
+          ]
+        },
+        {
+          "slug": "business",
+          "label": "Business",
+          "aliases": [
+            "economy",
+            "corporate",
+            "startup"
+          ]
+        },
+        {
+          "slug": "education",
+          "label": "Education",
+          "aliases": [
+            "school",
+            "university",
+            "international school",
+            "kindergarten",
+            "preschool"
+          ]
+        },
+        {
+          "slug": "heritage",
+          "label": "Heritage",
+          "aliases": [
+            "history",
+            "colonial",
+            "archaeology"
+          ]
+        },
+        {
+          "slug": "city-guide",
+          "label": "City guide",
+          "aliases": [
+            "destination guide",
+            "neighbourhood guide"
+          ]
+        },
+        {
+          "slug": "culture",
+          "label": "Culture",
+          "aliases": [
+            "arts",
+            "music",
+            "film",
+            "design",
+            "literature",
+            "tradition"
+          ],
+          "notes": "Coverage of the arts that is neither a dated event nor a venue (roughly 450 legacy articles across Art, Culture, Music, Film, Design, Art & Culture). Without it these force-fit into `news` or `people`."
+        },
+        {
+          "slug": "lifestyle",
+          "label": "Lifestyle",
+          "aliases": [
+            "health",
+            "fashion",
+            "home",
+            "parenting",
+            "green living"
+          ],
+          "notes": "General-interest service journalism with no venue subject (Health 99, Lifestyle 13, Green Living 47). Without it these force-fit into `news`."
+        }
+      ]
+    }
+  ]
+}

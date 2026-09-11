@@ -1,0 +1,190 @@
+{
+  "facet": "occasion",
+  "source": "ARCHITECTURE.md §4 names date night, business trip as examples; the rest is the E1.4 proposal for review.",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "terms": [
+    {
+      "slug": "date-night",
+      "label": "Date night",
+      "from_spec": true,
+      "aliases": [
+        "anniversary",
+        "Valentine's",
+        "Valentine",
+        "romantic dinner"
+      ]
+    },
+    {
+      "slug": "business-trip",
+      "label": "Business trip",
+      "from_spec": true,
+      "aliases": [
+        "business lunch",
+        "client dinner",
+        "corporate",
+        "business dinner",
+        "team building",
+        "team-building",
+        "MICE"
+      ]
+    },
+    {
+      "slug": "celebration",
+      "label": "Celebration",
+      "aliases": [
+        "birthday",
+        "wedding"
+      ]
+    },
+    {
+      "slug": "family-day",
+      "label": "Family day",
+      "aliases": [
+        "with kids",
+        "school holiday",
+        "family outing",
+        "family getaway"
+      ]
+    },
+    {
+      "slug": "brunch",
+      "label": "Brunch",
+      "aliases": [
+        "Sunday brunch",
+        "breakfast"
+      ]
+    },
+    {
+      "slug": "night-out",
+      "label": "Night out",
+      "aliases": [
+        "after-work drinks",
+        "clubbing",
+        "after-work",
+        "after work",
+        "girls' night",
+        "boys' night"
+      ]
+    },
+    {
+      "slug": "weekend-getaway",
+      "label": "Weekend getaway",
+      "aliases": [
+        "staycation",
+        "short break",
+        "long weekend"
+      ]
+    },
+    {
+      "slug": "group-gathering",
+      "label": "Group gathering",
+      "aliases": [
+        "big group",
+        "reunion",
+        "team outing",
+        "large group",
+        "group booking",
+        "group of friends"
+      ]
+    },
+    {
+      "slug": "solo",
+      "label": "Solo",
+      "aliases": [
+        "me time",
+        "solo traveller"
+      ]
+    },
+    {
+      "slug": "sunset",
+      "label": "Sunset",
+      "aliases": [
+        "golden hour",
+        "sundowner"
+      ]
+    },
+    {
+      "slug": "afternoon-tea",
+      "label": "Afternoon tea",
+      "aliases": [
+        "high tea",
+        "coffee break"
+      ]
+    },
+    {
+      "slug": "festive",
+      "label": "Festive season",
+      "aliases": [
+        "Christmas",
+        "New Year",
+        "New Year's Eve",
+        "festive season",
+        "year-end",
+        "Thanksgiving"
+      ]
+    },
+    {
+      "slug": "wedding",
+      "label": "Wedding",
+      "aliases": [
+        "weddings",
+        "honeymoon",
+        "proposal",
+        "bridal",
+        "bachelorette",
+        "hen party"
+      ]
+    },
+    {
+      "slug": "ramadan",
+      "label": "Ramadan & Eid",
+      "aliases": [
+        "iftar",
+        "buka puasa",
+        "Lebaran",
+        "Eid"
+      ]
+    },
+    {
+      "slug": "balinese-holy-days",
+      "label": "Balinese holy days",
+      "aliases": [
+        "Nyepi",
+        "Galungan",
+        "Kuningan",
+        "Saraswati",
+        "Pagerwesi"
+      ]
+    },
+    {
+      "slug": "independence-day",
+      "label": "Independence Day",
+      "aliases": [
+        "17 August",
+        "Hari Merdeka"
+      ]
+    },
+    {
+      "slug": "lunar-new-year",
+      "label": "Lunar New Year",
+      "aliases": [
+        "Chinese New Year",
+        "Imlek"
+      ]
+    },
+    {
+      "slug": "road-trip",
+      "label": "Road trip",
+      "aliases": [
+        "island hopping"
+      ]
+    },
+    {
+      "slug": "halloween",
+      "label": "Halloween"
+    }
+  ]
+}

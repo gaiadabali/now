@@ -1,0 +1,53 @@
+[project]
+name = "now-eval"
+version = "0.1.0"
+description = "E2.7 — evaluation harness + CI gate. Metrics (precision@k, nDCG@k, precision/recall, accuracy, itinerary constraint satisfaction) computed against version-controlled labelled sets derived from editor-authored metadata in articles.jsonl, run against a pluggable system-under-test interface. See ARCHITECTURE.md §17."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    # F120 routing: now_eval.calibration.embed_instrument re-exports
+    # cosine/build_centroids/centroid_predict from now_taxonomy_evidence.
+    # embed_similarity (moved there so the runtime classifier and this
+    # measurement module share one implementation -- see that module's
+    # docstring). embed_instrument.py is core, not calibration-extra, and
+    # is imported without the extra by design (pure logic, no DB) -- so
+    # this must be a core dependency too, not part of the extra below.
+    # now_taxonomy_evidence's own __init__.py does no eager heavy import,
+    # so this adds no import-time cost beyond installing the package.
+    "now-taxonomy-evidence",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+# `now_eval.calibration` (F96/F97 confidence-mapping audit) is deliberately
+# NOT part of the core harness's dependency footprint -- the CI-gated harness
+# stays a pure function of two version-controlled JSONL files (no DB, no
+# network). Calibration reads the live classifier DB output and calls the
+# shared Ollama Cloud provider for blind proxy labels, so its deps are opt-in.
+# `now-taxonomy-evidence` itself moved OUT of this extra and into core
+# `dependencies` above (F120) -- everything else calibration-specific
+# (DB/network libs) stays here.
+calibration = [
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "requests>=2.31,<3",
+    "now-db",
+    "now-platform-db",
+]
+
+[project.scripts]
+now-eval = "now_eval.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-platform-db = { path = "../platform-db", editable = true }
+now-taxonomy-evidence = { path = "../taxonomy-evidence", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_eval"]

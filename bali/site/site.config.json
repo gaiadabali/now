@@ -1,0 +1,44 @@
+{
+  "slug": "bali",
+  "name": "NOW! Bali",
+  "hostname": "nowbali.co.id",
+  "locale": "en-ID",
+  "timezone": "Asia/Makassar",
+  "currency": "IDR",
+  "tagline": "The island, read closely.",
+  "brand": { "logo": "/brand/bali.svg", "logoAlt": "NOW! Bali" },
+  "nav": [
+    { "label": "Dining", "href": "/dining" },
+    { "label": "Stay", "href": "/stay" },
+    { "label": "Culture", "href": "/culture" },
+    { "label": "Wellness", "href": "/wellness" },
+    { "label": "Things to Do", "href": "/things-to-do" },
+    { "label": "Events", "href": "/events" },
+    { "label": "Guides", "href": "/guides" }
+  ],
+  "footer": [
+    { "head": "Sections", "links": [
+      { "label": "Dining", "href": "/dining" },
+      { "label": "Stay", "href": "/stay" },
+      { "label": "Culture", "href": "/culture" },
+      { "label": "Wellness", "href": "/wellness" },
+      { "label": "Things to Do", "href": "/things-to-do" }
+    ]},
+    { "head": "Discover", "links": [
+      { "label": "Guides", "href": "/guides" },
+      { "label": "Events", "href": "/events" },
+      { "label": "Areas", "href": "/areas" },
+      { "label": "Places", "href": "/places" }
+    ]},
+    { "head": "NOW!", "links": [
+      { "label": "About Us", "href": "/about" },
+      { "label": "Podcast", "href": "/podcast" },
+      { "label": "Advertise", "href": "/advertise" },
+      { "label": "Contact", "href": "/contact" }
+    ]},
+    { "head": "Network", "links": [
+      { "label": "NOW! Jakarta", "href": "https://www.nowjakarta.co.id" },
+      { "label": "Subscribe", "href": "/subscribe" }
+    ]}
+  ]
+}

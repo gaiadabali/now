@@ -1,0 +1,50 @@
+{
+  "name": "@now-engine/cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ONE Payload 3 config, instantiated per city (ARCHITECTURE.md §3.5). Differentiated only by DATABASE_URI. Owns `public` in each city DB; never touches `engine`.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap",
+    "payload": "payload",
+    "boot-check": "node --experimental-vm-modules scripts/boot-check.mjs",
+    "verify:body-blocks": "node --experimental-vm-modules scripts/verify-body-blocks-roundtrip.mjs",
+    "verify:publish-event": "node --experimental-vm-modules scripts/verify-publish-event.mjs",
+    "verify:places-geo": "node --experimental-vm-modules scripts/verify-places-geo.mjs",
+    "verify:vocabulary": "node --experimental-vm-modules scripts/verify-vocabulary.mjs",
+    "seed:review-queue": "payload run scripts/seed-review-queue.mjs",
+    "verify:review-queue-render": "payload run scripts/verify-review-queue-render.mjs",
+    "verify:review-no-clobber": "payload run scripts/verify-review-no-clobber.mjs",
+    "verify:review-no-clobber-trigger": "payload run scripts/verify-classification-reviews-no-clobber-trigger.mjs",
+    "lint:site-literals": "node scripts/lint-site-literals.mjs"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.88.0",
+    "@payloadcms/next": "3.88.0",
+    "@payloadcms/richtext-lexical": "3.88.0",
+    "@payloadcms/storage-s3": "3.88.0",
+    "cross-env": "7.0.3",
+    "graphql": "16.9.0",
+    "ioredis": "5.4.1",
+    "next": "15.4.11",
+    "payload": "3.88.0",
+    "pg": "8.13.1",
+    "react": "19.0.1",
+    "react-dom": "19.0.1",
+    "sharp": "0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "19.0.1",
+    "@types/react-dom": "19.0.1",
+    "typescript": "5.7.2"
+  },
+  "engines": {
+    "node": "^18.20.2 || >=20.9.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "source": "ARCHITECTURE.md §4 'Type relation matrix' (identical to the data insert in now-db migration 0001), plus the `unknown` row added by F49 (PROGRESS.md) -- not in migration 0001's baseline insert, back-filled into every city by seed_city()'s ON CONFLICT DO NOTHING instead of a schema migration, since it is data, not DDL.",
+  "target": "engine.type_relations in EVERY city database (per-site copy = per-site overridable in place; no deploy).",
+  "seed_policy": "INSERT ... ON CONFLICT (type) DO NOTHING — the seed never overwrites a row, so a site's edits are never clobbered. Changing a default here only affects rows that do not exist yet; to change an existing site, UPDATE its row directly. Every L1 `type` term in the platform vocabulary gets a row; a type with no entry below gets `unknown_type_default` (the strictest policy).",
+  "invariant": "Exclusion is a property of `type`, never of partnership tier. Free, listed and paid partners get identical treatment (§4, §8.A, §11) — only link rendering differs.",
+  "unknown_type_default": {"exclude_same": true, "complements": []},
+  "venue_symmetry_rule": "The six VENUE types (stay, eat, drink, wellness, shop, do) are mutually complementary -- if A may be suggested on a B page, B may be suggested on an A page. Row 1's job is literally 'a different type' (ARCHITECTURE.md §8), so an asymmetry here is an oversight, not curation. Hansel, 2026-09-11, after seeing it live: 'when a restaurant page is open, never suggest another restaurant. always hotel or other thing.' The original matrix had `stay` listing `eat` but `eat` NOT listing `stay`, so hotel pages showed restaurants while restaurant pages could never show hotels -- `complements` is a strict whitelist (`type = ANY(complements)` in row1_complementary.py), so the omission was a hard structural exclusion, not a ranking preference. `event` and `editorial` are deliberately NOT part of this closure: they are cross-cutting rather than venue competitors, and both carry `exclude_same: false`.",
+  "relations": [
+    {"type": "unknown",   "exclude_same": true,  "complements": []},
+    {"type": "stay",      "exclude_same": true,  "complements": ["eat", "drink", "wellness", "do", "shop"]},
+    {"type": "eat",       "exclude_same": true,  "complements": ["stay", "drink", "wellness", "do", "shop", "event"]},
+    {"type": "drink",     "exclude_same": true,  "complements": ["eat", "stay", "wellness", "do", "shop"]},
+    {"type": "wellness",  "exclude_same": true,  "complements": ["eat", "stay", "drink", "do", "shop"]},
+    {"type": "shop",      "exclude_same": true,  "complements": ["eat", "stay", "drink", "wellness", "do"]},
+    {"type": "do",        "exclude_same": false, "complements": ["eat", "stay", "drink", "wellness", "shop"]},
+    {"type": "event",     "exclude_same": false, "complements": ["eat", "drink", "stay"]},
+    {"type": "editorial", "exclude_same": false, "complements": ["stay", "eat", "drink", "wellness", "shop", "do", "event"]}
+  ]
+}

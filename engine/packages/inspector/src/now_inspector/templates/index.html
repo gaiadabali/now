@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h3>What this shows</h3>
+  <p>Enter a free-text query (runs the lexical + semantic generators against that text) or an
+  article id (runs the same generators using the article's title/dek for lexical, and the
+  article's own stored embedding for semantic kNN). Either way you get: raw per-generator hits,
+  the RRF fusion, per-component scores, the hard-filter trace, fallback rung (when
+  <code class="small">now_filters</code> is importable), MMR/diversity status, and the full
+  quality-score component breakdown.</p>
+  <p class="muted">Try any free-text query, or an article id from a `series_key` cluster (an
+  annual "[Updated]" listicle, per ARCHITECTURE.md §8.A's series-dedup rule) to see the
+  filter-trace panel actually remove a superseded sibling.</p>
+</div>
+{% endblock %}

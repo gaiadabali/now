@@ -1,0 +1,1436 @@
+{
+  "facet": "location",
+  "source": "ARCHITECTURE.md §4 'Location tree'",
+  "persisted_fields": [
+    "slug",
+    "label",
+    "parent",
+    "geo",
+    "attrs"
+  ],
+  "geo_note": "Centroids are approximate seed values (4 dp, roughly 100 m) for area-level fallback and map centring only; E2.5 (geocoding) may refine them. The seed never overwrites a non-null geo already in the DB, so refinements survive re-seeding.",
+  "slug_note": "Slugs are unique within the facet (uq_terms_facet_slug), so district nodes are qualified: `south-jakarta`, not `south` — which also gives clean /{section}/{area} URLs.",
+  "root_note": "`indonesia` is seeded as a real root term so nationwide pieces (Made In Indonesia, generic Explore Indonesia) have a node. `international` is a proposed second root: World Traveller (94) + Travel (21) articles are about destinations outside Indonesia and `location` is a required facet.",
+  "terms": [
+    {
+      "slug": "indonesia",
+      "label": "Indonesia",
+      "children": [
+        {
+          "slug": "jakarta",
+          "label": "Jakarta",
+          "aliases": [
+            "DKI Jakarta"
+          ],
+          "geo": {
+            "lat": -6.2088,
+            "lng": 106.8456
+          },
+          "children": [
+            {
+              "slug": "south-jakarta",
+              "label": "South Jakarta",
+              "aliases": [
+                "Jakarta Selatan",
+                "Jaksel"
+              ],
+              "geo": {
+                "lat": -6.2615,
+                "lng": 106.8106
+              },
+              "children": [
+                {
+                  "slug": "senopati",
+                  "label": "Senopati",
+                  "aliases": [
+                    "Suryo",
+                    "Gunawarman (north end)"
+                  ],
+                  "geo": {
+                    "lat": -6.233,
+                    "lng": 106.812
+                  }
+                },
+                {
+                  "slug": "scbd",
+                  "label": "SCBD",
+                  "aliases": [
+                    "Sudirman Central Business District",
+                    "Pacific Place"
+                  ],
+                  "geo": {
+                    "lat": -6.2247,
+                    "lng": 106.809
+                  }
+                },
+                {
+                  "slug": "kemang",
+                  "label": "Kemang",
+                  "aliases": [
+                    "Kemang Raya",
+                    "Bangka"
+                  ],
+                  "geo": {
+                    "lat": -6.2605,
+                    "lng": 106.814
+                  }
+                },
+                {
+                  "slug": "blok-m",
+                  "label": "Blok M",
+                  "aliases": [
+                    "Melawai",
+                    "Little Tokyo"
+                  ],
+                  "geo": {
+                    "lat": -6.244,
+                    "lng": 106.7985
+                  }
+                },
+                {
+                  "slug": "pondok-indah",
+                  "label": "Pondok Indah",
+                  "aliases": [
+                    "PIM"
+                  ],
+                  "geo": {
+                    "lat": -6.2655,
+                    "lng": 106.7835
+                  }
+                },
+                {
+                  "slug": "senayan",
+                  "label": "Senayan",
+                  "aliases": [
+                    "Gelora Bung Karno",
+                    "GBK",
+                    "Senayan City",
+                    "Plaza Senayan"
+                  ],
+                  "geo": {
+                    "lat": -6.2255,
+                    "lng": 106.801
+                  }
+                },
+                {
+                  "slug": "cipete",
+                  "label": "Cipete",
+                  "aliases": [
+                    "Cipete Raya",
+                    "Fatmawati",
+                    "Antasari",
+                    "Pangeran Antasari"
+                  ],
+                  "geo": {
+                    "lat": -6.277,
+                    "lng": 106.801
+                  }
+                },
+                {
+                  "slug": "kuningan",
+                  "label": "Kuningan",
+                  "aliases": [
+                    "Mega Kuningan",
+                    "Setiabudi",
+                    "Rasuna Said"
+                  ],
+                  "geo": {
+                    "lat": -6.227,
+                    "lng": 106.829
+                  },
+                  "notes": "Densest 5-star hotel cluster in the city (Ritz-Carlton, JW Marriott, Raffles, Fairmont); no §4 node covers it, so hotel articles would fall back to the district."
+                },
+                {
+                  "slug": "gunawarman",
+                  "label": "Gunawarman / Dharmawangsa",
+                  "aliases": [
+                    "Dharmawangsa",
+                    "Wolter Monginsidi"
+                  ],
+                  "geo": {
+                    "lat": -6.24,
+                    "lng": 106.81
+                  },
+                  "notes": "Upscale F&B strip between Senopati and Blok M."
+                },
+                {
+                  "slug": "tebet",
+                  "label": "Tebet",
+                  "geo": {
+                    "lat": -6.23,
+                    "lng": 106.855
+                  },
+                  "notes": "Coffee-shop belt popular with young residents."
+                },
+                {
+                  "slug": "kebayoran-baru",
+                  "label": "Kebayoran Baru",
+                  "aliases": [
+                    "Kebayoran"
+                  ]
+                },
+                {
+                  "slug": "cilandak",
+                  "label": "Cilandak",
+                  "aliases": [
+                    "TB Simatupang",
+                    "Simatupang"
+                  ]
+                },
+                {
+                  "slug": "gatot-subroto",
+                  "label": "Gatot Subroto",
+                  "aliases": [
+                    "Jalan Gatot Subroto",
+                    "Semanggi"
+                  ]
+                },
+                {
+                  "slug": "casablanca",
+                  "label": "Casablanca",
+                  "aliases": [
+                    "Kota Kasablanka",
+                    "Casablanca Raya"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "central-jakarta",
+              "label": "Central Jakarta",
+              "aliases": [
+                "Jakarta Pusat",
+                "Jakpus"
+              ],
+              "geo": {
+                "lat": -6.1865,
+                "lng": 106.834
+              },
+              "children": [
+                {
+                  "slug": "menteng",
+                  "label": "Menteng",
+                  "geo": {
+                    "lat": -6.196,
+                    "lng": 106.833
+                  }
+                },
+                {
+                  "slug": "thamrin",
+                  "label": "Thamrin",
+                  "aliases": [
+                    "Bundaran HI",
+                    "Grand Indonesia",
+                    "Plaza Indonesia"
+                  ],
+                  "geo": {
+                    "lat": -6.1935,
+                    "lng": 106.823
+                  }
+                },
+                {
+                  "slug": "sudirman",
+                  "label": "Sudirman",
+                  "aliases": [
+                    "Jalan Jenderal Sudirman",
+                    "Dukuh Atas",
+                    "Karet"
+                  ],
+                  "geo": {
+                    "lat": -6.209,
+                    "lng": 106.8215
+                  }
+                },
+                {
+                  "slug": "gambir",
+                  "label": "Gambir",
+                  "aliases": [
+                    "Monas",
+                    "Merdeka Square",
+                    "Museum Nasional"
+                  ],
+                  "geo": {
+                    "lat": -6.176,
+                    "lng": 106.829
+                  }
+                },
+                {
+                  "slug": "cikini",
+                  "label": "Cikini",
+                  "aliases": [
+                    "Taman Ismail Marzuki",
+                    "TIM"
+                  ],
+                  "geo": {
+                    "lat": -6.192,
+                    "lng": 106.84
+                  },
+                  "notes": "Arts district — anchors much of the Art/Culture archive."
+                },
+                {
+                  "slug": "pasar-baru",
+                  "label": "Pasar Baru",
+                  "aliases": [
+                    "Passer Baroe"
+                  ],
+                  "geo": {
+                    "lat": -6.164,
+                    "lng": 106.834
+                  }
+                },
+                {
+                  "slug": "kemayoran",
+                  "label": "Kemayoran",
+                  "aliases": [
+                    "JIExpo"
+                  ]
+                },
+                {
+                  "slug": "tanah-abang",
+                  "label": "Tanah Abang"
+                },
+                {
+                  "slug": "kebon-sirih",
+                  "label": "Kebon Sirih & Sabang",
+                  "aliases": [
+                    "Sabang",
+                    "Jalan Sabang"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "north-jakarta",
+              "label": "North Jakarta",
+              "aliases": [
+                "Jakarta Utara",
+                "Jakut"
+              ],
+              "geo": {
+                "lat": -6.13,
+                "lng": 106.88
+              },
+              "children": [
+                {
+                  "slug": "pik",
+                  "label": "PIK",
+                  "aliases": [
+                    "Pantai Indah Kapuk",
+                    "PIK 2"
+                  ],
+                  "geo": {
+                    "lat": -6.109,
+                    "lng": 106.743
+                  }
+                },
+                {
+                  "slug": "kelapa-gading",
+                  "label": "Kelapa Gading",
+                  "aliases": [
+                    "MKG"
+                  ],
+                  "geo": {
+                    "lat": -6.159,
+                    "lng": 106.906
+                  }
+                },
+                {
+                  "slug": "ancol",
+                  "label": "Ancol",
+                  "aliases": [
+                    "Dufan",
+                    "Taman Impian Jaya Ancol"
+                  ],
+                  "geo": {
+                    "lat": -6.124,
+                    "lng": 106.843
+                  }
+                },
+                {
+                  "slug": "kepulauan-seribu",
+                  "label": "Kepulauan Seribu",
+                  "aliases": [
+                    "Thousand Islands",
+                    "Pulau Seribu"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "west-jakarta",
+              "label": "West Jakarta",
+              "aliases": [
+                "Jakarta Barat",
+                "Jakbar"
+              ],
+              "geo": {
+                "lat": -6.168,
+                "lng": 106.759
+              },
+              "children": [
+                {
+                  "slug": "puri-indah",
+                  "label": "Puri Indah",
+                  "aliases": [
+                    "Puri Kembangan"
+                  ],
+                  "geo": {
+                    "lat": -6.188,
+                    "lng": 106.738
+                  }
+                },
+                {
+                  "slug": "kebon-jeruk",
+                  "label": "Kebon Jeruk",
+                  "geo": {
+                    "lat": -6.193,
+                    "lng": 106.769
+                  }
+                },
+                {
+                  "slug": "kota-tua",
+                  "label": "Kota Tua",
+                  "aliases": [
+                    "Old Town",
+                    "Old Batavia",
+                    "Fatahillah",
+                    "Kota"
+                  ],
+                  "geo": {
+                    "lat": -6.1352,
+                    "lng": 106.8133
+                  },
+                  "notes": "Home of the 90 heritage articles (History & Heritage 74 + Hidden Heritage 16). Administratively Taman Sari, West Jakarta."
+                },
+                {
+                  "slug": "glodok",
+                  "label": "Glodok",
+                  "aliases": [
+                    "Chinatown",
+                    "Petak Sembilan",
+                    "Pancoran (West)"
+                  ],
+                  "geo": {
+                    "lat": -6.1445,
+                    "lng": 106.8135
+                  }
+                },
+                {
+                  "slug": "cengkareng",
+                  "label": "Cengkareng",
+                  "aliases": [
+                    "Soekarno-Hatta",
+                    "CGK"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "east-jakarta",
+              "label": "East Jakarta",
+              "aliases": [
+                "Jakarta Timur",
+                "Jaktim"
+              ],
+              "geo": {
+                "lat": -6.225,
+                "lng": 106.9
+              },
+              "notes": "§4 omits East Jakarta entirely (TMII, Cibubur, Jatinegara). Proposed for completeness of the administrative tree.",
+              "children": [
+                {
+                  "slug": "cibubur",
+                  "label": "Cibubur",
+                  "geo": {
+                    "lat": -6.36,
+                    "lng": 106.89
+                  }
+                },
+                {
+                  "slug": "tmii",
+                  "label": "TMII / Taman Mini",
+                  "aliases": [
+                    "Taman Mini",
+                    "Taman Mini Indonesia Indah"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "greater-jakarta",
+              "label": "Greater Jakarta",
+              "aliases": [
+                "Jabodetabek",
+                "Bodetabek"
+              ],
+              "children": [
+                {
+                  "slug": "bsd",
+                  "label": "BSD City",
+                  "aliases": [
+                    "Bumi Serpong Damai",
+                    "Serpong"
+                  ],
+                  "geo": {
+                    "lat": -6.302,
+                    "lng": 106.66
+                  }
+                },
+                {
+                  "slug": "tangerang",
+                  "label": "Tangerang",
+                  "geo": {
+                    "lat": -6.178,
+                    "lng": 106.63
+                  }
+                },
+                {
+                  "slug": "bekasi",
+                  "label": "Bekasi",
+                  "geo": {
+                    "lat": -6.238,
+                    "lng": 106.975
+                  }
+                },
+                {
+                  "slug": "bogor",
+                  "label": "Bogor",
+                  "aliases": [
+                    "Kebun Raya"
+                  ],
+                  "geo": {
+                    "lat": -6.595,
+                    "lng": 106.816
+                  }
+                },
+                {
+                  "slug": "depok",
+                  "label": "Depok",
+                  "geo": {
+                    "lat": -6.4025,
+                    "lng": 106.7942
+                  }
+                },
+                {
+                  "slug": "bintaro",
+                  "label": "Bintaro",
+                  "aliases": [
+                    "Bintaro Jaya"
+                  ],
+                  "geo": {
+                    "lat": -6.276,
+                    "lng": 106.72
+                  }
+                },
+                {
+                  "slug": "alam-sutera",
+                  "label": "Alam Sutera",
+                  "geo": {
+                    "lat": -6.224,
+                    "lng": 106.654
+                  }
+                },
+                {
+                  "slug": "gading-serpong",
+                  "label": "Gading Serpong",
+                  "aliases": [
+                    "Summarecon Serpong"
+                  ],
+                  "geo": {
+                    "lat": -6.242,
+                    "lng": 106.629
+                  }
+                },
+                {
+                  "slug": "sentul",
+                  "label": "Sentul",
+                  "aliases": [
+                    "Sentul City"
+                  ],
+                  "geo": {
+                    "lat": -6.565,
+                    "lng": 106.86
+                  }
+                },
+                {
+                  "slug": "puncak",
+                  "label": "Puncak",
+                  "aliases": [
+                    "Cisarua",
+                    "Cipanas"
+                  ],
+                  "geo": {
+                    "lat": -6.702,
+                    "lng": 106.995
+                  },
+                  "notes": "Weekend-getaway staple for Jakarta residents."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "bali",
+          "label": "Bali",
+          "geo": {
+            "lat": -8.4095,
+            "lng": 115.1889
+          },
+          "children": [
+            {
+              "slug": "south-bali",
+              "label": "South Bali",
+              "aliases": [
+                "Badung",
+                "Bukit Peninsula"
+              ],
+              "geo": {
+                "lat": -8.72,
+                "lng": 115.17
+              },
+              "children": [
+                {
+                  "slug": "seminyak",
+                  "label": "Seminyak",
+                  "aliases": [
+                    "Petitenget",
+                    "Oberoi",
+                    "Kayu Aya"
+                  ],
+                  "geo": {
+                    "lat": -8.6913,
+                    "lng": 115.1683
+                  }
+                },
+                {
+                  "slug": "canggu",
+                  "label": "Canggu",
+                  "aliases": [
+                    "Batu Bolong",
+                    "Berawa",
+                    "Echo Beach"
+                  ],
+                  "geo": {
+                    "lat": -8.6478,
+                    "lng": 115.1385
+                  }
+                },
+                {
+                  "slug": "kuta",
+                  "label": "Kuta",
+                  "aliases": [
+                    "Tuban"
+                  ],
+                  "geo": {
+                    "lat": -8.718,
+                    "lng": 115.1686
+                  }
+                },
+                {
+                  "slug": "uluwatu",
+                  "label": "Uluwatu",
+                  "aliases": [
+                    "Bukit",
+                    "Bingin",
+                    "Padang Padang",
+                    "Pecatu",
+                    "Ungasan",
+                    "Balangan"
+                  ],
+                  "geo": {
+                    "lat": -8.8291,
+                    "lng": 115.0849
+                  }
+                },
+                {
+                  "slug": "jimbaran",
+                  "label": "Jimbaran",
+                  "geo": {
+                    "lat": -8.7908,
+                    "lng": 115.162
+                  },
+                  "aliases": [
+                    "Kedonganan"
+                  ]
+                },
+                {
+                  "slug": "sanur",
+                  "label": "Sanur",
+                  "geo": {
+                    "lat": -8.69,
+                    "lng": 115.262
+                  },
+                  "aliases": [
+                    "Serangan"
+                  ]
+                },
+                {
+                  "slug": "nusa-dua",
+                  "label": "Nusa Dua",
+                  "aliases": [
+                    "Tanjung Benoa",
+                    "Benoa",
+                    "ITDC"
+                  ],
+                  "geo": {
+                    "lat": -8.8,
+                    "lng": 115.23
+                  }
+                },
+                {
+                  "slug": "denpasar",
+                  "label": "Denpasar",
+                  "aliases": [
+                    "Renon"
+                  ],
+                  "geo": {
+                    "lat": -8.6705,
+                    "lng": 115.2126
+                  },
+                  "notes": "Provincial capital; airport-adjacent hotels and the Renon dining scene have no §4 node."
+                },
+                {
+                  "slug": "legian",
+                  "label": "Legian",
+                  "geo": {
+                    "lat": -8.706,
+                    "lng": 115.17
+                  }
+                },
+                {
+                  "slug": "kerobokan",
+                  "label": "Kerobokan",
+                  "aliases": [
+                    "Umalas"
+                  ],
+                  "geo": {
+                    "lat": -8.665,
+                    "lng": 115.16
+                  }
+                },
+                {
+                  "slug": "pererenan",
+                  "label": "Pererenan",
+                  "geo": {
+                    "lat": -8.639,
+                    "lng": 115.121
+                  },
+                  "notes": "Canggu's fast-growing northern neighbour."
+                },
+                {
+                  "slug": "mengwi",
+                  "label": "Mengwi",
+                  "aliases": [
+                    "Taman Ayun"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "central-bali",
+              "label": "Central Bali",
+              "aliases": [
+                "Gianyar"
+              ],
+              "geo": {
+                "lat": -8.5069,
+                "lng": 115.2625
+              },
+              "children": [
+                {
+                  "slug": "ubud",
+                  "label": "Ubud",
+                  "aliases": [
+                    "Tegallalang",
+                    "Penestanan",
+                    "Sayan",
+                    "Payangan",
+                    "Peliatan"
+                  ],
+                  "geo": {
+                    "lat": -8.5069,
+                    "lng": 115.2625
+                  }
+                },
+                {
+                  "slug": "gianyar",
+                  "label": "Gianyar",
+                  "aliases": [
+                    "Sukawati",
+                    "Celuk",
+                    "Batubulan",
+                    "Keliki",
+                    "Tampaksiring",
+                    "Ketewel",
+                    "Saba"
+                  ]
+                },
+                {
+                  "slug": "bangli",
+                  "label": "Bangli & Penglipuran",
+                  "aliases": [
+                    "Penglipuran"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "east-bali",
+              "label": "East Bali",
+              "aliases": [
+                "Karangasem",
+                "Klungkung",
+                "Amlapura",
+                "Tirta Gangga",
+                "Tenganan",
+                "Besakih",
+                "Padang Bai",
+                "Padangbai"
+              ],
+              "geo": {
+                "lat": -8.45,
+                "lng": 115.55
+              },
+              "children": [
+                {
+                  "slug": "amed",
+                  "label": "Amed",
+                  "aliases": [
+                    "Tulamben"
+                  ],
+                  "geo": {
+                    "lat": -8.337,
+                    "lng": 115.658
+                  }
+                },
+                {
+                  "slug": "candidasa",
+                  "label": "Candidasa",
+                  "geo": {
+                    "lat": -8.509,
+                    "lng": 115.568
+                  }
+                },
+                {
+                  "slug": "sidemen",
+                  "label": "Sidemen",
+                  "geo": {
+                    "lat": -8.472,
+                    "lng": 115.441
+                  }
+                },
+                {
+                  "slug": "nusa-penida",
+                  "label": "Nusa Penida",
+                  "aliases": [
+                    "Nusa Islands"
+                  ],
+                  "geo": {
+                    "lat": -8.7275,
+                    "lng": 115.5444
+                  },
+                  "notes": "Islands off the south-east coast (Klungkung regency), grouped under East Bali for lack of a better §4 node."
+                },
+                {
+                  "slug": "nusa-lembongan",
+                  "label": "Nusa Lembongan",
+                  "aliases": [
+                    "Lembongan",
+                    "Ceningan",
+                    "Nusa Ceningan"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "north-bali",
+              "label": "North Bali",
+              "aliases": [
+                "Buleleng",
+                "Singaraja",
+                "Munduk"
+              ],
+              "geo": {
+                "lat": -8.158,
+                "lng": 115.025
+              },
+              "children": [
+                {
+                  "slug": "lovina",
+                  "label": "Lovina",
+                  "geo": {
+                    "lat": -8.158,
+                    "lng": 115.025
+                  }
+                },
+                {
+                  "slug": "kintamani",
+                  "label": "Kintamani & Mount Batur",
+                  "aliases": [
+                    "Mount Batur",
+                    "Batur",
+                    "Lake Batur"
+                  ]
+                },
+                {
+                  "slug": "bedugul",
+                  "label": "Bedugul & Lake Bratan",
+                  "aliases": [
+                    "Bratan",
+                    "Beratan",
+                    "Lake Bratan"
+                  ]
+                }
+              ]
+            },
+            {
+              "slug": "west-bali",
+              "label": "West Bali",
+              "aliases": [
+                "Menjangan",
+                "Pemuteran",
+                "Jembrana",
+                "Negara",
+                "Gilimanuk",
+                "Perancak"
+              ],
+              "children": [
+                {
+                  "slug": "tabanan",
+                  "label": "Tabanan"
+                },
+                {
+                  "slug": "tanah-lot",
+                  "label": "Tanah Lot"
+                },
+                {
+                  "slug": "jatiluwih",
+                  "label": "Jatiluwih"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "slug": "other",
+          "label": "Elsewhere in Indonesia",
+          "children": [
+            {
+              "slug": "lombok",
+              "label": "Lombok",
+              "aliases": [
+                "Gili Islands",
+                "Gili Trawangan",
+                "Senggigi",
+                "Mandalika",
+                "Mataram",
+                "Gili"
+              ],
+              "geo": {
+                "lat": -8.65,
+                "lng": 116.3249
+              }
+            },
+            {
+              "slug": "komodo",
+              "label": "Komodo & Labuan Bajo",
+              "aliases": [
+                "Labuan Bajo",
+                "Flores",
+                "Komodo National Park",
+                "Komodo"
+              ],
+              "geo": {
+                "lat": -8.4964,
+                "lng": 119.8877
+              }
+            },
+            {
+              "slug": "raja-ampat",
+              "label": "Raja Ampat",
+              "aliases": [
+                "Waisai",
+                "Papua"
+              ],
+              "geo": {
+                "lat": -0.2333,
+                "lng": 130.5167
+              }
+            },
+            {
+              "slug": "belitung",
+              "label": "Belitung",
+              "aliases": [
+                "Tanjung Pandan"
+              ],
+              "geo": {
+                "lat": -2.7411,
+                "lng": 107.6386
+              }
+            },
+            {
+              "slug": "bintan",
+              "label": "Bintan",
+              "aliases": [
+                "Lagoi"
+              ],
+              "geo": {
+                "lat": 1.0619,
+                "lng": 104.4855
+              }
+            },
+            {
+              "slug": "sumba",
+              "label": "Sumba",
+              "aliases": [
+                "Waingapu",
+                "Tambolaka"
+              ],
+              "geo": {
+                "lat": -9.6543,
+                "lng": 119.3956
+              }
+            },
+            {
+              "slug": "java",
+              "label": "Java",
+              "aliases": [
+                "Central Java",
+                "East Java",
+                "West Java"
+              ],
+              "children": [
+                {
+                  "slug": "yogyakarta",
+                  "label": "Yogyakarta",
+                  "aliases": [
+                    "Jogja",
+                    "Yogya",
+                    "Borobudur",
+                    "Prambanan"
+                  ],
+                  "geo": {
+                    "lat": -7.7956,
+                    "lng": 110.3695
+                  }
+                },
+                {
+                  "slug": "bandung",
+                  "label": "Bandung",
+                  "aliases": [
+                    "Lembang"
+                  ],
+                  "geo": {
+                    "lat": -6.9175,
+                    "lng": 107.6191
+                  }
+                },
+                {
+                  "slug": "surabaya",
+                  "label": "Surabaya",
+                  "geo": {
+                    "lat": -7.2575,
+                    "lng": 112.7521
+                  }
+                },
+                {
+                  "slug": "semarang",
+                  "label": "Semarang",
+                  "geo": {
+                    "lat": -6.9932,
+                    "lng": 110.4203
+                  }
+                },
+                {
+                  "slug": "solo",
+                  "label": "Solo",
+                  "aliases": [
+                    "Surakarta"
+                  ],
+                  "geo": {
+                    "lat": -7.5755,
+                    "lng": 110.8243
+                  }
+                },
+                {
+                  "slug": "malang",
+                  "label": "Malang",
+                  "aliases": [
+                    "Bromo"
+                  ],
+                  "geo": {
+                    "lat": -7.9666,
+                    "lng": 112.6326
+                  }
+                },
+                {
+                  "slug": "banyuwangi",
+                  "label": "Banyuwangi",
+                  "aliases": [
+                    "Ijen"
+                  ],
+                  "geo": {
+                    "lat": -8.2192,
+                    "lng": 114.3691
+                  }
+                }
+              ]
+            },
+            {
+              "slug": "sumatra",
+              "label": "Sumatra",
+              "children": [
+                {
+                  "slug": "medan",
+                  "label": "Medan",
+                  "geo": {
+                    "lat": 3.5952,
+                    "lng": 98.6722
+                  }
+                },
+                {
+                  "slug": "lake-toba",
+                  "label": "Lake Toba",
+                  "aliases": [
+                    "Samosir",
+                    "Parapat"
+                  ],
+                  "geo": {
+                    "lat": 2.6845,
+                    "lng": 98.8756
+                  }
+                }
+              ]
+            },
+            {
+              "slug": "sulawesi",
+              "label": "Sulawesi",
+              "aliases": [
+                "Wakatobi",
+                "Togean"
+              ],
+              "children": [
+                {
+                  "slug": "makassar",
+                  "label": "Makassar",
+                  "geo": {
+                    "lat": -5.1477,
+                    "lng": 119.4327
+                  }
+                },
+                {
+                  "slug": "manado",
+                  "label": "Manado",
+                  "aliases": [
+                    "Bunaken"
+                  ],
+                  "geo": {
+                    "lat": 1.4748,
+                    "lng": 124.8421
+                  }
+                },
+                {
+                  "slug": "toraja",
+                  "label": "Toraja",
+                  "aliases": [
+                    "Tana Toraja",
+                    "Rantepao"
+                  ],
+                  "geo": {
+                    "lat": -2.969,
+                    "lng": 119.899
+                  }
+                }
+              ]
+            },
+            {
+              "slug": "kalimantan",
+              "label": "Kalimantan",
+              "aliases": [
+                "Borneo",
+                "Derawan",
+                "Tanjung Puting"
+              ]
+            },
+            {
+              "slug": "nusa-tenggara",
+              "label": "Nusa Tenggara",
+              "aliases": [
+                "NTT",
+                "Sumbawa",
+                "Alor",
+                "Kupang",
+                "Ende",
+                "Kelimutu"
+              ]
+            },
+            {
+              "slug": "maluku",
+              "label": "Maluku",
+              "aliases": [
+                "Moluccas",
+                "Banda",
+                "Ambon",
+                "Ternate",
+                "Seram"
+              ]
+            },
+            {
+              "slug": "aceh",
+              "label": "Aceh",
+              "aliases": [
+                "Banda Aceh",
+                "Weh",
+                "Pulau Weh"
+              ]
+            },
+            {
+              "slug": "riau-islands",
+              "label": "Riau Islands",
+              "aliases": [
+                "Batam",
+                "Riau"
+              ]
+            },
+            {
+              "slug": "palembang",
+              "label": "Palembang"
+            },
+            {
+              "slug": "padang",
+              "label": "Padang",
+              "aliases": [
+                "Bukittinggi",
+                "West Sumatra"
+              ]
+            },
+            {
+              "slug": "lampung",
+              "label": "Lampung",
+              "aliases": [
+                "Krakatau",
+                "Krakatoa",
+                "Way Kambas"
+              ]
+            },
+            {
+              "slug": "cirebon",
+              "label": "Cirebon"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "international",
+      "label": "International",
+      "notes": "Destinations outside Indonesia (World Traveller 94, Travel 21). D06 (vocabulary-delta.md/.json, decided 2026-09-10): editorial-only -- Row 3 eligible, never Row 2 or the itinerary. 22 country/region children added from the vocabulary delta's corpus scan (>=20 mentions); a child only splits out on its own once it clears that bar on its own (see e.g. `europe`'s note).",
+      "attrs": {
+        "geo_scope": "abroad",
+        "inherited_by_descendants": true
+      },
+      "attrs_note": "`attrs` is stored ONLY on this root, not copied onto each of the 22 children below -- `inherited_by_descendants: true` documents that a consumer determining geo_scope for a location term must walk the parent chain to the nearest ancestor carrying `attrs.geo_scope`, not assume every descendant row carries its own copy. `engine.terms.attrs` (platform-db migration 0002) is a real jsonb column as of this delta; `now_db.provisioning`'s upsert now writes it (previously silently dropped -- see F81/F20 follow-up).",
+      "children": [
+        {
+          "slug": "europe",
+          "label": "Europe",
+          "aliases": [
+            "Paris",
+            "London",
+            "Amsterdam",
+            "Rome",
+            "Italy",
+            "France",
+            "Switzerland",
+            "Germany",
+            "Spain",
+            "Portugal",
+            "Vienna",
+            "Prague"
+          ]
+        },
+        {
+          "slug": "australia",
+          "label": "Australia",
+          "aliases": [
+            "Sydney",
+            "Melbourne",
+            "Perth",
+            "Brisbane"
+          ]
+        },
+        {
+          "slug": "singapore",
+          "label": "Singapore"
+        },
+        {
+          "slug": "japan",
+          "label": "Japan",
+          "aliases": [
+            "Tokyo",
+            "Kyoto",
+            "Osaka",
+            "Hokkaido"
+          ]
+        },
+        {
+          "slug": "usa",
+          "label": "United States",
+          "aliases": [
+            "New York",
+            "Los Angeles",
+            "San Francisco",
+            "Las Vegas",
+            "Hawaii",
+            "USA"
+          ]
+        },
+        {
+          "slug": "china",
+          "label": "China",
+          "aliases": [
+            "Shanghai",
+            "Beijing",
+            "Macau"
+          ]
+        },
+        {
+          "slug": "thailand",
+          "label": "Thailand",
+          "aliases": [
+            "Bangkok",
+            "Phuket",
+            "Chiang Mai",
+            "Koh Samui"
+          ]
+        },
+        {
+          "slug": "india",
+          "label": "India",
+          "aliases": [
+            "Mumbai",
+            "Delhi",
+            "Kerala",
+            "Rajasthan"
+          ]
+        },
+        {
+          "slug": "malaysia",
+          "label": "Malaysia",
+          "aliases": [
+            "Kuala Lumpur",
+            "Penang",
+            "Langkawi"
+          ]
+        },
+        {
+          "slug": "hong-kong",
+          "label": "Hong Kong"
+        },
+        {
+          "slug": "africa",
+          "label": "Africa",
+          "aliases": [
+            "Kenya",
+            "Tanzania",
+            "Cape Town",
+            "Morocco",
+            "Marrakech",
+            "Egypt"
+          ]
+        },
+        {
+          "slug": "turkey",
+          "label": "Turkey",
+          "aliases": [
+            "Istanbul",
+            "Cappadocia"
+          ]
+        },
+        {
+          "slug": "south-korea",
+          "label": "South Korea",
+          "aliases": [
+            "Seoul",
+            "Korea",
+            "Jeju"
+          ]
+        },
+        {
+          "slug": "new-zealand",
+          "label": "New Zealand",
+          "aliases": [
+            "Auckland",
+            "Queenstown"
+          ]
+        },
+        {
+          "slug": "vietnam",
+          "label": "Vietnam",
+          "aliases": [
+            "Hanoi",
+            "Ho Chi Minh",
+            "Da Nang",
+            "Hoi An"
+          ]
+        },
+        {
+          "slug": "philippines",
+          "label": "Philippines",
+          "aliases": [
+            "Manila",
+            "Cebu",
+            "Palawan"
+          ]
+        },
+        {
+          "slug": "uae",
+          "label": "United Arab Emirates",
+          "aliases": [
+            "Dubai",
+            "Abu Dhabi",
+            "UAE"
+          ]
+        },
+        {
+          "slug": "middle-east",
+          "label": "Middle East",
+          "aliases": [
+            "Qatar",
+            "Doha",
+            "Oman",
+            "Jordan"
+          ]
+        },
+        {
+          "slug": "cambodia",
+          "label": "Cambodia",
+          "aliases": [
+            "Siem Reap",
+            "Angkor",
+            "Laos",
+            "Luang Prabang"
+          ]
+        },
+        {
+          "slug": "taiwan",
+          "label": "Taiwan",
+          "aliases": [
+            "Taipei"
+          ]
+        },
+        {
+          "slug": "maldives",
+          "label": "Maldives"
+        },
+        {
+          "slug": "sri-lanka",
+          "label": "Sri Lanka",
+          "aliases": [
+            "Colombo"
+          ]
+        }
+      ]
+    }
+  ]
+}

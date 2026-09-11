@@ -1,0 +1,89 @@
+/* ============================================================================
+   NOW! — design tokens
+   ----------------------------------------------------------------------------
+   Derived from the live sites' actual DNA, not invented:
+     · Cormorant  — display serif, already the brand's headline face
+     · Heebo      — sans, already the brand's UI face
+     · #cd1719    — brand red, sampled from the logo mark
+     · #1d1d1b    — logo ink (NOT pure black — the logo never uses #000)
+   What changes versus the live site: Bootstrap's grey scale and its
+   default blue/green/yellow chrome are gone. Red becomes an accent that
+   is *earned*, not a button colour. Ground moves from #fff to warm paper.
+   ========================================================================= */
+
+:root {
+  /* ---- Ground & ink ------------------------------------------------ */
+  --paper: #fbf9f5;        /* warm cream — the broadsheet ground        */
+  --paper-deep: #f2ede3;   /* recessed panels, guide cards              */
+  --paper-pure: #ffffff;   /* image mats, cards that must lift          */
+  --ink: #1d1d1b;          /* logo ink — all display type               */
+  --ink-body: #2b2926;     /* body copy, a hair lighter than display    */
+  --ink-mute: #6c6760;     /* bylines, captions, meta                   */
+  --ink-faint: #a49d92;    /* disabled, counters, index numerals        */
+  --ink-invert: #faf7f2;   /* type on dark grounds                      */
+
+  /* ---- Accent ------------------------------------------------------ */
+  --red: #cd1719;          /* brand red — sampled from the logo         */
+  --red-deep: #a01013;     /* hover / pressed                           */
+  --red-wash: #fdf0ef;     /* tint for partner + live badges            */
+
+  /* ---- Rules -------------------------------------------------------
+     A broadsheet is held together by rules, not boxes or shadows.
+     Three weights only. Never a fourth.                                */
+  --rule-hair: 1px solid #ded7ca;   /* the workhorse: between items     */
+  --rule-thin: 1px solid #1d1d1b;   /* section boundary                 */
+  --rule-heavy: 3px solid #1d1d1b;  /* masthead + top-of-section only   */
+
+  /* ---- Type families ------------------------------------------------
+     Bound by next/font in layout.tsx; these vars are the only names
+     any component may reference.                                       */
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --font-sans: var(--font-heebo), -apple-system, 'Segoe UI', sans-serif;
+
+  /* ---- Type scale ---------------------------------------------------
+     Fluid, thirds-based. Display sizes are deliberately larger than a
+     normal site would dare — that gap is most of what reads as
+     "magazine" rather than "blog".                                     */
+  --t-banner: clamp(3.5rem, 1.5rem + 8.5vw, 8.5rem);   /* cover word    */
+  --t-display: clamp(2.6rem, 1.3rem + 5.4vw, 5.25rem); /* feature lead  */
+  --t-headline: clamp(1.9rem, 1.2rem + 2.6vw, 3rem);   /* article H1    */
+  --t-title: clamp(1.4rem, 1.1rem + 1.1vw, 1.85rem);   /* card headline */
+  --t-subtitle: clamp(1.15rem, 1rem + 0.5vw, 1.35rem); /* small card    */
+  --t-dek: clamp(1.05rem, 0.98rem + 0.35vw, 1.25rem);  /* standfirst    */
+  --t-body: 1.0625rem;                                  /* prose        */
+  --t-small: 0.9375rem;
+  --t-meta: 0.75rem;                                    /* kickers      */
+  --t-micro: 0.6875rem;
+
+  /* ---- Measure ------------------------------------------------------
+     Prose caps at 66ch. Non-negotiable — it is the single biggest
+     legibility lever on a long-read site.                              */
+  --measure: 66ch;
+  --measure-narrow: 54ch;
+
+  /* ---- Rhythm ------------------------------------------------------- */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2.25rem;
+  --space-xl: 3.5rem;
+  --space-2xl: 5rem;
+  --space-3xl: 7.5rem;
+
+  /* ---- Shell -------------------------------------------------------- */
+  --shell-max: 1420px;
+  --shell-pad: clamp(1.25rem, 0.5rem + 3vw, 4rem);
+  --gutter: clamp(1.25rem, 0.6rem + 1.8vw, 2.5rem);
+
+  /* ---- Motion -------------------------------------------------------
+     Editorial restraint: things fade and underline. Nothing slides,
+     bounces or scales.                                                 */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 0ms; }
+}

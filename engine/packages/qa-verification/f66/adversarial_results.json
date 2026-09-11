@@ -1,0 +1,135 @@
+[
+  {
+    "case": "valid_numeric_13",
+    "entity_id_sent": "13",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"64436ad5-359e-452e-b7b7-956ef765cdd8\", \"anon_id\": \"1d6812b5-3a79-458d-a783-33facc1c3222\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"13\", \"position\": 1, \"ts\": 1788963249259}]}",
+    "status": 204,
+    "response_body": ""
+  },
+  {
+    "case": "negative",
+    "entity_id_sent": "-1",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"2b31ff34-66dc-4fa4-af35-d66887ab4f5f\", \"anon_id\": \"fa068816-410d-48e5-aa69-ad6d3e8e4d95\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"-1\", \"position\": 1, \"ts\": 1788963249346}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '-1'\"}"
+  },
+  {
+    "case": "zero_padded_007",
+    "entity_id_sent": "007",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"58541b92-dc62-4e21-9290-84f2695e90f9\", \"anon_id\": \"b48e957c-c006-4f8a-96c9-9ad738ab1726\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"007\", \"position\": 1, \"ts\": 1788963249377}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '007'\"}"
+  },
+  {
+    "case": "zero_padded_0013",
+    "entity_id_sent": "0013",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"dd08591e-5fa9-4a02-b5d5-7029c143c305\", \"anon_id\": \"3b764bb4-93c1-48b7-8252-70c80c4452d1\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"0013\", \"position\": 1, \"ts\": 1788963249394}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '0013'\"}"
+  },
+  {
+    "case": "huge_50_digits",
+    "entity_id_sent": "11111111111111111111111111111111111111111111111111",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"fe3e4ff2-3282-4164-a61b-ff35950dcd82\", \"anon_id\": \"25a0fbdc-e160-4527-a829-138bceff1d2f\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"11111111111111111111111111111111111111111111111111\", \"position\": 1, \"ts\": 1788963249421}]}",
+    "status": 204,
+    "response_body": ""
+  },
+  {
+    "case": "unicode_arabic_indic_digits",
+    "entity_id_sent": "\u0661\u0662\u0663",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"6fd7c446-28b7-487e-916b-1af528aa16ef\", \"anon_id\": \"2dd200a4-c674-4840-ad7f-c2b1d9837650\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"\\u0661\\u0662\\u0663\", \"position\": 1, \"ts\": 1788963249461}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '\u0661\u0662\u0663'\"}"
+  },
+  {
+    "case": "unicode_fullwidth_digits",
+    "entity_id_sent": "\uff11\uff12\uff13",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"50a1accd-9395-4374-acf6-afc369c49532\", \"anon_id\": \"3f522ec8-07bc-4c40-a7e6-92243eb77fe6\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"\\uff11\\uff12\\uff13\", \"position\": 1, \"ts\": 1788963249487}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '\uff11\uff12\uff13'\"}"
+  },
+  {
+    "case": "leading_trailing_whitespace",
+    "entity_id_sent": "  13  ",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"c000d5cd-9096-4cb1-a0b6-86bc73d70ba1\", \"anon_id\": \"9683e270-d557-4e05-a35e-081d507dade0\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"  13  \", \"position\": 1, \"ts\": 1788963249520}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '  13  '\"}"
+  },
+  {
+    "case": "leading_whitespace_only",
+    "entity_id_sent": " 13",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"27740fee-b0a6-4891-bc7c-0f3f290b29d9\", \"anon_id\": \"223a7470-a70e-439d-b247-04fda38b7dfb\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \" 13\", \"position\": 1, \"ts\": 1788963249549}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got ' 13'\"}"
+  },
+  {
+    "case": "sql_drop_table",
+    "entity_id_sent": "1; DROP TABLE interactions;--",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"7f6c232d-90d8-48fb-98e2-3588c8072868\", \"anon_id\": \"cdb7a4de-f451-4ece-9a51-c8f4c898f4da\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"1; DROP TABLE interactions;--\", \"position\": 1, \"ts\": 1788963249572}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '1; DROP TABLE interactions;--'\"}"
+  },
+  {
+    "case": "sql_or_true",
+    "entity_id_sent": "1' OR '1'='1",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"fe0887de-40e0-4211-917e-a24e6fe28eaf\", \"anon_id\": \"4b0550bf-5d7e-4685-b7fe-a6de8fd61cd7\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"1' OR '1'='1\", \"position\": 1, \"ts\": 1788963249581}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got \\\"1' OR '1'='1\\\"\"}"
+  },
+  {
+    "case": "xss_script",
+    "entity_id_sent": "<script>alert(1)</script>",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"9ad6f8e3-a500-4f69-99bb-27e24c2f4411\", \"anon_id\": \"b0c1fb44-0bb8-4b21-a9bf-f8a7fd5fd593\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"<script>alert(1)</script>\", \"position\": 1, \"ts\": 1788963249600}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '<script>alert(1)</script>'\"}"
+  },
+  {
+    "case": "leftover_uuid",
+    "entity_id_sent": "0a1c2d3e-4f50-4617-9283-a4b5c6d7e8f9",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"f9e98d56-95fa-4320-a8df-256261441343\", \"anon_id\": \"859854d1-e03a-4e70-b928-ea375bc0bc23\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"0a1c2d3e-4f50-4617-9283-a4b5c6d7e8f9\", \"position\": 1, \"ts\": 1788963249625}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '0a1c2d3e-4f50-4617-9283-a4b5c6d7e8f9'\"}"
+  },
+  {
+    "case": "empty_string",
+    "entity_id_sent": "",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"7599439d-9c37-450a-89bb-c16b3a52580f\", \"anon_id\": \"403e734e-db13-41b7-9b22-cb31178f118f\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"\", \"position\": 1, \"ts\": 1788963249660}]}",
+    "status": 422,
+    "response_body": "{\"detail\":[{\"type\":\"string_too_short\",\"loc\":[\"impressions\",0,\"entity_id\"],\"msg\":\"String should have at least 1 character\",\"input\":\"\"}]}"
+  },
+  {
+    "case": "decimal",
+    "entity_id_sent": "1.0",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"16a07be6-cfbd-4a27-9ac2-84c43c129ef9\", \"anon_id\": \"5f11f511-a68a-4f24-9591-d9c2aec76fa7\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"1.0\", \"position\": 1, \"ts\": 1788963249687}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '1.0'\"}"
+  },
+  {
+    "case": "scientific_notation",
+    "entity_id_sent": "1e2",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"ad3ec9ff-c7d0-48fb-a601-4313ccd5796a\", \"anon_id\": \"9a331af2-44cc-4b9e-8964-040258c2310e\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"1e2\", \"position\": 1, \"ts\": 1788963249719}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '1e2'\"}"
+  },
+  {
+    "case": "plus_prefixed",
+    "entity_id_sent": "+13",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"ef3586a9-76b8-48a2-a182-03288745fd59\", \"anon_id\": \"ae0c3c36-875d-407d-9370-c3298342441a\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"+13\", \"position\": 1, \"ts\": 1788963249751}]}",
+    "status": 400,
+    "response_body": "{\"detail\":\"entity_id must be a native integer id (Payload PK), got '+13'\"}"
+  },
+  {
+    "case": "valid_zero",
+    "entity_id_sent": "0",
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"0cea5a18-ad79-4c15-a67c-ff6aa2509be5\", \"anon_id\": \"6ee6fd38-b26e-44c9-b878-4c9098ab9de9\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": \"0\", \"position\": 1, \"ts\": 1788963249782}]}",
+    "status": 204,
+    "response_body": ""
+  },
+  {
+    "case": "null_literal_none",
+    "entity_id_sent": null,
+    "request_body": "{\"interactions\": [], \"impressions\": [{\"session_id\": \"ce59622c-b534-4bc2-9b46-efad98fec26a\", \"anon_id\": \"2148d24a-c4eb-4b78-94c7-aa6a45307819\", \"surface\": \"article\", \"rail\": \"complementary\", \"entity_id\": null, \"position\": 1, \"ts\": 1788963249823}]}",
+    "status": 422,
+    "response_body": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"impressions\",0,\"entity_id\"],\"msg\":\"Input should be a valid string\",\"input\":null}]}"
+  }
+]

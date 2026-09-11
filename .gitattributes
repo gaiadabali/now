@@ -1,0 +1,28 @@
+# Normalize line endings in the repository to LF regardless of what an
+# individual agent's editor wrote on checkout (this tree is written to by
+# agents on Windows, producing a mix of LF and CRLF). Git stores LF and
+# converts to the platform's native line ending on checkout only if the
+# platform needs it — Windows tools that require CRLF should set
+# core.autocrlf locally, not rely on repo content.
+* text=auto eol=lf
+
+# Windows batch/PowerShell scripts genuinely need CRLF to run correctly
+# outside WSL/git-bash — keep those native.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary types some future asset drop may add — never touched by EOL
+# normalization even if extensionless detection guesses wrong.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.gz binary
+*.zip binary

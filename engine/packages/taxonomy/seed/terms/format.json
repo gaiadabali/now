@@ -1,0 +1,66 @@
+{
+  "facet": "format",
+  "source": "ARCHITECTURE.md §4 'Format → decay half-life' table",
+  "persisted_fields": [
+    "slug",
+    "label"
+  ],
+  "note": "Half-lives live in ../format_decay.json, not here (engine.terms has no attribute column). Every format listed here MUST have an entry there — the seed loader fails otherwise.",
+  "terms": [
+    {
+      "slug": "news",
+      "label": "News",
+      "description": "Time-bound announcement: openings, appointments, launches, updates."
+    },
+    {
+      "slug": "event",
+      "label": "Event",
+      "description": "Announcement or preview of a dated happening. Hard-expires at the event's ends_at (§8.A) in addition to decaying."
+    },
+    {
+      "slug": "offer",
+      "label": "Offer",
+      "description": "Promotion or deal. Hard-expires at campaign.ends_at; never decays (§4)."
+    },
+    {
+      "slug": "review",
+      "label": "Review",
+      "description": "First-person evaluation of a venue, show, product or trip."
+    },
+    {
+      "slug": "listing",
+      "label": "Listing",
+      "description": "Roundup or listicle tied to a period ('New Restaurants in Jakarta 2024', 'Best brunches this month'). Series-deduped via series_key (§8.A)."
+    },
+    {
+      "slug": "guide",
+      "label": "Guide",
+      "description": "Timeless how-to, thematic or area guide ('Where to eat in Senopati')."
+    },
+    {
+      "slug": "feature",
+      "label": "Feature",
+      "description": "Long-form editorial not tied to a date."
+    },
+    {
+      "slug": "heritage",
+      "label": "Heritage",
+      "description": "History and heritage long-form."
+    },
+    {
+      "slug": "people",
+      "label": "People",
+      "description": "Profile or interview."
+    },
+    {
+      "slug": "city-guide",
+      "label": "City guide",
+      "description": "Destination guide (Explore Indonesia, Discover Jakarta, World Traveller, Sites & Destinations)."
+    },
+    {
+      "slug": "opinion",
+      "label": "Opinion",
+      "description": "Column or op-ed. 148 legacy 'Opinion' articles have no §4 format; `feature` would misstate both their shape and their decay."
+    }
+  ]
+}

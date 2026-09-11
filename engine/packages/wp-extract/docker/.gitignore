@@ -1,0 +1,3 @@
+# Populated by scripts/restore.sh from the source dump; never commit the
+# actual WordPress DB dump (57 MB gzipped / 354 MB uncompressed).
+dump/

@@ -1,0 +1,12 @@
+{
+  "facet": "price_band",
+  "source": "ARCHITECTURE.md §4 ('price_band' row) and §9 ('Price $ · $$ · $$$ · $$$$')",
+  "persisted_fields": ["slug", "label"],
+  "note": "`ordinal` is documentation for price-band proximity (E3.5). engine.terms has no ordinal column; until one exists (see the taxonomy README, 'Proposed DDL'), consumers derive order from this file or from seed order.",
+  "terms": [
+    {"slug": "budget", "label": "$", "ordinal": 1, "description": "Street food, warung, casual cafe."},
+    {"slug": "moderate", "label": "$$", "ordinal": 2, "description": "Mid-range restaurant, 3-star hotel."},
+    {"slug": "upscale", "label": "$$$", "ordinal": 3, "description": "Upscale dining, 4-star hotel, cocktail bar."},
+    {"slug": "luxury", "label": "$$$$", "ordinal": 4, "description": "Fine dining, 5-star hotel, private villa."}
+  ]
+}
