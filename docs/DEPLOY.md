@@ -87,8 +87,33 @@ raw unencrypted port while `ufw status` still claimed only 80/443 were open.
 | `cms-jakarta.gaiada.com` | | 4312 |
 | `cms-bali.gaiada.com` | | 4313 |
 
-A vhost is the snap pattern — `proxy_pass http://127.0.0.1:<port>;` with the
-certificate paths already used by the other sites on this host.
+**Sites are created with `clpctl`, not by hand-writing vhosts.** delphi runs
+CloudPanel (6.0.8), which owns `/etc/nginx/sites-enabled/` and the certs; a
+hand-written vhost there is liable to be overwritten and will not get a
+certificate. Same command every other site on this host was made with:
+
+```bash
+clpctl site:add:reverse-proxy \
+  --domainName=now-engine-api.gaiada.com \
+  --reverseProxyUrl='http://127.0.0.1:4310' \
+  --siteUser=nowapionl \
+  --siteUserPassword='<generated>'
+```
+
+### Choosing a port needs two checks, not one
+
+`ss -tlnp` only finds what is *listening*. A port can be referenced by
+another project's vhost with nothing behind it — a naive check calls it free,
+and taking it makes that project's domain quietly serve this application to
+its visitors. That has already happened on this box once (snap's DEPLOY.md
+§11). So grep nginx as well:
+
+```bash
+ss -tlnH "sport = :4310"                    # nothing listening
+grep -rE '127\.0\.0\.1:4310' /etc/nginx/  # and nothing pointing at it
+```
+
+Verified for 4310-4314 on 2026-09-14: unlistened and unreferenced.
 
 ## 5. First deploy
 
@@ -143,8 +168,10 @@ act.
 ## 8. Still required, and not doable from here
 
 - **DNS** for the five hostnames in §4, pointing at `72.61.142.88`.
-- **TLS certificates** for them, in the same place as the other sites'.
-- **nginx vhosts**, one per hostname.
+  `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`).
+- **CloudPanel sites**, one per hostname (`clpctl site:add:reverse-proxy`),
+  which also issues the certificate. DNS must resolve first or issuance
+  fails.
 - **A GHCR pull token** on the box (§3).
 - **Database load + migrations** — the images will start against an empty
   Postgres and the API will answer `/healthz` regardless, because that probe
