@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getOrg, listPartnerships } from '@/lib/queries'
+import { requireUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Org({ params }: { params: Promise<{ id: string }> }) {
+  await requireUser()
   const { id } = await params
   const org = await getOrg(id)
   if (!org) notFound()

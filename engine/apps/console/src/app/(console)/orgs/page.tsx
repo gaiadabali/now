@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { listOrgs } from '@/lib/queries'
+import { requireUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,6 +9,7 @@ export default async function Orgs({
 }: {
   searchParams: Promise<{ q?: string }>
 }) {
+  await requireUser()
   const { q } = await searchParams
   const orgs = await listOrgs(q)
 
