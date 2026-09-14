@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Emits .next/standalone — a self-contained server bundle with only the
+  // node_modules it actually imports. Keeps the runtime image small and is
+  // what the Dockerfile copies.
+  output: 'standalone',
   reactStrictMode: true,
   images: {
     // Comp phase: images are still served by the legacy WordPress hosts.

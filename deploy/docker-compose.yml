@@ -1,0 +1,304 @@
+# NOW! Engine — production compose for the VPS (delphi).
+#
+# This is NOT the root docker-compose.yml. That one is the local dev stack:
+# it builds from source, publishes ports on 0.0.0.0, and runs Caddy for TLS.
+# None of those are right on a shared host. Differences, and why:
+#
+#   1. NO CADDY. delphi's host nginx already owns 80/443 and terminates TLS
+#      with certs under /etc/nginx/ssl-certificates/. A containerised Caddy
+#      would fail to bind, or worse, win the race and break every other site
+#      on the box. Routing is an nginx vhost per hostname -> 127.0.0.1:port.
+#
+#   2. PORTS ARE LOOPBACK-ONLY. `127.0.0.1:` is not decoration. Without it
+#      Docker publishes on 0.0.0.0 AND writes its own iptables rules, which
+#      bypass ufw entirely — the app would be reachable from the internet on
+#      a raw unencrypted port while `ufw status` still claimed only 80/443
+#      were open.
+#
+#   3. IMAGES ARE PULLED, NEVER BUILT. `next build` is the memory-hungry
+#      step that gets OOM-killed on a small box, with an error that reads
+#      like a code fault rather than a capacity one. CI builds and pushes to
+#      GHCR; see .github/workflows/publish-images.yml.
+#
+#   4. HOST PORTS ARE VARIABLES. The defaults below are chosen to avoid what
+#      is already bound on delphi, but this is a shared box and the next
+#      project will not know about us. Anything colliding is a one-line .env
+#      change, not a code change.
+#
+# Sizing note. delphi is 2 vCPU / 7 GB with roughly 4 GB free, already
+# running snap-apps, cosmedic-staging and infisical. The memory limits below
+# total ~3.4 GB with the `media` profile off. That is tight but workable;
+# they are floors chosen to make an OOM land on the container that caused it
+# rather than on Postgres. Two Payload instances are the heavy part — if the
+# box gets unhappy, stopping cms-bali is the first lever.
+#
+# Runbook: docs/DEPLOY.md. Driver: deploy/deploy.sh (do not roll out by hand).
+
+name: now-engine
+
+# Shared by both Payload instances. Kept out of either service so that
+# neither city reads as the "primary" one whose settings the other inherits.
+x-cms-shared: &cms-shared
+  NODE_ENV: production
+  PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
+  PLATFORM_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  GARAGE_S3_ENDPOINT: http://garage:3900
+  GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID:-}
+  GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
+  GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET:-now-media}
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  now-internal:
+    name: now-internal
+
+volumes:
+  postgres-data:
+  redis-data:
+  garage-meta:
+  garage-data:
+
+services:
+  # ---------------------------------------------------------------------
+  # Postgres 16 + pgvector + PostGIS — three databases (ARCHITECTURE.md §2).
+  # Custom image: no published tag carries both extensions.
+  # ---------------------------------------------------------------------
+  postgres:
+    image: ${POSTGRES_IMAGE:?set POSTGRES_IMAGE}:${IMAGE_TAG:?set IMAGE_TAG}
+    container_name: now-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Deliberately NOT published, not even on loopback. Reach it with
+    # `docker exec now-postgres psql`, or an SSH tunnel for external tooling.
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7.4.11-alpine
+    container_name: now-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:?}
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 192m
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # ---------------------------------------------------------------------
+  # engine-api — ONE instance for every city. Site comes from the request
+  # path (/v1/{site}/...), resolved through the sites registry.
+  # ---------------------------------------------------------------------
+  engine-api:
+    image: ${API_IMAGE:?set API_IMAGE}:${IMAGE_TAG:?}
+    container_name: now-engine-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-4310}:8000"
+    environment:
+      # Every name is prefixed ENGINE_API_ — app/config.py sets
+      # env_prefix="ENGINE_API_", so an unprefixed PLATFORM_DATABASE_URI is
+      # silently ignored and the app quietly falls back to localhost.
+      ENGINE_API_ENV: production
+      ENGINE_API_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENGINE_API_PLATFORM_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      # City pools are built from these, not from one URI: sites.db_ref
+      # usually holds a bare database name and config.build_city_dsn()
+      # supplies the rest. Adding a city is a registry row, not a redeploy.
+      ENGINE_API_CITY_DB_HOST: postgres
+      ENGINE_API_CITY_DB_PORT: "5432"
+      ENGINE_API_CITY_DB_USER: ${POSTGRES_USER}
+      ENGINE_API_CITY_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ENGINE_API_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 448m
+    healthcheck:
+      # /healthz, not /v1/health — the latter lives under the
+      # /v1/{site} router and would need a real site slug to answer.
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status==200 else 1)\""]
+      interval: 15s
+      timeout: 6s
+      retries: 10
+      start_period: 25s
+
+  # ---------------------------------------------------------------------
+  # web — the reader site. ONE instance; the hostname selects the city.
+  # ---------------------------------------------------------------------
+  web:
+    image: ${WEB_IMAGE:?set WEB_IMAGE}:${IMAGE_TAG:?}
+    container_name: now-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-4311}:3100"
+    environment:
+      NODE_ENV: production
+      ENGINE_API_URL: http://engine-api:8000
+      NOW_JAKARTA_HOSTNAME: ${NOW_JAKARTA_HOSTNAME:?}
+      NOW_BALI_HOSTNAME: ${NOW_BALI_HOSTNAME:?}
+    depends_on:
+      engine-api:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 448m
+
+  # ---------------------------------------------------------------------
+  # cms-{city} — the ONLY services that duplicate, because a Payload
+  # instance binds exactly one database (ARCHITECTURE.md §3.5). Same image,
+  # different DATABASE_URI. Everything else here is one deployment.
+  # ---------------------------------------------------------------------
+  cms-jakarta:
+    image: ${CMS_IMAGE:?set CMS_IMAGE}:${IMAGE_TAG:?}
+    container_name: now-cms-jakarta
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CMS_JAKARTA_HOST_PORT:-4312}:3000"
+    environment:
+      # Everything a Payload instance shares...
+      <<: *cms-shared
+      # ...and the only two things that make this instance Jakarta.
+      # ARCHITECTURE.md §3.5: the cities differ by configuration, never by
+      # code or image. Same CMS_IMAGE runs both.
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
+      SITE_SLUG: jakarta
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 640m
+
+  cms-bali:
+    image: ${CMS_IMAGE:?}:${IMAGE_TAG:?}
+    container_name: now-cms-bali
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CMS_BALI_HOST_PORT:-4313}:3000"
+    environment:
+      <<: *cms-shared
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
+      SITE_SLUG: bali
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 640m
+
+  # ---------------------------------------------------------------------
+  # Media path — behind the `media` profile, OFF by default.
+  #
+  # E1.3 (mirror wp-content/uploads into Garage) is still blocked, so these
+  # two would serve an empty bucket: web/next.config.mjs still points
+  # remotePatterns at the legacy WordPress hosts. Running them today costs
+  # ~640 MB on a box with ~4 GB free and returns nothing. Turn them on in
+  # the same change that unblocks the media migration:
+  #
+  #     docker compose --profile media up -d
+  # ---------------------------------------------------------------------
+  garage:
+    profiles: ["media"]
+    image: dxflrs/garage:v1.3.1
+    container_name: now-garage
+    restart: unless-stopped
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN:-}
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384m
+
+  imgproxy:
+    profiles: ["media"]
+    image: darthsim/imgproxy:v4.0.14
+    container_name: now-imgproxy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${IMGPROXY_HOST_PORT:-4314}:8080"
+    environment:
+      IMGPROXY_BIND: ":8080"
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: "http://garage:3900"
+      IMGPROXY_S3_REGION: ${GARAGE_S3_REGION:-garage}
+      AWS_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
+      IMGPROXY_KEY: ${IMGPROXY_KEY:-}
+      IMGPROXY_SALT: ${IMGPROXY_SALT:-}
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+      IMGPROXY_TTL: "2592000"
+      IMGPROXY_MAX_SRC_RESOLUTION: "50"
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m

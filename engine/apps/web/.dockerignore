@@ -1,0 +1,14 @@
+# Keeps the build context to source + manifests. node_modules is reinstalled
+# inside the image from the lockfile (`npm ci`), and .next is rebuilt — both
+# would otherwise be copied in only to be overwritten, and a host-built
+# .next can carry platform-specific binaries that break in the image.
+node_modules
+.next
+npm-debug.log*
+.env
+.env.*
+!.env.example
+Dockerfile
+.dockerignore
+*.tsbuildinfo
+test
