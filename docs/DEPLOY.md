@@ -1,8 +1,15 @@
-# Deploying NOW! Engine to delphi
+# Deploying NOW! Engine to helios
 
-The target is **delphi** (`72.61.142.88`, Ubuntu 24.04), a shared KVM box that
-already runs `snap-apps`, `cosmedic-staging` and `infisical`. Everything
-deploy-related lives in [`deploy/`](../deploy).
+The target is **helios** (`187.77.116.133`, Ubuntu 24.04), a CloudPanel box
+with 8 vCPU / 32 GB / 387 GB. Everything deploy-related lives in
+[`deploy/`](../deploy).
+
+> Moved here from delphi (`72.61.142.88`) deliberately. delphi is 2 vCPU with
+> ~4 GB free and 11 GB of disk, already carrying three other stacks; the full
+> NOW! stack measured 4.38 GB of limits, which left it with no headroom at
+> all. helios runs only a server-side GTM pair in Docker and has ~25 GB
+> available. Both hosts use the same pattern, so the only things that changed
+> are the hostname, the IP and the sizing.
 
 ---
 
@@ -12,45 +19,58 @@ deploy-related lives in [`deploy/`](../deploy).
 |---|---|
 | `postgres` · `redis` | ready — custom PG image carries pgvector + PostGIS |
 | `engine-api` | ready — ARCHITECTURE.md §16 calls this the durable deliverable |
-| `web` | ready — one instance, hostname selects the city |
+| `web-jakarta` · `web-bali` | ready — one image, one process per city |
 | `cms-jakarta` · `cms-bali` | ready — one image, two databases (§3.5) |
 | `garage` · `imgproxy` | **off** — behind the `media` profile, see §6 |
-| `engine-worker` | **cannot deploy** — `engine/apps/worker/` has no source |
-| `console` | **cannot deploy** — `engine/apps/console/` has no source |
+| `engine-worker` | ready — arq cron + the re-embed stream consumer |
+| `console` | ready — **read-only**, no auth in front of it yet |
 
-The last two are empty directories. They have compose placeholders in the
-root dev stack and are deliberately absent from `deploy/docker-compose.yml`:
-there is nothing to build an image from, and a Dockerfile for code that does
-not exist would only produce something that looks deployable.
+`console` has no authentication. It only reads, and that is deliberate:
+mutations with no identity to attribute them to would let anyone reaching the
+port change link policy and campaign budgets with no audit trail, and
+`engine.partnership_audit` expects an actor. Put CloudPanel basic auth in
+front of it at minimum.
 
-## 2. Capacity — read this before adding anything
+## 2. Capacity
 
-delphi is **2 vCPU / 7 GB**, with roughly **4 GB free** and **11 GB of disk**
-(89% used). The memory limits in `deploy/docker-compose.yml` total ~3.4 GB
-with the `media` profile off. That is deliberate and it is tight.
+helios is **8 vCPU / 32 GB / 387 GB**, with **~25 GB RAM and 172 GB of disk
+free**. The limits in `deploy/docker-compose.yml` total **11.5 GB** with the
+`media` profile off — comfortable, not tight.
 
-The limits are not there to be generous, they are there so that an OOM lands
-on the container that caused it rather than on Postgres. If the box gets
-unhappy, **stopping `cms-bali` is the first lever** — two Payload instances
-are the heavy part, and Bali has no editors on it yet.
+Worth noting: this is *more* than ARCHITECTURE.md §2's own production target
+(a Hetzner CPX41, 8 vCPU / 16 GB / 240 GB). The stack is not being squeezed
+onto this box.
 
-ARCHITECTURE.md specs a Hetzner CPX41 (8 vCPU / 16 GB / 240 GB) for this
-stack. delphi is a staging host, not that.
+The limits still matter. They exist so an OOM lands on the container that
+caused it rather than on Postgres, and so one runaway Payload instance cannot
+take down the 18 other sites CloudPanel serves from this host.
+
+Two things the headroom unlocks that delphi could not host:
+
+- **The media path.** 172 GB will hold the ~9 GB `wp-content/uploads` mirror
+  with room to spare, so `garage` + `imgproxy` are a data question (E1.3) and
+  no longer a capacity one — see §6.
+- **Self-hosted Nominatim.** The geocoder's imported database is ~37 GB.
+  That was impossible on delphi and is unremarkable here, which matters for
+  re-running E2.5 and for E5.1's OSRM travel matrix.
 
 ## 3. Why images are built on GitHub, never on the box
 
 `next build` is the most memory-hungry step in this stack and is what gets
 OOM-killed on a small box, with an error that reads like a code fault rather
-than a capacity one. `.github/workflows/publish-images.yml` builds all four
-images on GitHub and pushes them to GHCR; the VPS only pulls.
+than a capacity one. helios has the RAM to build, but the images are still
+built on GitHub: the artifact CI tested is then the artifact that runs, and
+the box never needs a toolchain.
 
-The larger benefit is that the artifact CI tested is the artifact that runs.
-
-Four images, one tag:
+`.github/workflows/publish-images.yml` builds all six and pushes them to
+GHCR; the VPS only pulls. Six images, **one tag** — deploy.sh pins them
+together so a rollout cannot mix a new API with an old CMS:
 
 ```
 ghcr.io/gaiadabali/now-postgres:sha-<short>
 ghcr.io/gaiadabali/now-api:sha-<short>
+ghcr.io/gaiadabali/now-worker:sha-<short>
+ghcr.io/gaiadabali/now-console:sha-<short>
 ghcr.io/gaiadabali/now-web:sha-<short>
 ghcr.io/gaiadabali/now-cms:sha-<short>
 ```
@@ -68,7 +88,7 @@ docker login ghcr.io -u <github-user> -p <PAT with read:packages>
 
 ## 4. Routing: host nginx, not Caddy
 
-delphi's **host nginx owns 80/443** and terminates TLS with certs under
+helios's **host nginx owns 80/443** and terminates TLS with certs under
 `/etc/nginx/ssl-certificates/`. The root `docker-compose.yml` runs Caddy;
 `deploy/docker-compose.yml` deliberately does not. A containerised Caddy here
 would either fail to bind or win the race and break every other site on the
@@ -82,13 +102,18 @@ raw unencrypted port while `ufw status` still claimed only 80/443 were open.
 | Hostname | → | Port |
 |---|---|---|
 | `now-engine-api.gaiada.com` | | 4310 |
-| `now-jakarta.gaiada.com` | | 4311 (web) |
-| `now-bali.gaiada.com` | | 4311 (web — same instance, Host header selects the city) |
+| `now-jakarta.gaiada.com` | | 4311 (web-jakarta) |
+| `now-bali.gaiada.com` | | 4315 (web-bali) |
 | `cms-jakarta.gaiada.com` | | 4312 |
 | `cms-bali.gaiada.com` | | 4313 |
+| `now-console.gaiada.com` | | 4316 — **put auth in front of this** |
 
-**Sites are created with `clpctl`, not by hand-writing vhosts.** delphi runs
-CloudPanel (6.0.8), which owns `/etc/nginx/sites-enabled/` and the certs; a
+There are two web processes, not one. `src/lib/site.ts` requires `SITE_SLUG`
+and says plainly that the app "serves exactly one city per process", so a
+single service fed both hostnames would throw at startup.
+
+**Sites are created with `clpctl`, not by hand-writing vhosts.** helios runs
+CloudPanel, which owns `/etc/nginx/sites-enabled/` and the certs; a
 hand-written vhost there is liable to be overwritten and will not get a
 certificate. Same command every other site on this host was made with:
 
@@ -105,20 +130,20 @@ clpctl site:add:reverse-proxy \
 `ss -tlnp` only finds what is *listening*. A port can be referenced by
 another project's vhost with nothing behind it — a naive check calls it free,
 and taking it makes that project's domain quietly serve this application to
-its visitors. That has already happened on this box once (snap's DEPLOY.md
-§11). So grep nginx as well:
+its visitors. That has already happened on a sibling host once (snap's
+DEPLOY.md §11). So grep nginx as well:
 
 ```bash
 ss -tlnH "sport = :4310"                    # nothing listening
 grep -rE '127\.0\.0\.1:4310' /etc/nginx/  # and nothing pointing at it
 ```
 
-Verified for 4310-4314 on 2026-09-14: unlistened and unreferenced.
+Verified on helios 2026-09-14: 4310-4316 are all unlistened AND unreferenced.
 
 ## 5. First deploy
 
 ```bash
-ssh delphi
+ssh helios
 git clone https://github.com/gaiadabali/now.git /opt/now-engine
 cd /opt/now-engine
 
@@ -129,10 +154,10 @@ docker login ghcr.io -u <github-user> -p <PAT>
 deploy/deploy.sh --pull --tag sha-<short sha>
 ```
 
-`deploy.sh` pulls all four images **before** stopping anything — a new API
+`deploy.sh` pulls all six images **before** stopping anything — a new API
 against an old CMS is worse than no rollout — then starts in dependency order
 and verifies: Postgres and Redis healthy, `engine-api` answering `/healthz`,
-and web/both CMS instances responding. It fails loudly rather than leaving a
+and both web instances, both CMS instances and the console responding. It fails loudly rather than leaving a
 half-deployed stack running.
 
 The databases still need loading (E1.8) and migrations (`now-db`). `deploy.sh`
@@ -142,9 +167,10 @@ does not do this yet — it is a rollout driver, not a migration runner.
 
 `garage` and `imgproxy` sit behind the `media` compose profile and do not
 start by default. E1.3 — mirroring `wp-content/uploads` into Garage — is
-still blocked, so they would serve an empty bucket while costing ~640 MB on a
-box with ~4 GB free. `web/next.config.mjs` still points `remotePatterns` at
-the legacy WordPress hosts, which is where images come from today.
+still blocked, so they would serve an empty bucket. On helios that is purely
+a data question — 172 GB holds the ~9 GB mirror easily — and no longer a
+capacity one. `web/next.config.mjs` still points `remotePatterns` at the
+legacy WordPress hosts, which is where images come from today.
 
 Turn them on in the same change that unblocks the mirror:
 
@@ -167,12 +193,16 @@ act.
 
 ## 8. Still required, and not doable from here
 
-- **DNS** for the five hostnames in §4, pointing at `72.61.142.88`.
-  `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`).
+- **DNS** for the six hostnames in §4, pointing at `187.77.116.133`.
+  `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Verified
+  2026-09-14: none of them resolve yet, while an existing sibling
+  (`bsc.gaiada.online`) resolves to this host, so the check itself is sound.
 - **CloudPanel sites**, one per hostname (`clpctl site:add:reverse-proxy`),
   which also issues the certificate. DNS must resolve first or issuance
   fails.
 - **A GHCR pull token** on the box (§3).
+- **Auth in front of `now-console.gaiada.com`** before it is reachable. It
+  is read-only, but partner and campaign data is commercial.
 - **Database load + migrations** — the images will start against an empty
   Postgres and the API will answer `/healthz` regardless, because that probe
   does not touch a city database. Do not read a green deploy as "the content

@@ -1,10 +1,10 @@
-# NOW! Engine — production compose for the VPS (delphi).
+# NOW! Engine — production compose for the VPS (helios).
 #
 # This is NOT the root docker-compose.yml. That one is the local dev stack:
 # it builds from source, publishes ports on 0.0.0.0, and runs Caddy for TLS.
 # None of those are right on a shared host. Differences, and why:
 #
-#   1. NO CADDY. delphi's host nginx already owns 80/443 and terminates TLS
+#   1. NO CADDY. helios's host nginx already owns 80/443 and terminates TLS
 #      with certs under /etc/nginx/ssl-certificates/. A containerised Caddy
 #      would fail to bind, or worse, win the race and break every other site
 #      on the box. Routing is an nginx vhost per hostname -> 127.0.0.1:port.
@@ -21,16 +21,20 @@
 #      GHCR; see .github/workflows/publish-images.yml.
 #
 #   4. HOST PORTS ARE VARIABLES. The defaults below are chosen to avoid what
-#      is already bound on delphi, but this is a shared box and the next
+#      is already bound on helios, but this is a shared box and the next
 #      project will not know about us. Anything colliding is a one-line .env
 #      change, not a code change.
 #
-# Sizing note. delphi is 2 vCPU / 7 GB with roughly 4 GB free, already
-# running snap-apps, cosmedic-staging and infisical. The memory limits below
-# total ~3.4 GB with the `media` profile off. That is tight but workable;
-# they are floors chosen to make an OOM land on the container that caused it
-# rather than on Postgres. Two Payload instances are the heavy part — if the
-# box gets unhappy, stopping cms-bali is the first lever.
+# Sizing note. helios is 8 vCPU / 32 GB with ~25 GB available and 172 GB of
+# disk, running only a server-side GTM pair in Docker. That is more headroom
+# than ARCHITECTURE.md §2's own target (a Hetzner CPX41, 8 vCPU / 16 GB), so
+# the limits below are working room rather than the starvation values an
+# earlier draft needed for a 2 vCPU / 4 GB box. They total ~11.5 GB with the
+# `media` profile off.
+#
+# The limits still exist on purpose: they make an OOM land on the container
+# that caused it rather than on Postgres, and they stop one runaway Payload
+# instance taking the box down for the other sites hosted here.
 #
 # Runbook: docs/DEPLOY.md. Driver: deploy/deploy.sh (do not roll out by hand).
 
@@ -96,8 +100,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.5"
-          memory: 1g
+          cpus: "4.0"
+          memory: 4g
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
       interval: 10s
@@ -122,8 +126,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 192m
+          cpus: "1.0"
+          memory: 512m
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
       interval: 10s
@@ -166,8 +170,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 448m
+          cpus: "2.0"
+          memory: 1g
     healthcheck:
       # /healthz, not /v1/health — the latter lives under the
       # /v1/{site} router and would need a real site slug to answer.
@@ -220,8 +224,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 448m
+          cpus: "2.0"
+          memory: 1g
 
   # ---------------------------------------------------------------------
   # web-{city} — the reader site.
@@ -257,8 +261,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 384m
+          cpus: "2.0"
+          memory: 768m
 
   web-bali:
     image: ${WEB_IMAGE:?}:${IMAGE_TAG:?}
@@ -278,8 +282,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 384m
+          cpus: "2.0"
+          memory: 768m
 
   # ---------------------------------------------------------------------
   # console — partner + campaign management.
@@ -310,8 +314,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 320m
+          cpus: "1.0"
+          memory: 512m
 
   # ---------------------------------------------------------------------
   # cms-{city} — the ONLY services that duplicate, because a Payload
@@ -340,8 +344,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 640m
+          cpus: "2.0"
+          memory: 1536m
 
   cms-bali:
     image: ${CMS_IMAGE:?}:${IMAGE_TAG:?}
@@ -361,8 +365,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 640m
+          cpus: "2.0"
+          memory: 1536m
 
   # ---------------------------------------------------------------------
   # Media path — behind the `media` profile, OFF by default.
@@ -393,8 +397,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 384m
+          cpus: "1.0"
+          memory: 768m
 
   imgproxy:
     profiles: ["media"]
@@ -420,5 +424,5 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.5"
-          memory: 256m
+          cpus: "1.0"
+          memory: 512m
