@@ -348,8 +348,19 @@ class NominatimProvider(_OsmProviderBase):
         # its administrative envelope (see name_agrees' docstring).
         return display.split(",")[0].strip() if display else None
 
+    @staticmethod
+    def _feature_category(feature: dict) -> str | None:
+        """Nominatim's `format=jsonv2` calls the OSM key **`category`**;
+        the older `format=json` calls it `class`. Verified against a live
+        Nominatim 5.3.2: jsonv2 returns `category`. Reading only `class`
+        silently classified every result as `unknown` (0.40) instead of
+        `poi` (0.90) — the tests missed it because the fixtures had been
+        written in the `json` shape. Both spellings are accepted so a
+        version or format change cannot reintroduce that."""
+        return feature.get("category") or feature.get("class")
+
     def _to_result(self, feature: dict, *, rung_is_name_search: bool) -> ProviderResult:
-        granularity = classify_granularity(feature.get("class"), feature.get("type"))
+        granularity = classify_granularity(self._feature_category(feature), feature.get("type"))
         confidence = (
             min(NAME_SEARCH_CONFIDENCE, _confidence_for(granularity))
             if rung_is_name_search

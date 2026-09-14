@@ -119,7 +119,7 @@ def run(
                 state.record(
                     StateRecord(
                         place_key=candidate.key,
-                        final=outcome.retryable_error is None,
+                        final=outcome.retryable_error is None and outcome.cacheable,
                         rung=outcome.rung.value,
                         status=outcome.status.value,
                         lat=outcome.lat,

@@ -66,11 +66,58 @@ production-sized JSONL. Several packages already do this correctly (see
 `engine/packages/eval/tests/fixtures/*`) — extend that pattern rather than
 un-ignoring the full files.
 
+## Geocoding: OpenStreetMap, and the attribution it obliges
+
+`jakarta/content/extracted/geocoded_places.jsonl` is derived like every
+other file above, but it is the one whose *source* carries a licence
+obligation, so it gets its own note.
+
+Coordinates come from a **self-hosted Nominatim** built from the
+Geofabrik `asia/indonesia` extract (`docker compose --profile geo up -d
+nominatim`). Rows resolved that way carry `location_type` beginning
+`osm_` — `osm_poi`, `osm_street`, `osm_area` — and their
+`google_place_id` is always `null`. Rows from the original WordPress
+MapPress/ACF seed carry `mappress_poi` / `google_map_acf` instead. The
+`location_type` prefix is therefore the provenance marker: it says which
+licence a given coordinate is under, per row.
+
+### The obligation
+
+OpenStreetMap data is **ODbL 1.0**. Unlike Google's terms — which permit
+storing `place_id` indefinitely but restrict caching other fields — ODbL
+lets us store coordinates permanently, which is what makes it the right
+fit for a database that *is* the canonical record. The trade is
+attribution:
+
+> **Any surface that displays an `osm_*`-sourced coordinate must credit
+> "© OpenStreetMap contributors".**
+
+Concretely, that means the map component (§15 uses MapLibre GL) and any
+place page rendering a pin from one of these rows. This is a deployment
+requirement, not a nicety: shipping the coordinates without the credit
+is a licence breach.
+
+It does **not** apply to rows seeded from MapPress/ACF (`mappress_poi`,
+`google_map_acf`) — those predate this pipeline and carry their own
+history.
+
+### Why the geocoder is not a production service
+
+ARCHITECTURE.md §15 is explicit that nearby-radius queries run on
+PostGIS and that a geocoder is never called per request. Nominatim is
+therefore **build-time infrastructure**: it turns venue rows into
+`geocoded_places.jsonl` once, E1.8 loads that into Postgres, and
+production never speaks to it again. It is profiled off (`geo`) and set
+`restart: "no"` for that reason, and it is entirely reasonable to run
+the import on a laptop and ship only the JSONL.
+
 ## Regenerating
 
 See each package's README for the exact command; as of this audit:
 - `engine/packages/wp-extract/README.md` — dumps → `content/extracted/`
 - `engine/packages/wp-harvest/README.md` — WP REST API → `content/harvested/`
+- `engine/packages/geocode/README.md` — venues + geo seed → `geocoded_places.jsonl`
+  (needs the `geo` compose profile up; see that README's runbook)
 
 ## Scope note
 

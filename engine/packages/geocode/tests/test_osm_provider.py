@@ -74,31 +74,58 @@ def photon(fixture: str | None = None, *, payload=None, status_code: int = 200):
 
 def test_nominatim_geocode_address_poi():
     provider, _ = nominatim("nominatim_address_poi.json")
-    result = provider.geocode_address("Jalan Kemang Raya, South Jakarta")
+    result = provider.geocode_address("Grand Indonesia Shopping Town, Jakarta")
     assert result is not None
-    assert (result.lat, result.lng) == (-6.2605, 106.8140)
+    assert (result.lat, result.lng) == (-6.1957601, 106.8214547)
     assert result.location_type == "osm_poi"
     assert result.confidence == 0.90
     assert result.provider == "nominatim"
     assert result.is_synthetic is False
 
 
+def test_jsonv2_spells_the_osm_key_category_not_class():
+    """Regression guard for a bug a live run caught and the original
+    fixtures hid. Nominatim's format=jsonv2 returns `category`; only the
+    older format=json returns `class`. Reading `class` alone classified
+    every real result as `unknown` (0.40) instead of its true bucket."""
+    provider, _ = nominatim("nominatim_address_poi.json")
+    raw = provider.geocode_address("x").raw
+    assert "category" in raw and "class" not in raw, "fixture must be real jsonv2 shape"
+    assert provider.geocode_address("x").location_type == "osm_poi"
+
+
+def test_legacy_class_spelling_still_classifies():
+    """format=json (and older Nominatim) spell it `class`. Both are
+    accepted so a version/format change cannot silently regress."""
+    legacy = [{"lat": "-6.2", "lon": "106.8", "class": "amenity", "type": "restaurant",
+               "name": "Legacy Shaped", "display_name": "Legacy Shaped, Jakarta"}]
+    provider, _ = nominatim(payload=legacy)
+    assert provider.geocode_address("x").location_type == "osm_poi"
+
+
 def test_nominatim_never_fabricates_a_google_place_id():
     """An OSM id must never travel in a Google-named field — downstream
     consumers treat google_place_id as a Google identifier."""
     provider, _ = nominatim("nominatim_address_poi.json")
-    result = provider.geocode_address("Jalan Kemang Raya")
+    result = provider.geocode_address("Grand Indonesia")
     assert result.google_place_id is None
     # ...but OSM identity is still preserved for audit.
     assert result.raw["osm_type"] == "way"
-    assert result.raw["osm_id"] == 4567
+    assert isinstance(result.raw["osm_id"], int)
+
+
+def test_nominatim_street_granularity():
+    provider, _ = nominatim("nominatim_address_street.json")
+    result = provider.geocode_address("Jalan Kemang Raya, Jakarta")
+    assert result.location_type == "osm_street"
+    assert result.confidence == 0.65
 
 
 def test_nominatim_city_centroid_gets_low_confidence():
-    """A vague address collapsing onto a city centroid is a known
+    """A vague address collapsing onto a city boundary is a known
     geocoder behaviour; it must not come back looking precise."""
     provider, _ = nominatim("nominatim_address_area.json")
-    result = provider.geocode_address("Bali")
+    result = provider.geocode_address("Denpasar, Bali")
     assert result.location_type == "osm_area"
     assert result.confidence == 0.30
 
@@ -140,7 +167,7 @@ def test_nominatim_find_place_accepts_a_real_name_match():
     provider, _ = nominatim("nominatim_name_hit.json")
     result = provider.find_place("Potato Head Beach Club", "Seminyak, Bali")
     assert result is not None
-    assert (result.lat, result.lng) == (-8.6801, 115.1553)
+    assert (result.lat, result.lng) == (-8.6794068, 115.1499595)
     assert result.confidence == NAME_SEARCH_CONFIDENCE
 
 
