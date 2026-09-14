@@ -73,6 +73,8 @@ def run(
     state: StateStore | None = None,
     location_tree: LocationTree | None = None,
     allow_synthetic: bool = False,
+    overrides: dict | None = None,
+    challenge_coarse_rung2: bool = True,
 ) -> tuple[list[GeocodedPlace], RunStats]:
     tree = location_tree or load_location_tree()
     merge_report = MergeReport()
@@ -83,7 +85,11 @@ def run(
     used_slugs: set[str] = set()
 
     for candidate in candidates:
-        cached = state.get(candidate.key) if state else None
+        overridden = bool(overrides and candidate.key in overrides)
+        # An overridden row never reads the cache: a human editing
+        # place-overrides.jsonl must see the change without having to know
+        # that a stale .state.jsonl would otherwise win.
+        cached = state.get(candidate.key) if (state and not overridden) else None
         if cached is not None:
             stats.resolved_from_cache += 1
             outcome_rung = Rung(cached.rung)
@@ -112,8 +118,14 @@ def run(
                     "in a non-dry-run build"
                 )
         else:
-            outcome = resolve_candidate(candidate, provider, allow_synthetic=allow_synthetic)
-            if provider is not None and outcome.rung != Rung.EXISTING_COORDINATES:
+            outcome = resolve_candidate(
+                candidate,
+                provider,
+                allow_synthetic=allow_synthetic,
+                overrides=overrides,
+                challenge_coarse_rung2=challenge_coarse_rung2,
+            )
+            if provider is not None and outcome.rung not in (Rung.EXISTING_COORDINATES, Rung.MANUAL_OVERRIDE):
                 stats.resolved_from_provider_calls += 1
             if state is not None:
                 state.record(

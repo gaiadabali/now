@@ -34,6 +34,7 @@ from pathlib import Path
 
 import click
 
+from now_geocode.overrides import OverrideError, load_overrides
 from now_geocode.pipeline import iter_jsonl, run
 from now_geocode.pgdemo import render_st_dwithin_demo_sql
 from now_geocode.providers.base import GeocodeProvider, ProviderConfigError
@@ -151,6 +152,17 @@ def cli() -> None:
               help="Markdown verification report (default: <output stem>.md).")
 @click.option("--review-queue", "review_queue_path", type=click.Path(path_type=Path), default=None,
               help="JSONL of unresolved/flagged rows only (default: <output stem>_review_queue.jsonl).")
+@click.option(
+    "--overrides", "overrides_path", type=click.Path(path_type=Path), default=None,
+    help="Human-verified corrections JSONL (rung 0), e.g. jakarta/site/place-overrides.jsonl. "
+         "Applied ahead of every automated source and never served from the state cache.",
+)
+@click.option(
+    "--no-challenge-coarse/--challenge-coarse", "no_challenge", default=False,
+    help="By default a coarse rung-2 hit (street/area) is challenged with a rung-3 name search and "
+         "the more specific result wins. Disable to stop at rung 2's first success — one fewer "
+         "provider call per coarse row, which matters on a billed provider.",
+)
 def build(
     venues_path: Path,
     geo_path: Path,
@@ -165,6 +177,8 @@ def build(
     state_path: Path | None,
     report_path: Path | None,
     review_queue_path: Path | None,
+    overrides_path: Path | None,
+    no_challenge: bool,
 ) -> None:
     """Resolve VENUES_PATH (venues.jsonl) + GEO_PATH (geo.jsonl) to
     geocoded_places.jsonl via the E2.5 source ladder."""
@@ -216,6 +230,15 @@ def build(
     if review_queue_path is None:
         review_queue_path = output_path.with_name(output_path.stem + "_review_queue.jsonl")
 
+    try:
+        overrides = load_overrides(overrides_path)
+    except OverrideError as exc:
+        # A typo in a hand-edited corrections file must fail the run, not
+        # silently skip a correction someone believes is applied.
+        raise click.ClickException(str(exc)) from exc
+    if overrides:
+        click.echo(f"loaded {len(overrides)} manual override(s) from {overrides_path}")
+
     venue_rows = iter_jsonl(venues_path)
     geo_rows = iter_jsonl(geo_path)
     state = StateStore(state_path)
@@ -227,6 +250,8 @@ def build(
             provider=provider_obj,
             state=state,
             allow_synthetic=dry_run,
+            overrides=overrides,
+            challenge_coarse_rung2=not no_challenge,
         )
     except ProviderConfigError as exc:
         raise click.ClickException(str(exc)) from exc

@@ -188,15 +188,24 @@ def test_photon_find_place_rejects_the_enclosing_suburb():
     "queried,feature,expected",
     [
         ("Potato Head Beach Club", "Potato Head Beach Club", True),
-        ("Potato Head Beach Club", "Potato Head", True),          # 2/4 == threshold
-        ("Potato Head Beach Club", "Seminyak", False),            # 0/4
-        ("Potato Head Beach Club", "Beach Club", True),           # 2/4
-        ("Potato Head Beach Club", "Club", False),                # 1/4
-        ("Revolver", "Revolver Espresso", True),                  # single token, present
-        ("Revolver", "Seminyak", False),                          # single token, absent
+        ("Potato Head Beach Club", "Potato Head", True),   # {potato,head} == {potato,head}
+        ("Potato Head Beach Club", "Seminyak", False),     # shares nothing
+        # "Beach"/"Club" are non-distinctive, so this reduces to an empty
+        # feature name — it could be any beach club, and is now rejected.
+        # It was accepted while the gate scored on all significant tokens.
+        ("Potato Head Beach Club", "Beach Club", False),
+        ("Potato Head Beach Club", "Club", False),
+        ("Revolver", "Revolver Espresso", True),           # {revolver} subset
+        ("Revolver", "Seminyak", False),
         ("Revolver", None, False),
         ("Revolver", "", False),
-        ("W Bali", "Seminyak", False),                            # "W" is not significant
+        ("W Bali", "Seminyak", False),                     # "W" is not significant
+        # Brand collision: the distinctive token "vacation" is absent from
+        # the query, so these are different properties.
+        ("Anantara Seminyak", "Anantara Vacation Club", False),
+        # ...but a genuine shorter form of the same name still matches.
+        ("The Legian Seminyak Bali", "The Legian Bali", True),
+        ("The Legian Seminyak Bali", "The Trans Resort Bali", False),
     ],
 )
 def test_name_agrees_cases(queried, feature, expected):

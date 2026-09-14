@@ -135,6 +135,33 @@ _CONFIG_STATUS_CODES = {401, 403}
 # so "W Bali" isn't judged mostly on "W".
 _MIN_SIGNIFICANT_TOKEN_LEN = 3
 
+# Tokens that carry no identity IN THIS CORPUS, so they must not count
+# toward name agreement. Length alone does not catch them: "the" is three
+# characters and passes the length filter, and "bali" appears in a large
+# share of these venue names.
+#
+# Measured consequence of omitting this list — two wrong venues that the
+# gate waved through on a live run:
+#
+#   "The Legian Seminyak Bali" matched "The Trans Resort Bali"
+#       {the, legian, seminyak, bali} vs {the, trans, resort, bali}
+#       -> overlap {the, bali} = 2/4 = 0.5, passed, 1.5 km wrong hotel
+#   "Anantara Seminyak" matched "Anantara Vacation Club"
+#       -> overlap {anantara} = 1/2 = 0.5, passed, different entity
+#
+# Both are exactly the silent-wrong-answer the gate exists to stop; it
+# was being defeated by its own scoring.
+_NON_DISTINCTIVE = {
+    # articles / connectives that survive the length filter
+    "the", "and", "for", "with",
+    # venue-type words — true of the venue, useless for identifying it
+    "hotel", "hotels", "resort", "resorts", "villa", "villas", "suites",
+    "spa", "club", "restaurant", "bar", "cafe", "lounge", "beach",
+    "house", "residence", "apartments", "inn",
+    # the corpus is entirely Bali/Jakarta, so these discriminate nothing
+    "bali", "jakarta", "indonesia",
+}
+
 
 def classify_granularity(osm_class: str | None, osm_type: str | None) -> str:
     """Map an OSM (class, type) pair onto one of GRANULARITY_CONFIDENCE's
@@ -171,7 +198,7 @@ def _significant_tokens(text: str) -> set[str]:
     return {t for t in normalize_name(text).split() if len(t) >= _MIN_SIGNIFICANT_TOKEN_LEN}
 
 
-def name_agrees(queried_name: str, feature_name: str | None, *, threshold: float = 0.5) -> bool:
+def name_agrees(queried_name: str, feature_name: str | None, *, threshold: float = 0.6) -> bool:
     """Does `feature_name` plausibly name the same venue as `queried_name`?
 
     Rung 3 asks a free-text search for a *venue name*; OSM answers with
@@ -194,18 +221,49 @@ def name_agrees(queried_name: str, feature_name: str | None, *, threshold: float
     exactly, since no fractional threshold is meaningful there.
     """
 
-    wanted = _significant_tokens(queried_name)
+    wanted_all = _significant_tokens(queried_name)
+    got_all = _significant_tokens(feature_name or "")
+    if not wanted_all or not got_all:
+        # Nothing to check against — do not invent agreement.
+        return False
+
+    # Score on distinctive tokens only. "The Legian Seminyak Bali" and
+    # "The Trans Resort Bali" share half their significant tokens and none
+    # of their distinctive ones. See _NON_DISTINCTIVE.
+    wanted = wanted_all - _NON_DISTINCTIVE
+    got = got_all - _NON_DISTINCTIVE
+
     if not wanted:
-        # Nothing to check against (name was all short tokens) — do not
-        # invent agreement; a caller with no usable name gets no pass.
-        return False
-    got = _significant_tokens(feature_name or "")
+        # The QUERIED name is entirely generic ("The Beach Club"). Nothing
+        # can identify it, so demand the whole significant name rather
+        # than guessing on stopwords.
+        return wanted_all <= got_all or got_all <= wanted_all
     if not got:
+        # The FEATURE's name is entirely generic while the query names
+        # something specific: "Potato Head Beach Club" against a feature
+        # called merely "Beach Club". That could be any beach club, so it
+        # cannot confirm this one. Asymmetric on purpose — treating it the
+        # same as the branch above accepted it on stopwords alone.
         return False
-    overlap = len(wanted & got)
-    if len(wanted) == 1:
-        return overlap == 1
-    return (overlap / len(wanted)) >= threshold
+
+    # Containment, not a coverage ratio. A correct match is one name being
+    # a shorter form of the other; a wrong match brings distinctive tokens
+    # the query never mentioned. Tuning a threshold cannot separate these
+    # — measured on the live run, 0.5 admitted two wrong venues and 0.6
+    # rejected two right ones:
+    #
+    #   RIGHT  "The Legian Seminyak Bali" / "The Legian Bali"
+    #          {legian} subset of {legian, seminyak}            -> accept
+    #   RIGHT  "The Anvaya Becah Resort Bali" / "The ANVAYA Hotel"
+    #          {anvaya} subset of {anvaya, becah}               -> accept
+    #   WRONG  "Anantara Seminyak" / "Anantara Vacation Club"
+    #          {anantara, vacation} brings "vacation"           -> reject
+    #   WRONG  "The Legian Seminyak Bali" / "The Trans Resort Bali"
+    #          {trans} shares nothing                           -> reject
+    #
+    # Brand collisions are the case this catches: two properties sharing
+    # a brand token differ precisely by the extra token.
+    return wanted <= got or got <= wanted
 
 
 class _OsmProviderBase:

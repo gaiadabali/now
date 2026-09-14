@@ -93,15 +93,43 @@ Both are in `venues.jsonl` and will keep causing trouble until corrected:
   token (`opera`); corroboration is indirect (hotel listings place the
   resort "within 10 minutes walk of opera Club"). Wants an editor's eye.
 
-## Follow-ups this research surfaced
+## Follow-ups — status
 
-1. **Let rung 3 challenge a coarse rung-2 hit.** Eight corrections came
-   from name searches the ladder never performed. If rung 2 returns
-   `osm_street` or weaker, running rung 3 and keeping the better result
-   would likely fix a chunk of the remaining street-level rows
-   automatically. This is a real design change and is **not** yet made.
-2. **Strip a leading article in `dedupe.candidate_key`** so
-   "The X" and "X" merge.
-3. **Nothing consumes this file yet.** Wiring it in as rung 0 — a manual
-   override ahead of existing coordinates — is the natural home, and is
-   also not yet done.
+1. ~~Let rung 3 challenge a coarse rung-2 hit.~~ **Done.** A coarse rung-2
+   result (street or weaker) is now challenged with a rung-3 name search
+   and the more *specific* result wins. Measured: venue-level 104 -> 125,
+   street-level 33 -> 10, duplicate centroids 15 -> 2.
+
+   It also independently rediscovered five of the venues researched here
+   — Discovery Kartika Plaza, Opera Bali, The Legian, Ayodya Resort and
+   The Trans Resort all now resolve automatically to within 150 m of the
+   hand-verified coordinate. That cross-validation is worth more than
+   either result alone.
+
+2. ~~Nothing consumes this file yet.~~ **Done.** It is rung 0, ahead of
+   the free seed, via `--overrides`. Overridden rows bypass the state
+   cache, so editing this file takes effect without deleting
+   `.state.jsonl`.
+
+3. **Strip a leading article in `dedupe.candidate_key`** — still open, and
+   deliberately so. It would change `place_key` for every venue starting
+   with "The", invalidating the keys in this file and every cached state
+   entry, to merge one pair. The `merge_into` action handles that pair at
+   no such cost.
+
+## What the automation still cannot do
+
+Six of the twelve overrides remain necessary — the pipeline does not
+reach them even with the challenge:
+
+| Venue | Why automation fails |
+|---|---|
+| Hotel Tugu Bali | source address names the wrong street entirely |
+| Red Carpet | OSM node is 1 km from the Kayu Aya address; only cross-checking two sources settles it |
+| The Anvaya | OSM name differs enough that rung 2's street hit stands |
+| Anantara Seminyak | rebranded; no automated path knows the old name |
+| Finns Recreation Club | not in OSM under this name |
+| The Mill at Starbucks Reserve Dewata | OSM node is plain "Starbucks"; the name gate correctly refuses it |
+
+Each of those needed a human to read a page and decide. That is exactly
+what rung 0 is for.
