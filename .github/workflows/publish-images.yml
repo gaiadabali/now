@@ -6,8 +6,9 @@ name: publish images
 #
 #   1. `next build` is the most memory-hungry step in this stack and is what
 #      gets OOM-killed on a small box, with an error that reads like a code
-#      fault rather than a capacity one. delphi has 2 vCPU and ~4 GB free
-#      while already running three other stacks.
+#      fault rather than a capacity one. The target host has the RAM to
+#      build, but keeping builds off it means the box never needs a
+#      toolchain and every rollout is a pull.
 #   2. The artifact CI tested is the artifact that runs.
 #
 # Tags are `sha-<short sha>`, never `latest`: a rollback has to be able to
