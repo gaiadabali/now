@@ -1,9 +1,30 @@
-from now_geocode.terms import load_location_tree
+import json
+
+from now_geocode.terms import DEFAULT_LOCATION_SEED, load_location_tree
 
 
-def test_loads_all_85_seeded_terms():
+def _count_seed_terms(terms: list[dict]) -> int:
+    return sum(1 + _count_seed_terms(t.get("children", [])) for t in terms)
+
+
+def test_loads_every_seeded_term():
+    """The loader must not drop nodes while walking the tree.
+
+    This used to assert a hardcoded 85 and had been failing since Wave 13
+    reseeded the taxonomy to 138 — a stale number, not a loader bug, but
+    it left the package without a green suite. Comparing against the seed
+    file instead makes the test self-validating: it still catches a loader
+    that loses nodes, and it does not need editing every time the
+    taxonomy grows.
+    """
+
+    seed = json.loads(DEFAULT_LOCATION_SEED.read_text(encoding="utf-8"))
+    expected = _count_seed_terms(seed if isinstance(seed, list) else seed.get("terms", []))
+
     tree = load_location_tree()
-    assert len(tree.nodes) == 85
+
+    assert expected > 0, "seed file parsed to zero terms — the shape changed"
+    assert len(tree.nodes) == expected
 
 
 def test_specific_beats_general_by_depth_not_string_length():

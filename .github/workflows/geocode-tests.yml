@@ -1,0 +1,94 @@
+name: geocode tests
+
+# E2.5 had no CI at all: none of the other five workflows watch
+# engine/packages/geocode/**, so the package's suite never ran on a pull
+# request. Added alongside the OSM providers, whose fixtures are the very
+# thing that needs guarding — a hand-written fixture in the wrong response
+# shape once let the suite confirm a wrong assumption while every real
+# result classified incorrectly.
+#
+# No services and no network: every provider test replays recorded JSON
+# through an injected session, so this needs neither Postgres nor an API
+# key nor a running Nominatim.
+
+on:
+  pull_request:
+    paths:
+      - "engine/packages/geocode/**"
+      - "engine/packages/taxonomy/seed/terms/**"
+      - ".github/workflows/geocode-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/packages/geocode/**"
+      - "engine/packages/taxonomy/seed/terms/**"
+      - ".github/workflows/geocode-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/packages/geocode
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install deps
+        run: uv sync --extra dev
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      - name: Every override cites a source
+        # The package's one hard rule is that it never invents a
+        # coordinate. An override with no source is indistinguishable
+        # from a fabricated one, so a hand-edited corrections file must
+        # not be able to smuggle one in. load_overrides enforces this at
+        # load time; this step makes a bad edit fail the PR rather than
+        # the next batch run.
+        run: |
+          uv run python - <<'PY'
+          from pathlib import Path
+          from now_geocode.overrides import load_overrides
+
+          repo = Path("../../..").resolve()
+          checked = 0
+          for path in sorted(repo.glob("*/site/place-overrides.jsonl")):
+              overrides = load_overrides(path)          # raises on malformed rows
+              for key, ov in overrides.items():
+                  if ov.action == "override" and not ov.sources:
+                      raise SystemExit(f"{path}: {key} ({ov.name}) overrides without a source")
+              print(f"{path}: {len(overrides)} override(s) OK")
+              checked += 1
+          if not checked:
+              print("no place-overrides.jsonl found — nothing to check")
+          PY
+
+      - name: Deliverable never fabricates a coordinate
+        # Guards the invariant the whole ladder is built around, against
+        # whatever geocoded_places.jsonl happens to be present. The file
+        # is gitignored derived data, so on a clean CI checkout this is a
+        # no-op — it earns its keep when someone runs CI over a tree that
+        # has one.
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+
+          repo = Path("../../..").resolve()
+          for path in sorted(repo.glob("*/content/extracted/geocoded_places.jsonl")):
+              rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+              for r in rows:
+                  if r["status"] == "unresolved" and r["lat"] is not None:
+                      raise SystemExit(f"{path}: {r['place_key']} is unresolved but carries a coordinate")
+                  if r["status"] == "resolved" and r["lat"] is None:
+                      raise SystemExit(f"{path}: {r['place_key']} is resolved with no coordinate")
+                  if (r.get("location_type") or "").startswith("osm_") and r.get("google_place_id"):
+                      raise SystemExit(f"{path}: {r['place_key']} is OSM-sourced but carries a google_place_id")
+              print(f"{path}: {len(rows)} rows OK")
+          PY
