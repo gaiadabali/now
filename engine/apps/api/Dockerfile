@@ -29,18 +29,17 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
-# Manifests first, so a source-only change does not re-resolve dependencies.
-# The two local packages' manifests must be present before `uv sync`, since
-# they are part of the resolution.
-COPY engine/apps/api/pyproject.toml engine/apps/api/uv.lock ./engine/apps/api/
-COPY engine/packages/config/pyproject.toml ./engine/packages/config/
-COPY engine/packages/rails/pyproject.toml ./engine/packages/rails/
-
-# The local deps are editable installs pointing at source that does not exist
-# yet at this layer, so install non-editable from the full tree below instead
-# of trying to split it further — correctness over one more cache layer.
-COPY engine/packages/config ./engine/packages/config
-COPY engine/packages/rails ./engine/packages/rails
+# COPY the WHOLE packages tree, not an enumerated subset.
+#
+# An earlier version copied only config and rails — the two packages named in
+# this app's pyproject.toml — and the build failed on
+# `Distribution not found at: file:///app/engine/packages/blender`, because
+# now-rails itself depends on now-db, now-platform-db, now-search,
+# now-filters, now-blender and now-quality. Enumerating a transitive closure
+# by hand in a Dockerfile is a trap that re-arms every time a package gains a
+# dependency; .dockerignore already strips .venv and node_modules, so the
+# whole tree is ~95 MB and copying it is the cheaper correctness.
+COPY engine/packages ./engine/packages
 COPY engine/apps/api ./engine/apps/api
 
 WORKDIR /app/engine/apps/api

@@ -21,9 +21,9 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
-COPY engine/apps/worker/pyproject.toml ./engine/apps/worker/
-COPY engine/packages/db ./engine/packages/db
-COPY engine/packages/embeddings ./engine/packages/embeddings
+# Whole packages tree — see engine/apps/api/Dockerfile for why enumerating
+# the transitive closure by hand is a trap.
+COPY engine/packages ./engine/packages
 COPY engine/apps/worker ./engine/apps/worker
 
 WORKDIR /app/engine/apps/worker
