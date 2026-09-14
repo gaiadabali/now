@@ -694,6 +694,36 @@ site → status → type → area      cheap, selective, indexed  → push into 
 
 Never retrieve 100 by embedding then filter to 3. Partial indexes on `(site_id, type, status)` and GiST on `geo`; constrain the vector search rather than post-filtering.
 
+**Corrected 2026-09-14 by the `/search` endpoint.** "Constrain rather than post-filter" holds when the
+candidate set is **selective**. It *inverts* when the set is most of the corpus: `= ANY(:ids)` with a
+near-corpus-sized array defeats both indexes. Measured on Jakarta's 4,772 articles with the 3,421-id
+pool the §8.A hard filters alone produce — i.e. the **default, unfiltered request**:
+
+```
+                 constrained        unconstrained
+semantic            49.2 ms             1.2 ms      ← 41×, HNSW degraded to a scan
+lexical             49.3 ms            15.2 ms      ← 3.2×, GIN index bypassed
+```
+
+So the rule is selectivity-dependent, and the threshold is a real number, not a vibe
+(`now_search.engine.LARGE_CANDIDATE_SET`, currently 1,000):
+
+| Candidate set | Path |
+|---|---|
+| ≤ threshold (reader picked facets) | push into SQL — §8.G as written |
+| > threshold (hard filters only) | retrieve unconstrained, over-fetch, filter in memory |
+
+**The trap that makes this dangerous.** The post-filter path is only sound if the unconstrained query
+is *exact*. pgvector's HNSW is **approximate**: at `hnsw.ef_search = 40` with `iterative_scan = off`,
+asking for 400 rows returned **28** — a short result that a post-filtering caller reads as "the index
+is exhausted" when it means "the ANN scan stopped early". Recall drops silently behind a healthy
+`200`. This is F67 resurfacing in a new caller. The fix is `search_semantic(exact=True)`: the same
+materialized-CTE plan the restricted path uses, minus the id filter — exact, complete, and *faster*
+than the large array (35 ms vs 49 ms).
+
+Net: `/search` p95 **195 ms → 69 ms**, results byte-identical to the constrained path across the
+hand-check query set (`packages/search/tests/test_candidate_set_strategy.py` is the regression gate).
+
 ---
 
 ## 9. Reader-facing filters
@@ -944,15 +974,21 @@ The **API is the durable deliverable** — the legacy UI is a probe that gets re
 ```
 GET  /v1/{site}/feed?surface=home&rail=trending
 GET  /v1/{site}/articles/{slug}
-GET  /v1/{site}/articles/{id}/rails          → all three rows
-GET  /v1/{site}/search?q=&type=&area=&price=&facets=
+GET  /v1/{site}/articles/{id}/rails          → all three rows          ✅ served
+GET  /v1/{site}/search?q=&type=&format=&facets=                        ✅ served
 GET  /v1/{site}/places?facets=&near=&open_at=
 GET  /v1/{site}/places/{slug}
 POST /v1/{site}/itineraries
 GET  /v1/{site}/itineraries/{token}
 POST /v1/{site}/assistant/messages           SSE
-POST /v1/{site}/events                       interaction beacon
+POST /v1/{site}/events                       interaction beacon        ✅ served
 ```
+
+`/search` takes `format=` where this list originally said `price=`: `price` is not an attribute any
+article carries today, and `area` is not a column but a **term facet**, reached through the generic
+`facets=location:senopati` selector rather than its own parameter. Unmatched selectors come back in
+`unresolved_facets` instead of being silently dropped — a typo'd filter that returns the whole corpus
+is indistinguishable, to the caller, from one that legitimately matched everything.
 
 OpenAPI → `openapi-typescript` → TS client in CI.
 

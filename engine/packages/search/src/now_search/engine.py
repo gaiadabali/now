@@ -26,12 +26,35 @@ from sqlalchemy.engine import Connection, Engine
 
 from now_search import lexical, query_embedder, semantic
 from now_search.facets import ActiveFilter, compute_facet_counts
-from now_search.models import ArticleSummary, SearchResult, SearchTiming
+from now_search.models import ArticleSummary, RankedHit, SearchResult, SearchTiming
 from now_search.rrf import DEFAULT_K as RRF_K
 from now_search.rrf import reciprocal_rank_fusion
 
 DEFAULT_LEXICAL_LIMIT = 100
 DEFAULT_SEMANTIC_LIMIT = 100
+
+# Above this many ids, `candidate_ids` stops being a constraint and starts
+# being a cost. ARCHITECTURE.md §8.G's rule ("constrain the vector search
+# rather than post-filtering") holds when the candidate set is SELECTIVE;
+# it inverts when the set is most of the corpus, because `= ANY(:ids)`
+# with a large array defeats both indexes. Measured on the 4,772-article
+# Jakarta corpus with a 3,421-id pool (the §8.A hard filter alone, no
+# reader facets -- i.e. the DEFAULT request):
+#
+#     semantic   1.2ms  ->  49.2ms   (41x, HNSW degraded to a scan)
+#     lexical   15.2ms  ->  49.3ms   (3.2x, GIN index bypassed)
+#
+# So a large set is applied AFTER retrieval instead, over-fetching to
+# absorb the rows the filter drops. This is not "retrieve 100 and filter
+# to 3" -- the case §8.G actually warns about is a *selective* filter,
+# which still takes the constrained path below.
+LARGE_CANDIDATE_SET = 1_000
+
+# How much deeper to retrieve when post-filtering, to land `limit` rows
+# that survive it. 4x covers a filter keeping >=25% of the corpus; below
+# that `_retrieve` falls back to the constrained query rather than
+# returning a short result set.
+POST_FILTER_OVERFETCH = 4
 
 _ARTICLE_SUMMARY_SQL = text(
     """
@@ -45,6 +68,55 @@ _ARTICLE_SUMMARY_SQL = text(
 @dataclass(frozen=True)
 class WarmUpStats:
     embedding_model_load_ms: float
+
+
+def _renumber(hits: list[RankedHit]) -> list[RankedHit]:
+    """Re-1-indexes `rank` after post-filtering.
+
+    RRF scores a hit by its *rank*, so leaving the pre-filter ranks in
+    place (1, 4, 9, ...) would fuse differently from the constrained
+    path, which never sees the dropped rows at all. Renumbering is what
+    makes the two paths agree on the same answer.
+    """
+    return [
+        RankedHit(entity_id=h.entity_id, rank=i, raw_score=h.raw_score)
+        for i, h in enumerate(hits, start=1)
+    ]
+
+
+def _retrieve(
+    fetch,
+    *,
+    limit: int,
+    candidate_ids: list[int] | None,
+) -> list[RankedHit]:
+    """One retrieval rail, taking whichever of the two paths is cheaper.
+
+    `fetch(limit, candidate_ids)` is the rail's own query function. It
+    MUST be exact and complete in its unconstrained form -- i.e. asking
+    for `n` returns the true best `n` whenever `n` rows exist. The
+    post-filter path below reads a short result as "no more rows exist",
+    so a rail whose unconstrained query is *approximate* would silently
+    lose recall here. `lexical.search_lexical` qualifies (GIN, exact);
+    `semantic.search_semantic` qualifies only when passed `exact=True`,
+    which is why `SearchEngine.search` sets it -- see that function's
+    docstring for the measured failure (limit=400 returning 28 rows) this
+    rule exists to prevent.
+    """
+    if candidate_ids is None:
+        return fetch(limit, None)
+    if len(candidate_ids) <= LARGE_CANDIDATE_SET:
+        return fetch(limit, candidate_ids)
+
+    allowed = set(candidate_ids)
+    deep_limit = limit * POST_FILTER_OVERFETCH
+    raw = fetch(deep_limit, None)
+    kept = [h for h in raw if int(h.entity_id) in allowed]
+    if len(kept) < limit and len(raw) >= deep_limit:
+        # The over-fetch filled up while more matching rows may exist
+        # deeper -- only the constrained query can say.
+        return fetch(limit, candidate_ids)
+    return _renumber(kept[:limit])
 
 
 class SearchEngine:
@@ -92,17 +164,28 @@ class SearchEngine:
         t_start = time.perf_counter()
 
         t0 = time.perf_counter()
-        lexical_hits = lexical.search_lexical(
-            self._conn, query, limit=lexical_limit, candidate_ids=candidate_ids
+        lexical_hits = _retrieve(
+            lambda lim, cids: lexical.search_lexical(
+                self._conn, query, limit=lim, candidate_ids=cids
+            ),
+            limit=lexical_limit,
+            candidate_ids=candidate_ids,
         )
         lexical_ms = (time.perf_counter() - t0) * 1000
 
         t1 = time.perf_counter()
         query_vec = query_embedder.embed_query(query)
-        semantic_hits = semantic.search_semantic(
-            self._conn,
-            query_vec,
-            model=query_embedder.model_name(),
+        semantic_hits = _retrieve(
+            lambda lim, cids: semantic.search_semantic(
+                self._conn,
+                query_vec,
+                model=query_embedder.model_name(),
+                limit=lim,
+                candidate_ids=cids,
+                # `_retrieve` requires an exact unconstrained fetch; the
+                # default HNSW path is approximate and returns short.
+                exact=True,
+            ),
             limit=semantic_limit,
             candidate_ids=candidate_ids,
         )

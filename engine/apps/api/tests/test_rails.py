@@ -29,7 +29,7 @@ from now_db.settings import pg_host, pg_password, pg_port, pg_user
 from sqlalchemy import create_engine, text
 
 from app.config import Settings
-from app.domain.rails.sync_bridge import dispose_all
+from app.infra.db.sync_bridge import dispose_all
 from app.main import create_app
 
 SITE_SLUG = "jakarta"  # real registry row seeded by now-db site:create -- not a literal this app hardcodes elsewhere

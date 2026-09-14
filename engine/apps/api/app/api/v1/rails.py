@@ -8,7 +8,7 @@ re-rank over the cached top ~40 not yet wired (E7.1/E7.2 gate it -- see
 Depends on `Depends(get_city_db)` for the same tenancy/reachability
 semantics every other route gets (unknown site -> 404, unreachable city
 DB -> 503) even though the actual rail computation runs over this
-package's own SYNC connection pools (`app/domain/rails/sync_bridge.py`)
+package's own SYNC connection pools (`app/infra/db/sync_bridge.py`)
 -- see that module's docstring for why `now_rails` cannot share the
 async pool this dependency hands out. `db` itself is unused in the
 handler body beyond the dependency's own side effect (validating the
