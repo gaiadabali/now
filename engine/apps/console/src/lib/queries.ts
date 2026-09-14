@@ -1,0 +1,156 @@
+import 'server-only'
+import { query } from './db'
+
+/**
+ * Every read the console makes, in one file.
+ *
+ * Kept together rather than scattered through page components so that the
+ * shape of what this tool touches is reviewable at a glance — this is the
+ * commerce surface, and "what can the console see" should not require
+ * grepping the app directory to answer.
+ *
+ * All SQL is parameterised. None of these take free text today, but the
+ * habit is the point: the search filter below is the first place a string
+ * from a URL reaches a query.
+ */
+
+export type Site = { id: string; slug: string; name: string; hostname: string | null }
+
+export type OrgRow = {
+  id: string
+  name: string
+  slug: string
+  website: string | null
+  type: string | null
+  type_guess: string | null
+  confidence: string | null
+  partnership_count: number
+  active_partnerships: number
+}
+
+export type PartnershipRow = {
+  id: string
+  tier: string | null
+  status: string | null
+  starts_at: string | null
+  ends_at: string | null
+  place_id: string | null
+  site_slug: string | null
+  show_badge: boolean | null
+  is_live: boolean
+}
+
+export type CampaignRow = {
+  id: string
+  objective: string | null
+  budget: string | null
+  pacing: string | null
+  status: string | null
+  site_slug: string | null
+  org_name: string | null
+  placement_count: number
+}
+
+export async function listSites(): Promise<Site[]> {
+  return query<Site>(
+    `SELECT id::text, slug, name, hostname FROM engine.sites ORDER BY slug`,
+  )
+}
+
+export async function countOrgs(): Promise<number> {
+  const [row] = await query<{ n: string }>(`SELECT count(*)::text AS n FROM engine.orgs`)
+  return Number(row?.n ?? 0)
+}
+
+/**
+ * Orgs with their partnership counts.
+ *
+ * `active_partnerships` is computed from the dates here rather than trusting
+ * `status` alone: ARCHITECTURE.md §11 resolves link policy from the *current*
+ * partnership, and E4.1 proved expiry at query time. A row whose `ends_at`
+ * has passed is not live no matter what its status column says, and a console
+ * that showed otherwise would be lying about what the renderer will do.
+ */
+export async function listOrgs(search?: string, limit = 100): Promise<OrgRow[]> {
+  const params: unknown[] = []
+  let where = ''
+  if (search && search.trim()) {
+    params.push(`%${search.trim()}%`)
+    where = `WHERE o.name ILIKE $1 OR o.slug ILIKE $1`
+  }
+  params.push(limit)
+  return query<OrgRow>(
+    `SELECT o.id::text,
+            o.name,
+            o.slug,
+            o.website,
+            o.type,
+            o.type_guess,
+            o.confidence::text,
+            count(p.id)::int AS partnership_count,
+            count(p.id) FILTER (
+              WHERE p.status = 'active'
+                AND (p.starts_at IS NULL OR p.starts_at <= now())
+                AND (p.ends_at   IS NULL OR p.ends_at   >  now())
+            )::int AS active_partnerships
+       FROM engine.orgs o
+       LEFT JOIN engine.partnerships p ON p.org_id = o.id
+       ${where}
+      GROUP BY o.id
+      ORDER BY active_partnerships DESC, partnership_count DESC, o.name
+      LIMIT $${params.length}`,
+    params,
+  )
+}
+
+export async function getOrg(id: string): Promise<OrgRow | null> {
+  const rows = await query<OrgRow>(
+    `SELECT o.id::text, o.name, o.slug, o.website, o.type, o.type_guess,
+            o.confidence::text,
+            0 AS partnership_count, 0 AS active_partnerships
+       FROM engine.orgs o WHERE o.id = $1::uuid`,
+    [id],
+  )
+  return rows[0] ?? null
+}
+
+export async function listPartnerships(orgId: string): Promise<PartnershipRow[]> {
+  return query<PartnershipRow>(
+    `SELECT p.id::text,
+            p.tier,
+            p.status,
+            p.starts_at::text,
+            p.ends_at::text,
+            p.place_id,
+            s.slug AS site_slug,
+            p.show_badge,
+            (p.status = 'active'
+             AND (p.starts_at IS NULL OR p.starts_at <= now())
+             AND (p.ends_at   IS NULL OR p.ends_at   >  now())) AS is_live
+       FROM engine.partnerships p
+       LEFT JOIN engine.sites s ON s.id = p.site_id
+      WHERE p.org_id = $1::uuid
+      ORDER BY is_live DESC, p.ends_at DESC NULLS LAST`,
+    [orgId],
+  )
+}
+
+export async function listCampaigns(): Promise<CampaignRow[]> {
+  return query<CampaignRow>(
+    `SELECT c.id::text,
+            c.objective,
+            c.budget::text,
+            c.pacing,
+            c.status,
+            s.slug AS site_slug,
+            o.name AS org_name,
+            count(pl.id)::int AS placement_count
+       FROM engine.campaigns c
+       LEFT JOIN engine.sites s ON s.id = c.site_id
+       LEFT JOIN engine.orgs  o ON o.id = c.org_id
+       LEFT JOIN engine.placements pl ON pl.campaign_id = c.id
+      GROUP BY c.id, s.slug, o.name
+      ORDER BY c.created_at DESC NULLS LAST
+      LIMIT 200`,
+  )
+}

@@ -30,8 +30,17 @@ class SourceKind(str, Enum):
 
 class Rung(str, Enum):
     """The strict resolution ladder, in order. `Rung.value` is stored on
-    every output row as `source` — never skipped, never guessed past."""
+    every output row as `source` — never skipped, never guessed past.
 
+    `MANUAL_OVERRIDE` is rung 0: a human looked the venue up and cited
+    where the coordinate came from. It outranks the free seed because the
+    reason `jakarta/site/place-overrides.jsonl` exists is that some seed
+    and geocode answers are demonstrably wrong — see `overrides.py`.
+
+    NB for consumers: `source` gained `manual_override` on 2026-09-14.
+    Anything switching on this value needs that arm."""
+
+    MANUAL_OVERRIDE = "manual_override"
     EXISTING_COORDINATES = "existing_coordinates"
     ADDRESS_GEOCODE = "address_geocode"
     NAME_PLACE_SEARCH = "name_place_search"

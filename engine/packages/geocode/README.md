@@ -211,6 +211,73 @@ task's hard requirement.
   The `--state` cache means a batch can be split across days/budgets
   without re-paying for anything already resolved.
 
+## Runbook — the real run (self-hosted, free)
+
+This is the production path. It needs no API key and costs nothing.
+
+```bash
+# 1. Bring up the geocoder. FIRST START IMPORTS asia/indonesia:
+#    ~1 hour, ~37 GB volume, 6 threads / 6 GB. It is not resumable —
+#    if interrupted, `docker volume rm now-engine_nominatim-data` and start again.
+docker compose --profile geo up -d nominatim
+
+# 2. Wait for the import. /status answers only when it is finished;
+#    `docker ps` shows (unhealthy) throughout, which is correct.
+until curl -fsS http://localhost:8088/status >/dev/null 2>&1; do sleep 60; done
+
+# 3. Run the batch.
+cd engine/packages/geocode
+.venv/Scripts/now-geocode build     ../../../jakarta/content/extracted/venues.jsonl     ../../../jakarta/content/extracted/geo.jsonl     -o ../../../jakarta/content/extracted/geocoded_places.jsonl     --provider nominatim --osm-base-url http://localhost:8088 --osm-min-interval 0
+
+# 4. Stop it. Nothing in production queries this (see ARCHITECTURE.md §15);
+#    it is build-time infrastructure and should not hold 6 GB indefinitely.
+docker compose --profile geo stop nominatim
+```
+
+Result on the Jakarta corpus as of 2026-09-14:
+
+```
+203 candidates -> 137 resolved, 9 rejected, 57 unresolved
+  venue-level   104/203 = 51.2%
+  + street-level 137/203 = 67.5%
+```
+
+(Before this pipeline: 62 resolved, all from the free MapPress/ACF seed.)
+
+### ⚠️ The state cache and `--provider none`
+
+`--provider none` records nothing as a permanent negative — a run with
+no provider describes the run's configuration, not the world, so it
+stays retryable (`LadderOutcome.cacheable`). A genuine zero-result from
+a provider that *did* answer is still cached as final, which is the
+point of `--state`.
+
+If you are re-running after changing provider or query construction and
+want every candidate re-attempted regardless, delete the state file:
+
+```bash
+rm ../../../jakarta/content/extracted/geocoded_places.state.jsonl
+```
+
+### Attribution is required
+
+Coordinates whose `location_type` starts with `osm_` are ODbL. Any
+surface that displays one must credit **"© OpenStreetMap contributors"**.
+See `docs/data-provenance.md`.
+
+### Known limits of this run
+
+- **15 rows share coordinates with another venue** (`duplicate_centroid`).
+  Their source addresses are street names without house numbers, so any
+  geocoder returns the street. This is a source-data problem; a Google
+  key does not fix it.
+- **9 rows were rejected as region centroids** (`below_venue_confidence_floor`)
+  — "Bali", "Ubud", "Nusa Dua". They keep their coordinate and flag for
+  audit but are deliberately not `resolved`.
+- **57 remain unresolved.** Mostly venue names with no usable address —
+  the case where Google's Places index genuinely beats OSM. That residue,
+  not the original 141, is what a key would buy.
+
 ## Area-term fallback
 
 `area.py` assigns a node from the seeded 85-term location tree

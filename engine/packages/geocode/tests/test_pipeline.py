@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from now_geocode.models import ProviderResult, Status
 from now_geocode.pipeline import iter_jsonl, run
 from now_geocode.state import StateStore
@@ -7,6 +9,17 @@ from now_geocode.state import StateStore
 REPO_ROOT = Path(__file__).resolve().parents[4]
 VENUES_PATH = REPO_ROOT / "jakarta" / "content" / "extracted" / "venues.jsonl"
 GEO_PATH = REPO_ROOT / "jakarta" / "content" / "extracted" / "geo.jsonl"
+
+# These are gitignored DERIVED data (see docs/data-provenance.md), so they
+# exist only on a machine that has run wp-extract. A clean CI checkout has
+# neither, and the test below used to fail there with FileNotFoundError —
+# it passed only where the extraction had already been run. Skipping keeps
+# it valuable locally without making CI depend on data the repo does not
+# and should not carry.
+requires_extracted_data = pytest.mark.skipif(
+    not (VENUES_PATH.exists() and GEO_PATH.exists()),
+    reason="jakarta/content/extracted/*.jsonl absent (gitignored derived data); run wp-extract first",
+)
 
 
 class CountingStubProvider:
@@ -102,6 +115,7 @@ def test_slugs_are_unique_on_name_collision():
     assert len(slugs) == len(set(slugs))
 
 
+@requires_extracted_data
 def test_real_extracted_files_end_to_end_zero_cost():
     """Smoke test against the actual E1.1 extraction output (frozen
     contract, not a fixture this package owns) — proves the free seed

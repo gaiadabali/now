@@ -1,0 +1,53 @@
+# Root build context — used by engine/apps/api/Dockerfile, which must build
+# from the repo root to reach its local path dependencies (now-config,
+# now-rails). Without this file the context is gigabytes: ~280 MB of
+# WordPress dumps, ~330 MB of extracted content JSONL, every .venv and
+# node_modules in the tree, and the whole .git history.
+#
+# Deny-by-default is not used here because the api build legitimately needs
+# three directories from different parts of the tree; an explicit deny list
+# keeps that readable.
+
+# VCS and tooling
+.git
+.github
+.gitignore
+.gitattributes
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/__pycache__
+**/*.pyc
+
+# Dependency trees — reinstalled inside the image from lockfiles
+**/.venv
+**/node_modules
+**/.next
+
+# Secrets: never in a build context. A COPY . would bake these into a layer
+# that survives in the image even if a later step deletes them.
+.env
+**/.env
+!**/.env.example
+**/secrets/
+
+# Production data and anything derived from it (docs/data-provenance.md).
+# None of it belongs in an application image. The city trees are ~300 MB
+# each, almost entirely dumps and extracted JSONL.
+*/db/
+*/content/
+*/cms/
+backups/
+media_mirror_state/
+
+# jakarta/site and bali/site are small and ARE config the apps may read
+# (brand tokens, taxonomy mapping, place-overrides), so they stay.
+
+# Local infrastructure state
+engine/infra/garage/data
+engine/infra/garage/meta
+
+# Docs and scratch — no effect on a build, only on context size
+*.md
+docs/
+!engine/apps/api/README.md

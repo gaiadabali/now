@@ -36,6 +36,9 @@ volumes:
   garage-data:
   caddy-data:
   caddy-config:
+  # Holds the imported Nominatim database (tens of GB). Deleting it means
+  # re-running a multi-hour import — see the `nominatim` service.
+  nominatim-data:
 
 services:
   # ---------------------------------------------------------------------
@@ -202,6 +205,98 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+
+  # ---------------------------------------------------------------------
+  # Nominatim — self-hosted OSM geocoder (ARCHITECTURE.md §15).
+  #
+  # Behind the `geo` profile: this is batch enrichment tooling for E2.5,
+  # not a request-path service, and it must never be started by a plain
+  # `docker compose up`.
+  #
+  #     docker compose --profile geo up -d nominatim
+  #
+  # §15 treats the geocoder as a *resolution service*. Self-hosting is
+  # what makes it free and unmetered: the public Nominatim instance caps
+  # at 1 req/s and forbids bulk use outright, which is a non-starter for
+  # the ~12,000 places E2.3 extracted. It also removes Google's ToS
+  # restriction on caching resolved fields — OSM is ODbL, so coordinates
+  # may be stored permanently with attribution, which suits a database
+  # that IS the canonical record.
+  #
+  # E5.1 needs the same Geofabrik extract on disk for OSRM, so this
+  # container and the travel matrix share one download.
+  #
+  # ⚠️ FIRST START RUNS A FULL IMPORT AND TAKES HOURS. It is idempotent
+  # only in the sense that the named volume persists it — if the import
+  # is interrupted, delete the volume and start over, do not "resume".
+  # Measured: ~1h for asia/indonesia on 6 threads / 6 GB, ~37 GB volume.
+  #
+  # **It does not have to run on the production host at all.** The only
+  # thing production needs is `geocoded_places.jsonl`, which E1.8 loads
+  # into Postgres; after that every "nearby" query is PostGIS. Running
+  # the import on a laptop or a throwaway box and shipping the JSONL is
+  # a legitimate — and cheaper — deployment, which is why the compose
+  # entry is profiled off rather than wired into the default stack.
+  #
+  # Attribution is not optional: OSM is ODbL. Any surface that displays
+  # a coordinate this produced must credit OpenStreetMap. See
+  # docs/data-provenance.md.
+  # ---------------------------------------------------------------------
+  nominatim:
+    profiles: ["geo"]
+    image: mediagis/nominatim:5.3.2-2026-06-23T09-03
+    container_name: now-nominatim
+    # `no`, NOT `unless-stopped`. This is a build-time tool, not a
+    # request-path service: §15 forbids calling a geocoder per request,
+    # so nothing in production ever queries it. `unless-stopped` would
+    # resurrect a 6 GB container on every daemon restart and hold it
+    # there forever, on a 16 GB host that also runs postgres (4 GB),
+    # the API, the worker, two CMS instances, web and console.
+    # Start it deliberately, run the batch, stop it.
+    restart: "no"
+    shm_size: 1g  # osm2pgsql uses shared memory heavily; the 64m default stalls the import
+    environment:
+      # Full Indonesia rather than the java + nusa-tenggara sub-extracts:
+      # Geofabrik does not publish Bali as its own region, and one file
+      # covers every future NOW! region (§3.4) in a single import.
+      PBF_URL: ${NOMINATIM_PBF_URL:-https://download.geofabrik.de/asia/indonesia-latest.osm.pbf}
+      REPLICATION_URL: ${NOMINATIM_REPLICATION_URL:-https://download.geofabrik.de/asia/indonesia-updates/}
+      # `extratags` over `full`: same POI coverage, but it also preserves
+      # opening_hours, which E5's slot fill needs as an open-at
+      # constraint. Storing it now costs little; a re-import later costs
+      # another multi-hour run.
+      IMPORT_STYLE: ${NOMINATIM_IMPORT_STYLE:-extratags}
+      NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-nominatim}
+      THREADS: ${NOMINATIM_THREADS:-6}
+      # The image's stock tuning targets a large server — it ships
+      # maintenance_work_mem = 10GB and effective_cache_size = 24GB.
+      # Docker here has ~7.8GB total, so the defaults OOM during the
+      # index phase, hours in. These values are sized for that box;
+      # raise them on the Hetzner CPX41 (16GB).
+      POSTGRES_SHARED_BUFFERS: ${NOMINATIM_SHARED_BUFFERS:-1500MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${NOMINATIM_MAINTENANCE_WORK_MEM:-2GB}
+      POSTGRES_AUTOVACUUM_WORK_MEM: ${NOMINATIM_AUTOVACUUM_WORK_MEM:-512MB}
+      POSTGRES_WORK_MEM: ${NOMINATIM_WORK_MEM:-50MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${NOMINATIM_EFFECTIVE_CACHE_SIZE:-4GB}
+      POSTGRES_SYNCHRONOUS_COMMIT: off  # import-time durability is worthless; the volume is rebuildable
+    volumes:
+      - nominatim-data:/var/lib/postgresql/16/main
+    networks: [now-net]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "7.0"
+          memory: 6g
+    healthcheck:
+      # /status returns 200 only once the import has finished and the
+      # API is actually answering — during import this stays unhealthy,
+      # which is the correct signal.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   # =======================================================================
   # PLACEHOLDERS — behind `apps` profile. Not started by plain

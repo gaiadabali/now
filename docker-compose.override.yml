@@ -30,3 +30,10 @@ services:
     ports:
       - "${CADDY_HTTP_PORT:-80}:80"
       - "${CADDY_HTTPS_PORT:-443}:443"
+
+  # 8088: imgproxy holds 8080, and 8081/8090 were already taken on this
+  # box by other local dev tools. Override NOMINATIM_PORT if 8088 clashes
+  # too. Only reachable with `--profile geo` — see the base file.
+  nominatim:
+    ports:
+      - "${NOMINATIM_PORT:-8088}:8080"

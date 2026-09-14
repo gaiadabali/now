@@ -57,16 +57,16 @@ def _nominatim(session) -> NominatimProvider:
 
 
 def test_osm_provider_resolves_a_place_through_the_real_ladder():
-    session = RoutingSession({"Kemang": _load("nominatim_address_poi.json")})
-    venues = [{"wp_id": 1, "name": "Kemang Bistro", "status": "publish",
-               "address": "Jalan Kemang Raya", "city": "Jakarta"}]
+    session = RoutingSession({"Grand Indonesia": _load("nominatim_address_poi.json")})
+    venues = [{"wp_id": 1, "name": "Grand Indonesia", "status": "publish",
+               "address": "Grand Indonesia Shopping Town", "city": "Jakarta"}]
 
     places, stats = run(venues, [], provider=_nominatim(session))
 
     place = places[0]
     assert place.status == Status.RESOLVED
     assert place.source == Rung.ADDRESS_GEOCODE
-    assert (place.lat, place.lng) == (-6.2605, 106.8140)
+    assert (place.lat, place.lng) == (-6.1957601, 106.8214547)
     assert place.location_type == "osm_poi"
     assert place.google_place_id is None  # OSM run leaves the Google field empty
 
@@ -117,9 +117,9 @@ def test_out_of_indonesia_osm_result_is_rejected_by_the_quality_gate():
 
 
 def test_state_cache_prevents_a_second_osm_call(tmp_path):
-    session = RoutingSession({"Kemang": _load("nominatim_address_poi.json")})
-    venues = [{"wp_id": 1, "name": "Kemang Bistro", "status": "publish",
-               "address": "Jalan Kemang Raya"}]
+    session = RoutingSession({"Grand Indonesia": _load("nominatim_address_poi.json")})
+    venues = [{"wp_id": 1, "name": "Grand Indonesia", "status": "publish",
+               "address": "Grand Indonesia Shopping Town"}]
     state_path = tmp_path / "s.jsonl"
 
     run(venues, [], provider=_nominatim(session), state=StateStore(state_path))
@@ -136,11 +136,11 @@ def test_chain_falls_through_to_a_second_provider_in_a_real_run():
     photon = PhotonProvider(
         session=RoutingSession({}, default=_load("photon_zero_results.json")), min_interval_s=0.0
     )
-    nominatim = _nominatim(RoutingSession({"Kemang": _load("nominatim_address_poi.json")}))
+    nominatim = _nominatim(RoutingSession({"Grand Indonesia": _load("nominatim_address_poi.json")}))
     chain = ChainProvider([photon, nominatim])
 
-    venues = [{"wp_id": 1, "name": "Kemang Bistro", "status": "publish",
-               "address": "Jalan Kemang Raya"}]
+    venues = [{"wp_id": 1, "name": "Grand Indonesia", "status": "publish",
+               "address": "Grand Indonesia Shopping Town"}]
     places, _ = run(venues, [], provider=chain)
 
     assert places[0].status == Status.RESOLVED
@@ -151,9 +151,9 @@ def test_chained_output_matches_the_google_run_contract():
     """A free run must emit exactly the same row shape E2.3/E1.8 already
     consume — swapping the provider is not allowed to change the
     contract."""
-    session = RoutingSession({"Kemang": _load("nominatim_address_poi.json")})
-    venues = [{"wp_id": 1, "name": "Kemang Bistro", "status": "publish",
-               "address": "Jalan Kemang Raya"}]
+    session = RoutingSession({"Grand Indonesia": _load("nominatim_address_poi.json")})
+    venues = [{"wp_id": 1, "name": "Grand Indonesia", "status": "publish",
+               "address": "Grand Indonesia Shopping Town"}]
 
     osm_places, _ = run(venues, [], provider=_nominatim(session))
 

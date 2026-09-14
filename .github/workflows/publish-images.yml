@@ -1,0 +1,115 @@
+name: publish images
+
+# Builds the deployable images on GitHub and pushes them to GHCR, so the VPS
+# only ever pulls. Two reasons, both learned the hard way on the other
+# project deployed to this host:
+#
+#   1. `next build` is the most memory-hungry step in this stack and is what
+#      gets OOM-killed on a small box, with an error that reads like a code
+#      fault rather than a capacity one. The target host has the RAM to
+#      build, but keeping builds off it means the box never needs a
+#      toolchain and every rollout is a pull.
+#   2. The artifact CI tested is the artifact that runs.
+#
+# Tags are `sha-<short sha>`, never `latest`: a rollback has to be able to
+# name what it is rolling back to.
+#
+# The packages inherit the repository's visibility (private), so the VPS
+# needs `docker login ghcr.io` with a PAT that can read gaiadabali's
+# packages — see docs/DEPLOY.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "engine/apps/api/**"
+      - "engine/infra/postgres/**"
+      - "engine/apps/web/**"
+      - "engine/packages/**"
+      - "deploy/**"
+      - ".github/workflows/publish-images.yml"
+  # Manual runs let a branch be published before merge, for a staging rollout.
+  workflow_dispatch:
+
+concurrency:
+  group: publish-images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      # Do not cancel a good image because a sibling failed — a partial
+      # publish is recoverable, and deploy.sh pins all three to one SHA
+      # anyway, so it simply will not roll out until every image exists.
+      fail-fast: false
+      matrix:
+        include:
+          # engine-api builds from the REPO ROOT: pyproject.toml declares
+          # local path deps (now-config, now-rails) that escape its own
+          # directory. See engine/apps/api/Dockerfile.
+          - name: now-api
+            context: .
+            dockerfile: engine/apps/api/Dockerfile
+          # Same repo-root context as the API, same reason: local path deps.
+          - name: now-worker
+            context: .
+            dockerfile: engine/apps/worker/Dockerfile
+          - name: now-web
+            context: engine/apps/web
+            dockerfile: engine/apps/web/Dockerfile
+          # ONE cms image for every city; cms-jakarta and cms-bali are the
+          # same image with a different DATABASE_URI (ARCHITECTURE.md §3.5).
+          - name: now-console
+            context: engine/apps/console
+            dockerfile: engine/apps/console/Dockerfile
+          - name: now-cms
+            context: engine/packages/cms
+            dockerfile: engine/packages/cms/Dockerfile
+          # Postgres is a CUSTOM image (pgvector base + PostGIS from PGDG),
+          # not a stock tag — no published image has both extensions. It
+          # must be published like any other, or the VPS would have to
+          # build it on the box.
+          - name: now-postgres
+            context: engine/infra/postgres
+            dockerfile: engine/infra/postgres/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # Lowercase is required: GHCR rejects a repository path with any
+          # uppercase character, and the org is already lowercase, but the
+          # expression keeps it true if that ever changes.
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:sha-${{ steps.sha.outputs.short }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          provenance: false
+
+      - name: Report the tag to deploy
+        run: |
+          echo "### ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "IMAGE_TAG=sha-${{ steps.sha.outputs.short }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

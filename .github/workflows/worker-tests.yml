@@ -1,0 +1,40 @@
+name: worker tests
+
+# engine-worker has no HTTP surface and its failure mode is silence — a
+# wedged scheduler looks exactly like an idle one. The tests that matter are
+# therefore about the invariants, not endpoints: per-site failure isolation,
+# the heartbeat gate that turns a dead consumer thread into an unhealthy
+# container, and the refusal to name a city.
+#
+# No services: every test uses fakes, so this needs neither Postgres nor
+# Redis nor a network.
+
+on:
+  pull_request:
+    paths:
+      - "engine/apps/worker/**"
+      - "engine/packages/db/**"
+      - "engine/packages/embeddings/**"
+      - ".github/workflows/worker-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/apps/worker/**"
+      - ".github/workflows/worker-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/apps/worker
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - name: Install deps
+        run: uv sync --extra dev
+      - name: Run tests
+        run: uv run pytest -q
