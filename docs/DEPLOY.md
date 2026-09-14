@@ -194,9 +194,28 @@ act.
 ## 8. Still required, and not doable from here
 
 - **DNS** for the six hostnames in §4, pointing at `187.77.116.133`.
-  `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Verified
-  2026-09-14: none of them resolve yet, while an existing sibling
-  (`bsc.gaiada.online`) resolves to this host, so the check itself is sound.
+
+  `gaiada.com` is on **Hostinger** — checked, not assumed: its nameservers
+  are `ns1.dns-parking.com` / `ns2.dns-parking.com`, which is Hostinger's
+  parking/DNS pair. (An earlier draft of this file said GoDaddy; that was
+  carried over from a sibling project's runbook and was wrong.)
+
+  Six A records in hPanel → Domains → DNS Zone, each `Type A`, `Points to
+  187.77.116.133`, TTL default:
+
+  | Name | |
+  |---|---|
+  | `now-engine-api` | the API |
+  | `now-jakarta` | web-jakarta |
+  | `now-bali` | web-bali |
+  | `cms-jakarta` | Payload, Jakarta |
+  | `cms-bali` | Payload, Bali |
+  | `now-console` | commerce console — **auth first** |
+
+  Hostinger's DNS Zone editor takes the subdomain only, not the full name.
+
+  Verified 2026-09-14: none of the six resolve yet, while an existing
+  sibling (`bsc.gaiada.online`) resolves to this host, so the check is sound.
 - **CloudPanel sites**, one per hostname (`clpctl site:add:reverse-proxy`),
   which also issues the certificate. DNS must resolve first or issuance
   fails.
