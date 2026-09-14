@@ -1,0 +1,2 @@
+# Next copies this directory into the runtime image; it must exist even if
+# empty, or the Dockerfile COPY fails.

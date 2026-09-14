@@ -1,0 +1,46 @@
+:root {
+  --ink: #14151a;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --bg: #fbfbfd;
+  --accent: #1a56db;
+  --live: #067647;
+  --off: #b42318;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.masthead {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: .9rem 1.5rem; border-bottom: 1px solid var(--line); background: #fff;
+}
+.masthead .brand { font-weight: 650; color: var(--ink); letter-spacing: -.01em; }
+.masthead nav { display: flex; gap: 1.1rem; }
+.masthead .badge {
+  margin-left: auto; font-size: 12px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: .15rem .6rem; cursor: help;
+}
+main { max-width: 1100px; margin: 0 auto; padding: 1.75rem 1.5rem 4rem; }
+h1 { font-size: 1.35rem; margin: 0 0 .35rem; letter-spacing: -.015em; }
+.sub { color: var(--muted); margin: 0 0 1.5rem; }
+table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #fafafa; }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pill { font-size: 12px; border-radius: 999px; padding: .1rem .5rem; border: 1px solid var(--line); }
+.pill.live { color: var(--live); border-color: #a9dfc4; background: #f0fdf6; }
+.pill.expired { color: var(--off); border-color: #f2c3bf; background: #fef4f3; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; margin-bottom: 1.75rem; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: .9rem 1rem; }
+.card .n { font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.card .k { color: var(--muted); font-size: 13px; }
+.empty { background: #fff; border: 1px dashed var(--line); border-radius: 8px; padding: 2rem; text-align: center; color: var(--muted); }
+form.search { margin-bottom: 1rem; }
+form.search input { padding: .5rem .7rem; border: 1px solid var(--line); border-radius: 6px; width: 280px; font: inherit; }

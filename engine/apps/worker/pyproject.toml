@@ -1,0 +1,39 @@
+[project]
+name = "now-engine-worker"
+version = "0.1.0"
+description = "engine-worker: ONE instance for every city. Scheduled offline work (partition maintenance, embeddings backfill) plus the re-embed-on-publish stream consumer."
+requires-python = ">=3.12"
+dependencies = [
+    # arq is the scheduler per ARCHITECTURE.md §2's service table. Its value
+    # here is cron_jobs and a Redis-backed queue, not task fan-out: this is
+    # one worker, and the fan-out unit is a site, not a process.
+    "arq>=0.26,<0.27",
+    "redis>=5.0",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "now-db",
+    "now-embeddings",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[project.scripts]
+now-worker = "app.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../../packages/db", editable = true }
+now-embeddings = { path = "../../packages/embeddings", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

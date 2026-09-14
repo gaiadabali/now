@@ -48,6 +48,15 @@ x-cms-shared: &cms-shared
   GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
   GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET:-now-media}
 
+# Shared by both reader-site instances. SITE_SLUG is deliberately NOT here:
+# it is the one thing that differs, and an anchor carrying the differentiator
+# only works by accident of override order.
+x-web-shared: &web-shared
+  NODE_ENV: production
+  ENGINE_API_URL: http://engine-api:8000
+  # site.config.json is mounted, not baked in — see the web-jakarta service.
+  NOW_REPO_ROOT: /srv/sites
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -169,19 +178,77 @@ services:
       start_period: 25s
 
   # ---------------------------------------------------------------------
-  # web — the reader site. ONE instance; the hostname selects the city.
+  # engine-worker — ONE instance for every city. It iterates the site
+  # registry (engine.sites), so a new region is a row, not a redeploy.
+  #
+  # Runs two things: arq cron (partition maintenance) and, in a supervised
+  # thread, the existing re-embed-on-publish stream consumer. The most
+  # important job is the least glamorous — engine.interactions and
+  # engine.impressions are daily-partitioned and an INSERT for a date with
+  # no partition FAILS, so running out of them is total loss of behavioural
+  # data that ARCHITECTURE.md §19 says cannot be backfilled.
+  #
+  # No port: liveness is a Redis heartbeat, because a container that is
+  # "running" only proves PID 1 has not exited while arq is wedged.
   # ---------------------------------------------------------------------
-  web:
+  engine-worker:
+    image: ${WORKER_IMAGE:?set WORKER_IMAGE}:${IMAGE_TAG:?}
+    container_name: now-engine-worker
+    restart: unless-stopped
+    environment:
+      ENGINE_WORKER_PLATFORM_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      ENGINE_WORKER_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      ENGINE_WORKER_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENGINE_WORKER_PARTITION_DAYS_AHEAD: "${PARTITION_DAYS_AHEAD:-14}"
+      # Unset means never drop. Dropping a partition destroys behavioural
+      # data permanently and E7 is data-gated on accumulating it.
+      ENGINE_WORKER_INTERACTION_RETENTION_DAYS: "${INTERACTION_RETENTION_DAYS:-}"
+      ENGINE_WORKER_RUN_REEMBED_CONSUMER: "${RUN_REEMBED_CONSUMER:-true}"
+      # now_db.settings builds each city DSN from these (db_ref is a bare
+      # database name — every city is on this one Postgres instance).
+      NOW_PG_HOST: postgres
+      NOW_PG_PORT: "5432"
+      NOW_PG_USER: ${POSTGRES_USER}
+      NOW_PG_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 448m
+
+  # ---------------------------------------------------------------------
+  # web-{city} — the reader site.
+  #
+  # ONE INSTANCE PER CITY, not one for both. src/lib/site.ts requires
+  # SITE_SLUG and says so plainly: "This app serves exactly one city per
+  # process". There is no hostname routing in it today, so a single service
+  # fed two hostnames would throw at startup.
+  #
+  # It also reads <root>/<slug>/site/site.config.json off the filesystem,
+  # which is NOT in the image — the web build context is engine/apps/web and
+  # the city config lives at the repo root. Mounting it instead of baking it
+  # in keeps ARCHITECTURE.md §3.5's promise that brand tokens are config: a
+  # change to site.config.json is a restart, not a rebuild.
+  # ---------------------------------------------------------------------
+  web-jakarta:
     image: ${WEB_IMAGE:?set WEB_IMAGE}:${IMAGE_TAG:?}
-    container_name: now-web
+    container_name: now-web-jakarta
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-4311}:3100"
+      - "127.0.0.1:${WEB_JAKARTA_HOST_PORT:-4311}:3100"
     environment:
-      NODE_ENV: production
-      ENGINE_API_URL: http://engine-api:8000
-      NOW_JAKARTA_HOSTNAME: ${NOW_JAKARTA_HOSTNAME:?}
-      NOW_BALI_HOSTNAME: ${NOW_BALI_HOSTNAME:?}
+      <<: *web-shared
+      SITE_SLUG: jakarta
+    volumes: &web-site-config
+      - ../jakarta/site:/srv/sites/jakarta/site:ro
+      - ../bali/site:/srv/sites/bali/site:ro
     depends_on:
       engine-api:
         condition: service_healthy
@@ -191,7 +258,60 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: 448m
+          memory: 384m
+
+  web-bali:
+    image: ${WEB_IMAGE:?}:${IMAGE_TAG:?}
+    container_name: now-web-bali
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_BALI_HOST_PORT:-4315}:3100"
+    environment:
+      <<: *web-shared
+      SITE_SLUG: bali
+    volumes: *web-site-config
+    depends_on:
+      engine-api:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 384m
+
+  # ---------------------------------------------------------------------
+  # console — partner + campaign management.
+  #
+  # ONE instance for every city: it reads the PLATFORM database only (§2),
+  # so there is no SITE_SLUG here and nothing per-city about it.
+  #
+  # READ-ONLY by design. There is no authentication in front of it yet, and
+  # mutations without an identity to attribute them to would let anyone who
+  # reaches the port change link policy and campaign budgets with no audit
+  # trail — engine.partnership_audit exists and expects an actor. Put it
+  # behind CloudPanel basic auth at minimum before exposing it.
+  # ---------------------------------------------------------------------
+  console:
+    image: ${CONSOLE_IMAGE:?set CONSOLE_IMAGE}:${IMAGE_TAG:?}
+    container_name: now-console
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CONSOLE_HOST_PORT:-4316}:3200"
+    environment:
+      NODE_ENV: production
+      PLATFORM_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [now-internal]
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 320m
 
   # ---------------------------------------------------------------------
   # cms-{city} — the ONLY services that duplicate, because a Payload
