@@ -31,7 +31,12 @@ RUN npm run build
 FROM base AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=builder /app/public ./public
+# No `COPY /app/public` here, unlike apps/web's Dockerfile: this package has
+# no `public/` directory at all. Payload ships its admin UI inside the bundle
+# and the CMS serves no static assets of its own, so the copy that mirrors
+# the web image fails the build outright with
+# `"/app/public": not found` -- a missing *source*, not a missing setting.
+# Add the line back in the same change that adds a public/ directory.
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/src/migrations ./src/migrations

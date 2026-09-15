@@ -26,6 +26,26 @@ const heebo = Heebo({
   variable: '--font-heebo',
 })
 
+/**
+ * Nothing under this layout may be prerendered.
+ *
+ * ARCHITECTURE.md §3.5: ONE image serves every city, differentiated only by
+ * `SITE_SLUG` at runtime. Static prerendering contradicts that directly —
+ * it resolves `getSiteConfig()` at *build* time and bakes one city's name,
+ * masthead, nav and `metadataBase` into an artifact that is supposed to be
+ * city-agnostic.
+ *
+ * That was not hypothetical. `.env.local` (gitignored, `SITE_SLUG=bali`)
+ * made local builds succeed while silently prerendering Bali's shell into
+ * the shared image; CI, which has no such file, failed on `/_not-found`
+ * with "SITE_SLUG is not set" and was the only thing telling the truth.
+ *
+ * `today` below is the second reason: it is `new Date()` formatted in the
+ * site's timezone, so a prerendered masthead would display the build date
+ * to every reader, forever.
+ */
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteConfig()
   return {
