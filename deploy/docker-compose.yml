@@ -350,82 +350,11 @@ services:
   #   docker compose ... exec console npx payload migrate
   # then create the first admin at https://<console host>/admin
   # ---------------------------------------------------------------------
-  console:
-    image: ${CONSOLE_IMAGE:?set CONSOLE_IMAGE}:${IMAGE_TAG:?}
-    container_name: now-console
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${CONSOLE_HOST_PORT:-4316}:3200"
-    environment:
-      NODE_ENV: production
-      # Two names for the same database, deliberately: DATABASE_URI is what
-      # Payload binds (and owns `public` through), PLATFORM_DATABASE_URL is
-      # what the console's own read queries use against `engine`.
-      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
-      PLATFORM_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [now-internal]
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512m
-
   # ---------------------------------------------------------------------
   # cms-{city} — the ONLY services that duplicate, because a Payload
   # instance binds exactly one database (ARCHITECTURE.md §3.5). Same image,
   # different DATABASE_URI. Everything else here is one deployment.
   # ---------------------------------------------------------------------
-  cms-jakarta:
-    image: ${CMS_IMAGE:?set CMS_IMAGE}:${IMAGE_TAG:?}
-    container_name: now-cms-jakarta
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${CMS_JAKARTA_HOST_PORT:-4312}:3000"
-    environment:
-      # Everything a Payload instance shares...
-      <<: *cms-shared
-      # ...and the only two things that make this instance Jakarta.
-      # ARCHITECTURE.md §3.5: the cities differ by configuration, never by
-      # code or image. Same CMS_IMAGE runs both.
-      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
-      SITE_SLUG: jakarta
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [now-internal]
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 1536m
-
-  cms-bali:
-    image: ${CMS_IMAGE:?}:${IMAGE_TAG:?}
-    container_name: now-cms-bali
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${CMS_BALI_HOST_PORT:-4313}:3000"
-    environment:
-      <<: *cms-shared
-      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
-      SITE_SLUG: bali
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [now-internal]
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 1536m
-
   # ---------------------------------------------------------------------
   # Media path — behind the `media` profile, OFF by default.
   #

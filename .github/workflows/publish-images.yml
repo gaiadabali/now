@@ -60,20 +60,10 @@ jobs:
             context: .
             dockerfile: engine/apps/worker/Dockerfile
           - name: now-web
-            context: engine/apps/web
+            context: engine
             dockerfile: engine/apps/web/Dockerfile
           # ONE cms image for every city; cms-jakarta and cms-bali are the
           # same image with a different DATABASE_URI (ARCHITECTURE.md §3.5).
-          - name: now-console
-            context: engine/apps/console
-            dockerfile: engine/apps/console/Dockerfile
-          - name: now-cms
-            context: engine/packages/cms
-            dockerfile: engine/packages/cms/Dockerfile
-          # Postgres is a CUSTOM image (pgvector base + PostGIS from PGDG),
-          # not a stock tag — no published image has both extensions. It
-          # must be published like any other, or the VPS would have to
-          # build it on the box.
           - name: now-postgres
             context: engine/infra/postgres
             dockerfile: engine/infra/postgres/Dockerfile
