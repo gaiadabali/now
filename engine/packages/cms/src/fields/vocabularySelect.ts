@@ -1,7 +1,7 @@
 import type { Field, SelectField } from 'payload'
 
-import type { VocabularyMap } from '@/lib/vocabulary'
-import { optionsFor } from '@/lib/vocabulary'
+import type { VocabularyMap } from '../lib/vocabulary'
+import { optionsFor } from '../lib/vocabulary'
 
 /**
  * A `select` field whose options come from the seeded taxonomy

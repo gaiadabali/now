@@ -2,10 +2,19 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["dom", "dom.iterable", "ES2022"],
-    "allowJs": false,
+    // true since this app began serving the Payload admin: Payload GENERATES
+    // `(payload)/team-editor/importMap.js` as JavaScript, and the layout
+    // imports it. packages/cms and apps/console both carry this for the same
+    // reason. It was false here while this was a pure reader app.
+    "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Reached transitively: this app imports the CMS's Payload config, whose
+    // Users collection imports @now/auth, which ships .ts sources with
+    // explicit .ts specifiers so its own tests can run under
+    // `node --experimental-strip-types` with no build step. Safe with noEmit.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -14,7 +23,12 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": {
+      // The admin now lives in this app (docs/ADMIN-CONSOLIDATION.md Phase 2),
+      // and Payload's own route files import the config by this alias.
+      "@payload-config": ["../../packages/cms/payload.config.ts"],
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

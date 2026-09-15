@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove, isLoggedIn } from '@/access'
-import { vocabularySelectField } from '@/fields/vocabularySelect'
-import type { VocabularyMap } from '@/lib/vocabulary'
+import { isAuthorOrAbove, isEditorOrAbove, isLoggedIn } from '../access'
+import { vocabularySelectField } from '../fields/vocabularySelect'
+import type { VocabularyMap } from '../lib/vocabulary'
 
 /**
  * `places` — ARCHITECTURE.md §5 / §1 principle 1 ("places are first-class

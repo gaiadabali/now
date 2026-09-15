@@ -1,14 +1,14 @@
 import type { CollectionConfig, Endpoint } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove } from '@/access'
+import { isAuthorOrAbove, isEditorOrAbove } from '../access'
 import {
   autoPopulateOnDecision,
   CLASSIFICATION_FACETS,
   deriveEntityType,
   makeApplyClassificationDecision,
-} from '@/hooks/reviewQueueHooks'
-import type { VocabularyMap } from '@/lib/vocabulary'
-import { optionsFor } from '@/lib/vocabulary'
+} from '../hooks/reviewQueueHooks'
+import type { VocabularyMap } from '../lib/vocabulary'
+import { optionsFor } from '../lib/vocabulary'
 
 /**
  * `classification-reviews` — E2.8, the review queue for E2.1's confidence

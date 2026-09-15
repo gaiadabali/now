@@ -6,6 +6,10 @@
     "skipLibCheck": true,
     "strict": false,
     "noEmit": true,
+    // @now/auth ships .ts sources with explicit .ts import specifiers, which
+    // is what lets `node --experimental-strip-types` run its tests with no
+    // build step. Consuming it needs this flag; it is safe alongside noEmit.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

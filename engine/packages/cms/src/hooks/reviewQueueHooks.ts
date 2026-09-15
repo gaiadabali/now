@@ -1,8 +1,8 @@
 import type { CollectionAfterChangeHook, CollectionBeforeChangeHook } from 'payload'
 
-import { publishDomainEvent } from '@/lib/redis'
-import type { VocabularyMap } from '@/lib/vocabulary'
-import { optionsFor } from '@/lib/vocabulary'
+import { publishDomainEvent } from '../lib/redis'
+import type { VocabularyMap } from '../lib/vocabulary'
+import { optionsFor } from '../lib/vocabulary'
 
 /**
  * Hooks for `classification-reviews` (E2.8 — see ClassificationReviews.ts

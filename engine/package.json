@@ -1,0 +1,15 @@
+{
+  "name": "now-engine",
+  "private": true,
+  "description": "npm workspace root for the Node side of the engine. The Python packages under packages/ and apps/ are unaffected — they keep their own uv projects.",
+  "workspaces": [
+    "apps/web",
+    "apps/console",
+    "packages/cms",
+    "packages/auth",
+    "packages/beacon"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

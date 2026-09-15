@@ -60,6 +60,22 @@ x-web-shared: &web-shared
   ENGINE_API_URL: http://engine-api:8000
   # site.config.json is mounted, not baked in — see the web-jakarta service.
   NOW_REPO_ROOT: /srv/sites
+  # The reader app now reads content through Payload's Local API against its
+  # own city database (docs/ui-data-layer.md), and serves the admin at
+  # /team-editor (docs/ADMIN-CONSOLIDATION.md Phase 2). DATABASE_URI is
+  # per-city and therefore set on each service, not here.
+  #
+  # PLATFORM_DATABASE_URI: the shared Payload config loads the taxonomy
+  # vocabulary from the platform at startup.
+  # PLATFORM_DATABASE_URL: the commerce pages' own read-only pool. Two names
+  # for one database because the console arrived with its own convention;
+  # unifying them is a rename across both apps and belongs in its own change.
+  PLATFORM_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+  PLATFORM_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+  # Signs and verifies the staff session cookie. The city apps cannot check a
+  # password — the credential lives in the platform — so this secret is what
+  # makes a sign-in trustworthy.
+  PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
 
 x-logging: &default-logging
   driver: json-file
@@ -171,6 +187,20 @@ services:
       ENGINE_API_CITY_DB_PORT: "5432"
       ENGINE_API_CITY_DB_USER: ${POSTGRES_USER}
       ENGINE_API_CITY_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # The ENGINE_API_* block above configures the ASYNC pool that
+      # `Depends(get_city_db)` hands out. It is not the only way this service
+      # reaches Postgres: `/search` and `/articles/{id}/rails` compose the
+      # sync {now_search, now_filters, now_blender} stack, which resolves its
+      # own connections through `now_db.settings` and therefore reads NOW_PG_*.
+      #
+      # Without these the sync path defaults to localhost:5432 and every rails
+      # or search request fails with `connection refused`, while /healthz and
+      # /v1/{site}/health keep answering 200 because they only touch the async
+      # pool. Found exactly that way on helios.
+      NOW_PG_HOST: postgres
+      NOW_PG_PORT: "5432"
+      NOW_PG_USER: ${POSTGRES_USER}
+      NOW_PG_PASSWORD: ${POSTGRES_PASSWORD}
       ENGINE_API_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       postgres:
@@ -262,6 +292,7 @@ services:
     environment:
       <<: *web-shared
       SITE_SLUG: jakarta
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
     volumes: &web-site-config
       - ../jakarta/site:/srv/sites/jakarta/site:ro
       - ../bali/site:/srv/sites/bali/site:ro
@@ -285,6 +316,7 @@ services:
     environment:
       <<: *web-shared
       SITE_SLUG: bali
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
     volumes: *web-site-config
     depends_on:
       engine-api:

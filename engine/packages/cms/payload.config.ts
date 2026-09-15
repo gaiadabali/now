@@ -14,15 +14,15 @@ import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 
-import { buildArticlesCollection } from '@/collections/Articles'
-import { Authors } from '@/collections/Authors'
-import { buildClassificationReviewsCollection } from '@/collections/ClassificationReviews'
-import { Events } from '@/collections/Events'
-import { Media } from '@/collections/Media'
-import { buildPlacesCollection } from '@/collections/Places'
-import { PlaceMentions } from '@/collections/PlaceMentions'
-import { Users } from '@/collections/Users'
-import { loadVocabulary } from '@/lib/vocabulary'
+import { buildArticlesCollection } from './src/collections/Articles'
+import { Authors } from './src/collections/Authors'
+import { buildClassificationReviewsCollection } from './src/collections/ClassificationReviews'
+import { Events } from './src/collections/Events'
+import { Media } from './src/collections/Media'
+import { buildPlacesCollection } from './src/collections/Places'
+import { PlaceMentions } from './src/collections/PlaceMentions'
+import { Users } from './src/collections/Users'
+import { loadVocabulary } from './src/lib/vocabulary'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -44,8 +44,20 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname, 'src') },
     meta: {
-      titleSuffix: process.env.SITE_SLUG ? ` — NOW! CMS (${process.env.SITE_SLUG})` : ' — NOW! CMS',
+      titleSuffix: process.env.SITE_SLUG ? ` — NOW! (${process.env.SITE_SLUG})` : ' — NOW!',
     },
+  },
+  // The admin is served BY THE READER APP, under the city's own hostname
+  // (docs/ADMIN-CONSOLIDATION.md Phase 2): now-jakarta.gaiada.com/team-editor.
+  // It is no longer a separate deployment on a separate hostname, so this
+  // route is what six hostnames collapsing to two actually rests on.
+  //
+  // Payload derives every admin URL it emits — login redirects, the logout
+  // link, "create first user" — from this value. Changing it here and not in
+  // the route folder (or the reverse) produces an admin that renders once and
+  // then 404s the moment it navigates.
+  routes: {
+    admin: '/team-editor',
   },
   editor: lexicalEditor(),
   collections: [
