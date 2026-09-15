@@ -1,8 +1,10 @@
 import { listCampaigns } from '@/lib/queries'
+import { requireUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Campaigns() {
+  await requireUser()
   const campaigns = await listCampaigns()
 
   return (

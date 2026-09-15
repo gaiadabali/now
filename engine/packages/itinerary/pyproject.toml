@@ -1,0 +1,24 @@
+[project]
+name = "now-itinerary"
+version = "0.1.0"
+description = "E5 -- itinerary engine (ARCHITECTURE.md Sec.12). An itinerary is a VRP with time windows: opening hours, dwell times, travel matrix, budget ceiling, category diversity, guaranteed partner slots. OR-Tools CP-SAT selects and assigns stops to day+slot; a separate per-day sequencing pass orders them by travel time. The solver picks; the LLM only narrates (Sec.1 principle 4). Constraint satisfaction is programmatically checkable -- now_itinerary.validate is the gate, and it is a hard CI fail at anything below 100%."
+requires-python = ">=3.12"
+dependencies = [
+    "ortools>=9.10,<10",
+    "click>=8.1,<9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-itinerary = "now_itinerary.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_itinerary"]

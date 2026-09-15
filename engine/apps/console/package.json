@@ -2,27 +2,40 @@
   "name": "@now-engine/console",
   "version": "0.1.0",
   "private": true,
-  "description": "Partner + campaign console. Platform DB only (ARCHITECTURE.md section 2) - it never opens a city database. ONE instance, serving every city.",
+  "description": "Partner + campaign console. A Payload instance owning platform `public` (ARCHITECTURE.md E4.4) for auth; commerce data still reads from `engine`.",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3200",
-    "build": "next build",
+    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
     "start": "next start -p 3200",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.88.0",
+    "@payloadcms/next": "3.88.0",
+    "@payloadcms/richtext-lexical": "3.88.0",
+    "drizzle-orm": "0.45.2",
     "next": "15.4.11",
+    "payload": "3.88.0",
     "pg": "8.13.1",
     "react": "19.0.1",
     "react-dom": "19.0.1",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
     "@types/pg": "8.11.10",
     "@types/react": "19.0.1",
     "@types/react-dom": "19.0.1",
+    "cross-env": "7.0.3",
     "typescript": "5.7.2"
+  },
+  "overrides": {
+    "drizzle-orm": "0.45.2"
   }
 }

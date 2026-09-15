@@ -23,9 +23,11 @@ a:hover { text-decoration: underline; }
 .masthead .brand { font-weight: 650; color: var(--ink); letter-spacing: -.01em; }
 .masthead nav { display: flex; gap: 1.1rem; }
 .masthead .badge {
-  margin-left: auto; font-size: 12px; color: var(--muted);
+  font-size: 12px; color: var(--muted);
   border: 1px solid var(--line); border-radius: 999px; padding: .15rem .6rem; cursor: help;
 }
+/* First badge after the nav carries the gap; the rest sit beside it. */
+.masthead nav + .badge { margin-left: auto; }
 main { max-width: 1100px; margin: 0 auto; padding: 1.75rem 1.5rem 4rem; }
 h1 { font-size: 1.35rem; margin: 0 0 .35rem; letter-spacing: -.015em; }
 .sub { color: var(--muted); margin: 0 0 1.5rem; }

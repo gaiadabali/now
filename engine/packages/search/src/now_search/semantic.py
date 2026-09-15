@@ -109,6 +109,22 @@ _KNN_SQL_RESTRICTED = text(
 )
 
 
+_KNN_SQL_EXACT_ALL = text(
+    """
+    WITH candidates AS MATERIALIZED (
+        SELECT entity_id::int AS article_id, vec
+          FROM engine.embeddings
+         WHERE entity_type = :entity_type
+           AND model = :model
+    )
+    SELECT article_id, 1 - (vec <=> CAST(:qvec AS vector)) AS cosine_sim
+      FROM candidates
+     ORDER BY vec <=> CAST(:qvec AS vector)
+     LIMIT :limit
+    """
+)
+
+
 def search_semantic(
     conn: Connection,
     query_vec: list[float],
@@ -116,13 +132,37 @@ def search_semantic(
     model: str,
     limit: int,
     candidate_ids: list[int] | None = None,
+    exact: bool = False,
 ) -> list[RankedHit]:
     """Best-first semantic hits. `model` is required (no default) so a
-    caller cannot forget it by omission -- see module docstring."""
+    caller cannot forget it by omission -- see module docstring.
+
+    `exact=True` with no `candidate_ids` runs the same materialized-CTE
+    plan `_KNN_SQL_RESTRICTED` uses, minus the id filter: exact cosine
+    over every article embedding of this model. It exists because the
+    default unconstrained path (`_KNN_SQL`) is the *approximate* HNSW
+    scan, and approximate means `limit` is an upper bound the index
+    frequently does not reach -- at this database's `hnsw.ef_search = 40`
+    with `hnsw.iterative_scan = off`, `limit=400` measured **28 rows
+    returned** on the real `now_jakarta` corpus. That is fine for a
+    caller that just wants "some near neighbours", and fatal for one
+    over-fetching deliberately in order to post-filter, which reads the
+    short result as "the index is exhausted" when it means "the ANN scan
+    stopped early".
+
+    So: `exact=True` is the mode a post-filtering caller must use. It is
+    the same F67 correctness property the restricted path has -- complete
+    and exactly ranked -- and it is *faster* than passing a large
+    `candidate_ids` array (35ms vs 49ms measured, 3,421 ids, 5,356-row
+    table), because it drops the per-row array membership test. See
+    `now_search.engine._retrieve` for the caller that relies on this.
+    """
     params = {"qvec": _vec_literal(query_vec), "entity_type": ENTITY_TYPE, "model": model, "limit": limit}
     if candidate_ids is not None:
         params["candidate_ids"] = candidate_ids
         rows = conn.execute(_KNN_SQL_RESTRICTED, params).fetchall()
+    elif exact:
+        rows = conn.execute(_KNN_SQL_EXACT_ALL, params).fetchall()
     else:
         rows = conn.execute(_KNN_SQL, params).fetchall()
     pairs = [(str(r[0]), float(r[1])) for r in rows]

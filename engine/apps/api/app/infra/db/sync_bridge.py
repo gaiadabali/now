@@ -10,9 +10,15 @@ connection pool of its own -- so a request pays for a `create_engine()`
 call (cheap: it does not connect) at most once per `db_ref`, never once
 per request. `app/infra/db/pools.CityPoolRegistry` is this app's existing
 equivalent for the ASYNC pools `Depends(get_city_db)` hands out; this is
-its sync-side sibling, kept local to `app/domain/rails/` (this ticket's
-exclusive scope) rather than folded into that shared module, since no
-other route needs a sync bridge today.
+its sync-side sibling.
+
+It lived in `app/domain/rails/` while rails was the only route needing a
+sync bridge; `GET /v1/{site}/search` is the second (`now_search` is part
+of the same sync stack), so it moved here to `app/infra/db/` rather than
+have one domain package import another domain's internals. The engine
+cache is keyed by `db_ref` and shared across both routes, which is the
+point -- two routes hitting the same city now share one connection pool
+instead of opening a second.
 
 The actual rail computation runs via `asyncio.to_thread` so it never
 blocks the event loop -- FastAPI's other routes keep serving traffic

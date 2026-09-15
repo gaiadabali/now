@@ -16,7 +16,7 @@ from now_config import SiteConfig
 from now_rails.orchestrator import ArticleNotFoundError, RailsOrchestrator
 
 from app.domain.rails.schemas import CacheInfoOut, ComponentScoreOut, RailItemOut, RailOut, RailsResponse
-from app.domain.rails.sync_bridge import get_sync_city_engine, get_sync_platform_engine, run_sync
+from app.infra.db.sync_bridge import get_sync_city_engine, get_sync_platform_engine, run_sync
 
 DEFAULT_K = 6
 DEFAULT_RERANK_POOL = 40  # ARCHITECTURE.md §7: "re-ranked ... (top ~40)"

@@ -113,6 +113,57 @@ Prevents two agents editing the same files in one wave.
 
 # 🌊 EXECUTION WAVES — what actually ran
 
+## WAVE 20 — The itinerary solver *(2026-09-15)*
+
+Beacon deployment is deferred pending client approval (B2), so this wave took the largest unbuilt
+piece that needs **no database and no behavioural data**: E5.2's solver and E5.3's gate. The dev
+Postgres was also down this session (Docker Desktop not running), which made a DB-free target the
+only honest choice — `now_itinerary` has zero DB imports by design, and its synthetic fixtures are
+what let 25 constraint scenarios be tested without one.
+
+| Item | Outcome |
+|---|---|
+| E5.2 CP-SAT solver | ✅ Assignment + scheduling. The slot ladder fixes intra-day order, so no TSP remains — what is solved is *which stop fills each (day, slot)* and *when the visitor arrives*, under opening hours, dwell, travel feasibility, budget, diversity caps, party constraints and guaranteed partner slots. **OPTIMAL at 1,000 candidates / 7 days in 1.2s.** |
+| E5.3 validator | ✅ **Independent re-derivation**, not a read-back of solver variables — checking that CP-SAT satisfied what CP-SAT was given proves only that CP-SAT works, and cannot catch the model encoding the *wrong* constraint. All 25 tests assert through it. |
+| 🐛 **Breakfast was silently dropped every day** | `max_per_type_per_day` defaulted to 2 while the ladder has three `eat` slots (breakfast/lunch/dinner). Measured: 10 of 12 slots filled across two days, breakfast gone both — and gone *silently*, being the only optional one of the three. Default now 3, with a regression test. |
+| Infeasibility is diagnosed | `_precheck` names the arithmetic conflicts rather than returning a bare `INFEASIBLE`: a per-type cap below the required same-type slot count is unsatisfiable for **any** pool, and required slots need *distinct* stops (org cap included in the supply count). |
+| ⚖️ Determinism: **accepted, not fixed** | Repeated solves can return different *equally optimal* itineraries. Both fixes cost more than the problem — an objective tie-break needs ~1e6 headroom, pushing coefficients to ~1e9 and off CP-SAT's performance cliff (400 stops: 1s → 10s limit, **not** optimal); `num_search_workers=1` measured **10.2s FEASIBLE vs 413ms OPTIMAL**, 25× slower. And a solve that hits its time limit is nondeterministic anyway. A shared itinerary is stable because **E5.4 persists it**, not because a re-solve reproduces it — so the test pins *equal quality*, not identical output. |
+| Travel honesty | `HaversineMatrix` is a stand-in until E5.1's OSRM matrix. §15's own framing is "Jakarta traffic is the problem", so it is wrong in a known direction — **optimistic**. `TravelMatrix.is_estimate` rides on the Protocol and the validation report so a gate can refuse to certify a trip whose travel budget was only checked against a guess. |
+
+**Suite:** itinerary 25 passing, no database required.
+
+> **Still open for E5:** E5.1 (OSRM matrix → `engine.travel_matrix`), E5.4 (`public.places` → `Stop`
+> adapter + API + persistence), E5.5 narration, E5.6 curated itineraries, E5.7 share/fork. E5.4 is
+> the next one and it needs the dev Postgres back up.
+
+
+## WAVE 19 — Expose the engine: `/search` *(2026-09-14)*
+
+The `now_search` package (1,601 LOC) had been built since E3.1 but was reachable only from a CLI and
+the eval SUT — of §16's ten endpoints, three were served. This wave is the first of "wire what is
+already built", chosen ahead of E4 commerce because the three capabilities Hansel named (interest
+learning, itinerary, assistant) all sit downstream of a reachable retrieval surface.
+
+| Item | Outcome |
+|---|---|
+| `GET /v1/{site}/search` | ✅ **served.** Hybrid BM25 + pgvector, RRF-fused, over a §8.A hard-filtered pool. `type`/`format` column facets + generic `facets=location:senopati` term selectors resolved against the platform taxonomy. 10 integration tests against real Jakarta data. |
+| **§8.G corrected** | ✅ "Constrain rather than post-filter" **inverts** for non-selective candidate sets. Measured on the default request (3,421-id pool / 4,772 corpus): semantic **1.2ms → 49.2ms** constrained (41×, HNSW degraded to a scan), lexical **15.2ms → 49.3ms**. Now selectivity-gated at `LARGE_CANDIDATE_SET = 1,000`. ARCHITECTURE.md §8.G updated with the numbers. |
+| **F67 resurfaced in a new caller** | ✅ **caught before it shipped.** The post-filter path is only sound if the unconstrained query is *exact*; pgvector HNSW is approximate — `limit=400` returned **28 rows**, which a post-filtering caller reads as "index exhausted". Recall would have dropped silently behind a `200`. Fixed with `search_semantic(exact=True)` (same materialized-CTE plan as the restricted path, minus the id filter): exact, complete, and **faster** than the large array (35ms vs 49ms). |
+| p95 | ✅ **195ms → 69.4ms**, meeting E3.1's `p95 < 80ms`. Results **byte-identical** to the constrained path across 8 hand-check queries — the equivalence is the quality proof, since identical output means identical nDCG by construction. |
+| Regression gate | `packages/search/tests/test_candidate_set_strategy.py` — pins path-equivalence *and* the `exact=True` completeness property the strategy rests on. |
+| `sync_bridge` promoted | `app/domain/rails/` → `app/infra/db/`. Two routes now share one sync pool per city instead of opening a second. |
+| 🐛 **7 red beacon tests fixed** | `POST /events` tests had been failing on **every run since ~3 days after the test container was provisioned**. Root cause: the seed creates daily partitions `CURRENT_DATE ± 3` **once**, and an INSERT into a daily-partitioned table with no matching partition *fails* — the endpoint was correctly returning 400 against a test DB that had aged out. Now re-applied per session (idempotent) in `conftest.py`. **Production was never at risk** — `apps/worker` runs a nightly cron 14 days ahead with `run_at_startup=True`. |
+| 🐛 2 stale facet tests fixed | Asserted the corpus was 100% unclassified — E2 has since typed 3,589 of 4,772 articles, so they failed on *progress*. Rewritten to assert the invariant (buckets partition the candidate set) rather than a snapshot. |
+
+**Suites green:** api 73 · search 51 · filters 71 · blender 60 · rails 18 = **273 passing, 0 failing.**
+
+> ⚠️ **Gap found, not closed: search ranking has no CI gate.** `now_eval.cli` registers only
+> `trivial-random` / `trivial-most-popular` as SUTs — `now_search.eval_sut` exists but was never wired
+> in, so the nDCG figures in F120/E3.3 came from ad-hoc runs, and no automated check would catch a
+> ranking regression today. This wave's equivalence test covers *this* change specifically; it is not
+> a general gate. Worth a ticket before the blender weights are tuned again.
+
+
 ## WAVE 18 — Route now, LLM later *(in flight, dispatched 2026-09-11)*
 
 Hansel's two decisions after F120 closed out the embeddings option:

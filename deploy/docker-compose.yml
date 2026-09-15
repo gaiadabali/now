@@ -291,11 +291,20 @@ services:
   # ONE instance for every city: it reads the PLATFORM database only (§2),
   # so there is no SITE_SLUG here and nothing per-city about it.
   #
-  # READ-ONLY by design. There is no authentication in front of it yet, and
-  # mutations without an identity to attribute them to would let anyone who
-  # reaches the port change link policy and campaign budgets with no audit
-  # trail — engine.partnership_audit exists and expects an actor. Put it
-  # behind CloudPanel basic auth at minimum before exposing it.
+  # A Payload instance owning platform `public` (ARCHITECTURE.md E4.4's
+  # "a Payload instance will own platform public"). Payload provides the
+  # auth — real sessions, lockout, password reset, roles — and every console
+  # page calls requireUser() before it queries anything.
+  #
+  # It owns `public.users` and nothing else. The commerce tables stay in
+  # `engine`, Alembic-owned, because now_link_resolver reads
+  # engine.partnerships on the REQUEST PATH; moving them is its own
+  # migration with its own blast radius, not a side effect of adding auth.
+  # So commerce data is still read-only here.
+  #
+  # First deploy must run the Payload migration once:
+  #   docker compose ... exec console npx payload migrate
+  # then create the first admin at https://<console host>/admin
   # ---------------------------------------------------------------------
   console:
     image: ${CONSOLE_IMAGE:?set CONSOLE_IMAGE}:${IMAGE_TAG:?}
@@ -305,7 +314,12 @@ services:
       - "127.0.0.1:${CONSOLE_HOST_PORT:-4316}:3200"
     environment:
       NODE_ENV: production
+      # Two names for the same database, deliberately: DATABASE_URI is what
+      # Payload binds (and owns `public` through), PLATFORM_DATABASE_URL is
+      # what the console's own read queries use against `engine`.
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
       PLATFORM_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
     depends_on:
       postgres:
         condition: service_healthy

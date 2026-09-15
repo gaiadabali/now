@@ -23,13 +23,36 @@ with 8 vCPU / 32 GB / 387 GB. Everything deploy-related lives in
 | `cms-jakarta` · `cms-bali` | ready — one image, two databases (§3.5) |
 | `garage` · `imgproxy` | **off** — behind the `media` profile, see §6 |
 | `engine-worker` | ready — arq cron + the re-embed stream consumer |
-| `console` | ready — **read-only**, no auth in front of it yet |
+| `console` | ready — Payload auth, **read-only** against commerce data |
 
-`console` has no authentication. It only reads, and that is deliberate:
-mutations with no identity to attribute them to would let anyone reaching the
-port change link policy and campaign budgets with no audit trail, and
-`engine.partnership_audit` expects an actor. Put CloudPanel basic auth in
-front of it at minimum.
+### The console's auth
+
+`console` is a Payload instance owning platform `public`, which is
+ARCHITECTURE.md's own plan for it ("a Payload instance will own platform
+`public` later, when the partner console (E4.4) needs an editing surface").
+Payload provides real sessions, lockout, password reset and roles; every
+console page calls `requireUser()` *before* it queries anything, and
+unauthenticated visitors land on Payload's own `/admin/login`.
+
+Its `users` table is separate from the CMS's on purpose. The CMS's lives in
+each **city** database and gates editorial work; this one lives in the
+**platform** database and gates commercial data. An editor who can publish in
+Jakarta should not thereby read every partner's terms.
+
+It owns `public.users` and nothing else. Commerce data is still **read-only**,
+because `orgs`, `partnerships`, `campaigns` and `placements` remain in
+`engine`, Alembic-owned — `now_link_resolver` reads `engine.partnerships` on
+the **request path**, so moving them into `public` for Payload to own would
+break link resolution, the loader and the CMS's Places collection. That is a
+deliberate migration with its own blast radius, and it is E4.4's work, not a
+side effect of adding auth.
+
+**First deploy runs the migration once**, then creates the first admin:
+
+```bash
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env   exec console npx payload migrate
+# then open https://now-console.gaiada.com/admin and create the first user
+```
 
 ## 2. Capacity
 
@@ -194,15 +217,35 @@ act.
 ## 8. Still required, and not doable from here
 
 - **DNS** for the six hostnames in §4, pointing at `187.77.116.133`.
-  `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Verified
-  2026-09-14: none of them resolve yet, while an existing sibling
-  (`bsc.gaiada.online`) resolves to this host, so the check itself is sound.
+
+  `gaiada.com` is on **Hostinger** — checked, not assumed: its nameservers
+  are `ns1.dns-parking.com` / `ns2.dns-parking.com`, which is Hostinger's
+  parking/DNS pair. (An earlier draft of this file said GoDaddy; that was
+  carried over from a sibling project's runbook and was wrong.)
+
+  Six A records in hPanel → Domains → DNS Zone, each `Type A`, `Points to
+  187.77.116.133`, TTL default:
+
+  | Name | |
+  |---|---|
+  | `now-engine-api` | the API |
+  | `now-jakarta` | web-jakarta |
+  | `now-bali` | web-bali |
+  | `cms-jakarta` | Payload, Jakarta |
+  | `cms-bali` | Payload, Bali |
+  | `now-console` | commerce console — **auth first** |
+
+  Hostinger's DNS Zone editor takes the subdomain only, not the full name.
+
+  Verified 2026-09-14: none of the six resolve yet, while an existing
+  sibling (`bsc.gaiada.online`) resolves to this host, so the check is sound.
 - **CloudPanel sites**, one per hostname (`clpctl site:add:reverse-proxy`),
   which also issues the certificate. DNS must resolve first or issuance
   fails.
 - **A GHCR pull token** on the box (§3).
-- **Auth in front of `now-console.gaiada.com`** before it is reachable. It
-  is read-only, but partner and campaign data is commercial.
+- **The console's Payload migration + first admin user** (§1). Until that
+  runs there is no account, and `/admin` will offer to create the first one
+  to whoever reaches it — so do it in the same session the host goes live.
 - **Database load + migrations** — the images will start against an empty
   Postgres and the API will answer `/healthz` regardless, because that probe
   does not touch a city database. Do not read a green deploy as "the content

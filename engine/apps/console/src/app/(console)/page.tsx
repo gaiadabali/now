@@ -1,9 +1,13 @@
 import Link from 'next/link'
 import { countOrgs, listCampaigns, listSites } from '@/lib/queries'
+import { requireUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Overview() {
+  // Before any query: a redirect must happen before the platform database
+  // is touched, not after.
+  await requireUser()
   const [sites, orgs, campaigns] = await Promise.all([listSites(), countOrgs(), listCampaigns()])
   const live = campaigns.filter((c) => c.status === 'active').length
 

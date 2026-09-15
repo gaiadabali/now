@@ -80,5 +80,17 @@ def embed_query(query: str) -> list[float]:
 
 
 def warm_up() -> None:
-    """Force the lazy model load now, outside of any latency measurement."""
+    """Force the lazy model load now, outside of any latency measurement.
+
+    Idempotent at module scope: `_model` is a process-wide singleton, so
+    once any caller has loaded it there is nothing left to force and this
+    returns without embedding anything. That matters on the request path
+    -- `SearchEngine._warmed_up` is *instance* state, so a per-request
+    engine (as `app.domain.search.service` builds) calls this on every
+    single request. Without the guard each of those would pay a real
+    `embed_query("warm up")` (~5-27ms, BENCHMARK.md F60) purely to
+    re-discover an already-loaded model, on the p95 path this package's
+    whole design is trying to protect."""
+    if _model is not None:
+        return
     embed_query("warm up")
