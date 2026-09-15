@@ -23,6 +23,12 @@ on:
     branches: [main]
     paths:
       - "engine/apps/api/**"
+      # now-worker is in the build matrix below but was missing here, so a
+      # change confined to the worker built no image and could never reach
+      # production. That is exactly what happened to the fix that made the
+      # re-embed consumer start at all: merged to main, worker tests green,
+      # no image. Every path in the matrix belongs in this list.
+      - "engine/apps/worker/**"
       - "engine/infra/postgres/**"
       - "engine/apps/web/**"
       - "engine/packages/**"
