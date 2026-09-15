@@ -11,7 +11,7 @@
  * writes.
  */
 
-import { SECTION_TO_TYPES, payloadClient, toArticle } from '@/lib/payload'
+import { SECTION_TO_TYPES, heroMediaId, legacyMediaUrls, payloadClient, toArticle } from '@/lib/payload'
 import { slugify } from '@/lib/format'
 
 export type Article = {
@@ -65,6 +65,25 @@ export function sectionLabel(slug: string): string {
 /** Published only, newest first. `_status` is Payload's draft/publish flag. */
 const PUBLISHED = { _status: { equals: 'published' } } as const
 
+/**
+ * Maps docs to articles, repointing hero images at the URL that serves them.
+ *
+ * One batched query per call rather than one per article — a twelve-card home
+ * page should cost one media lookup, not twelve. See `legacyMediaUrls` for why
+ * the Local API cannot answer this.
+ */
+async function toArticles(docs: Record<string, unknown>[]): Promise<Article[]> {
+  const urls = await legacyMediaUrls(
+    docs.map(heroMediaId).filter((id): id is number => id !== null),
+  )
+  return docs.map((doc) => {
+    const article = toArticle(doc)
+    const id = heroMediaId(doc)
+    const legacy = id === null ? undefined : urls.get(id)
+    return legacy ? { ...article, image: legacy } : article
+  })
+}
+
 export async function getLatest(limit = 20): Promise<Article[]> {
   const payload = await payloadClient()
   const { docs } = await payload.find({
@@ -74,7 +93,7 @@ export async function getLatest(limit = 20): Promise<Article[]> {
     limit,
     depth: 1, // resolves heroMedia to a document rather than an id
   })
-  return docs.map(toArticle)
+  return toArticles(docs)
 }
 
 export async function getLead(): Promise<Article | undefined> {
@@ -102,7 +121,7 @@ export async function getBySection(
     limit,
     depth: 1,
   })
-  return docs.map(toArticle)
+  return toArticles(docs)
 }
 
 export type Facet = { label: string; value: string | null; count: number }
@@ -176,7 +195,9 @@ export async function getBySlug(slug: string): Promise<Article | undefined> {
     limit: 1,
     depth: 1,
   })
-  return docs[0] ? toArticle(docs[0]) : undefined
+  if (!docs[0]) return undefined
+  const [article] = await toArticles([docs[0]])
+  return article
 }
 
 /**

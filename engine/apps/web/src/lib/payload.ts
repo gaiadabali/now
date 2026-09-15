@@ -16,6 +16,7 @@
  */
 
 import configPromise from '@now-engine/cms/payload.config'
+import pg from 'pg'
 import { getPayload } from 'payload'
 
 import type { Article } from '@/lib/content'
@@ -83,6 +84,60 @@ export function slugFromPermalink(permalink: string | null | undefined): string 
 }
 
 type PayloadDoc = Record<string, unknown>
+
+/**
+ * Resolves hero images to the URL that actually serves them.
+ *
+ * **Why this bypasses the Local API, which the data-layer contract otherwise
+ * forbids.** `media.url` holds the legacy WordPress URL these assets are
+ * still served from — E1.3 has not mirrored the ~9 GB of uploads onto this
+ * host — and `next.config.mjs` already allowlists those origins. But Payload
+ * treats `media` as an upload collection it owns, so on read it REPLACES
+ * `url` with `/api/media/file/<filename>`, a route backed by files that are
+ * not there. Every image then 500s.
+ *
+ * `disableLocalStorage` does not change this; the URL is computed either way.
+ * So the stored column is unreachable through the Local API, and one narrow
+ * read is the honest way to get it.
+ *
+ * This is temporary and deletes itself: once E1.3 mirrors uploads into
+ * Garage, Payload's own URL becomes correct and this whole module goes.
+ */
+let mediaPool: pg.Pool | null = null
+
+function cityPool(): pg.Pool {
+  const connectionString = process.env.DATABASE_URI
+  if (!connectionString) throw new Error('DATABASE_URI is not set')
+  mediaPool ??= new pg.Pool({ connectionString, max: 2, statement_timeout: 5_000 })
+  return mediaPool
+}
+
+export async function legacyMediaUrls(ids: number[]): Promise<Map<number, string>> {
+  const unique = [...new Set(ids.filter((id) => Number.isFinite(id)))]
+  if (unique.length === 0) return new Map()
+  try {
+    const { rows } = await cityPool().query(
+      'SELECT id, url FROM public.media WHERE id = ANY($1) AND url IS NOT NULL',
+      [unique],
+    )
+    return new Map(rows.map((r) => [Number(r.id), String(r.url)]))
+  } catch {
+    // A missing image is a worse page, not a broken one. Fall back to
+    // whatever Payload produced rather than failing the render.
+    return new Map()
+  }
+}
+
+/** The hero media row id on a doc, whether it came back as an id or a document. */
+export function heroMediaId(doc: PayloadDoc): number | null {
+  const hero = doc.heroMedia
+  if (typeof hero === 'number') return hero
+  if (hero && typeof hero === 'object') {
+    const id = (hero as PayloadDoc).id
+    return typeof id === 'number' ? id : Number(id) || null
+  }
+  return null
+}
 
 function heroUrl(doc: PayloadDoc): string {
   const hero = doc.heroMedia as PayloadDoc | number | null | undefined
