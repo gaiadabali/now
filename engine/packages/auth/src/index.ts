@@ -14,18 +14,22 @@
 
 export { PBKDF2, hashPassword, verifyPassword, type StoredCredential } from './password.ts'
 export {
+  COMMERCE_ROLES,
   DEFAULT_LOCKOUT,
-  STAFF_ROLES,
+  EDITORIAL_ROLES,
   authenticate,
-  isStaffRole,
+  hasAnyAccess,
+  isCommerceRole,
+  isEditorialRole,
   normaliseEmail,
   type AuthFailure,
   type AuthResult,
   type AuthenticateOptions,
   type AuthenticatedUser,
   type IdentityStore,
+  type CommerceRole,
+  type EditorialRole,
   type LockoutPolicy,
   type PlatformUser,
-  type StaffRole,
 } from './identity.ts'
 export { PostgresIdentityStore, createPool, upsertShadowUser } from './store.ts'

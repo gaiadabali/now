@@ -16,7 +16,7 @@
 import { Pool, type PoolConfig } from 'pg'
 
 import type { AuthenticatedUser, IdentityStore, PlatformUser } from './identity.ts'
-import { isStaffRole } from './identity.ts'
+import { isCommerceRole, isEditorialRole } from './identity.ts'
 
 export function createPool(connectionString: string, overrides: PoolConfig = {}): Pool {
   return new Pool({
@@ -32,11 +32,20 @@ export function createPool(connectionString: string, overrides: PoolConfig = {})
 }
 
 export class PostgresIdentityStore implements IdentityStore {
-  constructor(private readonly pool: Pool) {}
+  // An explicit field rather than a constructor parameter property: the
+  // latter needs a code transform, not just type erasure, so it is rejected
+  // by `node --experimental-strip-types` — which is how this package's tests
+  // run without a build step.
+  readonly #pool: Pool
+
+  constructor(pool: Pool) {
+    this.#pool = pool
+  }
 
   async findByEmail(email: string): Promise<PlatformUser | null> {
-    const { rows } = await this.pool.query(
-      `SELECT id, email, name, role, hash, salt, login_attempts, lock_until
+    const { rows } = await this.#pool.query(
+      `SELECT id, email, name, editorial_role, commerce_role,
+              hash, salt, login_attempts, lock_until
          FROM public.users
         WHERE lower(email) = $1
         LIMIT 1`,
@@ -51,8 +60,9 @@ export class PostgresIdentityStore implements IdentityStore {
       name: row.name === null ? null : String(row.name),
       // Left as-is when unrecognised rather than coerced to a default:
       // `authenticate` refuses an unknown role, and silently substituting
-      // `viewer` here would turn a data problem into a quiet grant.
-      role: row.role,
+      // something permissive here would turn a data problem into a grant.
+      editorialRole: row.editorial_role,
+      commerceRole: row.commerce_role,
       hash: row.hash === null ? null : String(row.hash),
       salt: row.salt === null ? null : String(row.salt),
       // `login_attempts` is `numeric` in Payload's schema, which node-postgres
@@ -66,7 +76,7 @@ export class PostgresIdentityStore implements IdentityStore {
   async recordFailedAttempt(userId: number, lockUntil: Date | null): Promise<void> {
     // Incremented in SQL, not read-modify-written in JS: two simultaneous
     // guesses must count as two, and a lost update here is a free attempt.
-    await this.pool.query(
+    await this.#pool.query(
       `UPDATE public.users
           SET login_attempts = coalesce(login_attempts, 0) + 1,
               lock_until     = $2
@@ -76,7 +86,7 @@ export class PostgresIdentityStore implements IdentityStore {
   }
 
   async clearFailedAttempts(userId: number): Promise<void> {
-    await this.pool.query(
+    await this.#pool.query(
       `UPDATE public.users
           SET login_attempts = 0,
               lock_until     = NULL
@@ -106,8 +116,11 @@ export async function upsertShadowUser(
   cityPool: Pool,
   user: AuthenticatedUser,
 ): Promise<number> {
-  if (!isStaffRole(user.role)) {
-    throw new Error(`refusing to shadow an unrecognised role: ${String(user.role)}`)
+  if (!isEditorialRole(user.editorialRole) || !isCommerceRole(user.commerceRole)) {
+    throw new Error(
+      `refusing to shadow unrecognised roles: editorial=${String(user.editorialRole)} ` +
+        `commerce=${String(user.commerceRole)}`,
+    )
   }
 
   const { rows } = await cityPool.query(
@@ -120,7 +133,11 @@ export async function upsertShadowUser(
             salt       = NULL,
             updated_at = now()
      RETURNING id`,
-    [user.email, user.name, user.role],
+    // The city collection keeps its own single `role` column: it governs
+    // publishing only, so the editorial dimension is the one that belongs
+    // here. Commerce access is read from the platform, never shadowed --
+    // there is nothing in a city database that commerce permissions apply to.
+    [user.email, user.name, user.editorialRole],
   )
 
   const id = rows[0]?.id

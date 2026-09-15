@@ -16,7 +16,9 @@ import {
   type IdentityStore,
   type PlatformUser,
   authenticate,
-  isStaffRole,
+  hasAnyAccess,
+  isCommerceRole,
+  isEditorialRole,
   normaliseEmail,
 } from '../src/identity.ts'
 import { hashPassword } from '../src/password.ts'
@@ -29,7 +31,8 @@ async function makeUser(overrides: Partial<PlatformUser> = {}): Promise<Platform
     id: 1,
     email: 'editor@gaiada.com',
     name: 'Editor',
-    role: 'viewer',
+    editorialRole: 'editor',
+    commerceRole: 'none',
     hash,
     salt,
     loginAttempts: 0,
@@ -71,7 +74,7 @@ class FakeStore implements IdentityStore {
 
 describe('authenticate — the happy path', () => {
   it('accepts correct credentials and returns the platform role', async () => {
-    const user = await makeUser({ role: 'partner_manager' })
+    const user = await makeUser({ editorialRole: 'editor', commerceRole: 'partner_manager' })
     const store = new FakeStore([user])
 
     const result = await authenticate('editor@gaiada.com', PASSWORD, { store })
@@ -81,7 +84,8 @@ describe('authenticate — the happy path', () => {
       platformId: 1,
       email: 'editor@gaiada.com',
       name: 'Editor',
-      role: 'partner_manager',
+      editorialRole: 'editor',
+      commerceRole: 'partner_manager',
     })
   })
 
@@ -188,32 +192,69 @@ describe('authenticate — lockout', () => {
 
 describe('authenticate — roles', () => {
   it('refuses a role this build does not recognise rather than defaulting', async () => {
-    const store = new FakeStore([await makeUser({ role: 'superuser' as never })])
+    const store = new FakeStore([await makeUser({ commerceRole: 'superuser' as never })])
     const result = await authenticate('editor@gaiada.com', PASSWORD, { store })
     assert.deepEqual(result, { ok: false, reason: 'invalid_credentials' })
   })
 
-  it('reflects a role changed in the platform on the next sign-in', async () => {
-    const user = await makeUser({ role: 'admin' })
+  it('reflects a role revoked in the platform on the next sign-in', async () => {
+    const user = await makeUser({ commerceRole: 'admin' })
     const store = new FakeStore([user])
 
     const before = await authenticate('editor@gaiada.com', PASSWORD, { store })
-    assert.equal(before.ok && before.user.role, 'admin')
+    assert.equal(before.ok && before.user.commerceRole, 'admin')
 
     // Revoked centrally — the whole reason identity lives in one place.
-    user.role = 'viewer'
+    user.commerceRole = 'viewer'
 
     const after = await authenticate('editor@gaiada.com', PASSWORD, { store })
-    assert.equal(after.ok && after.user.role, 'viewer')
+    assert.equal(after.ok && after.user.commerceRole, 'viewer')
   })
 
-  it('recognises exactly the three roles the console defines', () => {
-    assert.equal(isStaffRole('admin'), true)
-    assert.equal(isStaffRole('partner_manager'), true)
-    assert.equal(isStaffRole('viewer'), true)
-    assert.equal(isStaffRole('superuser'), false)
-    assert.equal(isStaffRole(''), false)
-    assert.equal(isStaffRole(null), false)
+  it('keeps the two dimensions independent', async () => {
+    // A publisher with no commercial access, and a commercial user who may
+    // not publish. Both are real people; one enum could not express either.
+    const publisher = await makeUser({ editorialRole: 'admin', commerceRole: 'none' })
+    const commercial = await makeUser({
+      id: 2,
+      email: 'sales@gaiada.com',
+      editorialRole: 'none',
+      commerceRole: 'partner_manager',
+    })
+    const store = new FakeStore([publisher, commercial])
+
+    const a = await authenticate('editor@gaiada.com', PASSWORD, { store })
+    const b = await authenticate('sales@gaiada.com', PASSWORD, { store })
+
+    assert.equal(a.ok && a.user.editorialRole, 'admin')
+    assert.equal(a.ok && a.user.commerceRole, 'none')
+    assert.equal(b.ok && b.user.editorialRole, 'none')
+    assert.equal(b.ok && b.user.commerceRole, 'partner_manager')
+  })
+
+  it('refuses a correct password when both dimensions are none', async () => {
+    const store = new FakeStore([await makeUser({ editorialRole: 'none', commerceRole: 'none' })])
+    const result = await authenticate('editor@gaiada.com', PASSWORD, { store })
+    assert.deepEqual(result, { ok: false, reason: 'no_access' })
+  })
+
+  it('recognises exactly the roles each surface defines', () => {
+    for (const role of ['admin', 'editor', 'author', 'none']) {
+      assert.equal(isEditorialRole(role), true, role)
+    }
+    for (const role of ['admin', 'partner_manager', 'viewer', 'none']) {
+      assert.equal(isCommerceRole(role), true, role)
+    }
+    assert.equal(isEditorialRole('partner_manager'), false, 'vocabularies must not bleed')
+    assert.equal(isCommerceRole('author'), false, 'vocabularies must not bleed')
+    assert.equal(isEditorialRole(null), false)
+    assert.equal(isCommerceRole(''), false)
+  })
+
+  it('hasAnyAccess is false only when both are none', () => {
+    assert.equal(hasAnyAccess({ editorialRole: 'none', commerceRole: 'none' }), false)
+    assert.equal(hasAnyAccess({ editorialRole: 'author', commerceRole: 'none' }), true)
+    assert.equal(hasAnyAccess({ editorialRole: 'none', commerceRole: 'viewer' }), true)
   })
 })
 

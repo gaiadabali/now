@@ -31,6 +31,27 @@ worse, accepts an invalid one. Two defences:
 2. Comparison uses `timingSafeEqual`, as Payload's does. `===` on hex strings
    leaks the matching prefix length through timing.
 
+## Two role dimensions, not one enum
+
+The CMS and console arrived with disjoint vocabularies:
+
+| dimension | values | governs |
+|---|---|---|
+| `editorialRole` | `admin` `editor` `author` `none` | publishing, in the city CMS |
+| `commerceRole` | `admin` `partner_manager` `viewer` `none` | orgs, partnerships, campaigns |
+
+One field cannot express both. "An editor who may also read partner terms"
+and "a partner manager who may not publish" are both real people, and
+collapsing them forces either over-granting or an enum that grows
+multiplicatively.
+
+`none` is the default on both, and a user who is `none` on both is refused at
+sign-in with `no_access` rather than admitted to an empty admin.
+
+**The city shadow takes the editorial dimension only.** Commerce access is
+read from the platform on every request; there is nothing in a city database
+that commercial permissions apply to.
+
 ## Design notes
 
 **Failures are indistinguishable.** An unknown address and a wrong password
@@ -57,12 +78,22 @@ role revocation, clock handling and outage behaviour with no container.
 ## Tests
 
 ```bash
-node --test --experimental-strip-types test/*.test.ts
+node --test --experimental-strip-types test/*.test.ts          # 34, no database
+NOW_PG_PASSWORD=… node --test --experimental-strip-types test/*.test.ts   # 41, with
 ```
+
+The integration file skips cleanly when the dev stack is down, rather than
+failing. It proves the two things a fake store cannot: that the SQL matches
+the schema Payload actually created, and that the shadow row lands carrying a
+role but no credential.
+
+> Note: this package's source avoids TypeScript constructor parameter
+> properties and enums. Both need a code transform rather than type erasure,
+> and `node --experimental-strip-types` rejects them — which is what lets the
+> tests run with no build step.
 
 ## Not done yet
 
-- Wiring the strategy into the CMS and console Payload configs
+- Wiring the strategy into the Payload configs
   (`disableLocalStrategy: true` + a custom strategy resolving the shadow row)
 - Migrating existing city `users` rows into the platform table
-- Integration tests against a real pair of databases

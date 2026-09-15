@@ -11,18 +11,42 @@
 
 import { verifyPassword } from './password.ts'
 
-export const STAFF_ROLES = ['admin', 'partner_manager', 'viewer'] as const
-export type StaffRole = (typeof STAFF_ROLES)[number]
+/**
+ * **Two dimensions, not one enum.**
+ *
+ * The CMS and the console arrived with disjoint role vocabularies —
+ * `admin|editor|author` for publishing, `admin|partner_manager|viewer` for
+ * commercial data. Merging the surfaces means one account has to express
+ * both, and a single field cannot: "an editor who may also read partner
+ * terms" and "a partner manager who may not publish" are both real people.
+ * Collapsing them forces either over-granting or a combinatorial enum
+ * (`editor_partner_manager`, …) that grows multiplicatively.
+ *
+ * `none` is a first-class value in each, and is the default. An editor with
+ * no commercial access must be expressible — and must be what you get by
+ * omission, because a role model whose safe state requires remembering to set
+ * something is a role model that will leak.
+ */
+export const EDITORIAL_ROLES = ['admin', 'editor', 'author', 'none'] as const
+export type EditorialRole = (typeof EDITORIAL_ROLES)[number]
 
-export function isStaffRole(value: unknown): value is StaffRole {
-  return typeof value === 'string' && (STAFF_ROLES as readonly string[]).includes(value)
+export const COMMERCE_ROLES = ['admin', 'partner_manager', 'viewer', 'none'] as const
+export type CommerceRole = (typeof COMMERCE_ROLES)[number]
+
+export function isEditorialRole(value: unknown): value is EditorialRole {
+  return typeof value === 'string' && (EDITORIAL_ROLES as readonly string[]).includes(value)
+}
+
+export function isCommerceRole(value: unknown): value is CommerceRole {
+  return typeof value === 'string' && (COMMERCE_ROLES as readonly string[]).includes(value)
 }
 
 export type PlatformUser = {
   id: number
   email: string
   name: string | null
-  role: StaffRole
+  editorialRole: EditorialRole
+  commerceRole: CommerceRole
   hash: string | null
   salt: string | null
   loginAttempts: number
@@ -34,12 +58,29 @@ export type AuthenticatedUser = {
   platformId: number
   email: string
   name: string | null
-  role: StaffRole
+  editorialRole: EditorialRole
+  commerceRole: CommerceRole
+}
+
+/**
+ * True when this user may reach the admin at all.
+ *
+ * Someone with `none` on both dimensions has an account — they may exist for
+ * audit history, or be mid-offboarding — but no reason to be let through the
+ * door. Refusing here rather than letting them in to an empty admin means the
+ * "can they sign in" question has exactly one answer, in one place.
+ */
+export function hasAnyAccess(user: {
+  editorialRole: EditorialRole
+  commerceRole: CommerceRole
+}): boolean {
+  return user.editorialRole !== 'none' || user.commerceRole !== 'none'
 }
 
 export type AuthFailure =
   | 'invalid_credentials'
   | 'locked'
+  | 'no_access'
   | 'unavailable'
 
 export type AuthResult =
@@ -134,10 +175,18 @@ export async function authenticate(
     return { ok: false, reason: 'invalid_credentials' }
   }
 
-  if (!isStaffRole(user.role)) {
+  if (!isEditorialRole(user.editorialRole) || !isCommerceRole(user.commerceRole)) {
     // A role this build does not recognise is not a licence to fall back to
     // something permissive. Refuse, and let a human fix the row.
     return { ok: false, reason: 'invalid_credentials' }
+  }
+
+  if (!hasAnyAccess(user)) {
+    // Correct password, but no access on either dimension. Distinct from a
+    // bad credential: this person *is* who they say they are, and telling
+    // them so costs nothing an attacker could not already learn by having
+    // the password.
+    return { ok: false, reason: 'no_access' }
   }
 
   try {
@@ -153,7 +202,8 @@ export async function authenticate(
       platformId: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      editorialRole: user.editorialRole,
+      commerceRole: user.commerceRole,
     },
   }
 }

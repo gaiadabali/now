@@ -34,8 +34,17 @@ export async function requireUser(): Promise<User> {
 /**
  * Roles are coarse by design (see collections/Users.ts). This exists so a
  * future write surface has one place to ask, rather than scattering
- * `user.role === 'admin'` through pages.
+ * `user.commerceRole === 'admin'` through pages.
+ *
+ * Reads the COMMERCE dimension only. Editorial standing is irrelevant here:
+ * being an admin of Jakarta's CMS is not a reason to see partner terms, which
+ * is the whole point of splitting the two (docs/ADMIN-CONSOLIDATION.md).
  */
 export function canManagePartners(user: User): boolean {
-  return user.role === 'admin' || user.role === 'partner_manager'
+  return user.commerceRole === 'admin' || user.commerceRole === 'partner_manager'
+}
+
+/** May this user see commercial data at all? */
+export function canReadCommerce(user: User): boolean {
+  return user.commerceRole !== 'none' && user.commerceRole !== undefined
 }

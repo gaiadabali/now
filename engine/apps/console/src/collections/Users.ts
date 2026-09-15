@@ -25,8 +25,11 @@ import type { CollectionConfig } from 'payload'
  * change to access rules, not a migration of everyone's role.
  */
 
-const isAdmin = ({ req }: { req: { user?: { role?: string } | null } }) =>
-  req.user?.role === 'admin'
+// Who may administer ACCOUNTS. This collection is the access-control list for
+// commercial data, so the commerce dimension is the one that governs it —
+// an editorial admin in a city has no business granting partner access.
+const isAdmin = ({ req }: { req: { user?: { commerceRole?: string } | null } }) =>
+  req.user?.commerceRole === 'admin'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -41,7 +44,7 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['email', 'name', 'role'],
+    defaultColumns: ['email', 'name', 'editorialRole', 'commerceRole'],
   },
   access: {
     // A signed-in user may see who else has access; only an admin may
@@ -50,7 +53,7 @@ export const Users: CollectionConfig = {
     read: ({ req }) => Boolean(req.user),
     create: isAdmin,
     update: ({ req, id }) => {
-      if (req.user?.role === 'admin') return true
+      if (req.user?.commerceRole === 'admin') return true
       // Anyone may edit their own row (name, password) but not someone
       // else's, and the `role` field below is admin-only regardless.
       return req.user?.id === id
@@ -58,19 +61,49 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   fields: [
+    // TWO DIMENSIONS, NOT ONE ENUM.
+    //
+    // The CMS and this console arrived with disjoint vocabularies —
+    // admin|editor|author for publishing, admin|partner_manager|viewer for
+    // commercial data. docs/ADMIN-CONSOLIDATION.md merges the surfaces, so
+    // one account has to express both, and a single field cannot: "an editor
+    // who may also read partner terms" and "a partner manager who may not
+    // publish" are both real people. Collapsing them forces either
+    // over-granting or an enum that grows multiplicatively.
+    //
+    // `none` is the default on both. A role model whose safe state depends on
+    // remembering to set something is a role model that will leak.
     {
-      name: 'role',
+      name: 'editorialRole',
       type: 'select',
       required: true,
-      defaultValue: 'viewer',
+      defaultValue: 'none',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Editor', value: 'editor' },
+        { label: 'Author', value: 'author' },
+        { label: 'No editorial access', value: 'none' },
+      ],
+      admin: { description: 'What this person may do in the city CMS.' },
+      access: {
+        // Without this, the self-edit rule above would let any user
+        // promote themselves.
+        update: isAdmin,
+      },
+    },
+    {
+      name: 'commerceRole',
+      type: 'select',
+      required: true,
+      defaultValue: 'none',
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Partner manager', value: 'partner_manager' },
         { label: 'Viewer', value: 'viewer' },
+        { label: 'No commercial access', value: 'none' },
       ],
+      admin: { description: 'What this person may see of orgs, partnerships and campaigns.' },
       access: {
-        // Without this, the self-edit rule above would let any user
-        // promote themselves to admin.
         update: isAdmin,
       },
     },

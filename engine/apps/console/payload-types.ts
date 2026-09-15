@@ -121,7 +121,14 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
-  role: 'admin' | 'partner_manager' | 'viewer';
+  /**
+   * What this person may do in the city CMS.
+   */
+  editorialRole: 'admin' | 'editor' | 'author' | 'none';
+  /**
+   * What this person may see of orgs, partnerships and campaigns.
+   */
+  commerceRole: 'admin' | 'partner_manager' | 'viewer' | 'none';
   name?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -216,7 +223,8 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  role?: T;
+  editorialRole?: T;
+  commerceRole?: T;
   name?: T;
   updatedAt?: T;
   createdAt?: T;
