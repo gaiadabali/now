@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove } from '@/access'
-import { bodyBlocksField } from '@/fields/bodyBlocks'
-import { vocabularySelectField } from '@/fields/vocabularySelect'
-import { enforcePublishRole } from '@/hooks/enforcePublishRole'
-import { publishArticleEvent } from '@/hooks/publishArticleEvent'
-import type { VocabularyMap } from '@/lib/vocabulary'
+import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { bodyBlocksField } from '../fields/bodyBlocks'
+import { vocabularySelectField } from '../fields/vocabularySelect'
+import { enforcePublishRole } from '../hooks/enforcePublishRole'
+import { publishArticleEvent } from '../hooks/publishArticleEvent'
+import type { VocabularyMap } from '../lib/vocabulary'
 
 /**
  * `articles` — ARCHITECTURE.md §5.

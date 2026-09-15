@@ -1,6 +1,6 @@
 import type { CollectionAfterChangeHook } from 'payload'
 
-import { publishDomainEvent } from '@/lib/redis'
+import { publishDomainEvent } from '../lib/redis'
 
 /**
  * afterChange hook — Articles.

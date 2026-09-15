@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove } from '@/access'
+import { isAuthorOrAbove, isEditorOrAbove } from '../access'
 
 /**
  * `authors` — public byline/profile, deliberately separate from `users`

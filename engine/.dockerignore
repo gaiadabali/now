@@ -1,0 +1,38 @@
+# Build context for the Node images (web, console, cms).
+#
+# Those three used to build with their own directory as the context. They
+# cannot any more: this directory is an npm workspace root, the lockfile lives
+# here, and `npm ci` inside a single workspace member has no lockfile to read.
+# So the context is `engine/` and each Dockerfile builds one member.
+#
+# Without this file that context is enormous — every .venv under packages/,
+# every node_modules, and the .next output of three Next apps.
+
+# Dependency trees and build output — reinstalled inside the image
+**/node_modules
+**/.next
+**/.venv
+**/dist
+
+# Python tooling that no Node image needs
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+
+# Secrets: never in a build context. A COPY . bakes these into a layer that
+# survives even if a later step deletes them.
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Local databases, dumps and derived data (docs/data-provenance.md)
+**/db/dumps
+**/content/harvested
+**/*.dump
+**/*.jsonl
+
+# Editor and OS noise
+**/.DS_Store
+**/*.swp

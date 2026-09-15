@@ -13,7 +13,16 @@
  *     its own database, because Payload binds one database per instance
  */
 
-import { Pool, type PoolConfig } from 'pg'
+// `pg` is CommonJS. A named import works under a bundler's interop but throws
+// under plain Node ESM —
+//   SyntaxError: The requested module 'pg' does not provide an export named 'Pool'
+// — which is how the payload CLI loads this package. Default-import then
+// destructure is the portable form, and this package is consumed both ways.
+import pg from 'pg'
+import type { PoolConfig } from 'pg'
+
+const { Pool } = pg
+type Pool = pg.Pool
 
 import type { AuthenticatedUser, IdentityStore, PlatformUser } from './identity.ts'
 import { isCommerceRole, isEditorialRole } from './identity.ts'

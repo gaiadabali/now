@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAdmin, readOnlyForAuthors } from '@/access'
-import { platformStrategy } from '@/auth/platformStrategy'
+import { isAdmin, readOnlyForAuthors } from '../access'
+import { platformStrategy } from '../auth/platformStrategy'
 
 /**
  * `users` — shadow projections of the platform identity store. Roles per
@@ -55,7 +55,13 @@ export const Users: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'author',
-      options: ['admin', 'editor', 'author'],
+      // 'none' is required, not cosmetic. Shadow rows are written from the
+      // platform's editorial_role (docs/ADMIN-CONSOLIDATION.md Phase 1), and
+      // that dimension has a 'none' value for staff with no publishing
+      // rights — a commerce-only user, say. Without it here the upsert fails
+      // on the enum and that person cannot sign in AT ALL, which is a lockout
+      // dressed up as a database error.
+      options: ['admin', 'editor', 'author', 'none'],
       access: {
         // Only an editor/admin may change someone's role.
         update: readOnlyForAuthors,

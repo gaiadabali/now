@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove } from '@/access'
-import { bodyBlocksField } from '@/fields/bodyBlocks'
+import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { bodyBlocksField } from '../fields/bodyBlocks'
 
 /**
  * `events` — ARCHITECTURE.md §5. Tied to a place; supports one-off and

@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
@@ -7,6 +9,12 @@ const nextConfig = {
   // image build fails at the COPY step — the Dockerfile was written for a
   // standalone build that the config never asked for.
   output: 'standalone',
+  // This app is an npm workspace member, so its dependencies live in
+  // engine/node_modules rather than beside it. Without an explicit tracing
+  // root Next infers one from the app directory and traces a tree that no
+  // longer contains them, producing a standalone bundle that is missing
+  // modules at runtime.
+  outputFileTracingRoot: path.join(import.meta.dirname, '../..'),
   // Payload's admin bundle pulls in a couple of packages that assume a
   // Node runtime; keep this minimal and let @payloadcms/next own the rest.
   experimental: {

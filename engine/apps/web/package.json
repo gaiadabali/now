@@ -2,7 +2,7 @@
   "name": "@now-engine/web",
   "version": "0.1.0",
   "private": true,
-  "description": "NOW! reader site. ONE Next.js app, instantiated per city (ARCHITECTURE.md §3.5) — differentiated only by SITE_SLUG + DATABASE_URI. Zero site-name literals in src/.",
+  "description": "NOW! reader site. ONE Next.js app, instantiated per city (ARCHITECTURE.md \u00a73.5) \u2014 differentiated only by SITE_SLUG + DATABASE_URI. Zero site-name literals in src/.",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
@@ -10,12 +10,20 @@
     "build": "next build",
     "start": "next start -p 3100",
     "typecheck": "tsc --noEmit",
-    "lint:site-literals": "node scripts/lint-site-literals.mjs"
+    "lint:site-literals": "node scripts/lint-site-literals.mjs",
+    "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
     "next": "15.4.11",
     "react": "19.0.1",
-    "react-dom": "19.0.1"
+    "react-dom": "19.0.1",
+    "@now-engine/cms": "file:../../packages/cms",
+    "payload": "3.88.0",
+    "sharp": "0.34.5",
+    "@payloadcms/next": "3.88.0",
+    "@payloadcms/db-postgres": "3.88.0",
+    "@payloadcms/richtext-lexical": "3.88.0",
+    "graphql": "^16.8.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
@@ -23,5 +31,7 @@
     "@types/react-dom": "19.0.1",
     "typescript": "5.7.2"
   },
-  "engines": { "node": "^18.20.2 || >=20.9.0" }
+  "engines": {
+    "node": "^18.20.2 || >=20.9.0"
+  }
 }

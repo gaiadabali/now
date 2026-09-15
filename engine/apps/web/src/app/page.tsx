@@ -14,6 +14,24 @@ export default async function HomePage() {
   const edit = latest.slice(1, 4)
   const rest = latest.slice(4, 12)
 
+  // A real database can be empty — a freshly provisioned city has no articles
+  // until the load runs. The fixture era could assume ARTICLES[0] existed;
+  // this cannot, and a masthead over a crash is worse than a masthead over an
+  // honest empty state.
+  if (!lead) {
+    return (
+      <section className="shell band">
+        <p className="kicker kicker--red">Nothing published yet</p>
+        <h1 className="display display--light" style={{ fontSize: 'var(--t-display)', marginTop: 'var(--space-s)' }}>
+          {site.name} is being prepared.
+        </h1>
+        <p className="dek" style={{ marginTop: 'var(--space-m)' }}>
+          There are no published stories in this edition yet. Please check back shortly.
+        </p>
+      </section>
+    )
+  }
+
   return (
     <>
       {/* ---------------------------------------------------- feature lead */}

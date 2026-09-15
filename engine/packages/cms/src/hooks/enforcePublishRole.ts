@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 
-import { canPublish } from '@/access'
+import { canPublish } from '../access'
 
 /**
  * Authors can write and save drafts freely, but only editor/admin may move
