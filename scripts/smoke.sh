@@ -86,6 +86,27 @@ smoke_city() {
                                    || bad "$img_ok/$img_total images load"
   fi
 
+  # DOCUMENT STRUCTURE. A page with two <html> elements returns a perfectly
+  # good 200 and then dies in the browser with "Application error: a
+  # client-side exception has occurred" — React cannot hydrate a nested
+  # document. curl never runs React, so every server-side check passed while
+  # the admin was unusable. This is the cheap proxy for that whole class of
+  # bug, and it is here because it actually happened: Payload's RootLayout
+  # renders its own <html>, and nesting it under the reader's root layout
+  # produced <html> x2 on every /team-editor page.
+  local doc_bad=0
+  for path in "/" "/team-editor" "/team-editor/login"; do
+    local page_html n_html n_body
+    page_html="$(body "$base$path")"
+    n_html="$(grep -o '<html' <<<"$page_html" | wc -l | tr -d ' ')"
+    n_body="$(grep -o '<body' <<<"$page_html" | wc -l | tr -d ' ')"
+    if [ "$n_html" != "1" ] || [ "$n_body" != "1" ]; then
+      bad "$path has <html>x$n_html <body>x$n_body — will not hydrate"
+      doc_bad=1
+    fi
+  done
+  [ "$doc_bad" -eq 0 ] && ok "one <html>/<body> on reader, admin and login"
+
   # Section index.
   local sec; sec="$(head_ "$base/dining")"
   [ "$sec" = "200" ] && ok "/dining returns 200" || bad "/dining returns $sec"
