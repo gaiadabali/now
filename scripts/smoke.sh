@@ -107,6 +107,26 @@ smoke_city() {
   done
   [ "$doc_bad" -eq 0 ] && ok "one <html>/<body> on reader, admin and login"
 
+  # FAVICON. There was none at all: /favicon.ico 404'd on both cities and the
+  # tab showed a blank page icon. It is per-city (one image, two cities), so a
+  # static app/icon file cannot serve it — the check is that the link is in
+  # the document AND the asset actually loads.
+  local icon
+  icon="$(grep -oE '<link[^>]*rel="icon"[^>]*>' <<<"$home" | grep -oE 'href="[^"]+"' | head -1 | sed 's/href="//;s/"$//')"
+  if [ -z "$icon" ]; then
+    bad "$name ships no <link rel=icon>"
+  else
+    local icode; icode="$(head_ "$base$icon")"
+    [ "$icode" = "200" ] && ok "favicon $icon loads" || bad "favicon $icon -> HTTP $icode"
+  fi
+
+  # /culture is a taxonomy-backed section, not a primaryType filter — an empty
+  # one would mean the term lookup silently returned nothing.
+  local cul cul_n
+  cul="$(body "$base/culture")"
+  cul_n="$(grep -oE 'href="/[a-z0-9-]{15,}"' <<<"$cul" | sort -u | wc -l | tr -d ' ')"
+  [ "$cul_n" -ge 5 ] && ok "/culture lists $cul_n articles"                      || bad "/culture lists only $cul_n articles — did the term lookup fail?"
+
   # Section index.
   local sec; sec="$(head_ "$base/dining")"
   [ "$sec" = "200" ] && ok "/dining returns 200" || bad "/dining returns $sec"

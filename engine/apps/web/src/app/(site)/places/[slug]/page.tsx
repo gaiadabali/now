@@ -1,106 +1,75 @@
-import Image from 'next/image'
-import Link from 'next/link'
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 
-import { StoryCard } from '@/components/StoryCard'
-import { Badge, PartnerBadge, SectionRule } from '@/components/primitives'
-import { PLACE, getLatest } from '@/lib/content'
+import { SectionRule } from '@/components/primitives'
+import { activePlaceBySlug } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
 
 /**
- * Place profile. The venue-shaped counterpart to an article: facts on the
- * left as a rules table, editorial coverage below. No star ratings and no
- * user reviews — NOW! speaks in its own voice, and a partner must never be
- * able to buy a score.
+ * Place profile — the venue-shaped counterpart to an article.
+ *
+ * **This used to render a fixture.** It served `PLACE` — a hardcoded Ubud
+ * restaurant — for every slug, in both cities, which is why a Jakarta URL
+ * showed a Bali address. It was a comp that outlived the comp era.
+ *
+ * Now it reads the real row and 404s unless `status = 'active'`. Every venue
+ * is still `pending_review` (F27), so this route 404s everywhere today. That
+ * is correct: a profile is a set of factual claims about a business — where
+ * it is, what it costs, when it opens — and none of them have been checked.
+ * A 404 is the honest answer until one has been.
+ *
+ * No star ratings and no user reviews, whatever the status: NOW! speaks in
+ * its own voice, and a partner must never be able to buy a score.
  */
-export default async function PlacePage() {
+
+type Params = { params: Promise<{ slug: string }> }
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params
+  const place = await activePlaceBySlug(slug)
+  if (!place) return {}
+  return { title: place.name, description: [place.subtype, place.area].filter(Boolean).join(' · ') }
+}
+
+export default async function PlacePage({ params }: Params) {
+  const { slug } = await params
   const site = await getSiteConfig()
-  const coverage = (await getLatest(4)).slice(1)
-  const hero = (await getLatest(1))[0]
-  const p = PLACE
+  const place = await activePlaceBySlug(slug)
+  if (!place) notFound()
+
+  const facts: Array<[string, string]> = [
+    ['Type', place.subtype ?? place.type ?? '—'],
+    ['Area', place.area ?? '—'],
+    ['Price', place.priceBand ?? '—'],
+    ['Address', place.address ?? '—'],
+  ].filter(([, v]) => v !== '—') as Array<[string, string]>
 
   return (
     <div className="shell">
       <div className="place-head">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-m)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-2xs)', alignItems: 'center' }}>
-            <span className="kicker kicker--red">{p.type}</span>
-            <span className="kicker">/ {p.area}</span>
-            {p.partner ? <PartnerBadge /> : null}
+            <span className="kicker kicker--red">{place.subtype ?? place.type ?? 'Venue'}</span>
+            {place.area ? <span className="kicker">/ {place.area}</span> : null}
           </div>
-          <h1 className="place-head__title display display--light">{p.name}</h1>
-          <p className="dek">{p.dek}</p>
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', flexWrap: 'wrap' }}>
-            {p.vibe.map((v) => (
-              <Badge key={v}>{v}</Badge>
-            ))}
-          </div>
+          <h1 className="place-head__title display display--light">{place.name}</h1>
         </div>
 
         <div className="place-facts">
-          <div className="place-facts__row">
-            <span className="place-facts__key">Cuisine</span>
-            <span className="place-facts__val">{p.cuisine}</span>
-          </div>
-          <div className="place-facts__row">
-            <span className="place-facts__key">Price</span>
-            <span className="place-facts__val price">
-              {'$'.repeat(p.price)}
-              <span className="price__off">{'$'.repeat(4 - p.price)}</span>
-            </span>
-          </div>
-          <div className="place-facts__row">
-            <span className="place-facts__key">Area</span>
-            <span className="place-facts__val">
-              <Link href="/areas/ubud" style={{ borderBottom: '1px solid var(--red)' }}>
-                {p.area}
-              </Link>
-              , {p.district}
-            </span>
-          </div>
-          <div className="place-facts__row">
-            <span className="place-facts__key">Hours</span>
-            <span className="place-facts__val">{p.hours}</span>
-          </div>
-          <div className="place-facts__row">
-            <span className="place-facts__key">Address</span>
-            <span className="place-facts__val">{p.address}</span>
-          </div>
-          <div className="place-facts__row">
-            <span className="place-facts__key">Telephone</span>
-            <span className="place-facts__val">{p.phone}</span>
-          </div>
+          {facts.map(([key, value]) => (
+            <div className="place-facts__row" key={key}>
+              <span className="place-facts__key">{key}</span>
+              <span className="place-facts__val">{value}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <figure>
-        <Image
-          className="article-hero__img"
-          src={hero.image}
-          alt=""
-          width={1600}
-          height={900}
-          sizes="100vw"
-          priority
-        />
-        <figcaption className="figure__caption">
-          {p.name}, {p.area}. <span className="figure__credit">Photo courtesy of the venue.</span>
-        </figcaption>
-      </figure>
-
       <section className="band">
-        <SectionRule label="Our Coverage" note={`Everything we have written about ${p.name}`} />
-        <div className="grid grid--3 grid--ruled">
-          {coverage.map((a) => (
-            <StoryCard key={a.id} article={a} locale={site.locale} timeZone={site.timezone} />
-          ))}
-        </div>
-      </section>
-
-      <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="Nearby" note="Within 15 minutes" moreHref="/areas/ubud" />
+        <SectionRule label="Our Coverage" note={`Everything ${site.name} has written about ${place.name}`} />
         <p className="meta">
-          Distance-ranked results appear here once geocoding completes — 141 venues are still waiting
-          on a Maps key (PROGRESS.md, blocker&nbsp;0).
+          Coverage links appear here once article&nbsp;→&nbsp;venue linking is applied to this
+          record.
         </p>
       </section>
     </div>

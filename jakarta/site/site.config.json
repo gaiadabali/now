@@ -8,7 +8,9 @@
   "tagline": "The city, read closely.",
   "brand": {
     "logo": "/brand/jakarta.svg",
-    "logoAlt": "NOW! Jakarta"
+    "logoAlt": "NOW! Jakarta",
+    "favicon": "/brand/jakarta-favicon.png",
+    "appleIcon": "/brand/jakarta-apple.png"
   },
   "nav": [
     {
@@ -68,6 +70,18 @@
         {
           "label": "Events",
           "href": "/events"
+        },
+        {
+          "label": "Culture",
+          "href": "/culture"
+        },
+        {
+          "label": "Areas",
+          "href": "/areas"
+        },
+        {
+          "label": "Places",
+          "href": "/places"
         }
       ]
     },
@@ -77,6 +91,31 @@
         {
           "label": "NOW! Bali",
           "href": "https://www.nowbali.co.id"
+        },
+        {
+          "label": "Subscribe",
+          "href": "/subscribe"
+        }
+      ]
+    },
+    {
+      "head": "NOW!",
+      "links": [
+        {
+          "label": "About Us",
+          "href": "/about"
+        },
+        {
+          "label": "Podcast",
+          "href": "/podcast"
+        },
+        {
+          "label": "Advertise",
+          "href": "/advertise"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact"
         }
       ]
     }
