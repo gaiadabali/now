@@ -113,6 +113,18 @@ services:
     image: redis:7.4.11-alpine
     container_name: now-redis
     restart: unless-stopped
+    # The healthcheck below runs `redis-cli -a $REDIS_PASSWORD` INSIDE the
+    # container ($$ escapes it past compose's own interpolation), so the
+    # variable has to exist in the container's environment. `command:` alone
+    # does not put it there -- it only passes the value as an argv token.
+    #
+    # Without this block the probe authenticates with an empty string and
+    # redis answers `WRONGPASS`, so the container runs perfectly while
+    # reporting unhealthy forever, and deploy.sh's health gate fails every
+    # rollout. The root docker-compose.yml has always had this block; it was
+    # dropped when this file was derived from it.
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:?}
