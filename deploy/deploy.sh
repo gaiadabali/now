@@ -25,6 +25,7 @@
 set -Eeuo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$DEPLOY_DIR/.." && pwd)"
 COMPOSE=(docker compose -f "$DEPLOY_DIR/docker-compose.yml" --env-file "$DEPLOY_DIR/.env")
 
 # Ordered so a dependency is healthy before its dependents are asked to
@@ -74,6 +75,35 @@ done
 export IMAGE_TAG
 
 info "tag $IMAGE_TAG"
+
+# ---------------------------------------------------------------------------
+# The checkout must match the tag being deployed.
+#
+# Not every deployed file lives in the image. `<slug>/site/site.config.json`
+# is BIND-MOUNTED from this checkout (see docker-compose.yml, web-jakarta),
+# deliberately, so a brand or navigation change is a restart rather than a
+# rebuild. The cost of that choice is a silent failure mode: pulling a new
+# image without pulling the repo leaves new code reading old config, and the
+# symptom is not an error. It is a footer missing the links the build added,
+# or a favicon falling back to the wordmark — a worse page that still returns
+# 200, which is exactly the kind of thing that survives a smoke test.
+#
+# Tags are `sha-<short sha>`, so the check is free and offline: the tag names
+# the commit the image was built from, and HEAD must be that commit.
+# ---------------------------------------------------------------------------
+if [[ "$IMAGE_TAG" == sha-* ]] && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  want="${IMAGE_TAG#sha-}"
+  have="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
+  if [[ "$have" != "$want"* ]]; then
+    die "this checkout is not the commit being deployed
+  image tag : $IMAGE_TAG  (built from $want)
+  checkout  : ${have:0:${#want}}
+  The city config under <slug>/site/ is mounted from here, not baked into the
+  image, so deploying now would run new code against old config.
+  Fix:  git -C $REPO_ROOT fetch origin && git -C $REPO_ROOT checkout $want"
+  fi
+  ok "checkout matches $IMAGE_TAG"
+fi
 
 # ---------------------------------------------------------------------------
 # Pull every image FIRST. A partial rollout — new API against an old CMS —
