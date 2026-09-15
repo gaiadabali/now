@@ -53,7 +53,13 @@ def _run_reembed_consumer(settings: Settings) -> None:
         logger.info(
             "re-embed consumer starting (provider=%s)", settings.reembed_provider
         )
-        worker.run()
+        # `run_forever`, not `run` — ReembedWorker exposes run_once (bounded,
+        # used by tests and `worker --once`) and run_forever (the loop). There
+        # is no `run`, so this raised AttributeError on the first line of the
+        # thread, every start, and the consumer never once ran in production.
+        # The supervision worked exactly as designed: the flag latched and the
+        # container reported unhealthy. Nothing read the report.
+        worker.run_forever()
     except Exception:
         # Latching the flag is the point: the heartbeat job reads it and
         # stops renewing, which is what turns "a thread quietly died" into
