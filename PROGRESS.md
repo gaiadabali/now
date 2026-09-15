@@ -113,6 +113,30 @@ Prevents two agents editing the same files in one wave.
 
 # 🌊 EXECUTION WAVES — what actually ran
 
+## WAVE 20 — The itinerary solver *(2026-09-15)*
+
+Beacon deployment is deferred pending client approval (B2), so this wave took the largest unbuilt
+piece that needs **no database and no behavioural data**: E5.2's solver and E5.3's gate. The dev
+Postgres was also down this session (Docker Desktop not running), which made a DB-free target the
+only honest choice — `now_itinerary` has zero DB imports by design, and its synthetic fixtures are
+what let 25 constraint scenarios be tested without one.
+
+| Item | Outcome |
+|---|---|
+| E5.2 CP-SAT solver | ✅ Assignment + scheduling. The slot ladder fixes intra-day order, so no TSP remains — what is solved is *which stop fills each (day, slot)* and *when the visitor arrives*, under opening hours, dwell, travel feasibility, budget, diversity caps, party constraints and guaranteed partner slots. **OPTIMAL at 1,000 candidates / 7 days in 1.2s.** |
+| E5.3 validator | ✅ **Independent re-derivation**, not a read-back of solver variables — checking that CP-SAT satisfied what CP-SAT was given proves only that CP-SAT works, and cannot catch the model encoding the *wrong* constraint. All 25 tests assert through it. |
+| 🐛 **Breakfast was silently dropped every day** | `max_per_type_per_day` defaulted to 2 while the ladder has three `eat` slots (breakfast/lunch/dinner). Measured: 10 of 12 slots filled across two days, breakfast gone both — and gone *silently*, being the only optional one of the three. Default now 3, with a regression test. |
+| Infeasibility is diagnosed | `_precheck` names the arithmetic conflicts rather than returning a bare `INFEASIBLE`: a per-type cap below the required same-type slot count is unsatisfiable for **any** pool, and required slots need *distinct* stops (org cap included in the supply count). |
+| ⚖️ Determinism: **accepted, not fixed** | Repeated solves can return different *equally optimal* itineraries. Both fixes cost more than the problem — an objective tie-break needs ~1e6 headroom, pushing coefficients to ~1e9 and off CP-SAT's performance cliff (400 stops: 1s → 10s limit, **not** optimal); `num_search_workers=1` measured **10.2s FEASIBLE vs 413ms OPTIMAL**, 25× slower. And a solve that hits its time limit is nondeterministic anyway. A shared itinerary is stable because **E5.4 persists it**, not because a re-solve reproduces it — so the test pins *equal quality*, not identical output. |
+| Travel honesty | `HaversineMatrix` is a stand-in until E5.1's OSRM matrix. §15's own framing is "Jakarta traffic is the problem", so it is wrong in a known direction — **optimistic**. `TravelMatrix.is_estimate` rides on the Protocol and the validation report so a gate can refuse to certify a trip whose travel budget was only checked against a guess. |
+
+**Suite:** itinerary 25 passing, no database required.
+
+> **Still open for E5:** E5.1 (OSRM matrix → `engine.travel_matrix`), E5.4 (`public.places` → `Stop`
+> adapter + API + persistence), E5.5 narration, E5.6 curated itineraries, E5.7 share/fork. E5.4 is
+> the next one and it needs the dev Postgres back up.
+
+
 ## WAVE 19 — Expose the engine: `/search` *(2026-09-14)*
 
 The `now_search` package (1,601 LOC) had been built since E3.1 but was reachable only from a CLI and
