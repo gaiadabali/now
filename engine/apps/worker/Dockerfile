@@ -29,7 +29,13 @@ COPY engine/apps/worker ./engine/apps/worker
 WORKDIR /app/engine/apps/worker
 # No --frozen: this app has no uv.lock committed yet, unlike the API. Resolve
 # at build time and let the image be the artifact that gets promoted.
-RUN uv sync --no-dev
+#
+# `--no-editable` for the same reason engine/apps/api's Dockerfile carries
+# it: the local path dependencies are declared editable, so without this
+# the venv only holds .pth files pointing at `/app/engine/packages/...`,
+# and the runner stage below never copies that tree. The build succeeds and
+# the container then dies on ModuleNotFoundError at import time.
+RUN uv sync --no-dev --no-editable
 
 FROM base AS runner
 RUN useradd --create-home --uid 10001 app

@@ -113,6 +113,47 @@ Prevents two agents editing the same files in one wave.
 
 # 🌊 EXECUTION WAVES — what actually ran
 
+## WAVE 21 — helios is live *(2026-09-15)*
+
+First real deployment. Six hostnames serving over TLS at `187.77.116.133`, tag **`sha-d4bc080`**.
+
+| URL | |
+|---|---|
+| `https://now-engine-api.gaiada.com/healthz` | ✅ `{"status":"ok"}` — live OpenAPI carries `/v1/{site}/search` |
+| `https://now-jakarta.gaiada.com` | ✅ **NOW! Jakarta** |
+| `https://now-bali.gaiada.com` | ✅ **NOW! Bali** |
+| `https://now-cms-jakarta.gaiada.com` · `now-cms-bali` | ✅ Payload at `/admin` |
+| `https://now-console.gaiada.com` | ✅ redirects to login; **admin created, first-register verified closed** |
+
+**§3.5 proven in production, not just on paper:** one image `now-web:sha-d4bc080` serves Jakarta on
+4311 and Bali on 4315, differentiated by nothing but `SITE_SLUG`. Titles confirmed live.
+
+### Five latent bugs, none of which CI could see
+
+The through-line: **CI proved images BUILD, never that they START.**
+
+| # | Bug | Consequence if unfound |
+|---|---|---|
+| 1 | `publish-images` had **never once succeeded**; its fix sat on an unmerged branch, and the workflow only triggers on `main` | nothing to deploy, ever |
+| 2 | `now-web` prerendered `/_not-found` + `/design` through a layout calling `getSiteConfig()` | **Bali's masthead, nav and `metadataBase` baked into the city-agnostic image** — plus `new Date()` frozen at build time, showing the build date to readers forever. Masked by a gitignored `.env.local` carrying `SITE_SLUG=bali`, so local builds "passed" |
+| 3 | `now-cms` copied `/app/public`, which does not exist in that package | image build fails |
+| 4 | `now-api` + `now-worker` used **editable** installs; the runner copies `/opt/venv` and the app dir but not `engine/packages`, so the `.pth` targets were absent | `ModuleNotFoundError: No module named 'now_config'` at startup. Fixed with `uv sync --no-editable` |
+| 5 | redis healthcheck ran `redis-cli -a $REDIS_PASSWORD` **inside** a container with no `environment:` block → empty password → `WRONGPASS` | redis serves fine but reports unhealthy **forever**; `deploy.sh`'s gate fails every rollout. The root compose always had the block; it was dropped when `deploy/` was derived from it |
+
+### Also found
+
+- **`npx payload migrate` cannot run against the deployed console image** — standalone build has `src/migrations/` but no `tsconfig.json` and no payload module. Applied the `up()` SQL directly and recorded it in `payload_migrations`. Runbook updated; **the proper fix (a console image that can migrate itself) is still open.**
+- DNS was first pointed at **delphi (`72.61.142.88`)**, the host this stack was deliberately moved off. Corrected to helios before it mattered.
+- Hostnames are `now-cms-jakarta` / `now-cms-bali`, not the runbook's original `cms-*`. Docs updated to match DNS.
+
+### Open
+
+- [ ] **Rotate the GHCR PAT** — it was pasted in chat and is in `/root/.docker/config.json`
+- [ ] **Smoke-test step in `publish-images`** — start each image, hit its healthcheck. Would have caught #4 and #5 in CI rather than on the box
+- [ ] **Databases are empty.** `now_platform` exists; `now_jakarta`/`now_bali` do not. Needs `site:create` + `now-db` migrations + the E1.8 load. **A green deploy is not live content.**
+- [ ] Console image should be able to run its own migrations
+
+
 ## WAVE 20 — The itinerary solver *(2026-09-15)*
 
 Beacon deployment is deferred pending client approval (B2), so this wave took the largest unbuilt

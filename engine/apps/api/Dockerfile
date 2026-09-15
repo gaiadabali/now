@@ -43,7 +43,22 @@ COPY engine/packages ./engine/packages
 COPY engine/apps/api ./engine/apps/api
 
 WORKDIR /app/engine/apps/api
-RUN uv sync --frozen --no-dev
+# `--no-editable` is load-bearing, not tidiness.
+#
+# pyproject.toml declares its local path dependencies with
+# `editable = true`, which is right for development: an editable install
+# writes a .pth file pointing at `/app/engine/packages/<pkg>/src` instead
+# of copying anything into site-packages. The runner stage below copies
+# `/opt/venv` and this app's own directory -- NOT `engine/packages` -- so
+# those .pth targets do not exist at runtime and the container dies on
+# `ModuleNotFoundError: No module named 'now_config'` while the *build*
+# reports success.
+#
+# `--no-editable` materialises the packages into the venv, which makes
+# /opt/venv self-contained and is what a runtime image should carry
+# anyway. The alternative -- copying the whole packages tree into the
+# runner too -- ships ~95 MB of source that nothing imports by path.
+RUN uv sync --frozen --no-dev --no-editable
 
 FROM base AS runner
 # Never run as root: a container escape should not land on uid 0, and the
