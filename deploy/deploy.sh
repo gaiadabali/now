@@ -11,6 +11,10 @@
 # rollout has an order and a verification step, and both are easy to skip by
 # hand at exactly the wrong moment.
 #
+# Four images, not six: the CMS and the commerce console were merged into the
+# reader app at /team-editor (docs/ADMIN-CONSOLIDATION.md Phase 4), so
+# `cms-jakarta`, `cms-bali` and `console` no longer exist as services.
+#
 # It never builds. Images come from GHCR — `next build` is the memory-hungry
 # step that gets OOM-killed on a small box, with an error that reads like a
 # code fault rather than a capacity one.
@@ -26,7 +30,7 @@ COMPOSE=(docker compose -f "$DEPLOY_DIR/docker-compose.yml" --env-file "$DEPLOY_
 # Ordered so a dependency is healthy before its dependents are asked to
 # start. compose's depends_on already encodes this; naming it again here
 # keeps the log readable when something stalls.
-SERVICES=(postgres redis engine-api engine-worker console web-jakarta web-bali cms-jakarta cms-bali)
+SERVICES=(postgres redis engine-api engine-worker web-jakarta web-bali)
 
 die()  { printf '\n\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 info() { printf '\033[36m==>\033[0m %s\n' "$*"; }
@@ -64,7 +68,7 @@ source "$DEPLOY_DIR/.env"; set +a
 
 [[ -n "${IMAGE_TAG:-}" ]] || die "IMAGE_TAG is empty — set it in .env or pass --tag"
 [[ "$IMAGE_TAG" != "latest" ]] || die "IMAGE_TAG=latest is refused: a rollback must be able to name what it rolls back to"
-for v in POSTGRES_IMAGE API_IMAGE WORKER_IMAGE CONSOLE_IMAGE WEB_IMAGE CMS_IMAGE; do
+for v in POSTGRES_IMAGE API_IMAGE WORKER_IMAGE WEB_IMAGE; do
   [[ -n "${!v:-}" ]] || die "$v is empty — see deploy/.env.example"
 done
 export IMAGE_TAG
@@ -76,7 +80,7 @@ info "tag $IMAGE_TAG"
 # is worse than no rollout, so nothing stops until all four are on disk.
 # ---------------------------------------------------------------------------
 info "pulling images"
-for img in "$POSTGRES_IMAGE" "$API_IMAGE" "$WORKER_IMAGE" "$CONSOLE_IMAGE" "$WEB_IMAGE" "$CMS_IMAGE"; do
+for img in "$POSTGRES_IMAGE" "$API_IMAGE" "$WORKER_IMAGE" "$WEB_IMAGE"; do
   docker pull --quiet "$img:$IMAGE_TAG" >/dev/null \
     || die "cannot pull $img:$IMAGE_TAG
   - is CI green for this SHA? see the publish-images workflow
@@ -127,7 +131,7 @@ if ! curl -fsS --max-time 10 "http://127.0.0.1:${api_port}/healthz" >/dev/null; 
 fi
 ok "engine-api /healthz"
 
-for pair in "web-jakarta:${WEB_JAKARTA_HOST_PORT:-4311}" "web-bali:${WEB_BALI_HOST_PORT:-4315}" "cms-jakarta:${CMS_JAKARTA_HOST_PORT:-4312}" "cms-bali:${CMS_BALI_HOST_PORT:-4313}" "console:${CONSOLE_HOST_PORT:-4316}"; do
+for pair in "web-jakarta:${WEB_JAKARTA_HOST_PORT:-4311}" "web-bali:${WEB_BALI_HOST_PORT:-4315}"; do
   svc="${pair%%:*}"; port="${pair##*:}"
   # Any HTTP response is enough here: a Next/Payload route may legitimately
   # answer 3xx or 4xx at /, and this check is "is the server listening",
