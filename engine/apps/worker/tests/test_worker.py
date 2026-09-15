@@ -156,11 +156,23 @@ def test_partition_lookahead_exceeds_the_cli_default():
 
 
 class FakeRedis:
+    """Mirrors redis-py's `set` signature, deliberately and exactly.
+
+    This fake used to declare `expire=None`, matching the production call
+    rather than the library. Both were wrong — arq's ctx["redis"] is an
+    ArqRedis, a subclass of redis.asyncio.Redis, whose TTL argument is `ex`.
+    So the suite passed for months while the real call raised TypeError on
+    every single beat, and the heartbeat key was never written once.
+
+    A fake that agrees with the caller instead of the dependency cannot fail.
+    Keep this signature honest: `ex`, `px`, `nx`, `xx` are what redis-py takes.
+    """
+
     def __init__(self):
         self.sets: list[tuple] = []
 
-    async def set(self, key, value, expire=None):
-        self.sets.append((key, value, expire))
+    async def set(self, key, value, *, ex=None, px=None, nx=False, xx=False):
+        self.sets.append((key, value, ex))
 
 
 async def test_heartbeat_written_when_consumer_is_healthy(monkeypatch):
@@ -175,6 +187,10 @@ async def test_heartbeat_written_when_consumer_is_healthy(monkeypatch):
 
     assert result["heartbeat"] == Settings().heartbeat_key
     assert redis.sets and redis.sets[0][0] == Settings().heartbeat_key
+    # The TTL is the whole mechanism: the key must expire so that a worker
+    # which stops beating goes unhealthy on its own. A write with no TTL
+    # would look identical here and never expire in production.
+    assert redis.sets[0][2] == Settings().heartbeat_ttl_seconds
     del alive
 
 
@@ -221,3 +237,58 @@ async def test_drop_old_partitions_is_a_noop_without_retention():
     ctx = {"settings": Settings(interaction_retention_days=None)}
     result = await jobs.drop_old_partitions(ctx)
     assert "skipped" in result
+
+
+# ---------------------------------------------------------------------------
+# The consumer entry point
+# ---------------------------------------------------------------------------
+
+
+def test_reembed_consumer_calls_a_method_that_exists(monkeypatch):
+    """Drives `_run_reembed_consumer` against a worker that exposes ONLY the
+    real ReembedWorker API.
+
+    Asserting `hasattr(ReembedWorker, "run_forever")` is not enough — that
+    stays true no matter what main.py actually calls, which is how the
+    original typo survived. The call site is what has to be exercised: it
+    called `run()`, which has never existed, so the thread raised
+    AttributeError on its first line at every start and the consumer never
+    ran in production. Its exception handler is deliberately broad, so the
+    only evidence was an unhealthy container.
+
+    Here that same handler is the assertion: if the call site names a method
+    the real class does not have, the failure flag latches and this fails.
+    """
+
+    import now_embeddings.cli as embed_cli
+    import now_embeddings.worker as embed_worker
+
+    real_api = {n for n in dir(embed_worker.ReembedWorker) if not n.startswith("_")}
+    calls: list[str] = []
+
+    class OnlyTheRealAPI:
+        """Raises AttributeError for anything the real class lacks."""
+
+        def __init__(self, **kwargs):
+            pass
+
+        def __getattr__(self, name):
+            if name not in real_api:
+                raise AttributeError(
+                    f"ReembedWorker has no attribute {name!r} — "
+                    f"app/main.py calls it but the real API is {sorted(real_api)}"
+                )
+            calls.append(name)
+            return lambda *a, **k: None
+
+    monkeypatch.setattr(embed_worker, "ReembedWorker", OnlyTheRealAPI)
+    monkeypatch.setattr(embed_cli, "_provider", lambda name: object())
+    monkeypatch.setattr(main, "_reembed_failed", threading.Event())
+
+    main._run_reembed_consumer(Settings(run_reembed_consumer=True))
+
+    assert not main._reembed_failed.is_set(), (
+        "the re-embed consumer failed to start — app/main.py calls a method "
+        "ReembedWorker does not have"
+    )
+    assert calls, "the consumer never called into ReembedWorker at all"

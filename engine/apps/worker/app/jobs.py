@@ -123,5 +123,10 @@ async def heartbeat(ctx: dict) -> dict:
 
     redis = ctx["redis"]
     settings = ctx["settings"]
-    await redis.set(settings.heartbeat_key, "1", expire=settings.heartbeat_ttl_seconds)
+    # `ex=`, not `expire=`. arq's ctx["redis"] is an ArqRedis, a subclass of
+    # redis.asyncio.Redis, whose set() names the TTL `ex`; `expire` was the
+    # old aioredis spelling and raises TypeError here. The heartbeat therefore
+    # never wrote a key, and the health probe read that as a wedged worker —
+    # a liveness check that could only ever report dead.
+    await redis.set(settings.heartbeat_key, "1", ex=settings.heartbeat_ttl_seconds)
     return {"heartbeat": settings.heartbeat_key}
