@@ -11,7 +11,14 @@
  * writes.
  */
 
-import { SECTION_TO_TYPES, heroMediaId, legacyMediaUrls, payloadClient, toArticle } from '@/lib/payload'
+import {
+  SECTION_TO_TYPES,
+  heroMediaId,
+  legacyMediaUrls,
+  payloadClient,
+  sectionFormatCounts,
+  toArticle,
+} from '@/lib/payload'
 import { slugify } from '@/lib/format'
 
 export type Article = {
@@ -39,9 +46,21 @@ export type Article = {
 const SECTION_MAP: Record<string, string[]> = {
   dining: ['dining'],
   stay: ['stay'],
-  culture: ['culture'],
   wellness: ['wellness'],
   'things-to-do': ['things-to-do'],
+  events: ['events'],
+  guides: ['guides'],
+}
+
+/**
+ * Sections backed by a `format` rather than a `primaryType`.
+ *
+ * Guides are not a subject, they are a shape — a city guide about food is
+ * still about food. §4 keeps that distinction, so this one section filters on
+ * `format` and the rest filter on type.
+ */
+const FORMAT_SECTIONS: Record<string, string[]> = {
+  guides: ['city-guide'],
 }
 
 export function sectionOf(article: Article): string {
@@ -106,15 +125,16 @@ export async function getBySection(
   limit = 12,
   format?: string,
 ): Promise<Article[]> {
+  const formats = FORMAT_SECTIONS[slug]
   const types = SECTION_TO_TYPES[slug]
-  if (!types) return []
+  if (!formats && !types) return []
 
   const payload = await payloadClient()
   const { docs } = await payload.find({
     collection: 'articles',
     where: {
       ...PUBLISHED,
-      primaryType: { in: types },
+      ...(formats ? { format: { in: formats } } : { primaryType: { in: types } }),
       ...(format ? { format: { equals: format } } : {}),
     },
     sort: '-publishedAt',
@@ -126,64 +146,73 @@ export async function getBySection(
 
 export type Facet = { label: string; value: string | null; count: number }
 
-/** Human labels for the §4 `format` vocabulary. */
+/**
+ * Human labels for the `format` vocabulary.
+ *
+ * **Every key must exist in `enum_articles_format`**, which is exactly:
+ *
+ *     city-guide, event, feature, guide, heritage, listing, news, offer,
+ *     opinion, people, review
+ *
+ * An earlier version invented `interview` and `listicle`. Neither exists, so
+ * counting them sent an unknown label to Postgres and every section page
+ * returned 500 — `invalid input value for enum enum_articles_format`. The
+ * same mistake, in the same shape, as mapping a `culture` primaryType that
+ * was never in the enum either.
+ *
+ * Unlabelled values still appear, humanised, rather than being dropped: the
+ * counts come from the DATA, and a label table that silently hides a format
+ * would make the facet row lie about what is in the section.
+ */
 const FORMAT_LABELS: Record<string, string> = {
   news: 'News',
   feature: 'Features',
   review: 'Reviews',
-  'city-guide': 'Guides',
+  'city-guide': 'City Guides',
+  guide: 'Guides',
   offer: 'Offers',
   event: 'Events',
   people: 'People',
-  interview: 'Interviews',
-  listicle: 'Lists',
+  opinion: 'Opinion',
+  heritage: 'Heritage',
+  listing: 'Listings',
+}
+
+function humanise(value: string): string {
+  return FORMAT_LABELS[value] ?? value.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase())
 }
 
 /**
- * Real facet counts for a section index.
+ * Real facet counts for a section index, in ONE query.
  *
- * Replaces the comp's hardcoded chips (`Ubud 34`, `$$ 41`), which were
- * invented design values wired to nothing — they neither counted nor
- * filtered, and on a live site they were simply false.
+ * Counts are grouped in SQL rather than asked for one format at a time. The
+ * previous shape issued a count per label — nine round trips for a page that
+ * needs one — and, worse, it could only count formats someone had thought to
+ * list. Grouping asks the data what is there, so a format added by the
+ * classifier tomorrow appears without a code change and an invented one
+ * cannot be sent at all.
  *
- * Faceted on `format` rather than area or price because those are the
- * attributes articles actually carry. Area and price live on `places`, and a
- * section index lists articles; the comp borrowed a place filter for an
- * article page.
- *
- * §9's "count with every filter EXCEPT the facet being counted" is satisfied
- * trivially here: `format` is the only reader-facing filter on this page, so
- * each count is taken with it lifted. The moment a second filter is added,
- * this has to grow an exclusion or the counts start lying by a different
- * mechanism.
+ * Uses the same city pool as `legacyMediaUrls`; see that function for why a
+ * narrow direct read is preferred here over the Local API, which cannot
+ * aggregate.
  */
 export async function getSectionFacets(slug: string): Promise<Facet[]> {
+  const formats = FORMAT_SECTIONS[slug]
   const types = SECTION_TO_TYPES[slug]
-  if (!types) return []
+  if (!formats && !types) return []
 
-  const payload = await payloadClient()
-  const base = { ...PUBLISHED, primaryType: { in: types } }
-
-  // `limit: 0` asks Postgres for the count without fetching rows.
-  const total = await payload.count({ collection: 'articles', where: base })
-
-  const counted = await Promise.all(
-    Object.entries(FORMAT_LABELS).map(async ([value, label]) => ({
-      label,
-      value,
-      count: (await payload.count({
-        collection: 'articles',
-        where: { ...base, format: { equals: value } },
-      })).totalDocs,
-    })),
-  )
+  const rows = await sectionFormatCounts({ formats, types })
+  const total = rows.reduce((sum, r) => sum + r.count, 0)
 
   return [
-    { label: 'All', value: null, count: total.totalDocs },
-    // A chip counting zero is noise, not information.
-    ...counted.filter((f) => f.count > 0).sort((a, b) => b.count - a.count),
+    { label: 'All', value: null, count: total },
+    ...rows
+      .filter((r) => r.format && r.count > 0)
+      .map((r) => ({ label: humanise(r.format!), value: r.format, count: r.count }))
+      .sort((a, b) => b.count - a.count),
   ]
 }
+
 
 export async function getBySlug(slug: string): Promise<Article | undefined> {
   const payload = await payloadClient()

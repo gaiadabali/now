@@ -8,6 +8,7 @@ import { SectionRule, Signup } from '@/components/primitives'
 import {
   getBySection,
   getBySlug,
+  getSectionFacets,
   getRelated,
   isSectionSlug,
   sectionLabel,
@@ -24,7 +25,14 @@ import { getSiteConfig } from '@/lib/site'
  * estate — do not split it into sibling dynamic routes.
  */
 
-type Params = { params: Promise<{ slug: string }> }
+type Params = {
+  params: Promise<{ slug: string }>
+  // The facet chips are links, so the active filter lives in the URL. That
+  // keeps a filtered section shareable and back-button-able, and keeps this
+  // page a server component — no client state for something the URL already
+  // expresses.
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
@@ -38,9 +46,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 }
 
-export default async function SlugPage({ params }: Params) {
+export default async function SlugPage({ params, searchParams }: Params) {
   const { slug } = await params
-  if (isSectionSlug(slug)) return <SectionIndex slug={slug} />
+  const query = (await searchParams) ?? {}
+  const format = typeof query.format === 'string' ? query.format : undefined
+  if (isSectionSlug(slug)) return <SectionIndex slug={slug} format={format} />
   const article = await getBySlug(slug)
   if (!article) notFound()
   return <ArticlePage slug={slug} />
@@ -163,24 +173,20 @@ async function ArticlePage({ slug }: { slug: string }) {
 /*  SECTION INDEX                                                             */
 /* ========================================================================== */
 
-async function SectionIndex({ slug }: { slug: string }) {
+async function SectionIndex({ slug, format }: { slug: string; format?: string }) {
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
-  const articles = await getBySection(slug, 12)
+  const articles = await getBySection(slug, 12, format)
   const [lead, ...rest] = articles
 
-  // Facet counts are illustrative in the comp. Live, they come from the
-  // engine's single aggregate pass, computed with every filter EXCEPT the
-  // facet being counted (ARCHITECTURE.md §9).
-  const facets = [
-    { label: 'All', count: articles.length, active: true },
-    { label: 'Ubud', count: 34 },
-    { label: 'Seminyak', count: 28 },
-    { label: 'Canggu', count: 22 },
-    { label: '$$', count: 41 },
-    { label: '$$$', count: 19 },
-    { label: 'Open now', count: 12 },
-  ]
+  // Real counts, faceted on `format`, computed from the database.
+  //
+  // These were hardcoded comp values — `Ubud 34`, `Seminyak 28`, `$$ 41` —
+  // wired to nothing. They neither counted nor filtered, and on Jakarta they
+  // showed BALI place names, because the comp borrowed a places filter for an
+  // articles page. Area and price are attributes of `places`; a section index
+  // lists `articles`, whose reader-facing facet is format.
+  const facets = await getSectionFacets(slug)
 
   return (
     <div className="shell">
@@ -196,11 +202,20 @@ async function SectionIndex({ slug }: { slug: string }) {
       </header>
 
       <div className="facets">
-        {facets.map((f) => (
-          <button className="facet" key={f.label} type="button" aria-pressed={Boolean(f.active)}>
-            {f.label} <span className="facet__count">{f.count}</span>
-          </button>
-        ))}
+        {facets.map((f) => {
+          const active = (f.value ?? undefined) === format
+          return (
+            <Link
+              className="facet"
+              key={f.label}
+              href={f.value ? `/${slug}?format=${encodeURIComponent(f.value)}` : `/${slug}`}
+              aria-pressed={active}
+              data-active={active || undefined}
+            >
+              {f.label} <span className="facet__count">{f.count}</span>
+            </Link>
+          )
+        })}
         <span className="facets__result">{articles.length} stories</span>
       </div>
 
