@@ -71,6 +71,19 @@ RUN addgroup --system --gid 10001 nodejs \
 # rather than at the top. The three COPYs below mirror that layout; getting
 # them wrong produces an image that starts and 500s on every request.
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+# sharp, copied EXPLICITLY rather than left to Next's dependency tracing.
+#
+# The deps stage installs the linuxmusl binary, but the runner takes the
+# traced standalone bundle — and the tracer does not follow a package added
+# with `--no-save` after `npm ci`, because nothing in package.json points at
+# it. The image then starts, serves most pages, and throws
+#   Could not load the "sharp" module using the linuxmusl-x64 runtime
+# the first time anything optimises an image. That is why a smoke test on the
+# homepage alone missed it: the homepage never asks sharp for anything.
+#
+# @img/* carries the actual platform binaries; sharp/ alone is not enough.
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 

@@ -23,6 +23,20 @@ export const Media: CollectionConfig = {
     delete: isEditorOrAbove,
   },
   upload: {
+    // The files are NOT on this host. E1.3 (mirroring ~9 GB of
+    // wp-content/uploads into Garage) has not run, so every row here points
+    // at an asset that still lives on the legacy WordPress origin — which is
+    // exactly what `media.url` holds and what next.config's remotePatterns
+    // already allow.
+    //
+    // Without this, Payload assumes it owns the bytes: it generates
+    // `/api/media/file/<filename>` for every image, next/image proxies that
+    // through /_next/image, and each one 500s on a file that was never
+    // there. `disableLocalStorage` stops Payload claiming the files and
+    // leaves the stored URL intact.
+    //
+    // This comes out in the same change that lands the Garage mirror.
+    disableLocalStorage: true,
     imageSizes: [
       { name: 'thumbnail', width: 400, height: undefined, position: 'centre' },
       { name: 'card', width: 800, height: undefined, position: 'centre' },
