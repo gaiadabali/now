@@ -292,3 +292,58 @@ def test_reembed_consumer_calls_a_method_that_exists(monkeypatch):
         "ReembedWorker does not have"
     )
     assert calls, "the consumer never called into ReembedWorker at all"
+
+
+# ---------------------------------------------------------------------------
+# The registry read
+# ---------------------------------------------------------------------------
+
+
+def test_load_sites_asks_only_for_active_sites(monkeypatch):
+    """Maintenance must not fan out to sites that are not being served.
+
+    `provisioning` means the database may not exist yet; `disabled` means it
+    is no longer served. Connecting to either is expected to fail, so trying
+    turns an ordinary lifecycle state into a job failure on every run — and a
+    report that always says "1 failed" is a report nobody reads. A leftover
+    `test` row pointing at a database nobody created did exactly that in
+    production, once a minute, for as long as the worker had been up.
+
+    Asserted on the SQL rather than through a database because the filter IS
+    the behaviour: the job cannot skip a row it was handed.
+    """
+
+    from app import sites as sites_mod
+
+    seen: dict = {}
+
+    class FakeResult:
+        def all(self):
+            return []
+
+    class FakeConn:
+        def execute(self, stmt, params=None):
+            seen["sql"] = " ".join(str(stmt).split())
+            seen["params"] = params
+            return FakeResult()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    class FakeEngine:
+        def connect(self):
+            return FakeConn()
+
+        def dispose(self):
+            pass
+
+    monkeypatch.setattr(sites_mod, "create_engine", lambda dsn: FakeEngine())
+    sites_mod.load_sites("postgresql://ignored/platform")
+
+    assert "WHERE status = :active" in seen["sql"], (
+        f"load_sites must filter on status; got: {seen['sql']}"
+    )
+    assert seen["params"] == {"active": "active"}

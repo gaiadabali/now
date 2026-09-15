@@ -41,15 +41,35 @@ class Site:
         return city_database_url(self.db_ref)
 
 
+#: Only `active` sites get maintenance. `provisioning` means the database may
+#: not exist yet and `disabled` means it is no longer served — in both cases
+#: connecting to it is expected to fail, so attempting it turns a normal
+#: lifecycle state into a job failure every run. That is not hypothetical: a
+#: leftover `test` row pointing at a database nobody ever created made
+#: `ensure_partitions` report "2 ok, 1 failed" on every single beat, which is
+#: how a report stops being read. Matches `now_config.SiteConfig.is_active`,
+#: the same rule the API serves traffic by.
+#:
+#: The literal rather than an import: `now_config` is not a worker dependency,
+#: and pulling the package in for one string would couple the scheduler to the
+#: config loader for no benefit. `now_config.SiteStatus` owns this vocabulary;
+#: if a status is ever renamed there, this is the other place that changes.
+ACTIVE = "active"
+
+
 def load_sites(platform_dsn: str) -> list[Site]:
-    """Read the registry. Ordered by slug purely so logs are stable run to
-    run — nothing downstream depends on the order."""
+    """Read the registry — active sites only, ordered by slug purely so logs
+    are stable run to run. Nothing downstream depends on the order."""
 
     engine = create_engine(platform_dsn)
     try:
         with engine.connect() as conn:
             rows = conn.execute(
-                text("SELECT slug, db_ref FROM engine.sites ORDER BY slug")
+                text(
+                    "SELECT slug, db_ref FROM engine.sites "
+                    "WHERE status = :active ORDER BY slug"
+                ),
+                {"active": ACTIVE},
             ).all()
     finally:
         engine.dispose()
