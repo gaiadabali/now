@@ -33,3 +33,13 @@ export {
   type PlatformUser,
 } from './identity.ts'
 export { PostgresIdentityStore, createPool, upsertShadowUser } from './store.ts'
+export {
+  DEFAULT_SESSION_TTL_SECONDS,
+  SESSION_COOKIE,
+  issueSessionToken,
+  sessionCookieOptions,
+  verifySessionToken,
+  type SessionClaims,
+  type VerifyFailure,
+  type VerifyResult,
+} from './session.ts'
