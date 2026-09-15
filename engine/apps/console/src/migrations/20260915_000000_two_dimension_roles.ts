@@ -1,7 +1,8 @@
 import { type MigrateDownArgs, type MigrateUpArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * Splits the single `role` column into two independent dimensions.
+ * Splits the single `role` column into two independent dimensions — EXPAND
+ * step only. The old `role` column is deliberately left in place.
  *
  * The CMS and this console arrived with disjoint vocabularies —
  * `admin|editor|author` for publishing, `admin|partner_manager|viewer` for
@@ -24,6 +25,17 @@ import { type MigrateDownArgs, type MigrateUpArgs, sql } from '@payloadcms/db-po
  * grant it back. Existing admins keep equivalent standing; everyone else
  * starts with no editorial access and is granted it deliberately.
  *
+ * **Why `role` survives this migration.** Dropping it here would be a single
+ * destructive step, and a schema change is not deployed at the same instant
+ * as the image that understands it: the running console reads `role`, so it
+ * would break the moment this ran and stay broken until a new image rolled
+ * out. Expand/contract instead — this adds and backfills, both old and new
+ * code work against the result, and `20260915_000001` drops `role` once the
+ * new image is actually serving.
+ *
+ * That ordering is not hypothetical here: the console deployed to helios at
+ * the time of writing predates the two-dimension collection entirely.
+ *
  * Written by hand rather than generated: `payload migrate:create` prompts
  * interactively about whether each enum is created or renamed, which cannot
  * be answered in CI or over a non-interactive shell.
@@ -41,29 +53,16 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
            "editorial_role" = CASE WHEN "role"::text = 'admin' THEN 'admin'::"public"."enum_users_editorial_role"
                                    ELSE 'none'::"public"."enum_users_editorial_role" END;
 
-    ALTER TABLE "users" DROP COLUMN "role";
-    DROP TYPE "public"."enum_users_role";
   `)
 }
 
 /**
- * Collapses back to a single column, keeping the commercial dimension.
- *
- * Editorial standing is **lost** on the way down — there is no column to put
- * it in. That is inherent to the reversal, not an oversight: anyone granted
- * editorial access after this migration ran will need it re-granted if it is
- * ever rolled back.
+ * Drops the two new columns. `role` was never removed by `up`, so it is still
+ * populated and authoritative — nothing needs reconstructing, and editorial
+ * standing is simply discarded because there was nowhere to put it before.
  */
 export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-    CREATE TYPE "public"."enum_users_role" AS ENUM('admin', 'partner_manager', 'viewer');
-
-    ALTER TABLE "users" ADD COLUMN "role" "public"."enum_users_role" DEFAULT 'viewer' NOT NULL;
-
-    UPDATE "users"
-       SET "role" = CASE WHEN "commerce_role"::text = 'none' THEN 'viewer'::"public"."enum_users_role"
-                         ELSE "commerce_role"::text::"public"."enum_users_role" END;
-
     ALTER TABLE "users" DROP COLUMN "editorial_role";
     ALTER TABLE "users" DROP COLUMN "commerce_role";
     DROP TYPE "public"."enum_users_editorial_role";
