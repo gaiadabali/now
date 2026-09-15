@@ -2,7 +2,7 @@
   "name": "@now-engine/cms",
   "version": "0.1.0",
   "private": true,
-  "description": "ONE Payload 3 config, instantiated per city (ARCHITECTURE.md §3.5). Differentiated only by DATABASE_URI. Owns `public` in each city DB; never touches `engine`.",
+  "description": "ONE Payload 3 config, instantiated per city (ARCHITECTURE.md \u00a73.5). Differentiated only by DATABASE_URI. Owns `public` in each city DB; never touches `engine`.",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
@@ -37,7 +37,8 @@
     "pg": "8.13.1",
     "react": "19.0.1",
     "react-dom": "19.0.1",
-    "sharp": "0.33.5"
+    "sharp": "0.33.5",
+    "@now/auth": "file:../auth"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
