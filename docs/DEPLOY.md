@@ -47,12 +47,40 @@ break link resolution, the loader and the CMS's Places collection. That is a
 deliberate migration with its own blast radius, and it is E4.4's work, not a
 side effect of adding auth.
 
-**First deploy runs the migration once**, then creates the first admin:
+**First deploy runs the migration once**, then creates the first admin.
+
+> ⚠️ **`npx payload migrate` does NOT work against the deployed image.**
+> Found on the first real deploy (2026-09-15). The runner stage is a Next.js
+> **standalone** build: it carries `src/migrations/` but no `tsconfig.json`
+> and no `payload` module, so `npx` downloads a fresh Payload that then dies
+> with `TypeError: Cannot read properties of null (reading 'config')` in
+> `getTSConfigPaths`. The migration files ship; the CLI that applies them
+> does not.
+>
+> Applied instead by extracting the `up()` SQL — it is plain SQL in a
+> `sql\`...\`` template, and it creates `payload_migrations` itself — then
+> recording it:
+>
+> ```bash
+> docker exec now-postgres psql -U now -d now_platform -v ON_ERROR_STOP=1 -f /tmp/m.sql
+> docker exec now-postgres psql -U now -d now_platform >   -c "INSERT INTO payload_migrations (name, batch) VALUES ('<migration name>', 1)"
+> ```
+>
+> **The proper fix is to make the console image able to migrate itself**
+> (keep `tsconfig.json` + the payload CLI in the runner, or add a dedicated
+> migrate target). Until that lands, every console migration needs the manual
+> path above.
+
+Then create the first admin **immediately, in the same session** — until one
+exists, `POST /api/users/first-register` is open to anyone who reaches the
+public hostname:
 
 ```bash
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env   exec console npx payload migrate
-# then open https://now-console.gaiada.com/admin and create the first user
+curl -s -X POST http://127.0.0.1:4316/api/users/first-register   -H 'Content-Type: application/json'   -d '{"email":"...","password":"...","name":"...","role":"admin"}'
 ```
+
+Verify it closed: a second call must return
+`{"errors":[{"message":"You are not allowed to perform this action."}]}`.
 
 ## 2. Capacity
 
@@ -127,8 +155,8 @@ raw unencrypted port while `ufw status` still claimed only 80/443 were open.
 | `now-engine-api.gaiada.com` | | 4310 |
 | `now-jakarta.gaiada.com` | | 4311 (web-jakarta) |
 | `now-bali.gaiada.com` | | 4315 (web-bali) |
-| `cms-jakarta.gaiada.com` | | 4312 |
-| `cms-bali.gaiada.com` | | 4313 |
+| `now-cms-jakarta.gaiada.com` | | 4312 |
+| `now-cms-bali.gaiada.com` | | 4313 |
 | `now-console.gaiada.com` | | 4316 — **put auth in front of this** |
 
 There are two web processes, not one. `src/lib/site.ts` requires `SITE_SLUG`
@@ -231,8 +259,8 @@ act.
   | `now-engine-api` | the API |
   | `now-jakarta` | web-jakarta |
   | `now-bali` | web-bali |
-  | `cms-jakarta` | Payload, Jakarta |
-  | `cms-bali` | Payload, Bali |
+  | `now-cms-jakarta` | Payload, Jakarta |
+  | `now-cms-bali` | Payload, Bali |
   | `now-console` | commerce console — **auth first** |
 
   Hostinger's DNS Zone editor takes the subdomain only, not the full name.
