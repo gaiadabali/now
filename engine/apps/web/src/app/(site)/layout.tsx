@@ -54,6 +54,15 @@ export async function generateMetadata(): Promise<Metadata> {
     description: site.tagline,
     openGraph: { siteName: site.name, locale: site.locale, type: 'website' },
     robots: { index: true, follow: true },
+    // Per-city, from the site row — ONE image serves both cities (§3.5), so a
+    // static app/icon file would give Bali readers Jakarta's mark. There was
+    // no favicon at all before this: /favicon.ico returned 404 and browsers
+    // fell back to a blank page icon.
+    icons: {
+      icon: [{ url: site.brand.favicon ?? site.brand.logo }],
+      shortcut: [{ url: site.brand.favicon ?? site.brand.logo }],
+      apple: [{ url: site.brand.appleIcon ?? site.brand.favicon ?? site.brand.logo }],
+    },
   }
 }
 

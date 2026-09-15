@@ -28,7 +28,10 @@ export type SiteConfig = {
   timezone: string
   currency: string
   tagline: string
-  brand: { logo: string; logoAlt: string }
+  // `favicon`/`appleIcon` are the square marks the live sites serve; the
+  // logo is a wide wordmark and is unreadable at 16px, so it is not a
+  // substitute. Optional so a config row without them still validates.
+  brand: { logo: string; logoAlt: string; favicon?: string; appleIcon?: string }
   nav: NavItem[]
   footer: FooterColumn[]
 }

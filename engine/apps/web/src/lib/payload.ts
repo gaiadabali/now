@@ -240,3 +240,197 @@ export async function sectionFormatCounts(
     return []
   }
 }
+
+/**
+ * Location terms with the number of published articles tagged to each.
+ *
+ * Areas are a PLATFORM concept — `engine.terms` joined to `engine.facets`
+ * holds one taxonomy shared by every city (§4) — while the tagging itself,
+ * `engine.entity_terms`, is per-city. So this needs both databases, which is
+ * also why it cannot come from the Local API: that binds one.
+ *
+ * Terms with no articles are dropped rather than listed at zero. An index of
+ * empty links is worse than a shorter index — it was a footer full of those
+ * that made the site feel broken in the first place.
+ */
+export async function areasWithCounts(): Promise<
+  Array<{ slug: string; label: string; count: number }>
+> {
+  const platformUrl = process.env.PLATFORM_DATABASE_URI ?? process.env.PLATFORM_DATABASE_URL
+  if (!platformUrl) return []
+
+  try {
+    const { rows: counts } = await cityPool().query(
+      `SELECT term_id::text AS term_id, count(DISTINCT entity_id)::int AS count
+         FROM engine.entity_terms
+        WHERE entity_type = 'article'
+        GROUP BY 1`,
+    )
+    if (counts.length === 0) return []
+
+    const platform = new pg.Pool({ connectionString: platformUrl, max: 2, statement_timeout: 5_000 })
+    try {
+      const { rows: terms } = await platform.query(
+        `SELECT t.id::text AS id, t.slug, t.label
+           FROM engine.terms t
+           JOIN engine.facets f ON f.id = t.facet_id
+          WHERE f.key = 'location'`,
+      )
+      const byId = new Map(counts.map((c) => [c.term_id, Number(c.count)]))
+      return terms
+        .map((t) => ({ slug: String(t.slug), label: String(t.label), count: byId.get(t.id) ?? 0 }))
+        .filter((t) => t.count > 0)
+        .sort((a, b) => b.count - a.count)
+    } finally {
+      await platform.end()
+    }
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Article ids carrying any of the given taxonomy term slugs.
+ *
+ * Culture is not a `primaryType` — the §4 L1 vocabulary has no such label,
+ * and mapping one produced a 500 (see `TYPE_TO_SECTION` above). It exists in
+ * the taxonomy instead, spread across the `subtype` and `format` facets as
+ * culture / heritage / people / art / music. So a culture index is a term
+ * lookup, not a column filter.
+ *
+ * Two connections for the same reason `areasWithCounts` needs two: the
+ * vocabulary (`engine.terms` + `engine.facets`) is PLATFORM-level and shared
+ * by every city, while the tagging (`engine.entity_terms`) is per-city.
+ *
+ * Slugs, not ids: a term id is a UUID generated at seed time and differs
+ * between environments, so hardcoding one would work here and break on
+ * helios. Slugs are the stable key.
+ */
+export async function articleIdsForTermSlugs(slugs: string[], limit = 200): Promise<number[]> {
+  const platformUrl = process.env.PLATFORM_DATABASE_URI ?? process.env.PLATFORM_DATABASE_URL
+  if (!platformUrl || slugs.length === 0) return []
+
+  try {
+    const platform = new pg.Pool({ connectionString: platformUrl, max: 2, statement_timeout: 5_000 })
+    let termIds: string[]
+    try {
+      const { rows } = await platform.query(
+        `SELECT t.id::text AS id
+           FROM engine.terms t
+           JOIN engine.facets f ON f.id = t.facet_id
+          WHERE t.slug = ANY($1) AND f.key = ANY($2)`,
+        [slugs, ['subtype', 'format', 'topic']],
+      )
+      termIds = rows.map((r) => String(r.id))
+    } finally {
+      await platform.end()
+    }
+    if (termIds.length === 0) return []
+
+    const { rows } = await cityPool().query(
+      `SELECT DISTINCT entity_id
+         FROM engine.entity_terms
+        WHERE entity_type = 'article' AND term_id = ANY($1::uuid[])
+        LIMIT $2`,
+      [termIds, limit],
+    )
+    return rows.map((r) => Number(r.entity_id)).filter(Number.isFinite)
+  } catch {
+    // An index that cannot reach the taxonomy is empty, not broken.
+    return []
+  }
+}
+
+export type PlaceRow = {
+  slug: string
+  name: string
+  area: string | null
+  type: string | null
+  subtype: string | null
+  priceBand: string | null
+  address: string | null
+}
+
+/**
+ * Published venues.
+ *
+ * **`status = 'active'` is the whole point of this function.** All 6,589
+ * Jakarta and 5,918 Bali places are still `pending_review` (F27, recorded as
+ * launch-blocking), and a public index that ignored `status` would publish
+ * twelve thousand unverified venue records — addresses, prices and opening
+ * claims nobody has checked — under NOW!'s name. So this returns an empty
+ * list today and fills in on its own as review progresses. That is the
+ * correct behaviour, not a gap to work around.
+ */
+export async function activePlaces(limit = 120): Promise<PlaceRow[]> {
+  try {
+    const { rows } = await cityPool().query(
+      `SELECT slug, name, area_term::text AS area, type::text AS type,
+              subtype::text AS subtype, price_band::text AS price_band, address
+         FROM public.places
+        WHERE status = 'active' AND slug IS NOT NULL
+        ORDER BY name
+        LIMIT $1`,
+      [limit],
+    )
+    return rows.map((r) => ({
+      slug: String(r.slug),
+      name: String(r.name),
+      area: r.area ? String(r.area) : null,
+      type: r.type ? String(r.type) : null,
+      subtype: r.subtype ? String(r.subtype) : null,
+      priceBand: r.price_band ? String(r.price_band) : null,
+      address: r.address ? String(r.address) : null,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** How many venues exist at all, and how many are still awaiting review. */
+export async function placeReviewCounts(): Promise<{ total: number; pending: number }> {
+  try {
+    const { rows } = await cityPool().query(
+      `SELECT count(*)::int AS total,
+              count(*) FILTER (WHERE status = 'pending_review')::int AS pending
+         FROM public.places`,
+    )
+    return { total: Number(rows[0]?.total ?? 0), pending: Number(rows[0]?.pending ?? 0) }
+  } catch {
+    return { total: 0, pending: 0 }
+  }
+}
+
+/**
+ * One venue by slug — **only if it is `active`**.
+ *
+ * Returns null for a `pending_review` row so the profile 404s rather than
+ * publishing unchecked facts. Same reasoning as `activePlaces`, and it has to
+ * be enforced here too: a directory that hides a venue while its profile
+ * still serves the address has not hidden anything.
+ */
+export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> {
+  try {
+    const { rows } = await cityPool().query(
+      `SELECT slug, name, area_term::text AS area, type::text AS type,
+              subtype::text AS subtype, price_band::text AS price_band, address
+         FROM public.places
+        WHERE slug = $1 AND status = 'active'
+        LIMIT 1`,
+      [slug],
+    )
+    const r = rows[0]
+    if (!r) return null
+    return {
+      slug: String(r.slug),
+      name: String(r.name),
+      area: r.area ? String(r.area) : null,
+      type: r.type ? String(r.type) : null,
+      subtype: r.subtype ? String(r.subtype) : null,
+      priceBand: r.price_band ? String(r.price_band) : null,
+      address: r.address ? String(r.address) : null,
+    }
+  } catch {
+    return null
+  }
+}

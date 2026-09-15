@@ -13,6 +13,7 @@
 
 import {
   SECTION_TO_TYPES,
+  articleIdsForTermSlugs,
   heroMediaId,
   legacyMediaUrls,
   payloadClient,
@@ -137,6 +138,31 @@ export async function getBySection(
       ...(formats ? { format: { in: formats } } : { primaryType: { in: types } }),
       ...(format ? { format: { equals: format } } : {}),
     },
+    sort: '-publishedAt',
+    limit,
+    depth: 1,
+  })
+  return toArticles(docs)
+}
+
+/**
+ * Culture: the taxonomy terms that together make up the subject.
+ *
+ * There is no `culture` primaryType — see `TYPE_TO_SECTION` in payload.ts for
+ * what happens when you pretend there is. These are real term slugs and are
+ * verified present in the platform vocabulary; where a city has none tagged,
+ * the page shows an empty state rather than an error.
+ */
+const CULTURE_TERMS = ['culture', 'heritage', 'people', 'art', 'music']
+
+export async function getCulture(limit = 24): Promise<Article[]> {
+  const ids = await articleIdsForTermSlugs(CULTURE_TERMS, 500)
+  if (ids.length === 0) return []
+
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'articles',
+    where: { ...PUBLISHED, id: { in: ids } },
     sort: '-publishedAt',
     limit,
     depth: 1,

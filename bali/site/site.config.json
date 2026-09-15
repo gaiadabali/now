@@ -8,7 +8,9 @@
   "tagline": "The island, read closely.",
   "brand": {
     "logo": "/brand/bali.svg",
-    "logoAlt": "NOW! Bali"
+    "logoAlt": "NOW! Bali",
+    "favicon": "/brand/bali-favicon.png",
+    "appleIcon": "/brand/bali-favicon.png"
   },
   "nav": [
     {
@@ -68,6 +70,18 @@
         {
           "label": "Events",
           "href": "/events"
+        },
+        {
+          "label": "Culture",
+          "href": "/culture"
+        },
+        {
+          "label": "Areas",
+          "href": "/areas"
+        },
+        {
+          "label": "Places",
+          "href": "/places"
         }
       ]
     },
@@ -77,6 +91,31 @@
         {
           "label": "NOW! Jakarta",
           "href": "https://www.nowjakarta.co.id"
+        },
+        {
+          "label": "Subscribe",
+          "href": "/subscribe"
+        }
+      ]
+    },
+    {
+      "head": "NOW!",
+      "links": [
+        {
+          "label": "About Us",
+          "href": "/about"
+        },
+        {
+          "label": "Podcast",
+          "href": "/podcast"
+        },
+        {
+          "label": "Advertise",
+          "href": "/advertise"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact"
         }
       ]
     }
