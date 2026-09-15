@@ -37,6 +37,24 @@ export async function payloadClient() {
 /**
  * Editorial section for a row, derived from the §4 L1 `primaryType`.
  *
+ * **Every value here must exist in `enum_articles_primary_type`.** The real
+ * vocabulary is exactly:
+ *
+ *     do, drink, eat, editorial, event, shop, stay, wellness, unknown
+ *
+ * An earlier version mapped `culture: 'culture'`, which is not one of them,
+ * so /culture reached Postgres as a filter on a non-existent enum label and
+ * returned 500 — `invalid input value for enum enum_articles_primary_type:
+ * "culture"`. A section whose type does not exist is not an empty page, it is
+ * a server error.
+ *
+ * Note what is deliberately NOT mapped:
+ *   editorial  the catch-all (1,208 Jakarta articles). Putting it behind a
+ *              named section would label general copy as that subject.
+ *   unknown    the fail-closed sentinel for unclassified rows.
+ *   (null)     E2 has not classified everything; 1,183 Jakarta rows are
+ *              still untyped and belong in no section rather than a wrong one.
+ *
  * The fixture era derived this from legacy WordPress category *names*, which
  * do not exist as a column — the archive's categories became taxonomy terms
  * during E1/E2. `primaryType` is the durable replacement and is what the
@@ -52,10 +70,10 @@ const TYPE_TO_SECTION: Record<string, string> = {
   eat: 'dining',
   drink: 'dining',
   stay: 'stay',
-  culture: 'culture',
   wellness: 'wellness',
   do: 'things-to-do',
   shop: 'things-to-do',
+  event: 'events',
 }
 
 export function sectionForType(primaryType: string | null | undefined): string | null {
@@ -184,5 +202,41 @@ export function toArticle(doc: PayloadDoc): Article {
     // bot-contaminated, and `getMostRead` must be recomputed from beacon data
     // rather than inheriting a number nobody can defend.
     views: 0,
+  }
+}
+
+/**
+ * Format counts for a section, grouped in SQL.
+ *
+ * The Local API cannot aggregate — `payload.count` answers one filter at a
+ * time — so a facet row would otherwise cost one round trip per format and
+ * could only ever count values someone hardcoded. Grouping asks the data
+ * what formats are actually present, which is both cheaper and impossible to
+ * drift from the enum.
+ *
+ * Only ever reads. Filters are parameterised; `slug` never reaches SQL.
+ */
+export async function sectionFormatCounts(
+  filter: { formats?: string[]; types?: string[] },
+): Promise<Array<{ format: string | null; count: number }>> {
+  const { formats, types } = filter
+  try {
+    const where = formats
+      ? { clause: 'format::text = ANY($1)', param: formats }
+      : { clause: 'primary_type::text = ANY($1)', param: types ?? [] }
+
+    const { rows } = await cityPool().query(
+      `SELECT format::text AS format, count(*)::int AS count
+         FROM public.articles
+        WHERE _status = 'published'
+          AND published_at IS NOT NULL AND published_at <= now()
+          AND ${where.clause}
+        GROUP BY 1`,
+      [where.param],
+    )
+    return rows.map((r) => ({ format: r.format, count: Number(r.count) }))
+  } catch {
+    // A section without its facet row is still a readable section.
+    return []
   }
 }
