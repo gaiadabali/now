@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
 import { AccountShell, Field, Submit, type StatusMessage } from '@/components/account'
 import { MIN_PASSWORD_LENGTH } from '@now/auth'
 import { completeReset } from '@/lib/readerActions'
+import { accountsEnabled } from '@/lib/reader'
 
 export const metadata: Metadata = {
   title: 'Set a new password',
@@ -32,6 +34,10 @@ export default async function ResetPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   const query = (await searchParams) ?? {}
   const token = typeof query.token === 'string' ? query.token : ''
   const flag = typeof query.status === 'string' ? query.status : undefined

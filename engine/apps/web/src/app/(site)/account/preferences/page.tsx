@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, Submit, type StatusMessage } from '@/components/account'
 import { ChipGroup } from '@/components/chips'
-import { currentReader } from '@/lib/reader'
+import { currentReader, accountsEnabled } from '@/lib/reader'
 import { savePreferences } from '@/lib/readerActions'
 import { hasChosen, loadPrefs, loadVocabulary } from '@/lib/preferences'
 
@@ -31,6 +31,10 @@ export default async function PreferencesPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   const reader = await currentReader()
   if (!reader) redirect('/account/login')
 

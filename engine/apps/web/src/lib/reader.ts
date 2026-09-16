@@ -87,6 +87,30 @@ export function allowInsecureLinks(): boolean {
 
 // --- mail ------------------------------------------------------------------
 
+/**
+ * Can this deployment actually complete a sign-up?
+ *
+ * Registration, verification and password reset all need mail. Without it the
+ * surface does not fail — it *succeeds wrongly*: a real person registers, their
+ * address and password hash land in the production database, the page says
+ * "check your email", and no email is ever sent. They cannot verify, cannot
+ * reset, and have no way to tell that anything went wrong. Found live on
+ * 2026-09-16, with `/account/register` serving a public form on both cities
+ * while no SMTP credential existed (F141).
+ *
+ * So the account surface is gated on mail being configured, and the gate is
+ * derived rather than a separate flag somebody has to remember to flip. The
+ * moment SMTP is set, the routes come back on their own; until then they are
+ * not reachable to be half-used.
+ *
+ * Development is unaffected: the console transport is a valid transport, so
+ * this is true whenever `createTransportFromEnv` succeeds.
+ */
+export function accountsEnabled(): boolean {
+  if (process.env.READER_ACCOUNTS_ENABLED === 'false') return false
+  return createTransportFromEnv().ok
+}
+
 let mailer: Mailer | null = null
 
 export function readerMailer(): Mailer {

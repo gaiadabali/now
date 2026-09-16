@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, StatusBanner, type StatusMessage } from '@/components/account'
 import { SectionRule } from '@/components/primitives'
-import { currentReader } from '@/lib/reader'
+import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signOut } from '@/lib/readerActions'
 import { describePrefs, hasChosen, loadPrefs, loadVocabulary } from '@/lib/preferences'
 
@@ -48,6 +48,10 @@ export default async function AccountPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   const reader = await currentReader()
   if (!reader) redirect('/account/login')
 
