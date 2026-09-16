@@ -77,6 +77,18 @@ ARG DATABASE_URI=postgresql://build:build@localhost:5432/build_placeholder
 ARG PLATFORM_DATABASE_URI=postgresql://build:build@localhost:5432/build_placeholder
 ENV DATABASE_URI=$DATABASE_URI
 ENV PLATFORM_DATABASE_URI=$PLATFORM_DATABASE_URI
+# The beacon FIRST. The web app's `prebuild` runs `scripts/sync-beacon.mjs`,
+# which copies `packages/beacon/dist/beacon.min.js` into `public/` and exits
+# 1 rather than skipping when it is missing — deliberately, because a site
+# that silently stops collecting behaviour cannot be backfilled.
+#
+# That dist/ is gitignored, so it exists on a developer's machine and in no
+# clone. The image built fine until the beacon gained a prebuild step, then
+# failed here with a bare `npm error command sh -c node scripts/sync-beacon.mjs`
+# and no mention of the beacon at all. Building it here is what makes the
+# image self-sufficient: `npm ci` above installs the whole workspace
+# including devDependencies, so terser is present.
+RUN npm run build --workspace=@now-engine/beacon
 RUN npm run build --workspace=@now-engine/web
 
 FROM base AS runner
