@@ -86,7 +86,11 @@ export default buildConfig({
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
       beforeNavLinks: ['/components/nav/NavMasthead#NavMasthead'],
-      afterNavLinks: ['/components/nav/NavAccount#NavAccount'],
+      // The account menu Payload does not have. Its avatar is a plain link
+      // to the profile page, so there was nowhere to put "sign out" except
+      // an unlabelled arrow at the foot of the nav. `actions` renders into
+      // the app header beside the avatar, which is where people look.
+      actions: ['/components/nav/AccountMenu#AccountMenu'],
     },
     // Payload's default account avatar is a GRAVATAR: it hashes the signed-in
     // email and fetches an image from gravatar.com on every admin page. For

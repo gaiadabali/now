@@ -432,81 +432,148 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 /* Payload ships its own logout control in `.nav__controls` — an unlabelled
-   arrow icon at the very bottom of the sidebar. With a labelled "Sign out"
-   in the account block above it, two of them is one too many, and the icon
-   was the one nobody could identify. */
+   arrow at the foot of the sidebar. The account menu in the header replaces
+   it, so the icon and the empty row it lived in both go. */
 .nav__log-out {
   display: none;
 }
 
-/* Pinned to the foot of the column. `.nav__wrap` is a flex column that
-   already grows to fill the sidebar, so `margin-top: auto` drops this to the
-   bottom instead of leaving it stranded under the last collection with three
-   hundred pixels of nothing beneath it. `width: 100%` because that wrap sets
-   `align-items: flex-start`, which otherwise shrinks this to its contents
-   and leaves the rule above it a stub.
+/* ---------------------------------------------------------------------------
+   The account menu
+   ---------------------------------------------------------------------------
+   Payload's avatar is a plain <Link> to the account page — not a menu — so
+   there was nowhere to hang profile, appearance and sign out. Its link is
+   hidden and `AccountMenu` (registered in `admin.components.actions`) renders
+   the monogram as a real menu trigger in the same place.
+   ------------------------------------------------------------------------ */
 
-   It also puts identity where a sidebar conventionally keeps it, so the eye
-   does not have to find it halfway up. */
-.now-nav-account {
-  display: grid;
-  gap: calc(var(--base) * 0.6);
-  width: 100%;
-  margin-top: auto;
-  padding-top: calc(var(--base) * 0.9);
-  padding-bottom: calc(var(--base) * 0.4);
-  border-top: 1px solid var(--theme-elevation-200);
+.app-header__account {
+  display: none;
 }
 
-.now-nav-account__who {
+.now-account {
+  position: relative;
+}
+
+.now-account__trigger {
   display: flex;
-  align-items: center;
-  gap: calc(var(--base) * 0.45);
-  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
-.now-avatar--nav {
-  width: 32px;
-  height: 32px;
-  font-size: 17px;
+.now-account__trigger:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
 }
 
-.now-nav-account__names {
+.now-account__menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: var(--z-popup);
   display: grid;
-  min-width: 0;
+  width: 16rem;
+  padding: var(--base) 0 calc(var(--base) * 0.4);
+  border: 1px solid var(--theme-elevation-1000);
+  background: var(--theme-elevation-0);
+  /* The one shadow in this skin. A menu floats over content and needs to
+     read as detached; everything else here is held by rules. */
+  box-shadow: 0 8px 28px rgb(0 0 0 / 14%);
 }
 
-.now-nav-account__name,
-.now-nav-account__role {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.now-account__who {
+  display: grid;
+  gap: 1px;
+  padding: 0 var(--base) calc(var(--base) * 0.65);
+  margin-bottom: calc(var(--base) * 0.4);
+  border-bottom: 1px solid var(--theme-elevation-150);
 }
 
-.now-nav-account__name {
+.now-account__name {
   color: var(--theme-elevation-1000);
   font-size: 0.9375rem;
   font-weight: 500;
 }
 
-.now-nav-account__role {
+.now-account__email,
+.now-account__role {
+  overflow: hidden;
   color: var(--theme-elevation-500);
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
 }
 
-.now-nav-account__out {
-  color: var(--theme-elevation-600);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.now-account__item {
+  display: block;
+  padding: calc(var(--base) * 0.38) var(--base);
+  color: var(--theme-elevation-800);
+  font-size: 0.875rem;
   text-decoration: none;
 }
 
-.now-nav-account__out:hover {
+.now-account__item:hover {
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-1000);
+}
+
+.now-account__item--out {
+  margin-top: calc(var(--base) * 0.3);
+  padding-top: calc(var(--base) * 0.5);
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.now-account__item--out:hover {
   color: var(--now-accent);
 }
+
+.now-account__section {
+  display: grid;
+  gap: calc(var(--base) * 0.3);
+  padding: calc(var(--base) * 0.4) var(--base) calc(var(--base) * 0.5);
+}
+
+.now-account__section-label {
+  color: var(--theme-elevation-500);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Three segments in one control: it is a single choice, so it reads as one
+   object rather than three buttons that happen to sit together. */
+.now-account__themes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--theme-elevation-200);
+}
+
+.now-account__theme {
+  padding: calc(var(--base) * 0.3) 0;
+  border: 0;
+  border-right: 1px solid var(--theme-elevation-200);
+  background: transparent;
+  color: var(--theme-elevation-600);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+.now-account__theme:last-child {
+  border-right: 0;
+}
+
+.now-account__theme:hover {
+  color: var(--theme-elevation-1000);
+}
+
+.now-account__theme[aria-checked='true'] {
+  background: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+}
+
 
 /* ===========================================================================
    THE PAGE
