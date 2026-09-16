@@ -235,10 +235,21 @@ html[data-theme='dark'] {
    printed mark sitting on its own stock is, at least, an idiom the brand
    already uses.
 
-   The square icon needs none of this — it ships with its own light ground. */
+   The square icon needs it too. I first wrote that it "ships with its own
+   light ground" and that was simply wrong: both favicons are transparent —
+   Jakarta's is RGBA, Bali's is a palette image with a transparency index,
+   which reports no alpha channel until you convert it. So on a dark ground
+   the ink strokes vanished and the breadcrumb mark showed as the red corner
+   alone. A plate behind an opaque image would be invisible anyway, so this
+   is safe whichever a city ships. */
 html[data-theme='dark'] .graphic-logo,
 html[data-theme='dark'] .staff-login__logo {
   padding: 0.5em 0.75em;
+  background: var(--paper);
+}
+
+html[data-theme='dark'] .graphic-icon {
+  padding: 1px;
   background: var(--paper);
 }
 
@@ -255,6 +266,416 @@ html[data-theme='dark'] .staff-login__logo {
 
 .now-wordmark__bang {
   color: var(--now-accent);
+}
+
+/* ===========================================================================
+   THE SIDEBAR
+   ---------------------------------------------------------------------------
+   It was 275px of empty column: no brand, a faint grey group label, eight
+   evenly-spaced links, and then six hundred pixels of nothing. Payload leaves
+   both ends of the nav open for exactly this and ships them empty.
+
+   Rebuilt as the thing it actually is — a masthead with a contents list under
+   it, and the reader's identity at the foot. Recessed ground and a full-height
+   ink rule separate it from the page instead of the hairline it had.
+   ======================================================================== */
+
+:root {
+  /* 275 -> 320. At 275 the gutter ate 120 of it, leaving 155px of usable
+     column — which is why "Classification review queue" broke onto two lines
+     and the masthead had nowhere to go. The extra 45px buys a single-line
+     label for every collection we have and room for the wordmark to be read
+     rather than recognised. */
+  --nav-width: 320px;
+}
+
+.nav {
+  background: var(--theme-elevation-50);
+  border-right: 1px solid var(--theme-elevation-1000);
+}
+
+/* Payload pads the scroll area for a nav that starts with links. Ours starts
+   with a masthead that has to reach the edges. */
+.nav__scroll {
+  --nav-padding-block-start: 0;
+  /* Payload reserves two base units at the foot for a controls row that is
+     now empty (its only child was the logout icon, replaced by the labelled
+     one in the account block). Left alone it strands the account block ~195px
+     above the bottom edge, which reads as a mistake rather than as margin. */
+  --nav-padding-block-end: calc(var(--base) * 0.9);
+  padding-inline: 0;
+}
+
+/* The container itself, not just its child — an empty flex row with a gap
+   still occupies height. */
+.nav__controls {
+  display: none;
+}
+
+.nav__wrap,
+.nav__controls {
+  padding-inline: var(--gutter-h);
+}
+
+/* --- the masthead ------------------------------------------------------- */
+
+.now-nav-masthead {
+  /* Full-bleed. This renders INSIDE `.nav__wrap`, which already carries
+     `--gutter-h` of inline padding, so without escaping it first the
+     masthead is padded twice — on a 275px sidebar with a 60px gutter that
+     left a 155px box holding a 35px logo. The negative margin pulls it back
+     to the nav's edges; the padding then puts the wordmark on the same
+     left edge as the collection links. */
+  margin-inline: calc(var(--gutter-h) * -1);
+  padding: calc(var(--base) * 0.9) var(--gutter-h) calc(var(--base) * 0.7);
+  margin-bottom: calc(var(--base) * 1.1);
+  border-bottom: 3px solid var(--theme-elevation-1000);
+  background: var(--theme-elevation-0);
+}
+
+.now-nav-masthead__link {
+  display: block;
+  text-decoration: none;
+}
+
+.now-nav-masthead__logo {
+  display: block;
+  width: 100%;
+  max-width: 11rem;
+  height: auto;
+}
+
+/* Ink on nothing, so on a dark ground it needs its own stock — the same
+   reasoning as `.graphic-logo`. */
+html[data-theme='dark'] .now-nav-masthead__logo {
+  padding: 0.4em 0.55em;
+  background: var(--paper);
+}
+
+.now-nav-masthead__kicker {
+  margin: calc(var(--base) * 0.5) 0 0;
+  color: var(--now-accent);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* --- the contents list -------------------------------------------------- */
+
+/* "Collections" becomes a kicker over a rule, the way a section head works
+   on the reader site, rather than a grey word floating above a list. */
+.nav-group__toggle,
+.nav__label {
+  padding-bottom: calc(var(--base) * 0.45);
+  border-bottom: 1px solid var(--theme-elevation-200);
+  color: var(--theme-elevation-600);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+}
+
+/* Set to the space available rather than to a habit. Eight collections in a
+   full-height column leaves most of it empty, and a 15px link in 275px of
+   sidebar reads as a footnote — smaller, in fact, than Payload's own 17.5px,
+   which is the wrong direction to have taken it.
+   
+   1.125rem with a line and a half of rhythm fills the column honestly and
+   makes the list scannable from a normal sitting distance. Anything larger
+   starts wrapping "Classification review queue" onto three lines. */
+.nav__link {
+  padding-block: calc(var(--base) * 0.42);
+  color: var(--theme-elevation-700);
+  font-size: 1.125rem;
+  line-height: 1.35;
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nav__link:hover,
+.nav a.nav__link:focus-visible {
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
+}
+
+/* The current collection, stated by weight and ink rather than by a 2px bar
+   an eye has to hunt for. The bar stays, in the accent, as the anchor. */
+.nav__link.active,
+.nav__link:has(.nav__link-indicator) {
+  color: var(--theme-elevation-1000);
+  font-weight: 600;
+}
+
+.nav__link-indicator {
+  inset-inline-start: calc(var(--gutter-h) * -1 + 2px);
+  width: 3px;
+  height: 1.1em;
+  border-radius: 0;
+  background: var(--now-accent);
+}
+
+/* --- who is signed in --------------------------------------------------- */
+
+/* The collapse control sits on top of the masthead plate. Payload gives it a
+   boxed, shadowed chip that read as a button bolted onto the logo; on a
+   brand plate it wants to be a mark, not a widget. */
+.hamburger {
+  background-color: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  color: var(--theme-elevation-600);
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.hamburger:hover {
+  background-color: transparent;
+  box-shadow: none;
+  color: var(--now-accent);
+}
+
+/* Payload ships its own logout control in `.nav__controls` — an unlabelled
+   arrow at the foot of the sidebar. The account menu in the header replaces
+   it, so the icon and the empty row it lived in both go. */
+.nav__log-out {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The account menu
+   ---------------------------------------------------------------------------
+   Payload's avatar is a plain <Link> to the account page — not a menu — so
+   there was nowhere to hang profile, appearance and sign out. Its link is
+   hidden and `AccountMenu` (registered in `admin.components.actions`) renders
+   the monogram as a real menu trigger in the same place.
+   ------------------------------------------------------------------------ */
+
+.app-header__account {
+  display: none;
+}
+
+.now-account {
+  position: relative;
+}
+
+.now-account__trigger {
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.now-account__trigger:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+.now-account__menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: var(--z-popup);
+  display: grid;
+  width: 16rem;
+  padding: var(--base) 0 calc(var(--base) * 0.4);
+  border: 1px solid var(--theme-elevation-1000);
+  background: var(--theme-elevation-0);
+  /* The one shadow in this skin. A menu floats over content and needs to
+     read as detached; everything else here is held by rules. */
+  box-shadow: 0 8px 28px rgb(0 0 0 / 14%);
+}
+
+.now-account__who {
+  display: grid;
+  gap: 1px;
+  padding: 0 var(--base) calc(var(--base) * 0.65);
+  margin-bottom: calc(var(--base) * 0.4);
+  border-bottom: 1px solid var(--theme-elevation-150);
+}
+
+.now-account__name {
+  color: var(--theme-elevation-1000);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.now-account__email,
+.now-account__role {
+  overflow: hidden;
+  color: var(--theme-elevation-500);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+}
+
+.now-account__item {
+  display: block;
+  padding: calc(var(--base) * 0.38) var(--base);
+  color: var(--theme-elevation-800);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.now-account__item:hover {
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-1000);
+}
+
+.now-account__item--out {
+  margin-top: calc(var(--base) * 0.3);
+  padding-top: calc(var(--base) * 0.5);
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.now-account__item--out:hover {
+  color: var(--now-accent);
+}
+
+.now-account__section {
+  display: grid;
+  gap: calc(var(--base) * 0.3);
+  padding: calc(var(--base) * 0.4) var(--base) calc(var(--base) * 0.5);
+}
+
+.now-account__section-label {
+  color: var(--theme-elevation-500);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Three segments in one control: it is a single choice, so it reads as one
+   object rather than three buttons that happen to sit together. */
+.now-account__themes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--theme-elevation-200);
+}
+
+.now-account__theme {
+  padding: calc(var(--base) * 0.3) 0;
+  border: 0;
+  border-right: 1px solid var(--theme-elevation-200);
+  background: transparent;
+  color: var(--theme-elevation-600);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+.now-account__theme:last-child {
+  border-right: 0;
+}
+
+.now-account__theme:hover {
+  color: var(--theme-elevation-1000);
+}
+
+.now-account__theme[aria-checked='true'] {
+  background: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+}
+
+
+/* ===========================================================================
+   THE PAGE
+   ---------------------------------------------------------------------------
+   Three things made the content read as a database viewer rather than an
+   editorial tool: a title with a small beige button crammed against it, a
+   full-width filled search block, and a table of zebra stripes whose rows
+   changed height as titles wrapped.
+   ======================================================================== */
+
+/* Title and its actions on one baseline, with room to breathe. */
+.list-header__title-and-actions {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--base) * 0.8);
+  padding-bottom: calc(var(--base) * 0.4);
+}
+
+/* The filled block becomes a rule with a field on it. */
+.list-controls {
+  border-bottom: 1px solid var(--theme-elevation-200);
+}
+
+.list-controls__wrap,
+.collection-list__search-input {
+  background: transparent;
+}
+
+/* --- the table ---------------------------------------------------------- */
+
+/* Zebra striping is what a spreadsheet does when it has no other structure.
+   Hairlines do the same job without turning every other row into a block of
+   colour, and they are what the reader site uses. */
+.table tbody tr:nth-child(odd) {
+  background: transparent;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--theme-elevation-150);
+}
+
+.table tbody tr:hover {
+  background: var(--theme-elevation-50);
+}
+
+.table thead th {
+  border-bottom: 1px solid var(--theme-elevation-1000);
+  color: var(--theme-elevation-600);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.table td,
+.table th {
+  padding-block: calc(var(--base) * 0.42);
+}
+
+/* Every title was underlined, which on a list of forty is a page of rules.
+   The underline arrives on hover, where it means "this is the one". */
+.table td a {
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
+}
+
+.table td a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--now-accent);
+  text-underline-offset: 3px;
+}
+
+/* A date that wraps to put "1:36 AM" on its own line makes a row twice as
+   tall as its neighbours for no information. Payload names every cell after
+   its field, so the timestamp columns can be addressed without counting
+   `nth-child` — which would break the moment somebody reorders a column. */
+.table td.cell-publishedAt,
+.table td.cell-updatedAt,
+.table td.cell-createdAt {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Create New" arrived as a small beige pill wedged against the title — the
+   least prominent thing on a screen whose whole purpose is making one. It
+   is the page's primary action, so it gets the ink treatment the sign-in
+   button already uses, with red on hover. */
+.list-header__title-and-actions .btn--style-pill {
+  border: 1px solid var(--theme-elevation-1000);
+  border-radius: 0;
+  background: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.list-header__title-and-actions .btn--style-pill:hover {
+  border-color: var(--now-accent);
+  background: var(--now-accent);
+  color: var(--theme-elevation-0);
 }
 
 /* ---------------------------------------------------------------------------

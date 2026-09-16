@@ -85,6 +85,12 @@ export default buildConfig({
         Icon: '/components/graphics/SiteIcon#SiteIcon',
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
+      beforeNavLinks: ['/components/nav/NavMasthead#NavMasthead'],
+      // The account menu Payload does not have. Its avatar is a plain link
+      // to the profile page, so there was nowhere to put "sign out" except
+      // an unlabelled arrow at the foot of the nav. `actions` renders into
+      // the app header beside the avatar, which is where people look.
+      actions: ['/components/nav/AccountMenu#AccountMenu'],
     },
     // Payload's default account avatar is a GRAVATAR: it hashes the signed-in
     // email and fetches an image from gravatar.com on every admin page. For
@@ -92,6 +98,14 @@ export default buildConfig({
     // request carrying a hash of their email, to render a grey silhouette.
     // A monogram costs nothing and looks like the brand.
     avatar: { Component: '/components/graphics/StaffAvatar#StaffAvatar' },
+    // The sidebar carried no brand and ended in ~600px of nothing. Payload
+    // gives both ends a slot; it just ships them empty.
+    //   beforeNavLinks — the city masthead, so the surface an editor looks at
+    //     all day says which city they are about to publish into.
+    //   afterNavLinks  — who is signed in, their editorial role, and the way
+    //     out. Sign-out previously hid inside the avatar menu.
+    // Slots rather than a `Nav` override, so Payload can keep changing the
+    // nav's internals without taking these with it.
   },
   // The admin is served BY THE READER APP, under the city's own hostname
   // (docs/ADMIN-CONSOLIDATION.md Phase 2): <city>.gaiada.com/team-editor. The
