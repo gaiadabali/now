@@ -1,5 +1,5 @@
 {
-  "hash": "7a65b57b9d0f0fd32f97abe4c21c380e091983adcec83c166fd6df5c051aa0a1",
+  "hash": "266cc48c6b3bc76b1e67f3cd3f26c400c92554cee4b3864ee626ff5ffd9dccda",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -2021,6 +2021,20 @@
             "udt": "uuid"
           },
           {
+            "default": null,
+            "name": "geo",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "geography"
+          },
+          {
+            "default": null,
+            "name": "embedding",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          },
+          {
             "default": "now()",
             "name": "created_at",
             "nullable": "NO",
@@ -2072,9 +2086,19 @@
         ],
         "indexes": [
           {
+            "def": "CREATE INDEX ix_terms_embedding_hnsw ON engine.terms USING hnsw (embedding vector_cosine_ops) WHERE (embedding IS NOT NULL)",
+            "method": "hnsw",
+            "name": "ix_terms_embedding_hnsw"
+          },
+          {
             "def": "CREATE INDEX ix_terms_facet ON engine.terms USING btree (facet_id)",
             "method": "btree",
             "name": "ix_terms_facet"
+          },
+          {
+            "def": "CREATE INDEX ix_terms_geo ON engine.terms USING gist (geo)",
+            "method": "gist",
+            "name": "ix_terms_geo"
           },
           {
             "def": "CREATE INDEX ix_terms_parent ON engine.terms USING btree (parent_id)",
@@ -2110,6 +2134,20 @@
             "nullable": "NO",
             "type": "uuid",
             "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "taste_vec_long",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
+          },
+          {
+            "default": null,
+            "name": "taste_vec_short",
+            "nullable": "YES",
+            "type": "USER-DEFINED",
+            "udt": "vector"
           },
           {
             "default": "'{}'::jsonb",
@@ -2162,6 +2200,11 @@
           }
         ],
         "indexes": [
+          {
+            "def": "CREATE INDEX ix_user_profiles_taste_long_hnsw ON engine.user_profiles USING hnsw (taste_vec_long vector_cosine_ops) WHERE (taste_vec_long IS NOT NULL)",
+            "method": "hnsw",
+            "name": "ix_user_profiles_taste_long_hnsw"
+          },
           {
             "def": "CREATE UNIQUE INDEX user_profiles_pkey ON engine.user_profiles USING btree (user_id, site_id)",
             "method": "btree",
