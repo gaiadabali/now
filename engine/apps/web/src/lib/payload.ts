@@ -122,7 +122,7 @@ type PayloadDoc = Record<string, unknown>
  */
 let mediaPool: pg.Pool | null = null
 
-function cityPool(): pg.Pool {
+export function cityPool(): pg.Pool {
   const connectionString = process.env.DATABASE_URI
   if (!connectionString) throw new Error('DATABASE_URI is not set')
   mediaPool ??= new pg.Pool({ connectionString, max: 2, statement_timeout: 5_000 })
@@ -365,6 +365,10 @@ export async function articleIdsForTermSlugs(slugs: string[], limit = 200): Prom
 }
 
 export type PlaceRow = {
+  /** `public.places.id` — what the beacon reports as `entity_id` (E8.5), and
+   *  what `entity_terms` and `partnerships.place_id` join on. The slug is the
+   *  URL, not the key. */
+  id: string
   slug: string
   name: string
   area: string | null
@@ -388,7 +392,7 @@ export type PlaceRow = {
 export async function activePlaces(limit = 120): Promise<PlaceRow[]> {
   try {
     const { rows } = await cityPool().query(
-      `SELECT slug, name, area_term::text AS area, type::text AS type,
+      `SELECT id::text AS id, slug, name, area_term::text AS area, type::text AS type,
               subtype::text AS subtype, price_band::text AS price_band, address
          FROM public.places
         WHERE status = 'active' AND slug IS NOT NULL
@@ -397,6 +401,7 @@ export async function activePlaces(limit = 120): Promise<PlaceRow[]> {
       [limit],
     )
     return rows.map((r) => ({
+      id: String(r.id),
       slug: String(r.slug),
       // Decoded in the helper, not at each call site, so no page can forget.
       name: decodeEntities(String(r.name)),
@@ -436,7 +441,7 @@ export async function placeReviewCounts(): Promise<{ total: number; pending: num
 export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> {
   try {
     const { rows } = await cityPool().query(
-      `SELECT slug, name, area_term::text AS area, type::text AS type,
+      `SELECT id::text AS id, slug, name, area_term::text AS area, type::text AS type,
               subtype::text AS subtype, price_band::text AS price_band, address
          FROM public.places
         WHERE slug = $1 AND status = 'active'
@@ -446,6 +451,7 @@ export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> 
     const r = rows[0]
     if (!r) return null
     return {
+      id: String(r.id),
       slug: String(r.slug),
       name: decodeEntities(String(r.name)),
       area: r.area ? String(r.area) : null,

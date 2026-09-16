@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { EntityBeacon } from '@/components/Beacon'
 import { SectionRule } from '@/components/primitives'
 import { activePlaceBySlug } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
@@ -36,6 +37,8 @@ export default async function PlacePage({ params }: Params) {
   const site = await getSiteConfig()
   const place = await activePlaceBySlug(slug)
   if (!place) notFound()
+  // Tells the layout's single beacon tag which place this page is (E8.5).
+  const beacon = <EntityBeacon entity={String(place.id)} entityType="place" surface="place" />
 
   const facts: Array<[string, string]> = [
     ['Type', place.subtype ?? place.type ?? '—'],
@@ -46,6 +49,7 @@ export default async function PlacePage({ params }: Params) {
 
   return (
     <div className="shell">
+      {beacon}
       <div className="place-head">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-m)' }}>
           <div style={{ display: 'flex', gap: 'var(--space-2xs)', alignItems: 'center' }}>

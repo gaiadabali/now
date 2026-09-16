@@ -55,7 +55,8 @@ function makeBeacon(opts) {
   }, opts.attrs || {});
 
   const attrStr = Object.keys(attrs).map((k) => k + '="' + attrs[k] + '"').join(' ');
-  const html = '<!doctype html><html><body><script id="tag" ' + attrStr + '></script></body></html>';
+  const head = opts.head || '';
+  const html = '<!doctype html><html><head>' + head + '</head><body><script id="tag" ' + attrStr + '></script></body></html>';
 
   const dom = new JSDOM(html, {
     url: opts.url || 'https://reader.test/articles/rooftop-bars',
@@ -237,5 +238,77 @@ test('a thrown error inside a click handler never escapes to the host page', () 
 });
 
 // ---------------------------------------------------------------------
+
+// --- data-user (E8.5) ------------------------------------------------------
+//
+// The server renders the signed-in reader's id onto the tag, so the FIRST
+// event of a page already carries user_id. Without this there is a window on
+// every page load where a signed-in reader's behaviour lands as anonymous.
+
+test('data-user puts user_id on the very first event, with no identify() call', () => {
+  const uuid = '11111111-2222-3333-4444-555555555555';
+  const env = makeBeacon({ attrs: { 'data-user': uuid } });
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.ok(view, 'expected a view interaction');
+  assert.strictEqual(view.user_id, uuid);
+});
+
+test('a non-UUID data-user degrades to anonymous rather than poisoning the batch', () => {
+  // The server rejects non-UUID user ids, so sending one would fail the whole
+  // batch — losing every event in it, not just the identity.
+  const env = makeBeacon({ attrs: { 'data-user': 'not-a-uuid' } });
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.ok(view, 'expected a view interaction');
+  assert.ok(!('user_id' in view), 'user_id should be absent, got ' + view.user_id);
+});
+
+test('an absent data-user stays anonymous', () => {
+  const env = makeBeacon();
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.ok(!('user_id' in view));
+});
+
+test('identify() still overrides data-user, for sign-in without a reload', () => {
+  const env = makeBeacon({ attrs: { 'data-user': '11111111-2222-3333-4444-555555555555' } });
+  const other = '99999999-8888-7777-6666-555555555555';
+  env.window.NOWB('identify', other);
+  env.window.NOWB('track', 'click', { entityId: 'place:1' });
+  env.window.NOWB('flush');
+  const click = lastBody(env).interactions.find((e) => e.kind === 'click');
+  assert.strictEqual(click.user_id, other);
+});
+
+// --- <meta> fallback (E8.5) ------------------------------------------------
+
+test('entity comes from <meta> when the script tag has none', () => {
+  const env = makeBeacon({
+    attrs: { 'data-entity': '' },
+    head: '<meta name="nowb:entity" content="article-42"><meta name="nowb:entity-type" content="article"><meta name="nowb:surface" content="article">'
+  });
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.ok(view, 'expected a view interaction');
+  assert.strictEqual(view.entity_id, 'article-42');
+  assert.strictEqual(view.surface, 'article');
+});
+
+test('an explicit data-entity beats the meta', () => {
+  const env = makeBeacon({
+    attrs: { 'data-entity': 'from-tag' },
+    head: '<meta name="nowb:entity" content="from-meta">'
+  });
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.strictEqual(view.entity_id, 'from-tag');
+});
+
+test('no meta and no data-entity does not throw', () => {
+  const env = makeBeacon({ attrs: { 'data-entity': '' } });
+  env.window.NOWB('flush');
+  assert.ok(lastBody(env), 'expected a batch even with no entity');
+});
 
 runAll();

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Cormorant, Heebo } from 'next/font/google'
 
+import { Beacon } from '@/components/Beacon'
 import { Masthead } from '@/components/Masthead'
 import { Footer } from '@/components/primitives'
 import { getSiteConfig } from '@/lib/site'
@@ -85,6 +86,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Masthead site={site} today={today} />
         <main id="main">{children}</main>
         <Footer site={site} />
+        {/* One tag for the whole site. Pages that represent an entity emit
+            `<meta name="nowb:entity">` and the beacon picks it up — see
+            components/Beacon.tsx. Rendered last so it never delays paint;
+            it is `async` anyway. */}
+        <Beacon site={site.slug} />
       </body>
     </html>
   )

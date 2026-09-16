@@ -8,6 +8,7 @@ import {
 import { NextResponse } from 'next/server'
 
 import { readerSecret, readerStore } from '@/lib/reader'
+import { stitchAnonymousHistory } from '@/lib/stitch'
 
 /**
  * `GET /account/verify/confirm?token=…` — where the verification link lands.
@@ -51,6 +52,12 @@ export async function GET(request: Request): Promise<Response> {
   if (!result.ok) return invalid
 
   await readerStore().markEmailVerified(result.reader.id, new Date())
+
+  // Same claim the sign-in action makes. This route establishes a session of
+  // its own rather than going through `establishSession`, so the stitch has
+  // to be repeated here — and this is the path a brand-new reader actually
+  // takes, which makes it the one that matters most.
+  await stitchAnonymousHistory(result.reader.id)
 
   // Signed in on success: they have just proven control of the mailbox, and a
   // password prompt here is friction with no security value.

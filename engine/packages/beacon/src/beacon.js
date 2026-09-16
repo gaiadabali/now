@@ -28,9 +28,44 @@
     entityType: attr('data-entity-type', 'article'),
     surface: attr('data-surface', 'article'),
     endpoint: attr('data-endpoint', ''), // default derived below
+    user: attr('data-user', ''),         // server-rendered session, E8.5
     consent: attr('data-consent', null), // 'granted' | 'denied' | null (unset)
     debug: attr('data-debug', null) === 'true'
   };
+
+  // Page-level overrides via <meta>, for hosts that render the script once in
+  // a shared layout (E8.5).
+  //
+  // Next's App Router renders the layout around the page, so the layout owns
+  // the <script> tag but only the page knows which article this is. A meta
+  // tag closes that: the page emits it, it is in the DOM before this async
+  // script executes, and the result is ONE beacon tag site-wide instead of a
+  // per-page tag every new route can forget to add.
+  //
+  // The script tag still wins where both are present — an explicit
+  // data-entity is a deliberate statement, a meta is a fallback.
+  function meta(name) {
+    try {
+      var el = doc.querySelector('meta[name="nowb:' + name + '"]');
+      var v = el && el.getAttribute('content');
+      return v == null || v === '' ? '' : v;
+    } catch (e) {
+      return '';
+    }
+  }
+
+  // A page that names an entity owns the whole description of itself.
+  //
+  // Taking entity from the meta but surface from the script tag produced the
+  // worst of both: the layout's generic surface ("site") attached to a
+  // specific article, because the layout ALWAYS sets data-surface and so the
+  // meta could never win. Either the page is describing itself or it is not.
+  var metaEntity = meta('entity');
+  if (metaEntity && !cfg.entity) {
+    cfg.entity = metaEntity;
+    cfg.entityType = meta('entity-type') || cfg.entityType;
+    cfg.surface = meta('surface') || cfg.surface;
+  }
 
   if (!cfg.endpoint) {
     // Default: same script origin, /v1/{site}/events
@@ -370,7 +405,17 @@
   var pageEnteredAt = now();
   var maxScrollPct = 0;
   var reportedMilestones = {};
-  var userId; // set only via public API — never inferred
+  // Set from `data-user` at init, or later via the public API.
+  //
+  // E8.5 added the attribute. The host page is server-rendered and already
+  // knows who is signed in, so the alternative — an inline NOWB('identify')
+  // call — has to either race this file's async load or ship a stub queue to
+  // avoid it, and buys nothing either way. What it is NOT is inference: the
+  // server states the id, exactly as it states data-site.
+  //
+  // Still filtered through isValidUUID below before it is ever sent, so a
+  // malformed attribute degrades to anonymous rather than to a rejected batch.
+  var userId = cfg.user || undefined;
 
   function baseFields() {
     var fields = {

@@ -29,6 +29,7 @@ import {
   siteBaseUrl,
 } from '@/lib/reader'
 import { savePrefs } from '@/lib/preferences'
+import { stitchAnonymousHistory } from '@/lib/stitch'
 
 /**
  * Register, sign in, sign out, verify, reset (E8.3).
@@ -215,6 +216,11 @@ async function establishSession(identityId: string, email: string): Promise<void
   const token = issueReaderToken({ identityId, email }, readerSecret())
   const jar = await cookies()
   jar.set(READER_SESSION_COOKIE, token, readerCookieOptions(READER_SESSION_TTL_SECONDS))
+
+  // Claim this device's recent anonymous reading, so a reader who browsed for
+  // weeks before signing up does not start from zero (E8.5). Bounded and
+  // never throws — see lib/stitch.ts for why both matter.
+  await stitchAnonymousHistory(identityId)
 }
 
 export async function signOut(): Promise<void> {
