@@ -2,17 +2,15 @@
   "name": "@now-engine/console",
   "version": "0.1.0",
   "private": true,
-  "description": "Partner + campaign console. A Payload instance owning platform `public` (ARCHITECTURE.md E4.4) for auth; commerce data still reads from `engine`.",
+  "description": "Schema owner for `now_platform.public` — the staff identity store. NOT an app: its pages became /team-editor/commerce and its admin is retired. It exists so `public.users` has a migration home.",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3200",
-    "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
-    "start": "next start -p 3200",
     "typecheck": "tsc --noEmit",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-    "generate:types": "payload generate:types",
-    "generate:importmap": "payload generate:importmap"
+    "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
+    "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status",
+    "generate:types": "payload generate:types"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.88.0",

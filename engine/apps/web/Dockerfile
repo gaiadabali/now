@@ -39,6 +39,10 @@ FROM base AS deps
 # build that does not change a dependency, which is most of them.
 COPY engine/package.json engine/package-lock.json ./
 COPY engine/apps/web/package.json ./apps/web/
+# apps/console serves nothing any more — it is the migration home for
+# `now_platform.public` (see its README). Its manifest is still copied
+# because `npm ci` below installs the WHOLE workspace and refuses to run
+# against a lockfile whose members it cannot all find.
 COPY engine/apps/console/package.json ./apps/console/
 COPY engine/packages/cms/package.json ./packages/cms/
 COPY engine/packages/auth/package.json ./packages/auth/

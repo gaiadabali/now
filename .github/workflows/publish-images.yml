@@ -75,8 +75,6 @@ jobs:
           - name: now-web
             context: .
             dockerfile: engine/apps/web/Dockerfile
-          # ONE cms image for every city; cms-jakarta and cms-bali are the
-          # same image with a different DATABASE_URI (ARCHITECTURE.md §3.5).
           - name: now-postgres
             context: engine/infra/postgres
             dockerfile: engine/infra/postgres/Dockerfile
