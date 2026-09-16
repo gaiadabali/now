@@ -176,8 +176,19 @@ async function ArticlePage({ slug }: { slug: string }) {
         <section className="shell band" style={{ paddingTop: 0 }}>
           <SectionRule label="Read Next" note="Chosen by the engine" moreHref={`/${section}`} />
           <div className="grid grid--3 grid--ruled">
-            {related.map((a) => (
-              <StoryCard key={a.id} article={a} locale={locale} timeZone={tz} />
+            {/* The one rail the engine ranks rather than the desk ordering
+                it, so it is the one whose position bias §10 has to correct
+                for — which needs the slot recorded on both the impression
+                and the click, not just the click. */}
+            {related.map((a, i) => (
+              <StoryCard
+                key={a.id}
+                article={a}
+                locale={locale}
+                timeZone={tz}
+                rail="read-next"
+                position={i + 1}
+              />
             ))}
           </div>
         </section>
