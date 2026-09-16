@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { EntityBeacon } from '@/components/Beacon'
 import { StoryCard } from '@/components/StoryCard'
 import { SectionRule, Signup } from '@/components/primitives'
 import {
@@ -14,7 +15,7 @@ import {
   sectionLabel,
   sectionOf,
 } from '@/lib/content'
-import { formatDate, readingTime } from '@/lib/format'
+import { formatCount, formatDate, readingTime } from '@/lib/format'
 import { stripTags } from '@/lib/html'
 import { getSiteConfig } from '@/lib/site'
 
@@ -69,6 +70,8 @@ async function ArticlePage({ slug }: { slug: string }) {
   const { locale, timezone: tz } = site
   const article = (await getBySlug(slug))!
   const related = await getRelated(article)
+  // Tells the layout's single beacon tag which article this page is (E8.5).
+  const beacon = <EntityBeacon entity={String(article.id)} entityType="article" surface="article" />
   const section = sectionOf(article)
 
   // Pull quote is lifted from the body rather than authored separately, the
@@ -81,6 +84,7 @@ async function ArticlePage({ slug }: { slug: string }) {
 
   return (
     <article>
+      {beacon}
       <div className="shell">
         <header className="article-head">
           <p className="lead__kicker">
@@ -247,7 +251,7 @@ async function SectionIndex({
           )
         })}
         <span className="facets__result">
-          {result.total.toLocaleString(locale)} {result.total === 1 ? 'story' : 'stories'}
+          {formatCount(result.total)} {result.total === 1 ? 'story' : 'stories'}
           {result.totalPages > 1 ? ` · page ${result.page} of ${result.totalPages}` : ''}
         </span>
       </div>

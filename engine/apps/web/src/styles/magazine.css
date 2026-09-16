@@ -626,3 +626,21 @@
 .swatch__chip { height: 4.5rem; border: var(--rule-hair); }
 .swatch__name { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; margin-top: var(--space-2xs); color: var(--ink); }
 .swatch__hex { font-family: var(--font-sans); font-size: var(--t-micro); color: var(--ink-faint); }
+
+/* --- Preference chips (E8.4) ---------------------------------------------
+   Real checkboxes and radios, styled. The input stays in the accessibility
+   tree and keeps keyboard focus; only its default painting is hidden, so the
+   picker works with no JavaScript and reads correctly to a screen reader.
+   `:checked` drives the visual state, which is why nothing here hydrates. */
+.chip { display: inline-flex; cursor: pointer; }
+.chip__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip__label {
+  display: inline-block; border: var(--rule-hair); padding: 0.5em 0.9em;
+  font-family: var(--font-sans); font-size: var(--t-meta); color: var(--ink);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.chip:hover .chip__label { border-color: var(--ink); }
+.chip__input:checked + .chip__label { background: var(--ink); color: var(--ink-invert); border-color: var(--ink); }
+/* Focus lands on the visually hidden input, so the ring has to be drawn on
+   the label or keyboard users cannot see where they are. */
+.chip__input:focus-visible + .chip__label { outline: 2px solid var(--red); outline-offset: 2px; }

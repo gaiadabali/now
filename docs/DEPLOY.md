@@ -19,11 +19,15 @@ with 8 vCPU / 32 GB / 387 GB. Everything deploy-related lives in
 |---|---|
 | `postgres` · `redis` | ready — custom PG image carries pgvector + PostGIS |
 | `engine-api` | ready — ARCHITECTURE.md §16 calls this the durable deliverable |
-| `web-jakarta` · `web-bali` | ready — one image, one process per city |
-| `cms-jakarta` · `cms-bali` | ready — one image, two databases (§3.5) |
+| `web-jakarta` · `web-bali` | ready — one image, one process per city. **Also serves the admin and the commerce console at `/team-editor`** |
 | `garage` · `imgproxy` | **off** — behind the `media` profile, see §6 |
 | `engine-worker` | ready — arq cron + the re-embed stream consumer |
-| `console` | ready — Payload auth, **read-only** against commerce data |
+
+> **`cms-jakarta`, `cms-bali` and `console` are gone.** They were absorbed
+> into the web image at `/team-editor`
+> ([ADMIN-CONSOLIDATION.md](ADMIN-CONSOLIDATION.md) Phase 4): four services
+> and four hostnames became none. Anything below that still names them is
+> superseded by that document, which is the one to follow.
 
 ### The console's auth
 
@@ -121,10 +125,11 @@ together so a rollout cannot mix a new API with an old CMS:
 ghcr.io/gaiadabali/now-postgres:sha-<short>
 ghcr.io/gaiadabali/now-api:sha-<short>
 ghcr.io/gaiadabali/now-worker:sha-<short>
-ghcr.io/gaiadabali/now-console:sha-<short>
 ghcr.io/gaiadabali/now-web:sha-<short>
-ghcr.io/gaiadabali/now-cms:sha-<short>
 ```
+
+Four images, not six: `now-cms` and `now-console` are no longer built — the
+CI matrix in `publish-images.yml` is the authority, and it lists these four.
 
 `latest` is refused by `deploy.sh`. A rollback has to be able to name what it
 is rolling back to.
@@ -155,9 +160,12 @@ raw unencrypted port while `ufw status` still claimed only 80/443 were open.
 | `now-engine-api.gaiada.com` | | 4310 |
 | `now-jakarta.gaiada.com` | | 4311 (web-jakarta) |
 | `now-bali.gaiada.com` | | 4315 (web-bali) |
-| `now-cms-jakarta.gaiada.com` | | 4312 |
-| `now-cms-bali.gaiada.com` | | 4313 |
-| `now-console.gaiada.com` | | 4316 — **put auth in front of this** |
+
+The three CMS/console hostnames that used to sit here (`now-cms-jakarta`,
+`now-cms-bali`, `now-console`, ports 4312/4313/4316) are retired. The admin
+is a path on the city hostnames now — `now-bali.gaiada.com/team-editor` —
+behind the staff sign-in, so there is nothing separate to route or to "put
+auth in front of".
 
 There are two web processes, not one. `src/lib/site.ts` requires `SITE_SLUG`
 and says plainly that the app "serves exactly one city per process", so a
@@ -208,8 +216,12 @@ deploy/deploy.sh --pull --tag sha-<short sha>
 `deploy.sh` pulls all six images **before** stopping anything — a new API
 against an old CMS is worse than no rollout — then starts in dependency order
 and verifies: Postgres and Redis healthy, `engine-api` answering `/healthz`,
-and both web instances, both CMS instances and the console responding. It fails loudly rather than leaving a
+and both web instances responding. It fails loudly rather than leaving a
 half-deployed stack running.
+
+There are no CMS or console instances to check any more — `deploy.sh`'s own
+`SERVICES` list is postgres, redis, engine-api, engine-worker, web-jakarta,
+web-bali, and the admin is a path on the two web instances.
 
 The databases still need loading (E1.8) and migrations (`now-db`). `deploy.sh`
 does not do this yet — it is a rollout driver, not a migration runner.
@@ -251,30 +263,85 @@ act.
   parking/DNS pair. (An earlier draft of this file said GoDaddy; that was
   carried over from a sibling project's runbook and was wrong.)
 
-  Six A records in hPanel → Domains → DNS Zone, each `Type A`, `Points to
+  Three A records in hPanel → Domains → DNS Zone, each `Type A`, `Points to
   187.77.116.133`, TTL default:
 
   | Name | |
   |---|---|
   | `now-engine-api` | the API |
-  | `now-jakarta` | web-jakarta |
-  | `now-bali` | web-bali |
-  | `now-cms-jakarta` | Payload, Jakarta |
-  | `now-cms-bali` | Payload, Bali |
-  | `now-console` | commerce console — **auth first** |
+  | `now-jakarta` | web-jakarta — reader site **and** `/team-editor` |
+  | `now-bali` | web-bali — reader site **and** `/team-editor` |
+
+  It was six. `now-cms-jakarta`, `now-cms-bali` and `now-console` are not
+  needed: the admin is a path on the city hostnames
+  ([ADMIN-CONSOLIDATION.md](ADMIN-CONSOLIDATION.md)). Three records never
+  created is three fewer certificates to renew.
 
   Hostinger's DNS Zone editor takes the subdomain only, not the full name.
 
-  Verified 2026-09-14: none of the six resolve yet, while an existing
-  sibling (`bsc.gaiada.online`) resolves to this host, so the check is sound.
+  Verified 2026-09-14: none resolve yet, while an existing sibling
+  (`bsc.gaiada.online`) resolves to this host, so the check is sound.
 - **CloudPanel sites**, one per hostname (`clpctl site:add:reverse-proxy`),
   which also issues the certificate. DNS must resolve first or issuance
   fails.
 - **A GHCR pull token** on the box (§3).
-- **The console's Payload migration + first admin user** (§1). Until that
-  runs there is no account, and `/admin` will offer to create the first one
-  to whoever reaches it — so do it in the same session the host goes live.
+- **A staff account in `now_platform.public.users`.** Identity is the
+  platform's, not a city's: the admin's sign-in verifies against that table
+  and projects a shadow row into the city database
+  ([ADMIN-CONSOLIDATION.md](ADMIN-CONSOLIDATION.md) Phase 1). A row with no
+  `hash`/`salt` cannot sign in, so seed one deliberately — there is no
+  "create the first user" screen to race anyone to, because the collection
+  sets `disableLocalStrategy`:
+
+  ```bash
+  PLATFORM_DATABASE_URI=... npm run staff-account -w @now/auth --     --email you@example.com --name "Your Name" --editorial admin --commerce admin
+  ```
+
+  It prints a generated password once. The same command resets a password and
+  clears a lockout, so it is also the answer to "I am locked out of the admin".
+  The city shadow row is created by the first sign-in, not by this.
 - **Database load + migrations** — the images will start against an empty
   Postgres and the API will answer `/healthz` regardless, because that probe
   does not touch a city database. Do not read a green deploy as "the content
   is live".
+- **A Hostinger mailbox, and the two secrets that depend on it** (E8, reader
+  accounts). Without these `/account/*` is broken in production while the rest
+  of the site is fine — sign-up, verification and password reset all need mail,
+  and the app refuses to start with a console transport under
+  `NODE_ENV=production` rather than pretending to send.
+
+  Hostinger, matching the other gaiada properties: `gaiada.com`'s DNS is
+  already there, so SPF and DKIM are one panel rather than a second vendor to
+  verify. **Verified reachable 2026-09-16** — `smtp.hostinger.com:465` answers
+  `220 ESMTP smtp.hostinger.com` with a valid certificate, so host, port and
+  implicit TLS are settled; only the credential is outstanding.
+
+  1. hPanel → Emails → create a mailbox on `gaiada.com` (`hello@` is what
+     `.env.example` assumes). SMTP_USER is the **full address**, and
+     SMTP_PASSWORD is that *mailbox's* password — not the hPanel login.
+  2. Set on each web service:
+
+     ```
+     MAIL_TRANSPORT=smtp
+     SMTP_HOST=smtp.hostinger.com
+     SMTP_PORT=465            # implicit TLS; SMTP_SECURE is derived from this
+     SMTP_USER=hello@gaiada.com
+     SMTP_PASSWORD=…
+     MAIL_FROM_EMAIL=hello@gaiada.com
+     MAIL_FROM_NAME="NOW! Jakarta"      # per city
+     MAIL_SUPPORT_EMAIL=hello@gaiada.com
+     SITE_BASE_URL=https://now-jakarta.gaiada.com   # per city
+     READER_SESSION_SECRET=…   # openssl rand -base64 48
+     ```
+
+     SMTP will not send "as" an address the mailbox does not own, unlike an
+     API provider — so `MAIL_FROM_EMAIL` must be the mailbox itself.
+
+     `READER_SESSION_SECRET` **must differ from `PAYLOAD_SECRET`**; the app
+     throws at startup if they match. Readers and staff are separate
+     populations with separate cookies, and a shared signing key would leave
+     the `aud` claim as the only thing between a reader token and the admin
+     (docs/READER-IDENTITY.md).
+  3. Check SPF and DKIM in hPanel after the mailbox exists. A correct SMTP
+     config with no DKIM delivers straight to spam, which looks identical to
+     "no mail was sent" from the reader's side.

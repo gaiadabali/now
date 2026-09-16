@@ -1,0 +1,290 @@
+/* ============================================================================
+   NOW! — admin skin (Payload 3)
+   ----------------------------------------------------------------------------
+   The admin now lives on the city's own hostname, one click from the reader
+   site (docs/ADMIN-CONSOLIDATION.md Phase 2). Arriving at a stock Payload
+   screen from a warm-paper broadsheet reads as a different company. This
+   file closes that gap.
+
+   HOW IT WORKS, AND WHY IT IS THIS SHORT.
+   Payload's entire admin is painted from ONE neutral ramp, --color-base-0
+   through --color-base-1000. Everything else — backgrounds, borders, text,
+   inputs, buttons, tables, the lot — is --theme-elevation-*, which is
+   nothing but an alias onto that ramp (light) or onto it reversed (dark).
+   So repainting the ramp repaints the whole admin, in BOTH themes, without
+   naming a single component. That is the bulk of what is below.
+
+   Everything after the ramp is the short list of places where a value is
+   not derived from it: the type faces, the corner radii, and the three
+   spots where brand red is *earned* (focus, the active nav marker, the
+   sign-in kicker) rather than sprayed. Red is not a button colour here, for
+   the same reason it is not one on the reader site — see tokens.css.
+
+   Payload's own rules sit in `@layer payload-default`; this file is
+   unlayered, so it wins without a single `!important`.
+
+   WHAT IS DELIBERATELY LEFT ALONE: success / warning / error. They carry
+   meaning, not brand. Repainting a validation error into the house red
+   would look tidier in a screenshot and cost an editor a saved draft.
+   ========================================================================= */
+
+:root {
+  /* ---- The ramp ------------------------------------------------------
+     Warm paper at 0, logo ink at 900. Four steps ARE brand tokens and say
+     so; the rest are interpolated between them, which is why they are
+     literal — CSS cannot mix two custom properties.
+
+     Read it twice, because it serves both themes:
+       light  bg = base-0     text = base-800   border = base-150
+       dark   bg = base-900   text = base-0     border = base-750
+     Which is why 900 is the logo ink (a good dark ground) and 0 is the
+     paper (a good light type colour), not #000 and #fff.              */
+  --color-base-0: var(--paper);          /* #fbf9f5                       */
+  --color-base-50: #f4f1ea;
+  --color-base-100: #ede8df;
+  --color-base-150: #e6e0d4;             /* the hairline, cf. --rule-hair */
+  --color-base-200: #dad3c6;
+  --color-base-250: #cdc6b8;
+  --color-base-300: #c1b8a9;
+  --color-base-350: #b4ab9b;
+  --color-base-400: #a89e8d;
+  --color-base-450: #999082;
+  --color-base-500: #8a8276;
+  --color-base-550: #7b756b;
+  --color-base-600: var(--ink-mute);     /* #6c6760 — captions, meta      */
+  --color-base-650: #5c5852;
+  --color-base-700: #4c4843;
+  --color-base-750: #3b3834;
+  --color-base-800: var(--ink-body);     /* #2b2926 — body copy           */
+  --color-base-850: #242320;
+  --color-base-900: var(--ink);          /* #1d1d1b — logo ink            */
+  --color-base-950: #141412;
+  --color-base-1000: #0b0b0a;
+
+  /* ---- Type ----------------------------------------------------------
+     The same two faces the brand already uses, bound by next/font in the
+     (payload) layout so the admin costs no Google request either.     */
+  --font-body: var(--font-sans);
+  --font-serif: var(--font-display);
+
+  /* ---- Corners -------------------------------------------------------
+     A broadsheet is held together by rules, not rounded boxes. Payload's
+     default 3/4/8px is the loudest "this is a SaaS dashboard" signal
+     left once the colour is fixed.                                    */
+  --style-radius-s: 0px;
+  --style-radius-m: 0px;
+  --style-radius-l: 2px;
+
+  /* ---- Accent --------------------------------------------------------
+     Red earns its keep on the focus ring: that is the one piece of chrome
+     that must be unmissable, and ink-on-ink is not.                   */
+  --now-accent: var(--red);
+  --accessibility-outline: 2px solid var(--red);
+}
+
+/* Dark theme. The ramp inverts itself — Payload aliases the elevations in
+   reverse — so the only value that needs restating is the accent: #cd1719
+   vibrates against a near-black ground, and a lighter tint of the same hue
+   does not. */
+html[data-theme='dark'] {
+  --now-accent: #e8666a;
+  --accessibility-outline: 2px solid #e8666a;
+}
+
+/* ---------------------------------------------------------------------------
+   The nav
+   ------------------------------------------------------------------------ */
+
+/* The marker beside the collection you are in. Payload paints it
+   --theme-text, which makes it useless as a marker — the same ink as the
+   label it is meant to distinguish. */
+.nav__link-indicator {
+  background: var(--now-accent);
+}
+
+/* Group headings as the site's kicker: small, tracked, upper — the same
+   treatment as `.kicker` in magazine.css, which is what an editor arriving
+   from the front end has just been reading. */
+.nav__label {
+  color: var(--theme-elevation-500);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------------
+   The brand marks
+   ------------------------------------------------------------------------ */
+
+/* The square mark, inside Payload's 16px breadcrumb home link. */
+.graphic-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The wide wordmark, on the views Payload draws on a page of their own. */
+.graphic-logo {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Both cities' wordmarks are drawn in logo ink on nothing, which is correct
+   for the paper they were made for and invisible on a near-black ground.
+   The fix is a paper plate, not a filter: `invert()` would turn the brand
+   red cyan, and a recoloured logo is not the client's logo any more. A
+   printed mark sitting on its own stock is, at least, an idiom the brand
+   already uses.
+
+   The square icon needs none of this — it ships with its own light ground. */
+html[data-theme='dark'] .graphic-logo,
+html[data-theme='dark'] .staff-login__logo {
+  padding: 0.5em 0.75em;
+  background: var(--paper);
+}
+
+/* Typeset stand-in, shown only when the city config could not be read
+   (packages/cms/src/components/graphics/SiteLogo.tsx). */
+.now-wordmark {
+  color: var(--theme-elevation-1000);
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.now-wordmark__bang {
+  color: var(--now-accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Sign-in — team-editor/login, which is ours rather than Payload's
+   ------------------------------------------------------------------------ */
+
+.staff-login {
+  width: 100%;
+  max-width: 22rem;
+  margin-inline: auto;
+}
+
+/* Logo over a heavy rule: the masthead's own construction, at a quarter of
+   the size. */
+.staff-login__brand {
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--base);
+  border-bottom: 3px solid var(--theme-elevation-1000);
+}
+
+.staff-login__logo {
+  display: block;
+  width: 100%;
+  max-width: 15rem;
+  height: auto;
+}
+
+.staff-login__kicker {
+  margin: calc(var(--base) * 0.75) 0 0;
+  color: var(--now-accent);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.staff-login__title {
+  margin: calc(var(--base) * 0.25) 0 calc(var(--base) * 1.5);
+  color: var(--theme-elevation-1000);
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  font-weight: 400;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.staff-login__form {
+  display: grid;
+  gap: var(--base);
+}
+
+.staff-login__label {
+  display: grid;
+  gap: calc(var(--base) * 0.25);
+}
+
+.staff-login__label > span {
+  color: var(--theme-elevation-600);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.staff-login__input {
+  width: 100%;
+  padding: calc(var(--base) * 0.5) calc(var(--base) * 0.6);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.staff-login__input:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+.staff-login__error {
+  margin: 0;
+  color: var(--theme-error-500);
+  font-size: 0.875rem;
+}
+
+/* Ink, not red — the same restraint the reader site applies to its own
+   calls to action. Red arrives on hover, where it is a response rather
+   than decoration. */
+.staff-login__submit {
+  padding: calc(var(--base) * 0.55);
+  border: 1px solid var(--theme-elevation-1000);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.staff-login__submit:hover:not(:disabled) {
+  border-color: var(--now-accent);
+  background: var(--now-accent);
+}
+
+.staff-login__submit:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staff-login__submit {
+    transition: none;
+  }
+}
+
+.staff-login__note {
+  margin: 0;
+  color: var(--theme-elevation-500);
+  font-size: 0.875rem;
+  text-align: center;
+}

@@ -1,7 +1,13 @@
 # Consolidating the admin surfaces
 
-**Status:** planned, not started. Decided 2026-09-15.
-**Supersedes:** the six-hostname layout in [DEPLOY.md §4](DEPLOY.md).
+**Status:** phases 1–3 shipped; phase 4 all but the infrastructure.
+Decided 2026-09-15 · last reconciled against the codebase 2026-09-16.
+**Supersedes:** the six-hostname layout in [DEPLOY.md §4](DEPLOY.md), whose
+service and hostname tables still describe the retired six.
+
+Boxes below are ticked only where the repository shows the work. The ones
+still open are DNS, CloudPanel and the beacon's endpoint — none of which live
+here, so none of which this file can verify.
 
 ## What changes
 
@@ -107,7 +113,7 @@ Build the custom auth strategy and point **both** existing CMS instances and
 the console at `now_platform.public.users`. Six hostnames still, three apps
 still — but one account now works everywhere.
 
-- [ ] `packages/auth` (new): verify credentials against platform users;
+- [x] `packages/auth` (new): verify credentials against platform users;
       shadow-row upsert; role refresh
 - [ ] Migrate existing city `users` rows into the platform table; keep the
       city tables as shadows
@@ -122,27 +128,34 @@ the old surfaces still work.
 
 ### Phase 2 — the reader site and the CMS become one app
 
-- [ ] `apps/web` gains the `(payload)` route group; `routes.admin` =
+- [x] `apps/web` gains the `(payload)` route group; `routes.admin` =
       `/team-editor`
-- [ ] `packages/cms` stays the **shared Payload config package** — §3.5's
+- [x] `packages/cms` stays the **shared Payload config package** — §3.5's
       "ONE Payload config, instantiated per city" is preserved, the app
-      imports it rather than owning it
-- [ ] `SITE_SLUG` continues to select the city; no new per-city code
-- [ ] Deploy under the existing city hostnames. `now-cms-*` still up, unused.
+      imports it rather than owning it. Its own `src/app/` is now gone: it is
+      a library and nothing else
+- [x] `SITE_SLUG` continues to select the city; no new per-city code — it
+      now also picks the brand marks in the admin chrome
+- [x] Deploy under the existing city hostnames. `now-cms-*` is gone, not
+      merely unused.
 
 ### Phase 3 — commerce moves in
 
-- [ ] `apps/console/src/app/(console)/*` → `/team-editor/commerce`
-- [ ] Platform read-only pool, as today
-- [ ] Role gate on every route, enforced server-side, not in a layout
-- [ ] Console still up, unused, as a rollback
+- [x] `apps/console/src/app/(console)/*` → `/team-editor/commerce`
+- [x] Platform read-only pool, as today (`apps/web/src/lib/db.ts`)
+- [x] Role gate on every route, enforced server-side, not in a layout —
+      every commerce page calls `requireCommerceAccess()` before it queries
+- [x] Console still up, unused, as a rollback — now dropped; `apps/console`
+      remains in the tree as source, built by nothing
 
 ### Phase 4 — retire
 
 - [ ] Path-route `/v1/*` → `engine-api` on both city hostnames
 - [ ] Re-point the beacon's endpoint (it derives `origin + /v1/{site}/events`
       and accepts a `data-endpoint` override, so this is config)
-- [ ] Drop `cms-jakarta`, `cms-bali`, `console` from compose
+- [x] Drop `cms-jakarta`, `cms-bali`, `console` from compose — gone from
+      `deploy/docker-compose.yml`, the root `docker-compose.yml`, the CI
+      image matrix and `.env.example`
 - [ ] Remove the four CloudPanel sites and the four DNS records
 
 ## Risks worth holding in view

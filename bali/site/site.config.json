@@ -98,7 +98,7 @@
       "links": [
         {
           "label": "NOW! Jakarta",
-          "href": "https://www.nowjakarta.co.id"
+          "href": "https://now-jakarta.gaiada.com"
         },
         {
           "label": "Subscribe",
@@ -127,5 +127,21 @@
         }
       ]
     }
-  ]
+  ],
+  "contact": {
+    "address": [
+      "Jalan Pengubengan Kauh No. 99",
+      "Kerobokan Kelod",
+      "Kuta Utara, Bali"
+    ],
+    "phone": [
+      "+62 811 380 850",
+      "+62 811 399 0072"
+    ]
+  },
+  "podcast": {
+    "name": "The NOW! Bali Podcast",
+    "spotifyShowId": "2diJC7HRHorf0DycVMqXCn",
+    "url": "https://open.spotify.com/show/2diJC7HRHorf0DycVMqXCn"
+  }
 }

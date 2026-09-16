@@ -56,13 +56,31 @@ def introspect_schema(connection: Connection, schema: str = "engine") -> dict[st
             {"schema": schema, "table": table},
         ).fetchall()
 
+        # `delete_rule`/`update_rule` are joined in because the gate was blind
+        # to them (F139). Migration 0008 changed two foreign keys from NO
+        # ACTION to CASCADE and SET NULL — a change in what happens to a
+        # person's data when their account is deleted — and the schema hash
+        # did not move. A gate that cannot see the difference between CASCADE
+        # and NO ACTION cannot catch the class of bug F138 actually was.
+        #
+        # `::text` on the aggregated column names is not cosmetic either. The
+        # `array_agg` returns `information_schema.sql_identifier[]`, which the
+        # driver hands back as the literal string '{user_id,site_id}' — and
+        # `list()` on a string splits it into CHARACTERS. Every recorded
+        # constraint in the old baseline was a list like
+        # ["{","u","s","e","r",...]. It hashed deterministically, so the gate
+        # still worked, but the baseline was unreadable and a column-set
+        # change was being compared as a character sequence.
         constraints = connection.execute(
             text(
                 "SELECT tc.constraint_type, tc.constraint_name, "
-                "       array_agg(kcu.column_name ORDER BY kcu.ordinal_position) "
+                "       array_agg(kcu.column_name::text ORDER BY kcu.ordinal_position), "
+                "       max(rc.delete_rule), max(rc.update_rule) "
                 "FROM information_schema.table_constraints tc "
                 "JOIN information_schema.key_column_usage kcu "
                 "  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema "
+                "LEFT JOIN information_schema.referential_constraints rc "
+                "  ON rc.constraint_name = tc.constraint_name AND rc.constraint_schema = tc.table_schema "
                 "WHERE tc.table_schema = :schema AND tc.table_name = :table "
                 "  AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY') "
                 "GROUP BY tc.constraint_type, tc.constraint_name "
@@ -130,7 +148,19 @@ def introspect_schema(connection: Connection, schema: str = "engine") -> dict[st
                 for c in columns
             ],
             "constraints": [
-                {"type": c[0], "name": c[1], "columns": list(c[2])} for c in constraints
+                {
+                    "type": c[0],
+                    "name": c[1],
+                    "columns": list(c[2]),
+                    # Present only on foreign keys; omitted elsewhere so the
+                    # record stays the shape of the thing it describes.
+                    **(
+                        {"on_delete": c[3], "on_update": c[4]}
+                        if c[0] == "FOREIGN KEY"
+                        else {}
+                    ),
+                }
+                for c in constraints
             ],
             "checks": [{"name": c[0], "clause": c[1]} for c in checks],
             "indexes": [

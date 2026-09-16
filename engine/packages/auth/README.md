@@ -92,8 +92,29 @@ role but no credential.
 > and `node --experimental-strip-types` rejects them — which is what lets the
 > tests run with no build step.
 
+## Creating an account
+
+There is no sign-up, and Payload's "create the first user" screen does not
+exist here — `disableLocalStrategy` removed it, which is the point. Accounts
+are minted with:
+
+```bash
+PLATFORM_DATABASE_URI=... npm run staff-account -w @now/auth --   --email person@example.com --name "Their Name"   --editorial admin --commerce viewer
+```
+
+`scripts/staff-account.mjs` calls `hashPassword` from this package rather than
+reimplementing PBKDF2, so a change to the parameters in `password.ts` cannot
+leave it minting credentials that `verifyPassword` rejects. It is idempotent
+on email: re-running resets the password and the roles and clears
+`login_attempts`, which is also how an account gets unlocked.
+
+It writes only the platform row. The city shadow row is written by the
+sign-in route on first use (`upsertShadowUser`) — one owner for that write,
+not two.
+
 ## Not done yet
 
-- Wiring the strategy into the Payload configs
-  (`disableLocalStrategy: true` + a custom strategy resolving the shadow row)
 - Migrating existing city `users` rows into the platform table
+- Server-side session revocation. Signing out clears the cookie
+  (`/team-editor/logout`); the token itself stays valid until it expires, so
+  the 8h TTL is the bound on a stolen one.

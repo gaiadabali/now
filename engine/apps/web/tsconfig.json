@@ -4,8 +4,10 @@
     "lib": ["dom", "dom.iterable", "ES2022"],
     // true since this app began serving the Payload admin: Payload GENERATES
     // `(payload)/team-editor/importMap.js` as JavaScript, and the layout
-    // imports it. packages/cms and apps/console both carry this for the same
-    // reason. It was false here while this was a pure reader app.
+    // imports it. This app is now the ONLY one that needs it — packages/cms
+    // and apps/console each had their own generated map while they were
+    // apps, and neither is one any more. It was false here while this was a
+    // pure reader app.
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,

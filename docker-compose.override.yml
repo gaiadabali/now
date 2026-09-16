@@ -37,3 +37,23 @@ services:
   nominatim:
     ports:
       - "${NOMINATIM_PORT:-8088}:8080"
+
+  # Local SMTP sink for E8.0. Catches every message the app sends and shows
+  # them at http://localhost:8025 — nothing leaves the machine, so a
+  # verification or password-reset flow can be driven end to end without a
+  # provider account and without the risk of mailing a real address from a
+  # development database.
+  #
+  # Deliberately in the override file only: production must reach a real
+  # relay, and `@now/mailer`'s createTransportFromEnv refuses the console
+  # transport under NODE_ENV=production for the same reason.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP — point SMTP_HOST/SMTP_PORT here
+      - "${MAILPIT_UI_PORT:-8025}:8025" # web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1

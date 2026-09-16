@@ -6,6 +6,19 @@ between two running instances is the `DATABASE_URI` env var. This package owns `
 in each city database and must never create, alter or read anything in `engine` —
 Alembic owns `engine` and never touches `public`. See ARCHITECTURE.md §1 principle 2.
 
+## This package is a library, not an app
+
+It ships the Payload config, the collections, the migrations and the admin's custom
+components. It does **not** serve anything. The admin is rendered by the reader app at
+`<city>/team-editor` (docs/ADMIN-CONSOLIDATION.md Phase 2), which imports this config
+through the `@payload-config` alias and owns the only import map.
+
+It used to be a Next app of its own, with an `admin/` route and a container per city.
+Those containers are retired (deploy/deploy.sh), the image is no longer built, and the
+route folder no longer matched `routes.admin` — so `next dev` here started a server whose
+admin 404'd, and `generate:importmap` failed outright looking for a folder that had moved.
+Both are gone rather than left to mislead.
+
 ## Quick start
 
 ```bash
@@ -13,12 +26,14 @@ cp .env.example .env
 # edit .env: DATABASE_URI, SITE_SLUG, PLATFORM_DATABASE_URI, REDIS_URL
 npm install
 npx payload migrate      # applies src/migrations/* to whatever DATABASE_URI points at
-npm run dev              # next dev — admin panel at http://localhost:3000/admin
 ```
 
+To run the admin, start the reader app — `npm run dev -w @now-engine/web` — and open
+`/team-editor`.
+
 To point the exact same checkout at a different city, change only `DATABASE_URI` (and
-`SITE_SLUG`, which is cosmetic — admin-panel labelling and log lines only, never branching
-logic) and re-run `npx payload migrate` / restart. No code changes, no rebuild.
+`SITE_SLUG`, which selects the brand marks in the admin chrome and the log lines, never
+branching logic) and re-run `npx payload migrate` / restart. No code changes, no rebuild.
 
 ## Facet vocabulary across two databases
 

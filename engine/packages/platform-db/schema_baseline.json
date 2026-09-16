@@ -1,5 +1,5 @@
 {
-  "hash": "8cddf51d06be11012f556e37b288e00520383f77b1454ff238dfe9194bff910f",
+  "hash": "266cc48c6b3bc76b1e67f3cd3f26c400c92554cee4b3864ee626ff5ffd9dccda",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -57,52 +57,26 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "c",
-              "a",
-              "m",
-              "p",
-              "a",
-              "i",
-              "g",
-              "n",
-              "_",
-              "i",
-              "d",
-              "}"
+              "campaign_id"
             ],
             "name": "ad_events_campaign_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "p",
-              "l",
-              "a",
-              "c",
-              "e",
-              "m",
-              "e",
-              "n",
-              "t",
-              "_",
-              "i",
-              "d",
-              "}"
+              "placement_id"
             ],
             "name": "ad_events_placement_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              ",",
-              "t",
-              "s",
-              "}"
+              "id",
+              "ts"
             ],
             "name": "ad_events_pkey",
             "type": "PRIMARY KEY"
@@ -141,19 +115,7 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "v",
-              "e",
-              "r",
-              "s",
-              "i",
-              "o",
-              "n",
-              "_",
-              "n",
-              "u",
-              "m",
-              "}"
+              "version_num"
             ],
             "name": "alembic_version_pkc",
             "type": "PRIMARY KEY"
@@ -250,39 +212,25 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "o",
-              "r",
-              "g",
-              "_",
-              "i",
-              "d",
-              "}"
+              "org_id"
             ],
             "name": "campaigns_org_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "s",
-              "i",
-              "t",
-              "e",
-              "_",
-              "i",
-              "d",
-              "}"
+              "site_id"
             ],
             "name": "campaigns_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "campaigns_pkey",
             "type": "PRIMARY KEY"
@@ -354,21 +302,14 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "facets_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "k",
-              "e",
-              "y",
-              "}"
+              "key"
             ],
             "name": "uq_facets_key",
             "type": "UNIQUE"
@@ -389,7 +330,12 @@
         "partitioned": false
       },
       "identities": {
-        "checks": [],
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['active'::text, 'suspended'::text, 'deleted'::text])))",
+            "name": "identities_status_ck"
+          }
+        ],
         "columns": [
           {
             "default": "gen_random_uuid()",
@@ -418,28 +364,89 @@
             "nullable": "NO",
             "type": "jsonb",
             "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "name",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "salt",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_verified_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "0",
+            "name": "login_attempts",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "lock_until",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "last_login_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'active'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           }
         ],
         "constraints": [
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "identities_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "e",
-              "m",
-              "a",
-              "i",
-              "l",
-              "}"
+              "email"
             ],
             "name": "uq_identities_email",
             "type": "UNIQUE"
@@ -455,6 +462,111 @@
             "def": "CREATE UNIQUE INDEX uq_identities_email ON engine.identities USING btree (email)",
             "method": "btree",
             "name": "uq_identities_email"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_identities_email_norm ON engine.identities USING btree (email_norm)",
+            "method": "btree",
+            "name": "uq_identities_email_norm"
+          }
+        ],
+        "partitioned": false
+      },
+      "identity_tokens": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['verify_email'::text, 'reset_password'::text])))",
+            "name": "identity_tokens_kind_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "token_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "expires_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "consumed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "identity_tokens_identity_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "identity_tokens_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX identity_tokens_expiry_ix ON engine.identity_tokens USING btree (expires_at) WHERE (consumed_at IS NULL)",
+            "method": "btree",
+            "name": "identity_tokens_expiry_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX identity_tokens_hash_uq ON engine.identity_tokens USING btree (token_hash)",
+            "method": "btree",
+            "name": "identity_tokens_hash_uq"
+          },
+          {
+            "def": "CREATE INDEX identity_tokens_identity_kind_ix ON engine.identity_tokens USING btree (identity_id, kind)",
+            "method": "btree",
+            "name": "identity_tokens_identity_kind_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX identity_tokens_pkey ON engine.identity_tokens USING btree (id)",
+            "method": "btree",
+            "name": "identity_tokens_pkey"
           }
         ],
         "partitioned": false
@@ -536,59 +648,32 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "s",
-              "i",
-              "t",
-              "e",
-              "_",
-              "i",
-              "d",
-              "}"
+              "site_id"
             ],
             "name": "itineraries_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "u",
-              "s",
-              "e",
-              "r",
-              "_",
-              "i",
-              "d",
-              "}"
+              "user_id"
             ],
             "name": "itineraries_user_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "itineraries_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "s",
-              "h",
-              "a",
-              "r",
-              "e",
-              "_",
-              "t",
-              "o",
-              "k",
-              "e",
-              "n",
-              "}"
+              "share_token"
             ],
             "name": "uq_itineraries_share_token",
             "type": "UNIQUE"
@@ -653,80 +738,33 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "a",
-              "r",
-              "e",
-              "a",
-              "_",
-              "t",
-              "e",
-              "r",
-              "m",
-              "_",
-              "i",
-              "d",
-              "}"
+              "area_term_id"
             ],
             "name": "itinerary_days_area_term_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "t",
-              "i",
-              "n",
-              "e",
-              "r",
-              "a",
-              "r",
-              "y",
-              "_",
-              "i",
-              "d",
-              "}"
+              "itinerary_id"
             ],
             "name": "itinerary_days_itinerary_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "itinerary_days_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "t",
-              "i",
-              "n",
-              "e",
-              "r",
-              "a",
-              "r",
-              "y",
-              "_",
-              "i",
-              "d",
-              ",",
-              "d",
-              "a",
-              "y",
-              "_",
-              "i",
-              "n",
-              "d",
-              "e",
-              "x",
-              "}"
+              "itinerary_id",
+              "day_index"
             ],
             "name": "uq_itinerary_days_seq",
             "type": "UNIQUE"
@@ -823,61 +861,33 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "c",
-              "a",
-              "m",
-              "p",
-              "a",
-              "i",
-              "g",
-              "n",
-              "_",
-              "i",
-              "d",
-              "}"
+              "campaign_id"
             ],
             "name": "itinerary_stops_campaign_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "d",
-              "a",
-              "y",
-              "_",
-              "i",
-              "d",
-              "}"
+              "day_id"
             ],
             "name": "itinerary_stops_day_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "itinerary_stops_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "d",
-              "a",
-              "y",
-              "_",
-              "i",
-              "d",
-              ",",
-              "s",
-              "e",
-              "q",
-              "}"
+              "day_id",
+              "seq"
             ],
             "name": "uq_itinerary_stops_seq",
             "type": "UNIQUE"
@@ -893,6 +903,99 @@
             "def": "CREATE UNIQUE INDEX uq_itinerary_stops_seq ON engine.itinerary_stops USING btree (day_id, seq)",
             "method": "btree",
             "name": "uq_itinerary_stops_seq"
+          }
+        ],
+        "partitioned": false
+      },
+      "newsletter_subscribers": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'unsubscribed'::text])))",
+            "name": "newsletter_subscribers_status_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_slug",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'pending'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "source",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "confirmed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "newsletter_subscribers_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_subscribers_pkey ON engine.newsletter_subscribers USING btree (id)",
+            "method": "btree",
+            "name": "newsletter_subscribers_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_subscribers_site_email_uq ON engine.newsletter_subscribers USING btree (site_slug, email_norm)",
+            "method": "btree",
+            "name": "newsletter_subscribers_site_email_uq"
+          },
+          {
+            "def": "CREATE INDEX newsletter_subscribers_site_status_ix ON engine.newsletter_subscribers USING btree (site_slug, status)",
+            "method": "btree",
+            "name": "newsletter_subscribers_site_status_ix"
           }
         ],
         "partitioned": false
@@ -1067,43 +1170,23 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "p",
-              "a",
-              "r",
-              "e",
-              "n",
-              "t",
-              "_",
-              "o",
-              "r",
-              "g",
-              "_",
-              "i",
-              "d",
-              "}"
+              "parent_org_id"
             ],
             "name": "orgs_parent_org_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "orgs_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "s",
-              "l",
-              "u",
-              "g",
-              "}"
+              "slug"
             ],
             "name": "uq_orgs_slug",
             "type": "UNIQUE"
@@ -1182,32 +1265,16 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "p",
-              "a",
-              "r",
-              "t",
-              "n",
-              "e",
-              "r",
-              "s",
-              "h",
-              "i",
-              "p",
-              "_",
-              "i",
-              "d",
-              "}"
+              "partnership_id"
             ],
             "name": "partnership_audit_partnership_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "partnership_audit_pkey",
             "type": "PRIMARY KEY"
@@ -1366,39 +1433,25 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "o",
-              "r",
-              "g",
-              "_",
-              "i",
-              "d",
-              "}"
+              "org_id"
             ],
             "name": "partnerships_org_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "s",
-              "i",
-              "t",
-              "e",
-              "_",
-              "i",
-              "d",
-              "}"
+              "site_id"
             ],
             "name": "partnerships_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "partnerships_pkey",
             "type": "PRIMARY KEY"
@@ -1501,29 +1554,16 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "c",
-              "a",
-              "m",
-              "p",
-              "a",
-              "i",
-              "g",
-              "n",
-              "_",
-              "i",
-              "d",
-              "}"
+              "campaign_id"
             ],
             "name": "placements_campaign_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "placements_pkey",
             "type": "PRIMARY KEY"
@@ -1539,6 +1579,101 @@
             "def": "CREATE UNIQUE INDEX placements_pkey ON engine.placements USING btree (id)",
             "method": "btree",
             "name": "placements_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "saved_items": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "note",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "saved_items_identity_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "saved_items_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "identity_id",
+              "site_id",
+              "entity_type",
+              "entity_id"
+            ],
+            "name": "saved_items_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX saved_items_entity_ix ON engine.saved_items USING btree (site_id, entity_type, entity_id)",
+            "method": "btree",
+            "name": "saved_items_entity_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX saved_items_pkey ON engine.saved_items USING btree (identity_id, site_id, entity_type, entity_id)",
+            "method": "btree",
+            "name": "saved_items_pkey"
+          },
+          {
+            "def": "CREATE INDEX saved_items_reader_recent_ix ON engine.saved_items USING btree (identity_id, site_id, created_at DESC)",
+            "method": "btree",
+            "name": "saved_items_reader_recent_ix"
           }
         ],
         "partitioned": false
@@ -1674,76 +1809,37 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "l",
-              "o",
-              "c",
-              "a",
-              "t",
-              "i",
-              "o",
-              "n",
-              "_",
-              "t",
-              "e",
-              "r",
-              "m",
-              "_",
-              "i",
-              "d",
-              "}"
+              "location_term_id"
             ],
             "name": "sites_location_term_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "sites_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "d",
-              "b",
-              "_",
-              "r",
-              "e",
-              "f",
-              "}"
+              "db_ref"
             ],
             "name": "uq_sites_db_ref",
             "type": "UNIQUE"
           },
           {
             "columns": [
-              "{",
-              "h",
-              "o",
-              "s",
-              "t",
-              "n",
-              "a",
-              "m",
-              "e",
-              "}"
+              "hostname"
             ],
             "name": "uq_sites_hostname",
             "type": "UNIQUE"
           },
           {
             "columns": [
-              "{",
-              "s",
-              "l",
-              "u",
-              "g",
-              "}"
+              "slug"
             ],
             "name": "uq_sites_slug",
             "type": "UNIQUE"
@@ -1834,97 +1930,34 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "o",
-              "r",
-              "i",
-              "g",
-              "i",
-              "n",
-              "_",
-              "s",
-              "i",
-              "t",
-              "e",
-              "}"
+              "origin_site"
             ],
             "name": "syndications_origin_site_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "t",
-              "a",
-              "r",
-              "g",
-              "e",
-              "t",
-              "_",
-              "s",
-              "i",
-              "t",
-              "e",
-              "}"
+              "target_site"
             ],
             "name": "syndications_target_site_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "syndications_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "o",
-              "r",
-              "i",
-              "g",
-              "i",
-              "n",
-              "_",
-              "s",
-              "i",
-              "t",
-              "e",
-              ",",
-              "o",
-              "r",
-              "i",
-              "g",
-              "i",
-              "n",
-              "_",
-              "a",
-              "r",
-              "t",
-              "i",
-              "c",
-              "l",
-              "e",
-              "_",
-              "i",
-              "d",
-              ",",
-              "t",
-              "a",
-              "r",
-              "g",
-              "e",
-              "t",
-              "_",
-              "s",
-              "i",
-              "t",
-              "e",
-              "}"
+              "origin_site",
+              "origin_article_id",
+              "target_site"
             ],
             "name": "uq_syndications_edge",
             "type": "UNIQUE"
@@ -2019,64 +2052,33 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "f",
-              "a",
-              "c",
-              "e",
-              "t",
-              "_",
-              "i",
-              "d",
-              "}"
+              "facet_id"
             ],
             "name": "terms_facet_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "p",
-              "a",
-              "r",
-              "e",
-              "n",
-              "t",
-              "_",
-              "i",
-              "d",
-              "}"
+              "parent_id"
             ],
             "name": "terms_parent_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "i",
-              "d",
-              "}"
+              "id"
             ],
             "name": "terms_pkey",
             "type": "PRIMARY KEY"
           },
           {
             "columns": [
-              "{",
-              "f",
-              "a",
-              "c",
-              "e",
-              "t",
-              "_",
-              "i",
-              "d",
-              ",",
-              "s",
-              "l",
-              "u",
-              "g",
-              "}"
+              "facet_id",
+              "slug"
             ],
             "name": "uq_terms_facet_slug",
             "type": "UNIQUE"
@@ -2172,53 +2174,26 @@
         "constraints": [
           {
             "columns": [
-              "{",
-              "s",
-              "i",
-              "t",
-              "e",
-              "_",
-              "i",
-              "d",
-              "}"
+              "site_id"
             ],
             "name": "user_profiles_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "u",
-              "s",
-              "e",
-              "r",
-              "_",
-              "i",
-              "d",
-              "}"
+              "user_id"
             ],
             "name": "user_profiles_user_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
           {
             "columns": [
-              "{",
-              "u",
-              "s",
-              "e",
-              "r",
-              "_",
-              "i",
-              "d",
-              ",",
-              "s",
-              "i",
-              "t",
-              "e",
-              "_",
-              "i",
-              "d",
-              "}"
+              "user_id",
+              "site_id"
             ],
             "name": "user_profiles_pkey",
             "type": "PRIMARY KEY"

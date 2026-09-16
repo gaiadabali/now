@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "lint:site-literals": "node scripts/lint-site-literals.mjs",
     "generate:importmap": "payload generate:importmap",
-    "test": "node --test --experimental-strip-types test/*.test.ts"
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "sync:beacon": "node scripts/sync-beacon.mjs",
+    "prebuild": "node scripts/sync-beacon.mjs",
+    "predev": "node scripts/sync-beacon.mjs"
   },
   "dependencies": {
     "next": "15.4.11",
@@ -24,7 +27,10 @@
     "@payloadcms/next": "3.88.0",
     "@payloadcms/db-postgres": "3.88.0",
     "@payloadcms/richtext-lexical": "3.88.0",
-    "graphql": "^16.8.1"
+    "graphql": "^16.8.1",
+    "@now/auth": "*",
+    "@now/mailer": "*",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",

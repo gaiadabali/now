@@ -43,3 +43,56 @@ export {
   type VerifyFailure,
   type VerifyResult,
 } from './session.ts'
+
+// --- readers (E8.2, docs/READER-IDENTITY.md) --------------------------------
+//
+// A separate population with a separate store, cookie and signing secret. The
+// only thing shared with staff is the crypto in `password.ts` and `token.ts`,
+// because two implementations of the same primitive is two security levels
+// with one review between them.
+export {
+  READER_SESSION_COOKIE,
+  READER_SESSION_TTL_SECONDS,
+  issueReaderToken,
+  readerCookieClearOptions,
+  readerCookieOptions,
+  verifyReaderToken,
+  type ReaderSessionClaims,
+  type ReaderVerifyFailure,
+  type ReaderVerifyResult,
+} from './readerSession.ts'
+export {
+  DEFAULT_READER_LOCKOUT,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  RESET_TOKEN_TTL_HOURS,
+  VERIFY_TOKEN_TTL_HOURS,
+  authenticateReader,
+  checkPassword,
+  completePasswordReset,
+  consumeEmailToken,
+  generateEmailToken,
+  hashEmailToken,
+  issueEmailToken,
+  normaliseReaderEmail,
+  registerReader,
+  type ConsumeFailure,
+  type ConsumeResult,
+  type EmailTokenKind,
+  type EmailTokenRecord,
+  type IssueTokenResult,
+  type PasswordCheck,
+  type PasswordProblem,
+  type ReaderAuthFailure,
+  type ReaderAuthOptions,
+  type ReaderAuthResult,
+  type ReaderLockoutPolicy,
+  type ReaderRecord,
+  type ReaderStatus,
+  type ReaderStore,
+  type RegisterFailure,
+  type RegisterInput,
+  type RegisterResult,
+} from './reader.ts'
+export { PostgresReaderStore } from './readerStore.ts'
+export { audienceMatches, decodeToken, encodeToken, type Audience } from './token.ts'

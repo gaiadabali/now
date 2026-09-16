@@ -2,10 +2,18 @@
 #
 # Scope of this file (E0.1 — see PROGRESS.md): infrastructure services only
 # (postgres, redis, garage, imgproxy, caddy). Application services
-# (engine-api, engine-worker, cms-jakarta, cms-bali, web, console) are wired
-# below as PLACEHOLDERS behind the `apps` profile so `docker compose up`
-# brings the infra layer up cleanly today, without depending on Dockerfiles
-# that other in-flight tasks (E0.2/E0.3 and later) haven't created yet.
+# (engine-api, engine-worker, web) are wired below as PLACEHOLDERS behind the
+# `apps` profile so `docker compose up` brings the infra layer up cleanly
+# today, without depending on Dockerfiles that other in-flight tasks
+# (E0.2/E0.3 and later) haven't created yet.
+#
+# `cms-jakarta`, `cms-bali` and `console` used to be here and are not any
+# more. The CMS and the commerce console were absorbed into the reader app at
+# /team-editor (docs/ADMIN-CONSOLIDATION.md Phase 4): deploy/docker-compose.yml
+# dropped them, deploy.sh stopped naming them, and the CI matrix stopped
+# building their images. This file was the last place still claiming they
+# exist — three services whose `build.context` points at a package that no
+# longer has an app in it.
 #
 # Once an app has a real Dockerfile, its owning task should: (1) fix the
 # `build.context`, (2) drop the `profiles: ["apps"]` line so it starts by
@@ -306,7 +314,16 @@ services:
   engine-api:
     profiles: ["apps"]
     build:
-      context: ./engine/apps/api
+      # Repo root, not the app directory. Every one of these three Dockerfiles
+      # opens with a banner saying so: the Python apps declare local path
+      # dependencies (now-config, now-rails, now-db, now-embeddings) and the
+      # web app is an npm workspace member that also bakes in `<slug>/site/`.
+      # A scoped context cannot see any of it, so `docker compose --profile
+      # apps build` failed on all three at the first COPY. The CI matrix in
+      # .github/workflows/publish-images.yml has always built them this way;
+      # this file was the one that disagreed.
+      context: .
+      dockerfile: engine/apps/api/Dockerfile
     image: ${ENGINE_API_IMAGE:-now-engine-api:local}
     container_name: now-engine-api
     restart: unless-stopped
@@ -336,7 +353,8 @@ services:
   engine-worker:
     profiles: ["apps"]
     build:
-      context: ./engine/apps/worker
+      context: .
+      dockerfile: engine/apps/worker/Dockerfile
     image: ${ENGINE_WORKER_IMAGE:-now-engine-worker:local}
     container_name: now-engine-worker
     restart: unless-stopped
@@ -357,50 +375,11 @@ services:
     networks: [now-net]
     logging: *default-logging
 
-  cms-jakarta:
-    profiles: ["apps"]
-    build:
-      context: ./engine/packages/cms
-    image: ${CMS_IMAGE:-now-cms:local}
-    container_name: now-cms-jakarta
-    restart: unless-stopped
-    environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
-      SITE_SLUG: jakarta
-      GARAGE_S3_ENDPOINT: http://garage:3900
-      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
-      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
-      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [now-net]
-    logging: *default-logging
-
-  cms-bali:
-    profiles: ["apps"]
-    build:
-      context: ./engine/packages/cms
-    image: ${CMS_IMAGE:-now-cms:local}
-    container_name: now-cms-bali
-    restart: unless-stopped
-    environment:
-      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
-      SITE_SLUG: bali
-      GARAGE_S3_ENDPOINT: http://garage:3900
-      GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID}
-      GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY}
-      GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks: [now-net]
-    logging: *default-logging
-
   web:
     profiles: ["apps"]
     build:
-      context: ./engine/apps/web
+      context: .
+      dockerfile: engine/apps/web/Dockerfile
     image: ${WEB_IMAGE:-now-web:local}
     container_name: now-web
     restart: unless-stopped
@@ -413,20 +392,3 @@ services:
     networks: [now-net]
     logging: *default-logging
 
-  console:
-    profiles: ["apps"]
-    build:
-      context: ./engine/apps/console
-    image: ${CONSOLE_IMAGE:-now-console:local}
-    container_name: now-console
-    restart: unless-stopped
-    environment:
-      DATABASE_URL_PLATFORM: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
-      ENGINE_API_URL: http://engine-api:8000
-    depends_on:
-      postgres:
-        condition: service_healthy
-      engine-api:
-        condition: service_healthy
-    networks: [now-net]
-    logging: *default-logging
