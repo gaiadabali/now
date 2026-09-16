@@ -43,9 +43,21 @@ export type SmtpConfig = {
 
 export class SmtpTransport implements Transport {
   readonly name: string
+  /**
+   * The resolved settings, **without the password**.
+   *
+   * Exposed because `secure` and `allowSelfSigned` are decisions made from
+   * other inputs (the port, NODE_ENV) rather than passed straight through,
+   * and a decision nothing can observe is a decision nothing can test. A
+   * wrong `secure` fails as a connection timeout, which names nothing.
+   */
+  readonly settings: Omit<SmtpConfig, 'password'>
   private transporter: Transporter
 
   constructor(config: SmtpConfig) {
+    const { password: _password, ...rest } = config
+    void _password
+    this.settings = rest
     // The name is logged at startup, so it carries host and port and
     // deliberately not the user or password.
     this.name = `smtp://${config.host}:${config.port}`

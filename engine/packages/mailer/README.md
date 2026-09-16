@@ -116,6 +116,23 @@ mail is a decision the caller has to make.
 | `SMTP_USER` / `SMTP_PASSWORD` | — | omit both for an unauthenticated relay |
 | `SMTP_ALLOW_SELF_SIGNED` | `false` | local relays only; ignored in production |
 
+**Production is Hostinger**, matching the other gaiada properties — `gaiada.com`'s
+DNS is already there, so SPF/DKIM are one panel rather than a second vendor to
+verify:
+
+```
+MAIL_TRANSPORT=smtp
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465                  # implicit TLS; SMTP_SECURE is derived from it
+SMTP_USER=hello@gaiada.com     # the FULL address, not a username
+SMTP_PASSWORD=…                # the MAILBOX password, not the hPanel login
+```
+
+Verified reachable 2026-09-16: `smtp.hostinger.com:465` answers
+`220 ESMTP smtp.hostinger.com` with a valid certificate. SMTP will not send
+"as" an address the mailbox does not own, unlike an API provider, so
+`MAIL_FROM_EMAIL` has to be that mailbox.
+
 Local development:
 
 ```bash
@@ -126,7 +143,7 @@ SMTP_HOST=localhost SMTP_PORT=1025 npm run dev
 ## Tests
 
 ```bash
-npm test --workspace @now/mailer     # 31, no network
+npm test --workspace @now/mailer     # 36, no network
 ```
 
 Mostly attack tests: header injection refused rather than stripped, origin

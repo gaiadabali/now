@@ -304,3 +304,44 @@ act.
   Postgres and the API will answer `/healthz` regardless, because that probe
   does not touch a city database. Do not read a green deploy as "the content
   is live".
+- **A Hostinger mailbox, and the two secrets that depend on it** (E8, reader
+  accounts). Without these `/account/*` is broken in production while the rest
+  of the site is fine — sign-up, verification and password reset all need mail,
+  and the app refuses to start with a console transport under
+  `NODE_ENV=production` rather than pretending to send.
+
+  Hostinger, matching the other gaiada properties: `gaiada.com`'s DNS is
+  already there, so SPF and DKIM are one panel rather than a second vendor to
+  verify. **Verified reachable 2026-09-16** — `smtp.hostinger.com:465` answers
+  `220 ESMTP smtp.hostinger.com` with a valid certificate, so host, port and
+  implicit TLS are settled; only the credential is outstanding.
+
+  1. hPanel → Emails → create a mailbox on `gaiada.com` (`hello@` is what
+     `.env.example` assumes). SMTP_USER is the **full address**, and
+     SMTP_PASSWORD is that *mailbox's* password — not the hPanel login.
+  2. Set on each web service:
+
+     ```
+     MAIL_TRANSPORT=smtp
+     SMTP_HOST=smtp.hostinger.com
+     SMTP_PORT=465            # implicit TLS; SMTP_SECURE is derived from this
+     SMTP_USER=hello@gaiada.com
+     SMTP_PASSWORD=…
+     MAIL_FROM_EMAIL=hello@gaiada.com
+     MAIL_FROM_NAME="NOW! Jakarta"      # per city
+     MAIL_SUPPORT_EMAIL=hello@gaiada.com
+     SITE_BASE_URL=https://now-jakarta.gaiada.com   # per city
+     READER_SESSION_SECRET=…   # openssl rand -base64 48
+     ```
+
+     SMTP will not send "as" an address the mailbox does not own, unlike an
+     API provider — so `MAIL_FROM_EMAIL` must be the mailbox itself.
+
+     `READER_SESSION_SECRET` **must differ from `PAYLOAD_SECRET`**; the app
+     throws at startup if they match. Readers and staff are separate
+     populations with separate cookies, and a shared signing key would leave
+     the `aud` claim as the only thing between a reader token and the admin
+     (docs/READER-IDENTITY.md).
+  3. Check SPF and DKIM in hPanel after the mailbox exists. A correct SMTP
+     config with no DKIM delivers straight to spam, which looks identical to
+     "no mail was sent" from the reader's side.

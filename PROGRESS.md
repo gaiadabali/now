@@ -1099,7 +1099,7 @@ alongside (B2) · staff editing via direct-SQL admin pages, the commerce-console
 | E8.4b | **Drift gate was blind to `ON DELETE`** — now recorded and hashed (F139) | E8.4a | **done** | | 2026-09-16 |
 | E8.4 | 30-second onboarding picker (§17) → `stated_prefs` + `facet_affinity` seed | E8.3 | **done** | | 2026-09-16 |
 | E8.5 | Beacon wired into the site + identity stitching `anon_id → user_id` | E8.3 | **done** | | 2026-09-16 |
-| E8.5a | **Deploy** — needs SMTP provider, `READER_SESSION_SECRET`, DNS, CloudPanel sites (DEPLOY.md §8) | E8.5 | blocked | | |
+| E8.5a | **Deploy** — mail provider settled (**Hostinger**, endpoint verified). Still needs a **mailbox + password**, `READER_SESSION_SECRET`, DNS, CloudPanel sites (DEPLOY.md §8) | E8.5 | blocked — needs Hansel | | |
 | E8.6 | Reader dashboard — taste profile, saves, reading history, itineraries | E8.4, E8.5 | todo | | |
 | E8.7 | Personalized feed on `entity_terms` facet affinity (**not** type — F50) | E8.4 | todo | | |
 | E8.8 | Staff audience console — `/team-editor/audience/{topics,readers}` | E8.4 | todo | | |

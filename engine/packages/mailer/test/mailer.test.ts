@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import { Mailer, createTransportFromEnv } from '../src/mailer.ts'
+import { SmtpTransport } from '../src/smtp.ts'
 import { MemoryTransport } from '../src/transport.ts'
 
 const FROM = { email: 'hello@gaiada.com', name: 'NOW! Jakarta' }
@@ -103,6 +104,49 @@ test('an unrecognised transport name is refused', () => {
   const result = createTransportFromEnv({ MAIL_TRANSPORT: 'sendgrid' })
   assert.equal(result.ok, false)
   assert.equal(!result.ok && result.reason, 'unknown_transport')
+})
+
+test('port 465 implies implicit TLS without setting SMTP_SECURE', () => {
+  // The documented production config (Hostinger). Getting this wrong means
+  // speaking plaintext at a port expecting TLS, which fails as a timeout
+  // rather than as anything that names the cause.
+  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.hostinger.com', SMTP_PORT: '465' })
+  assert.equal(result.ok, true)
+  assert.equal(result.ok && result.transport.name, 'smtp://smtp.hostinger.com:465')
+  assert.equal(result.ok && (result.transport as SmtpTransport).settings.secure, true)
+})
+
+test('port 587 stays STARTTLS, not implicit TLS', () => {
+  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.hostinger.com', SMTP_PORT: '587' })
+  assert.equal(result.ok && (result.transport as SmtpTransport).settings.secure, false)
+})
+
+test('SMTP_SECURE still overrides the port-derived default', () => {
+  const result = createTransportFromEnv({
+    SMTP_HOST: 'relay.internal',
+    SMTP_PORT: '465',
+    SMTP_SECURE: 'false',
+  })
+  assert.equal(result.ok && (result.transport as SmtpTransport).settings.secure, false)
+})
+
+test('self-signed certs are never allowed in production, whatever the env says', () => {
+  const result = createTransportFromEnv({
+    NODE_ENV: 'production',
+    SMTP_HOST: 'smtp.hostinger.com',
+    SMTP_PORT: '465',
+    SMTP_ALLOW_SELF_SIGNED: 'true',
+  })
+  assert.equal(result.ok && (result.transport as SmtpTransport).settings.allowSelfSigned, false)
+})
+
+test('self-signed IS allowed outside production, for mailpit', () => {
+  const result = createTransportFromEnv({
+    SMTP_HOST: '127.0.0.1',
+    SMTP_PORT: '1025',
+    SMTP_ALLOW_SELF_SIGNED: 'true',
+  })
+  assert.equal(result.ok && (result.transport as SmtpTransport).settings.allowSelfSigned, true)
 })
 
 test('the transport name never carries a credential', () => {
