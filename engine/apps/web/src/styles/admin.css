@@ -412,6 +412,30 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   background: var(--now-accent);
 }
 
+/* A link in the nav to a page that is NOT a Payload collection — today just
+   `/team-editor/staff`, which cannot be one because staff identity lives in
+   the platform database (docs/ADMIN-CONSOLIDATION.md). Payload's nav only
+   lists collections, so without this the page is reachable by typed URL
+   alone. Set to match `.nav__link` exactly rather than to stand out: it is a
+   destination in the same list, not an advertisement. */
+.now-nav-extra {
+  display: block;
+  margin-top: calc(var(--base) * 0.9);
+  padding-block: calc(var(--base) * 0.42);
+  border-top: 1px solid var(--theme-elevation-200);
+  color: var(--theme-elevation-700);
+  font-size: 1.125rem;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.now-nav-extra:hover,
+.now-nav-extra:focus-visible {
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
+}
+
 /* --- who is signed in --------------------------------------------------- */
 
 /* The collapse control sits on top of the masthead plate. Payload gives it a

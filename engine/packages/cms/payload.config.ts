@@ -86,6 +86,12 @@ export default buildConfig({
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
       beforeNavLinks: ['/components/nav/NavMasthead#NavMasthead'],
+      // The staff surface is a plain Next page, not a collection — the rows
+      // it edits are in `now_platform`, which this Payload instance cannot
+      // reach — so Payload's nav, which lists collections, would never
+      // mention it. That is survivable for the commerce console and not for
+      // the one surface an admin needs in order to onboard anybody.
+      afterNavLinks: ['/components/nav/StaffLink#StaffLink'],
       // The account menu Payload does not have. Its avatar is a plain link
       // to the profile page, so there was nowhere to put "sign out" except
       // an unlabelled arrow at the foot of the nav. `actions` renders into
