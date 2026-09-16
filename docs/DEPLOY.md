@@ -216,8 +216,12 @@ deploy/deploy.sh --pull --tag sha-<short sha>
 `deploy.sh` pulls all six images **before** stopping anything — a new API
 against an old CMS is worse than no rollout — then starts in dependency order
 and verifies: Postgres and Redis healthy, `engine-api` answering `/healthz`,
-and both web instances, both CMS instances and the console responding. It fails loudly rather than leaving a
+and both web instances responding. It fails loudly rather than leaving a
 half-deployed stack running.
+
+There are no CMS or console instances to check any more — `deploy.sh`'s own
+`SERVICES` list is postgres, redis, engine-api, engine-worker, web-jakarta,
+web-bali, and the admin is a path on the two web instances.
 
 The databases still need loading (E1.8) and migrations (`now-db`). `deploy.sh`
 does not do this yet — it is a rollout driver, not a migration runner.
