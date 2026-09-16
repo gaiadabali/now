@@ -102,7 +102,7 @@ for (;;) {
     }
 
     try {
-      const { id, createdAt, updatedAt, ...rest } = doc
+      const { id, createdAt, updatedAt } = doc
       await db.createVersion({
         autosave: false,
         collectionSlug: 'articles',
@@ -111,7 +111,14 @@ for (;;) {
         returning: false,
         snapshot: false,
         updatedAt,
-        versionData: { ...rest, _status: doc._status ?? 'published' },
+        // The whole document, timestamps INCLUDED. A version row carries two
+        // pairs of them: its own `created_at`/`updated_at` (the arguments
+        // above) and the snapshot's `version_created_at`/`version_updated_at`
+        // inside `version`. Destructuring the timestamps out of the payload
+        // left the second pair NULL on every row — the list view reads the
+        // snapshot, so every article showed a blank Last Modified while the
+        // version row beside it held the right value.
+        versionData: { ...doc, id: undefined, _status: doc._status ?? 'published' },
       })
       created++
     } catch (error) {
