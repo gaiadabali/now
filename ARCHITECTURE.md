@@ -413,9 +413,24 @@ placements(id, campaign_id, surface, slot, boost_factor,
 ad_events(id, campaign_id, placement_id, session_id, kind, ts)  -- partitioned, append-only
 facets(id, key, label, cardinality, required)
 terms(id, facet_id, slug, label, parent_id, geo, embedding vector(1536))
-identities(id, email, created_at, stated_prefs jsonb)
+-- READER identity. Distinct from staff `public.users` on purpose: that table is
+-- Payload-shaped and shadow-projected into every city DB, and a reader must
+-- never be one wrong `role` value away from a CMS session (docs/READER-IDENTITY.md).
+identities(id, email, email_norm, name, created_at, stated_prefs jsonb,
+           -- E8.1: as shipped in baseline 0001 this table could not store a
+           -- credential at all. PBKDF2 parameters are @now/auth's, matched to
+           -- Payload's, so one hasher serves both populations.
+           hash, salt, email_verified_at, login_attempts, lock_until,
+           last_login_at, status)                -- UNIQUE on email_norm, not email
+identity_tokens(id, identity_id, kind, token_hash, expires_at, consumed_at, created_at)
+                                                 -- verify_email | reset_password;
+                                                 -- hashed at rest: a token in a
+                                                 -- mailbox is a bearer credential
+saved_items(identity_id, site_id, entity_type, entity_id, note, created_at)
+                                                 -- §10 weights a save at 1.0
 user_profiles(user_id, site_id, taste_vec_long vector, taste_vec_short vector,
               facet_affinity jsonb, n_meaningful, updated_at)
+                                                 -- n_meaningful is §10's α input
 itineraries(id, site_id, user_id, title, start_date, party jsonb, prefs jsonb, share_token)
 itinerary_days(itinerary_id, day_index, area_term_id)
 itinerary_stops(day_id, seq, slot, place_id, start_time, duration_min, note,
@@ -1042,5 +1057,8 @@ Once retrieval works, compute what the engine *would* recommend for live traffic
 | **E4** | Commerce: partnerships, link resolution, campaigns, ledger, console |
 | **E5** | Itinerary: OR-Tools solver, travel matrix, narration |
 | **E6** | Assistant + Bali provisioning |
+| **E8** | Reader identity: accounts, registration preferences, dashboard, personalized feed, staff audience console — [docs/READER-IDENTITY.md](docs/READER-IDENTITY.md) |
 
 **The beacon ships in E0, before anything consumes it.** Behavioural data cannot be backfilled, and there is currently no analytics on the live site. Every week without it delays Stage 2 by a week.
+
+**E8 is numbered after E7 but scheduled before it.** §10's whole model — `α = n/(n+20)` blending stated against revealed taste — needs a `user_id` to attach a history to, and `interactions.user_id` has been NULL on every row ever written because no reader can sign in. E7 is data-gated; E8 is what starts collecting the data. It does **not** substitute for E2.1: the type-filtered rails stay blocked on classification, so E8's feed ranks on `entity_terms` facet affinity, which is populated.

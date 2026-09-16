@@ -1,0 +1,21 @@
+{
+  "name": "@now/mailer",
+  "version": "0.1.0",
+  "description": "Transactional email. SMTP over a vendor SDK so any provider works and Mailpit works locally; the transport is an interface so tests never touch a network. E8.0 — see docs/READER-IDENTITY.md.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "nodemailer": "^10.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/nodemailer": "^6.4.17",
+    "typescript": "^5.7.2"
+  }
+}

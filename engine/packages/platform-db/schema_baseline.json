@@ -1,5 +1,5 @@
 {
-  "hash": "562d5dc0ddaa2cc765a533e556461862c9aec16fe6e84c4d584b1639881cc1a2",
+  "hash": "d06f9b0880c66ad43efca8955cb958c0a98335f41fc1e4e452d4f3f90ddf9110",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -389,7 +389,12 @@
         "partitioned": false
       },
       "identities": {
-        "checks": [],
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['active'::text, 'suspended'::text, 'deleted'::text])))",
+            "name": "identities_status_ck"
+          }
+        ],
         "columns": [
           {
             "default": "gen_random_uuid()",
@@ -418,6 +423,76 @@
             "nullable": "NO",
             "type": "jsonb",
             "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "name",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "salt",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_verified_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "0",
+            "name": "login_attempts",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "lock_until",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "last_login_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'active'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           }
         ],
         "constraints": [
@@ -455,6 +530,124 @@
             "def": "CREATE UNIQUE INDEX uq_identities_email ON engine.identities USING btree (email)",
             "method": "btree",
             "name": "uq_identities_email"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_identities_email_norm ON engine.identities USING btree (email_norm)",
+            "method": "btree",
+            "name": "uq_identities_email_norm"
+          }
+        ],
+        "partitioned": false
+      },
+      "identity_tokens": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['verify_email'::text, 'reset_password'::text])))",
+            "name": "identity_tokens_kind_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "token_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "expires_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "consumed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "identity_tokens_identity_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "identity_tokens_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX identity_tokens_expiry_ix ON engine.identity_tokens USING btree (expires_at) WHERE (consumed_at IS NULL)",
+            "method": "btree",
+            "name": "identity_tokens_expiry_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX identity_tokens_hash_uq ON engine.identity_tokens USING btree (token_hash)",
+            "method": "btree",
+            "name": "identity_tokens_hash_uq"
+          },
+          {
+            "def": "CREATE INDEX identity_tokens_identity_kind_ix ON engine.identity_tokens USING btree (identity_id, kind)",
+            "method": "btree",
+            "name": "identity_tokens_identity_kind_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX identity_tokens_pkey ON engine.identity_tokens USING btree (id)",
+            "method": "btree",
+            "name": "identity_tokens_pkey"
           }
         ],
         "partitioned": false
@@ -1639,6 +1832,156 @@
         ],
         "partitioned": false
       },
+      "saved_items": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "note",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "saved_items_identity_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "saved_items_site_id_fkey",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              ",",
+              "s",
+              "i",
+              "t",
+              "e",
+              "_",
+              "i",
+              "d",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "t",
+              "y",
+              "p",
+              "e",
+              ",",
+              "e",
+              "n",
+              "t",
+              "i",
+              "t",
+              "y",
+              "_",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "saved_items_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX saved_items_entity_ix ON engine.saved_items USING btree (site_id, entity_type, entity_id)",
+            "method": "btree",
+            "name": "saved_items_entity_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX saved_items_pkey ON engine.saved_items USING btree (identity_id, site_id, entity_type, entity_id)",
+            "method": "btree",
+            "name": "saved_items_pkey"
+          },
+          {
+            "def": "CREATE INDEX saved_items_reader_recent_ix ON engine.saved_items USING btree (identity_id, site_id, created_at DESC)",
+            "method": "btree",
+            "name": "saved_items_reader_recent_ix"
+          }
+        ],
+        "partitioned": false
+      },
       "sites": {
         "checks": [
           {
@@ -2084,20 +2427,6 @@
             "udt": "uuid"
           },
           {
-            "default": null,
-            "name": "geo",
-            "nullable": "YES",
-            "type": "USER-DEFINED",
-            "udt": "geography"
-          },
-          {
-            "default": null,
-            "name": "embedding",
-            "nullable": "YES",
-            "type": "USER-DEFINED",
-            "udt": "vector"
-          },
-          {
             "default": "now()",
             "name": "created_at",
             "nullable": "NO",
@@ -2180,19 +2509,9 @@
         ],
         "indexes": [
           {
-            "def": "CREATE INDEX ix_terms_embedding_hnsw ON engine.terms USING hnsw (embedding vector_cosine_ops) WHERE (embedding IS NOT NULL)",
-            "method": "hnsw",
-            "name": "ix_terms_embedding_hnsw"
-          },
-          {
             "def": "CREATE INDEX ix_terms_facet ON engine.terms USING btree (facet_id)",
             "method": "btree",
             "name": "ix_terms_facet"
-          },
-          {
-            "def": "CREATE INDEX ix_terms_geo ON engine.terms USING gist (geo)",
-            "method": "gist",
-            "name": "ix_terms_geo"
           },
           {
             "def": "CREATE INDEX ix_terms_parent ON engine.terms USING btree (parent_id)",
@@ -2228,20 +2547,6 @@
             "nullable": "NO",
             "type": "uuid",
             "udt": "uuid"
-          },
-          {
-            "default": null,
-            "name": "taste_vec_long",
-            "nullable": "YES",
-            "type": "USER-DEFINED",
-            "udt": "vector"
-          },
-          {
-            "default": null,
-            "name": "taste_vec_short",
-            "nullable": "YES",
-            "type": "USER-DEFINED",
-            "udt": "vector"
           },
           {
             "default": "'{}'::jsonb",
@@ -2321,11 +2626,6 @@
           }
         ],
         "indexes": [
-          {
-            "def": "CREATE INDEX ix_user_profiles_taste_long_hnsw ON engine.user_profiles USING hnsw (taste_vec_long vector_cosine_ops) WHERE (taste_vec_long IS NOT NULL)",
-            "method": "hnsw",
-            "name": "ix_user_profiles_taste_long_hnsw"
-          },
           {
             "def": "CREATE UNIQUE INDEX user_profiles_pkey ON engine.user_profiles USING btree (user_id, site_id)",
             "method": "btree",

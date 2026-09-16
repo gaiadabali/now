@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    // This package ships .ts SOURCES and imports them with explicit `.ts`
+    // specifiers, which is what lets `node --experimental-strip-types` run
+    // its tests and scripts/staff-account.mjs with no build step. Without
+    // this flag every one of those imports is a TS5097 and `npm run
+    // typecheck` fails on the package's own source — which it did. Safe
+    // beside `noEmit`: nothing here is compiled, so no emitted specifier
+    // can be wrong. Consumers (apps/web, packages/cms) already set it for
+    // the same reason, reaching this package transitively.
+    "allowImportingTsExtensions": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}
