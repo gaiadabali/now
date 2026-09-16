@@ -25,7 +25,7 @@ Companion to [ARCHITECTURE.md](ARCHITECTURE.md). **Architecture decisions live t
 | **E4** Commerce | 🟡 **1/8** | E4.1 orgs+partnerships schema done, 1,562 orgs loaded, query-time expiry proven |
 | **E5** Itinerary | 🟡 **2/7** | **Solver + validator shipped (wave 20)** — OPTIMAL at 1,000 candidates / 7 days in 1.2 s, 25 tests green, no DB needed. E5.4 (places→Stop adapter, API, persistence) is next and needs dev Postgres up. Geo no longer blocks E5.1 — Nominatim resolved 137/203 free |
 | **E6** Assistant + Bali | ⬜ 0/4 | Not started |
-| **E8** Reader identity | 🟡 **2/9** · **in flight** | **E8.0 mailer + E8.1 migration 0007 shipped 2026-09-16.** Accounts, registration prefs, reader dashboard, staff audience console still open. Numbered after E7 but **scheduled before it** → [docs/READER-IDENTITY.md](docs/READER-IDENTITY.md) |
+| **E8** Reader identity | 🟡 **4/10** · **in flight** | **Readers can now register, verify, sign in and reset — proven end-to-end 2026-09-16.** E8.0 mailer · E8.1 migration 0007 · E8.2 reader session · E8.3 routes. Preference picker, beacon, dashboard and staff console still open. Numbered after E7 but **scheduled before it** → [docs/READER-IDENTITY.md](docs/READER-IDENTITY.md) |
 | **E7** Personalization | ⬜ data-gated | Opens at ~50k sessions. **Unblocked by decision, not by code:** B2 approved 2026-09-16, so the beacon deploys with E8 and the clock finally starts |
 
 ### 🚦 The critical path — one thing gates everything
@@ -57,7 +57,7 @@ Companion to [ARCHITECTURE.md](ARCHITECTURE.md). **Architecture decisions live t
 ✅ Inspector            filter trace working on real removals
 ⛔ The three rails      blocked — no types to filter on (F50)
 ✅ Itinerary solver     OPTIMAL at 1,000 candidates / 7 days in 1.2 s; 0 violations
-⛔ Reader accounts      schema ready (0007); no sign-in yet — `user_id` still NULL (E8.2–E8.3)
+✅ Reader accounts      register · verify · sign in · reset, live E2E; `user_id` still NULL until E8.5
 ✅ Outbound email       @now/mailer over SMTP; verified end-to-end against Mailpit
 ```
 
@@ -156,6 +156,30 @@ The through-line: **CI proved images BUILD, never that they START.**
 - [ ] **Smoke-test step in `publish-images`** — start each image, hit its healthcheck. Would have caught #4 and #5 in CI rather than on the box
 - [ ] **Databases are empty.** `now_platform` exists; `now_jakarta`/`now_bali` do not. Needs `site:create` + `now-db` migrations + the E1.8 load. **A green deploy is not live content.**
 - [ ] Console image should be able to run its own migrations
+
+
+## WAVE 22 — Readers can sign in *(2026-09-16)*
+
+E8.2 and E8.3, on top of wave 21's mailer and migration. **Driven end to end against the live
+platform DB and a real SMTP server**, not only unit-tested: register → mail delivered → link
+followed → verified → signed in → reset → old password dead.
+
+| Item | Outcome |
+|---|---|
+| E8.2 reader session | ✅ `ReaderStore` (interface + Postgres), `registerReader` / `authenticateReader`, single-use email tokens, `__Host-now-reader` on its own secret with `aud: 'reader'`. **`token.ts` extracted** so staff and readers share one HMAC implementation — two would be two security levels with one review between them. Staff's 47 tests green through the refactor. |
+| E8.3 routes | ✅ Register · sign in · sign out · verify · forgot · reset, as server actions with no client JavaScript, following `newsletter.ts`. |
+| 🔒 **Reader sessions cannot reach `/team-editor`** | Proven twice. Unit: a reader token is refused by the staff verifier as `wrong_audience` and vice versa, *even when signed with the same secret*. Live: a reader cookie — and the same cookie renamed to `__Host-now-staff` — returns byte-identical output to **no cookie at all** on `/team-editor/commerce`, with the reader's address appearing nowhere. Three independent defences: separate cookie name, separate signing secret (startup refuses `READER_SESSION_SECRET === PAYLOAD_SECRET`), explicit `aud`. |
+| 🔒 No enumeration oracle, measured | Register, sign-in and forgot-password return **identical** responses for a known and an unknown address — verified live, all three pairs. |
+| 🐛 **The timing oracle a test caught** | `authenticateReader` hashes a dummy credential when there is no account, so "no such address" costs the same as "wrong password". The first version used a 64-byte dummy hash — and `verifyPassword` returns early unless the decoded hash is `PBKDF2.keylen` (512), so **it did no hashing at all** and the oracle was wide open. Measured after the fix: **1.08×** between the two paths, where it had been ~60×. Now derived from the constant so it cannot drift. |
+| 🐛 **Registration lost the account when mail failed** | Found by running it: the row was inserted, the link builder then refused an `http://` base under `NODE_ENV=production`, and the visitor got a 500 while an unverifiable account sat in the table. Now the link config is checked **before** any insert, and a send failure is logged and swallowed — the account stands and `/account/verify` can reissue. The failure is deliberately *not* surfaced differently, because "mail failed" would only ever appear for genuinely new addresses and would re-open the enumeration oracle. |
+| 🐛 Verification 500'd after succeeding | Consuming the token during a page render marked the address verified and then threw — Next only permits `cookies().set()` from a Server Action or route handler. The link now points at a route handler (`/account/verify/confirm`); `/account/verify` renders the outcome and the resend form. |
+| ⚖️ GET consumes the verify token, not the reset token | Mail clients and scanners prefetch links. For verification that is tolerable — the effect is what the reader wanted. For a reset it would lock someone out of their own recovery, so `/account/reset` shows a form and spends its token on POST. |
+| ⚠️ Rate limiting is in-process | Fixed-window, per container, lost on restart — so N containers allow N× the rate. Real protection is the per-account DB lockout (10 attempts) that every instance sees; this only blunts the many-addresses-few-attempts shape. Redis is already in compose. **E8.3a.** |
+
+**Suite:** auth 88 passing (7 DB-integration skipped) · mailer 31 · web typecheck + build clean · site-literals lint clean.
+
+> **Next:** E8.4, the 30-second preference picker — the first thing that makes an account worth
+> having, and the one piece that works today without the beacon or F50.
 
 
 ## WAVE 21 — The two foundations E8 stands on *(2026-09-16)*
@@ -1025,8 +1049,9 @@ alongside (B2) · staff editing via direct-SQL admin pages, the commerce-console
 | E8.0 | **Transactional mailer** (`@now/mailer`) — SMTP, 3 templates, Mailpit in dev | — | **done** | | 2026-09-16 |
 | E8.1 | Migration 0007 — credential columns, `identity_tokens`, `saved_items` | — | **done** | | 2026-09-16 |
 | E8.1b | **Wire the newsletter confirm route** — the template exists, nothing calls it; F135 is not closed until a subscriber can reach `confirmed` | E8.0, E8.1 | todo | | |
-| E8.2 | `ReaderIdentityStore` in `@now/auth`; reader session (`__Host-now-reader`, own secret, `aud`) | E8.1 | todo | | |
-| E8.3 | Register · login · logout · verify · reset routes + forms | E8.0, E8.2 | todo | | |
+| E8.2 | `ReaderStore` + reader session (`__Host-now-reader`, own secret, `aud`) | E8.1 | **done** | | 2026-09-16 |
+| E8.3 | Register · login · logout · verify · reset routes + forms | E8.0, E8.2 | **done** | | 2026-09-16 |
+| E8.3a | **Move rate limiting to Redis** — the current limiter is in-process, so N containers allow N× the rate | E8.3 | todo | | |
 | E8.4 | 30-second onboarding picker (§17) → `stated_prefs` + `facet_affinity` seed | E8.3 | todo | | |
 | E8.5 | **Deploy the beacon** (B2) + identity stitching `anon_id → user_id` | E8.3 | todo | | |
 | E8.6 | Reader dashboard — taste profile, saves, reading history, itineraries | E8.4, E8.5 | todo | | |

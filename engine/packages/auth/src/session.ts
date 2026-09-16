@@ -23,9 +23,8 @@
  * cookie, never in a URL or localStorage.
  */
 
-import crypto from 'node:crypto'
-
 import type { CommerceRole, EditorialRole } from './identity.ts'
+import { audienceMatches, decodeToken, encodeToken } from './token.ts'
 
 /** Eight hours, matching the console's existing `tokenExpiration`. */
 export const DEFAULT_SESSION_TTL_SECONDS = 60 * 60 * 8
@@ -38,21 +37,19 @@ export type SessionClaims = {
   commerceRole: CommerceRole
   /** Unix seconds. */
   exp: number
+  /**
+   * `'staff'` on every token issued since E8.2. Optional because tokens minted
+   * before it have none, and expiring every live editor session to add a field
+   * that the cookie name already implies is not a trade worth making.
+   */
+  aud?: 'staff'
 }
 
-export type VerifyFailure = 'malformed' | 'bad_signature' | 'expired'
+export type VerifyFailure = 'malformed' | 'bad_signature' | 'expired' | 'wrong_audience'
 
 export type VerifyResult =
   | { ok: true; claims: SessionClaims }
   | { ok: false; reason: VerifyFailure }
-
-function base64url(input: Buffer | string): string {
-  return Buffer.from(input).toString('base64url')
-}
-
-function sign(body: string, secret: string): Buffer {
-  return crypto.createHmac('sha256', secret).update(body).digest()
-}
 
 /**
  * Issues a token for a user who has just authenticated against the platform.
@@ -68,17 +65,15 @@ export function issueSessionToken(
   secret: string,
   options: { ttlSeconds?: number; now?: () => Date } = {},
 ): string {
-  if (!secret) throw new Error('refusing to sign a session token with an empty secret')
-
   const now = options.now ?? (() => new Date())
   const ttl = options.ttlSeconds ?? DEFAULT_SESSION_TTL_SECONDS
   const full: SessionClaims = {
     ...claims,
     exp: Math.floor(now().getTime() / 1000) + ttl,
+    aud: 'staff',
   }
 
-  const body = base64url(JSON.stringify(full))
-  return `${body}.${base64url(sign(body, secret))}`
+  return encodeToken(full, secret)
 }
 
 /**
@@ -93,42 +88,23 @@ export function verifySessionToken(
   secret: string,
   options: { now?: () => Date } = {},
 ): VerifyResult {
-  if (!secret) throw new Error('refusing to verify a session token with an empty secret')
-  if (typeof token !== 'string' || token.length === 0) {
-    return { ok: false, reason: 'malformed' }
-  }
+  const decoded = decodeToken(token, secret)
+  if (!decoded.ok) return { ok: false, reason: decoded.reason }
 
-  const parts = token.split('.')
-  if (parts.length !== 2) return { ok: false, reason: 'malformed' }
-  const [body, providedSignature] = parts as [string, string]
-
-  const expected = sign(body, secret)
-  let provided: Buffer
-  try {
-    provided = Buffer.from(providedSignature, 'base64url')
-  } catch {
-    return { ok: false, reason: 'malformed' }
-  }
-  // Length must match before timingSafeEqual, which throws on a mismatch.
-  if (provided.length !== expected.length) return { ok: false, reason: 'bad_signature' }
-  if (!crypto.timingSafeEqual(provided, expected)) return { ok: false, reason: 'bad_signature' }
-
-  let claims: SessionClaims
-  try {
-    claims = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
-  } catch {
-    return { ok: false, reason: 'malformed' }
-  }
+  const raw = decoded.claims
+  // Checked before the shape, so a reader token that somehow reached a staff
+  // route is refused as the wrong audience rather than as a malformed staff
+  // token — the log line should say what actually happened.
+  if (!audienceMatches(raw, 'staff')) return { ok: false, reason: 'wrong_audience' }
 
   if (
-    typeof claims !== 'object' ||
-    claims === null ||
-    typeof claims.shadowId !== 'number' ||
-    typeof claims.email !== 'string' ||
-    typeof claims.exp !== 'number'
+    typeof raw.shadowId !== 'number' ||
+    typeof raw.email !== 'string' ||
+    typeof raw.exp !== 'number'
   ) {
     return { ok: false, reason: 'malformed' }
   }
+  const claims = raw as unknown as SessionClaims
 
   const now = options.now ?? (() => new Date())
   if (claims.exp * 1000 <= now().getTime()) {

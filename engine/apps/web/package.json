@@ -24,7 +24,10 @@
     "@payloadcms/next": "3.88.0",
     "@payloadcms/db-postgres": "3.88.0",
     "@payloadcms/richtext-lexical": "3.88.0",
-    "graphql": "^16.8.1"
+    "graphql": "^16.8.1",
+    "@now/auth": "*",
+    "@now/mailer": "*",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
