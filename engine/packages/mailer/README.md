@@ -116,22 +116,35 @@ mail is a decision the caller has to make.
 | `SMTP_USER` / `SMTP_PASSWORD` | — | omit both for an unauthenticated relay |
 | `SMTP_ALLOW_SELF_SIGNED` | `false` | local relays only; ignored in production |
 
-**Production is Hostinger**, matching the other gaiada properties — `gaiada.com`'s
-DNS is already there, so SPF/DKIM are one panel rather than a second vendor to
-verify:
+**Production is Google Workspace**, because that is what `gaiada.com`'s DNS
+already says. Checked live 2026-09-16 rather than inferred from the registrar:
+
+```
+MX    gaiada.com        ->  smtp.google.com (1)
+TXT   gaiada.com        ->  v=spf1 include:_spf.google.com ~all
+TXT   _dmarc.gaiada.com ->  v=DMARC1; p=none; ...; adkim=s; aspf=s
+```
+
+SPF authorises Google and nothing else, and DMARC asks for strict alignment on
+both legs — so any other provider fails SPF and lands in spam, which from a
+reader's side is indistinguishable from no mail being sent.
 
 ```
 MAIL_TRANSPORT=smtp
-SMTP_HOST=smtp.hostinger.com
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465                  # implicit TLS; SMTP_SECURE is derived from it
-SMTP_USER=hello@gaiada.com     # the FULL address, not a username
-SMTP_PASSWORD=…                # the MAILBOX password, not the hPanel login
+SMTP_USER=hello@gaiada.com     # a real Workspace mailbox
+SMTP_PASSWORD=…                # an APP PASSWORD, not the account password
 ```
 
-Verified reachable 2026-09-16: `smtp.hostinger.com:465` answers
-`220 ESMTP smtp.hostinger.com` with a valid certificate. SMTP will not send
-"as" an address the mailbox does not own, unlike an API provider, so
-`MAIL_FROM_EMAIL` has to be that mailbox.
+2,000 messages/day. `smtp-relay.gmail.com` allows 10,000 and authenticates by
+IP if that ever binds. `MAIL_FROM_EMAIL` must align with `SMTP_USER` — `aspf=s`
+is strict.
+
+⚠️ **DKIM is not published for the domain** (`google._domainkey.gaiada.com`
+does not resolve) while DMARC already asks for strict DKIM alignment. `p=none`
+means nothing is rejected yet, but every message fails the DKIM leg of its own
+policy. Enable it in Workspace admin before that policy is tightened.
 
 Local development:
 
