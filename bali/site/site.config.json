@@ -82,6 +82,14 @@
         {
           "label": "Places",
           "href": "/places"
+        },
+        {
+          "label": "Editorial",
+          "href": "/editorial"
+        },
+        {
+          "label": "Unclassified",
+          "href": "/unclassified"
         }
       ]
     },

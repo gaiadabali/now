@@ -48,23 +48,20 @@ export async function payloadClient() {
  * "culture"`. A section whose type does not exist is not an empty page, it is
  * a server error.
  *
- * Note what is deliberately NOT mapped:
- *   editorial  the catch-all (1,208 Jakarta articles). Putting it behind a
- *              named section would label general copy as that subject.
- *   unknown    the fail-closed sentinel for unclassified rows.
- *   (null)     E2 has not classified everything; 1,183 Jakarta rows are
- *              still untyped and belong in no section rather than a wrong one.
+ * Every value in that vocabulary now has a home. Earlier this mapped only the
+ * seven venue-shaped types and let `editorial`, `unknown` and NULL fall
+ * through to no section at all — which meant **half the archive was
+ * unreachable by browsing**: 2,391 of Jakarta's 4,772 published articles and
+ * 1,557 of Bali's 4,429 existed only at their direct URL.
  *
- * The fixture era derived this from legacy WordPress category *names*, which
- * do not exist as a column — the archive's categories became taxonomy terms
- * during E1/E2. `primaryType` is the durable replacement and is what the
- * classifier actually populates.
+ * That was the right call while the plan was to classify everything before
+ * launch. The plan is now the opposite: publish the whole archive, label
+ * honestly what is not yet classified, and let editors re-file it in
+ * team-editor. An article in `Unclassified` is visibly unsorted and one click
+ * from being sorted; an article in no section is simply lost.
  *
- * `editorial`, `event` and NULL deliberately fall through to `null` rather
- * than being forced into a section: 1,183 Jakarta articles are still
- * unclassified (E2 is not finished), and putting them in an arbitrary section
- * would be worse than leaving them out of section indexes, where they are
- * merely absent rather than wrong.
+ * `unknown` and NULL are handled in content.ts rather than here, because they
+ * are the *absence* of a type — there is no key to map.
  */
 const TYPE_TO_SECTION: Record<string, string> = {
   eat: 'dining',
@@ -74,6 +71,7 @@ const TYPE_TO_SECTION: Record<string, string> = {
   do: 'things-to-do',
   shop: 'things-to-do',
   event: 'events',
+  editorial: 'editorial',
 }
 
 export function sectionForType(primaryType: string | null | undefined): string | null {
@@ -192,7 +190,10 @@ export function toArticle(doc: PayloadDoc): Article {
     // The view model's `section` is the human-facing label the fixture era
     // stored; `sectionOf()` maps it to a slug. Feeding it the slug directly
     // is correct because `sectionOf` falls through to `slugify(section)`.
-    section: sectionForType(primaryType) ?? 'more',
+    // 'unclassified' is a real section now, so an untyped article gets a
+    // working kicker link instead of 'more', which resolved to no route and
+    // rendered a link to a 404 on every untyped card.
+    section: sectionForType(primaryType) ?? 'unclassified',
     categories: primaryType ? [primaryType] : [],
     tags: [],
     image: heroUrl(doc),
@@ -217,13 +218,18 @@ export function toArticle(doc: PayloadDoc): Article {
  * Only ever reads. Filters are parameterised; `slug` never reaches SQL.
  */
 export async function sectionFormatCounts(
-  filter: { formats?: string[]; types?: string[] },
+  filter: { formats?: string[]; types?: string[]; untyped?: boolean },
 ): Promise<Array<{ format: string | null; count: number }>> {
-  const { formats, types } = filter
+  const { formats, types, untyped } = filter
   try {
-    const where = formats
-      ? { clause: 'format::text = ANY($1)', param: formats }
-      : { clause: 'primary_type::text = ANY($1)', param: types ?? [] }
+    // `untyped` cannot be a parameterised list: it is the absence of a value.
+    // Both spellings count — NULL from the importer, `unknown` from the
+    // classifier declining to guess.
+    const where = untyped
+      ? { clause: "(primary_type IS NULL OR primary_type::text = 'unknown')", param: null }
+      : formats
+        ? { clause: 'format::text = ANY($1)', param: formats }
+        : { clause: 'primary_type::text = ANY($1)', param: types ?? [] }
 
     const { rows } = await cityPool().query(
       `SELECT format::text AS format, count(*)::int AS count
@@ -232,7 +238,7 @@ export async function sectionFormatCounts(
           AND published_at IS NOT NULL AND published_at <= now()
           AND ${where.clause}
         GROUP BY 1`,
-      [where.param],
+      where.param === null ? [] : [where.param],
     )
     return rows.map((r) => ({ format: r.format, count: Number(r.count) }))
   } catch {

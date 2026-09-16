@@ -127,6 +127,28 @@ smoke_city() {
   cul_n="$(grep -oE 'href="/[a-z0-9-]{15,}"' <<<"$cul" | sort -u | wc -l | tr -d ' ')"
   [ "$cul_n" -ge 5 ] && ok "/culture lists $cul_n articles"                      || bad "/culture lists only $cul_n articles — did the term lookup fail?"
 
+  # PAGINATION. Half the archive used to be unreachable by browsing — a
+  # section showed a fixed twelve of its several hundred articles, and
+  # untyped articles had no section at all. Two things must hold: a later
+  # page must return DIFFERENT articles (a pager that silently ignores ?page=
+  # returns 200 and looks fine), and /unclassified must be populated, since
+  # that is where a quarter of the archive lives until editors re-file it.
+  local p1 p2 shared
+  p1="$(body "$base/dining" | grep -oE 'href="/[a-z0-9-]{15,}"' | sort -u)"
+  p2="$(body "$base/dining?page=2" | grep -oE 'href="/[a-z0-9-]{15,}"' | sort -u)"
+  if [ -z "$p2" ]; then
+    bad "/dining?page=2 has no articles"
+  else
+    shared="$(comm -12 <(printf '%s
+' "$p1") <(printf '%s
+' "$p2") | wc -l | tr -d ' ')"
+    [ "$shared" -eq 0 ] && ok "/dining page 2 is a different slice of the archive"                         || bad "/dining page 2 repeats $shared articles from page 1"
+  fi
+
+  local unc
+  unc="$(body "$base/unclassified" | grep -oE 'href="/[a-z0-9-]{15,}"' | sort -u | wc -l | tr -d ' ')"
+  [ "$unc" -ge 10 ] && ok "/unclassified lists $unc articles"                     || bad "/unclassified lists only $unc — untyped articles are still unreachable"
+
   # Section index.
   local sec; sec="$(head_ "$base/dining")"
   [ "$sec" = "200" ] && ok "/dining returns 200" || bad "/dining returns $sec"
