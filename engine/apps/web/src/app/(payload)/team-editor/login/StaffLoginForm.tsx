@@ -13,8 +13,19 @@ import { useState, type FormEvent } from 'react'
  *
  * It posts to `/api/staff-login`, never to Payload's `/api/users/login`,
  * which is disabled (see the page beside this one).
+ *
+ * Presentation is entirely in `styles/admin.css` under `.staff-login__*`.
+ * It used to be inline styles referencing `--space-*` and `.kicker` from the
+ * reader site's stylesheets — none of which are loaded under Payload's root
+ * layout, so every one of them resolved to nothing and the form rendered as
+ * raw browser defaults.
+ *
+ * `destination` is resolved on the server (see the page beside this one) so
+ * that the untrusted `?redirect=` value is validated once, somewhere it
+ * cannot be skipped, rather than by this component reading the query string
+ * for itself.
  */
-export function StaffLoginForm() {
+export function StaffLoginForm({ destination }: { destination: string }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +53,7 @@ export function StaffLoginForm() {
         // page re-run with the cookie now set, rather than rendering from a
         // cache that still believes nobody is signed in.
         router.refresh()
-        router.push('/team-editor')
+        router.push(destination)
         return
       }
 
@@ -59,49 +70,43 @@ export function StaffLoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ marginTop: 'var(--space-l)', display: 'grid', gap: 'var(--space-m)' }}>
-      <label style={{ display: 'grid', gap: 'var(--space-2xs)' }}>
-        <span className="kicker">Email</span>
+    <form className="staff-login__form" onSubmit={onSubmit}>
+      <label className="staff-login__label">
+        <span>Email</span>
         <input
+          className="staff-login__input"
           name="email"
           type="email"
           required
           autoComplete="username"
           autoFocus
-          style={{ padding: 'var(--space-s)', font: 'inherit', border: '1px solid currentColor' }}
         />
       </label>
 
-      <label style={{ display: 'grid', gap: 'var(--space-2xs)' }}>
-        <span className="kicker">Password</span>
+      <label className="staff-login__label">
+        <span>Password</span>
         <input
+          className="staff-login__input"
           name="password"
           type="password"
           required
           autoComplete="current-password"
-          style={{ padding: 'var(--space-s)', font: 'inherit', border: '1px solid currentColor' }}
         />
       </label>
 
       {error ? (
-        <p role="alert" className="dek" style={{ color: 'var(--c-red, #b00)', margin: 0 }}>
+        <p role="alert" className="staff-login__error">
           {error}
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="kicker kicker--red"
-        style={{
-          padding: 'var(--space-s)',
-          border: '1px solid currentColor',
-          background: 'transparent',
-          cursor: pending ? 'progress' : 'pointer',
-        }}
-      >
-        {pending ? 'Signing in…' : 'Sign in →'}
+      <button className="staff-login__submit" type="submit" disabled={pending}>
+        {pending ? 'Signing in…' : 'Sign in'}
       </button>
+
+      {/* One account opens both cities (docs/ADMIN-CONSOLIDATION.md): worth
+          saying here, because the mark above the form implies the opposite. */}
+      <p className="staff-login__note">One staff account works across every NOW! city.</p>
     </form>
   )
 }

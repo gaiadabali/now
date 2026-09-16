@@ -22,6 +22,7 @@ import { Media } from './src/collections/Media'
 import { buildPlacesCollection } from './src/collections/Places'
 import { PlaceMentions } from './src/collections/PlaceMentions'
 import { Users } from './src/collections/Users'
+import { loadSiteBrand } from './src/lib/siteBrand'
 import { loadVocabulary } from './src/lib/vocabulary'
 
 const filename = fileURLToPath(import.meta.url)
@@ -34,6 +35,13 @@ const dirname = path.dirname(filename)
 // (esbuild, via @payloadcms/next) supports it.
 const vocabulary = await loadVocabulary()
 
+// Read at module load, alongside the vocabulary above and for the same
+// reason: `admin.meta` is a plain object Payload sanitises once at boot, so
+// a value that arrives per-request is too late. Reading a JSON file that
+// the image bakes in costs nothing and cannot fail the boot — see
+// src/lib/siteBrand.ts.
+const brand = await loadSiteBrand()
+
 const hasGarageCreds = Boolean(
   process.env.GARAGE_S3_ENDPOINT && process.env.GARAGE_ACCESS_KEY_ID && process.env.GARAGE_SECRET_ACCESS_KEY,
 )
@@ -45,10 +53,43 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname, 'src') },
     meta: {
       titleSuffix: process.env.SITE_SLUG ? ` — NOW! (${process.env.SITE_SLUG})` : ' — NOW!',
+      // The city's own mark on the admin tab.
+      //
+      // It has to be set HERE and not in the route group's layout. Payload's
+      // catch-all page exports its own `generateMetadata`, and Next lets a
+      // page's metadata win over its layout's for the same key — so a
+      // favicon declared upstairs is silently replaced by Payload's on every
+      // admin screen. `admin.meta` is the hook that feeds the generator
+      // itself, which is the only place upstream of that.
+      //
+      // Left unset when the config is unreadable, so Payload falls back to
+      // its own mark rather than to a broken image.
+      ...(brand?.icon ? { icons: [{ rel: 'icon', url: brand.icon }] } : {}),
+    },
+    // The admin wears the client's brand, not Payload's.
+    //
+    // Both cities run this same config, so the marks cannot be named here;
+    // the components read them from the city's own `site.config.json` at
+    // render time (src/lib/siteBrand.ts), which keeps §3.5 intact — the
+    // image stays city-agnostic and SITE_SLUG still decides everything.
+    //
+    // Paths, not imports: Payload resolves `admin.components` through the
+    // generated import map so the client bundle can reach them. A leading
+    // `/` means "relative to `admin.importMap.baseDir`", which is this
+    // package's `src`; the generator rewrites it into a path relative to
+    // whichever app owns the map. There is exactly one of those —
+    // `apps/web/src/app/(payload)/team-editor/importMap.js` — so run
+    // `npm run generate:importmap -w @now-engine/web` after touching this.
+    components: {
+      graphics: {
+        Icon: '/components/graphics/SiteIcon#SiteIcon',
+        Logo: '/components/graphics/SiteLogo#SiteLogo',
+      },
     },
   },
   // The admin is served BY THE READER APP, under the city's own hostname
-  // (docs/ADMIN-CONSOLIDATION.md Phase 2): now-jakarta.gaiada.com/team-editor.
+  // (docs/ADMIN-CONSOLIDATION.md Phase 2): <city>.gaiada.com/team-editor. The
+  // literal hostname was here until this file's own lint caught it.
   // It is no longer a separate deployment on a separate hostname, so this
   // route is what six hostnames collapsing to two actually rests on.
   //
