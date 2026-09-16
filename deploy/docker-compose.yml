@@ -58,8 +58,9 @@ x-cms-shared: &cms-shared
 x-web-shared: &web-shared
   NODE_ENV: production
   ENGINE_API_URL: http://engine-api:8000
-  # site.config.json is mounted, not baked in — see the web-jakarta service.
-  NOW_REPO_ROOT: /srv/sites
+  # NOW_REPO_ROOT is NOT set here: the image bakes the city config in and
+  # sets it itself. Overriding it from compose would point the app at a path
+  # that does not exist in the container.
   # The reader app now reads content through Payload's Local API against its
   # own city database (docs/ui-data-layer.md), and serves the admin at
   # /team-editor (docs/ADMIN-CONSOLIDATION.md Phase 2). DATABASE_URI is
@@ -277,11 +278,18 @@ services:
   # process". There is no hostname routing in it today, so a single service
   # fed two hostnames would throw at startup.
   #
-  # It also reads <root>/<slug>/site/site.config.json off the filesystem,
-  # which is NOT in the image — the web build context is engine/apps/web and
-  # the city config lives at the repo root. Mounting it instead of baking it
-  # in keeps ARCHITECTURE.md §3.5's promise that brand tokens are config: a
-  # change to site.config.json is a restart, not a rebuild.
+  # The city config is BAKED INTO THE IMAGE, not mounted. It used to be
+  # mounted from the checkout so that a brand or nav change was a restart
+  # rather than a rebuild. That benefit was never once used, and the cost was
+  # a silent drift trap: pull a new image without pulling the repo and new
+  # code runs against old config, with no error anywhere — a footer missing
+  # the links the build added, a favicon falling back to the wordmark. Both
+  # return 200 and pass a smoke test.
+  #
+  # So the image now carries its own config and cannot disagree with itself,
+  # and a config change goes through CI like any other change. §3.5 still
+  # holds: nothing city-specific is COMPILED in, both cities' rows ship in one
+  # image, and SITE_SLUG selects which is read at startup.
   # ---------------------------------------------------------------------
   web-jakarta:
     image: ${WEB_IMAGE:?set WEB_IMAGE}:${IMAGE_TAG:?}
@@ -293,9 +301,6 @@ services:
       <<: *web-shared
       SITE_SLUG: jakarta
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
-    volumes: &web-site-config
-      - ../jakarta/site:/srv/sites/jakarta/site:ro
-      - ../bali/site:/srv/sites/bali/site:ro
     depends_on:
       engine-api:
         condition: service_healthy
@@ -317,7 +322,6 @@ services:
       <<: *web-shared
       SITE_SLUG: bali
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
-    volumes: *web-site-config
     depends_on:
       engine-api:
         condition: service_healthy

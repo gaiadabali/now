@@ -31,6 +31,11 @@ on:
       - "engine/apps/worker/**"
       - "engine/infra/postgres/**"
       - "engine/apps/web/**"
+      # The city config is baked into the web image now, not mounted, so a
+      # brand or navigation change is a rebuild. Without these two paths it
+      # would be a commit that changes nothing deployable.
+      - "jakarta/site/site.config.json"
+      - "bali/site/site.config.json"
       - "engine/packages/**"
       - "deploy/**"
       - ".github/workflows/publish-images.yml"
@@ -65,8 +70,10 @@ jobs:
           - name: now-worker
             context: .
             dockerfile: engine/apps/worker/Dockerfile
+          # Repo root, like the API: the web image now bakes in the city
+          # config, which lives at `<slug>/site/` outside engine/.
           - name: now-web
-            context: engine
+            context: .
             dockerfile: engine/apps/web/Dockerfile
           # ONE cms image for every city; cms-jakarta and cms-bali are the
           # same image with a different DATABASE_URI (ARCHITECTURE.md §3.5).

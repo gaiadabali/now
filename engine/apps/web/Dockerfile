@@ -3,16 +3,32 @@
 # connection pool at request time, so nothing city-specific is baked in and a
 # new region needs no rebuild.
 #
-# BUILD CONTEXT IS engine/, NOT this directory.
+# BUILD CONTEXT IS THE REPO ROOT, NOT this directory and no longer `engine/`.
 #
-#     docker build -f engine/apps/web/Dockerfile engine
+#     docker build -f engine/apps/web/Dockerfile .
 #
-# It used to build from `engine/apps/web`. It cannot any more: this app is an
-# npm workspace member, the lockfile lives at the workspace root, and
-# `npm ci` inside a single member has no lockfile to read. The workspace
-# itself is not optional — this app imports the CMS's Payload config to run
-# the Local API in-process (docs/ui-data-layer.md), and before hoisting there
-# were three copies of payload in the tree.
+# It used to build from `engine/apps/web`, then from `engine/`. Two reasons it
+# is now the root:
+#
+#   1. This app is an npm workspace member. The lockfile lives at the
+#      workspace root and `npm ci` inside a single member has no lockfile to
+#      read. The workspace is not optional either — this app imports the CMS's
+#      Payload config to run the Local API in-process (docs/ui-data-layer.md).
+#      That is why the context could not stay `apps/web`.
+#
+#   2. The city config (`<slug>/site/site.config.json`) lives at the repo
+#      root, and it is now BAKED IN rather than bind-mounted. It used to be
+#      mounted so that a brand or nav change was a restart instead of a
+#      rebuild — but that benefit was never once used, and its cost was a
+#      silent drift trap: new code running against old config, no error
+#      anywhere, a footer quietly missing the links the build had added. An
+#      image that carries its own config cannot disagree with itself.
+#
+# `engine/` is still the workspace root INSIDE the image (WORKDIR /app), so
+# every COPY below names its source with an `engine/` prefix while its
+# destination is unchanged. The API image already builds from the root; the
+# root .dockerignore is tuned for exactly this and keeps the city `site/`
+# directories while excluding the ~600 MB of dumps and extracted content.
 
 FROM node:22.11-alpine AS base
 WORKDIR /app
@@ -21,12 +37,12 @@ RUN apk add --no-cache libc6-compat
 FROM base AS deps
 # Manifests only, before the source: this layer is then cached across every
 # build that does not change a dependency, which is most of them.
-COPY package.json package-lock.json ./
-COPY apps/web/package.json ./apps/web/
-COPY apps/console/package.json ./apps/console/
-COPY packages/cms/package.json ./packages/cms/
-COPY packages/auth/package.json ./packages/auth/
-COPY packages/beacon/package.json ./packages/beacon/
+COPY engine/package.json engine/package-lock.json ./
+COPY engine/apps/web/package.json ./apps/web/
+COPY engine/apps/console/package.json ./apps/console/
+COPY engine/packages/cms/package.json ./packages/cms/
+COPY engine/packages/auth/package.json ./packages/auth/
+COPY engine/packages/beacon/package.json ./packages/beacon/
 # `npm ci` installs the WHOLE workspace, not just this member. That is
 # deliberate: the web app's dependency graph reaches into packages/cms (the
 # Payload config) and transitively packages/auth, so a members-only install
@@ -45,7 +61,9 @@ RUN npm install --no-save --os=linux --libc=musl --cpu=x64 sharp
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# `engine/`, not `.`: the context is the repo root now, but /app must remain
+# the npm workspace root or every relative path in the build breaks.
+COPY engine/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
 # Nothing here evaluates a database at build time — pages read through the
 # Local API at REQUEST time — but importing the Payload config does construct
@@ -86,6 +104,20 @@ COPY --from=deps --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sh
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
+
+# The city config, baked in — read straight from the build context, since it
+# lives at the repo root rather than under engine/.
+#
+# `getSiteConfig()` resolves `<NOW_REPO_ROOT>/<slug>/site/site.config.json`,
+# so the layout here has to mirror the repo's. Only the config file is copied,
+# not the rest of `<slug>/site/` — taxonomy mappings and place overrides are
+# pipeline inputs that nothing reads at request time.
+#
+# Both cities ship in ONE image. That is the same promise as §3.5: the image
+# is city-agnostic and SITE_SLUG picks which row it reads at startup.
+COPY --chown=nextjs:nodejs jakarta/site/site.config.json ./sites/jakarta/site/site.config.json
+COPY --chown=nextjs:nodejs bali/site/site.config.json ./sites/bali/site/site.config.json
+ENV NOW_REPO_ROOT=/app/sites
 
 USER nextjs
 EXPOSE 3100
