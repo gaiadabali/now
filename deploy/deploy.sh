@@ -161,17 +161,31 @@ if ! curl -fsS --max-time 10 "http://127.0.0.1:${api_port}/healthz" >/dev/null; 
 fi
 ok "engine-api /healthz"
 
+# RETRY, do not single-shot. The services above get a 240s loop; these used
+# to get one curl, fired the instant compose returned. A freshly recreated
+# container has not necessarily bound its port yet — Next reports "Ready in
+# ~700ms" but the publish happens after — so the probe could hit a closed
+# socket and `die`.
+#
+# That is the worst failure mode a deploy script has: the rollout had already
+# swapped the images and was fine, and the script called it broken, which
+# invites a rollback that is not needed. Observed exactly once, on a deploy
+# where both cities were serving 200 seconds later.
+web_deadline=$(( SECONDS + 90 ))
 for pair in "web-jakarta:${WEB_JAKARTA_HOST_PORT:-4311}" "web-bali:${WEB_BALI_HOST_PORT:-4315}"; do
   svc="${pair%%:*}"; port="${pair##*:}"
-  # Any HTTP response is enough here: a Next/Payload route may legitimately
-  # answer 3xx or 4xx at /, and this check is "is the server listening",
-  # not "is the content right".
-  if curl -fsS -o /dev/null --max-time 15 "http://127.0.0.1:${port}/" \
-     || curl -s -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:${port}/" | grep -qE '^[2345]'; then
-    ok "$svc responding on ${port}"
-  else
-    die "$svc is not responding on 127.0.0.1:${port} — docker compose logs $svc"
-  fi
+  while :; do
+    # Any HTTP response is enough here: a Next/Payload route may legitimately
+    # answer 3xx or 4xx at /, and this check is "is the server listening",
+    # not "is the content right". `000` is curl's "no response at all".
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "http://127.0.0.1:${port}/" 2>/dev/null)"
+    if [[ "$code" =~ ^[2345] ]]; then
+      ok "$svc responding on ${port} (HTTP $code)"
+      break
+    fi
+    (( SECONDS < web_deadline )) || die "$svc is not responding on 127.0.0.1:${port} after 90s — docker compose logs $svc"
+    sleep 3
+  done
 done
 
 printf '\n\033[32mdeployed\033[0m %s\n' "$IMAGE_TAG"
