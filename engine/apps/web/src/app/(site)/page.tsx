@@ -43,7 +43,19 @@ export default async function HomePage() {
               <span className="kicker">/ The Feature</span>
             </div>
             <h1 className="lead__headline display display--light">
-              <Link href={`/${lead.slug}`}>{lead.title}</Link>
+              {/* Tagged like a card because it behaves like one: the single
+                  most-clicked link on the site, and untagged it reaches the
+                  beacon as a bare URL with no id and no slot. A rail of one
+                  is still a rail. */}
+              <Link
+                href={`/${lead.slug}`}
+                data-nowb-entity={String(lead.id)}
+                data-nowb-entity-type="article"
+                data-nowb-rail="lead"
+                data-nowb-position="1"
+              >
+                {lead.title}
+              </Link>
             </h1>
             <p className="dek lead__dek">{lead.dek}</p>
             <div className="byline">
@@ -82,6 +94,8 @@ export default async function HomePage() {
               locale={locale}
               timeZone={tz}
               partner={i === 2}
+              rail="the-edit"
+              position={i + 1}
             />
           ))}
         </div>
@@ -117,6 +131,8 @@ export default async function HomePage() {
                     locale={locale}
                     timeZone={tz}
                     partner={i === 1}
+                    rail="latest"
+                    position={i + 1}
                   />
                 </div>
               ))}
@@ -136,6 +152,8 @@ export default async function HomePage() {
                       showDek={false}
                       locale={locale}
                       timeZone={tz}
+                      rail="most-read"
+                      position={i + 1}
                     />
                   </li>
                 ))}
