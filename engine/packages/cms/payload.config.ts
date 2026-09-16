@@ -86,6 +86,12 @@ export default buildConfig({
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
     },
+    // Payload's default account avatar is a GRAVATAR: it hashes the signed-in
+    // email and fetches an image from gravatar.com on every admin page. For
+    // staff who have no Gravatar — all of them — that is a third-party
+    // request carrying a hash of their email, to render a grey silhouette.
+    // A monogram costs nothing and looks like the brand.
+    avatar: { Component: '/components/graphics/StaffAvatar#StaffAvatar' },
   },
   // The admin is served BY THE READER APP, under the city's own hostname
   // (docs/ADMIN-CONSOLIDATION.md Phase 2): <city>.gaiada.com/team-editor. The
@@ -99,6 +105,16 @@ export default buildConfig({
   // then 404s the moment it navigates.
   routes: {
     admin: '/team-editor',
+  },
+  // The client's admin should not be advertising the CMS vendor. Payload
+  // puts "Payload Settings" above the language and theme controls on the
+  // account screen — the one string in the whole UI that names the product
+  // rather than describing what it does. Overriding the key is the supported
+  // way; patching the package is not.
+  i18n: {
+    translations: {
+      en: { general: { payloadSettings: 'Editor settings' } },
+    },
   },
   editor: lexicalEditor(),
   collections: [

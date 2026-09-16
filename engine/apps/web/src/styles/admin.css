@@ -115,6 +115,102 @@ html[data-theme='dark'] {
 }
 
 /* ---------------------------------------------------------------------------
+   Headings — the display serif, where a heading is actually a title
+   ---------------------------------------------------------------------------
+   The ramp and the two faces got the admin most of the way, but every
+   heading was still set in the UI sans at a weight Payload picked, and that
+   is most of what was left reading "dashboard" rather than "masthead". The
+   reader site sets every title in Cormorant; these are the three places the
+   admin has a title of its own.
+
+   Only titles. Field labels, section headings inside a document, table
+   headers and the nav stay in the sans — they are furniture, and a serif
+   there would be costume rather than brand.
+   ------------------------------------------------------------------------ */
+
+/* "Articles" above a list, and the document's own title. */
+.list-header__title,
+.doc-header__title {
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--theme-elevation-1000);
+}
+
+/* "Collections" on the dashboard. */
+.collections__label {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--theme-elevation-1000);
+}
+
+/* ---------------------------------------------------------------------------
+   The dashboard's collection cards
+   ---------------------------------------------------------------------------
+   Payload draws them as filled, rounded, bordered boxes. On a warm ground
+   that reads as eight beige rectangles — the ramp made them quieter without
+   making them the brand's. A broadsheet separates things with rules, so
+   these become paper under a rule, which is the same device the reader
+   site's section headers and the sign-in screen already use.
+   ------------------------------------------------------------------------ */
+
+.card {
+  min-height: 0;
+  padding: var(--base) 0 calc(var(--base) * 0.85);
+  border: 0;
+  border-top: 1px solid var(--theme-elevation-1000);
+  border-radius: 0;
+  background: transparent;
+  align-items: baseline;
+}
+
+.card:hover {
+  background: transparent;
+  border-top-color: var(--now-accent);
+}
+
+.card__title {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--theme-elevation-1000);
+}
+
+/* ---------------------------------------------------------------------------
+   The account monogram
+   ---------------------------------------------------------------------------
+   Replaces Payload's Gravatar fetch — see `admin.avatar` in payload.config.ts.
+   ------------------------------------------------------------------------ */
+
+.now-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* An explicit box, because the element it replaces was an <img> that
+     carried its own width and height — `.app-header__account` sets neither,
+     so a span sized 100% collapses to a sliver. */
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--theme-elevation-1000);
+  color: var(--theme-elevation-0);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  /* Cormorant's cap height sits high in the box; without this the letter
+     looks pasted above centre. */
+  padding-top: 0.06em;
+  user-select: none;
+}
+
+/* ---------------------------------------------------------------------------
    The brand marks
    ------------------------------------------------------------------------ */
 
