@@ -99,7 +99,7 @@ echo "==> routes"
 route_fail=0
 for port in "$JKT_PORT" "$BALI_PORT"; do
   city="jakarta"; [ "$port" = "$BALI_PORT" ] && city="bali"
-  for route in / /dining /stay /wellness /things-to-do /events /guides /about /contact /advertise /podcast /subscribe /areas /culture /places /search; do
+  for route in / /dining /stay /wellness /things-to-do /events /guides /about /contact /advertise /podcast /subscribe /areas /culture /places /editorial /unclassified /search "/dining?page=3" "/unclassified?page=2"; do
     code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "http://127.0.0.1:$port$route")"
     if [ "$code" = "200" ]; then
       printf '  \033[32mok\033[0m   %-8s %-16s %s\n' "$city" "$route" "$code"

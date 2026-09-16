@@ -51,7 +51,24 @@ const SECTION_MAP: Record<string, string[]> = {
   'things-to-do': ['things-to-do'],
   events: ['events'],
   guides: ['guides'],
+  editorial: ['editorial'],
+  unclassified: ['unclassified'],
 }
+
+/**
+ * The section for articles the classifier has not typed.
+ *
+ * `primaryType` is NULL for 1,183 published Jakarta articles and 799 in Bali,
+ * and `unknown` is the fail-closed sentinel for the same condition. Before
+ * this section existed they were reachable only by their direct URL — a
+ * quarter of the archive, invisible to anyone browsing.
+ *
+ * Naming it plainly is deliberate. These are not miscellaneous articles, they
+ * are unsorted ones, and an editor opening `Unclassified` in team-editor
+ * knows exactly what the queue is. Calling it "More" would hide the backlog
+ * behind a word that sounds intentional.
+ */
+export const UNCLASSIFIED = 'unclassified'
 
 /**
  * Sections backed by a `format` rather than a `primaryType`.
@@ -75,11 +92,20 @@ export function isSectionSlug(slug: string): boolean {
   return slug in SECTION_MAP
 }
 
+const SECTION_LABELS: Record<string, string> = {
+  'things-to-do': 'Things to Do',
+  unclassified: 'Unclassified',
+  editorial: 'Editorial',
+}
+
 export function sectionLabel(slug: string): string {
-  return slug
-    .split('-')
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join(' ')
+  return (
+    SECTION_LABELS[slug] ??
+    slug
+      .split('-')
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(' ')
+  )
 }
 
 /** Published only, newest first. `_status` is Payload's draft/publish flag. */
@@ -121,28 +147,85 @@ export async function getLead(): Promise<Article | undefined> {
   return lead
 }
 
+export type Page<T> = {
+  items: T[]
+  page: number
+  totalPages: number
+  total: number
+}
+
+/**
+ * The `where` clause that selects a section's articles.
+ *
+ * Unclassified is the interesting one: it is defined by the ABSENCE of a
+ * type, so it cannot be expressed as `primaryType: { in: [...] }`. Both
+ * spellings of "not classified" have to be caught — NULL, which is what the
+ * importer left, and the `unknown` enum label, which is what the classifier
+ * writes when it declines to guess. Matching only one would strand the other,
+ * and which one a row carries is an accident of which pipeline touched it.
+ */
+function sectionWhere(slug: string): Record<string, unknown> | null {
+  if (slug === UNCLASSIFIED) {
+    return {
+      or: [{ primaryType: { exists: false } }, { primaryType: { equals: 'unknown' } }],
+    }
+  }
+  const formats = FORMAT_SECTIONS[slug]
+  if (formats) return { format: { in: formats } }
+  const types = SECTION_TO_TYPES[slug]
+  if (types) return { primaryType: { in: types } }
+  return null
+}
+
+/**
+ * One page of a section.
+ *
+ * Paginated because the archive is the point. A section index that showed a
+ * fixed twelve exposed 12 of Jakarta's 935 dining articles — the other 923
+ * existed only at their direct URL, which is no way to hand an archive to an
+ * editor. Payload counts and slices in one query, so the total costs nothing
+ * extra and the page can say how much there is.
+ */
+export async function getSectionPage(
+  slug: string,
+  opts: { page?: number; limit?: number; format?: string } = {},
+): Promise<Page<Article>> {
+  const { page = 1, limit = 24, format } = opts
+  const where = sectionWhere(slug)
+  if (!where) return { items: [], page: 1, totalPages: 0, total: 0 }
+
+  const payload = await payloadClient()
+  const result = await payload.find({
+    collection: 'articles',
+    where: {
+      ...PUBLISHED,
+      ...where,
+      ...(format ? { format: { equals: format } } : {}),
+    },
+    sort: '-publishedAt',
+    // A page past the end returns empty rather than throwing; the page
+    // component turns that into a 404 so a bad ?page= cannot look like a
+    // section that has run dry.
+    page: Math.max(1, page),
+    limit,
+    depth: 1,
+  })
+  return {
+    items: await toArticles(result.docs),
+    page: result.page ?? 1,
+    totalPages: result.totalPages ?? 1,
+    total: result.totalDocs ?? 0,
+  }
+}
+
+/** First page only — for rails and anywhere a count is not wanted. */
 export async function getBySection(
   slug: string,
   limit = 12,
   format?: string,
 ): Promise<Article[]> {
-  const formats = FORMAT_SECTIONS[slug]
-  const types = SECTION_TO_TYPES[slug]
-  if (!formats && !types) return []
-
-  const payload = await payloadClient()
-  const { docs } = await payload.find({
-    collection: 'articles',
-    where: {
-      ...PUBLISHED,
-      ...(formats ? { format: { in: formats } } : { primaryType: { in: types } }),
-      ...(format ? { format: { equals: format } } : {}),
-    },
-    sort: '-publishedAt',
-    limit,
-    depth: 1,
-  })
-  return toArticles(docs)
+  const { items } = await getSectionPage(slug, { limit, format })
+  return items
 }
 
 /**
@@ -225,9 +308,13 @@ function humanise(value: string): string {
 export async function getSectionFacets(slug: string): Promise<Facet[]> {
   const formats = FORMAT_SECTIONS[slug]
   const types = SECTION_TO_TYPES[slug]
-  if (!formats && !types) return []
+  // Unclassified has neither — it is defined by the absence of a type — so it
+  // needs its own branch or it would silently render no facet row at all.
+  if (!formats && !types && slug !== UNCLASSIFIED) return []
 
-  const rows = await sectionFormatCounts({ formats, types })
+  const rows = await sectionFormatCounts(
+    slug === UNCLASSIFIED ? { untyped: true } : { formats, types },
+  )
   const total = rows.reduce((sum, r) => sum + r.count, 0)
 
   return [

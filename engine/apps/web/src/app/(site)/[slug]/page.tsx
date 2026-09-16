@@ -6,8 +6,8 @@ import { notFound } from 'next/navigation'
 import { StoryCard } from '@/components/StoryCard'
 import { SectionRule, Signup } from '@/components/primitives'
 import {
-  getBySection,
   getBySlug,
+  getSectionPage,
   getSectionFacets,
   getRelated,
   isSectionSlug,
@@ -50,7 +50,10 @@ export default async function SlugPage({ params, searchParams }: Params) {
   const { slug } = await params
   const query = (await searchParams) ?? {}
   const format = typeof query.format === 'string' ? query.format : undefined
-  if (isSectionSlug(slug)) return <SectionIndex slug={slug} format={format} />
+  const page = Number.parseInt(typeof query.page === 'string' ? query.page : '1', 10)
+  if (isSectionSlug(slug)) {
+    return <SectionIndex slug={slug} format={format} page={Number.isFinite(page) ? page : 1} />
+  }
   const article = await getBySlug(slug)
   if (!article) notFound()
   return <ArticlePage slug={slug} />
@@ -173,11 +176,28 @@ async function ArticlePage({ slug }: { slug: string }) {
 /*  SECTION INDEX                                                             */
 /* ========================================================================== */
 
-async function SectionIndex({ slug, format }: { slug: string; format?: string }) {
+const PER_PAGE = 24
+
+async function SectionIndex({
+  slug,
+  format,
+  page = 1,
+}: {
+  slug: string
+  format?: string
+  page?: number
+}) {
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
-  const articles = await getBySection(slug, 12, format)
-  const [lead, ...rest] = articles
+  const result = await getSectionPage(slug, { page, limit: PER_PAGE, format })
+  const articles = result.items
+  // A page number past the end is a bad URL, not an empty section. Without
+  // this, ?page=9999 renders a section that looks like it has no articles.
+  if (articles.length === 0 && page > 1) notFound()
+  // The lead treatment only makes sense on the first page; on page 3 the
+  // newest article of that slice is not "leading" anything.
+  const isFirstPage = result.page <= 1
+  const [lead, ...rest] = isFirstPage ? articles : []
 
   // Real counts, faceted on `format`, computed from the database.
   //
@@ -216,10 +236,13 @@ async function SectionIndex({ slug, format }: { slug: string; format?: string })
             </Link>
           )
         })}
-        <span className="facets__result">{articles.length} stories</span>
+        <span className="facets__result">
+          {result.total.toLocaleString(locale)} {result.total === 1 ? 'story' : 'stories'}
+          {result.totalPages > 1 ? ` · page ${result.page} of ${result.totalPages}` : ''}
+        </span>
       </div>
 
-      {lead ? (
+      {isFirstPage && lead ? (
         <div className="lead">
           <div className="lead__body">
             <span className="kicker kicker--red">Leading</span>
@@ -246,14 +269,106 @@ async function SectionIndex({ slug, format }: { slug: string; format?: string })
       <section className="band" style={{ paddingTop: 0 }}>
         <SectionRule label="More in this section" />
         <div className="grid grid--3 grid--ruled">
-          {rest.map((a, i) => (
-            <StoryCard key={a.id} article={a} locale={locale} timeZone={tz} partner={i === 0} />
+          {(isFirstPage ? rest : articles).map((a, i) => (
+            <StoryCard
+              key={a.id}
+              article={a}
+              locale={locale}
+              timeZone={tz}
+              partner={isFirstPage && i === 0}
+            />
           ))}
         </div>
-        {!rest.length ? (
-          <p className="meta">Nothing else here yet — the classifier is still filling this section.</p>
+        {articles.length === 0 ? (
+          <p className="meta">Nothing in this section yet.</p>
         ) : null}
+        <Pager slug={slug} format={format} page={result.page} totalPages={result.totalPages} />
       </section>
     </div>
+  )
+}
+
+
+/**
+ * Section pagination.
+ *
+ * Links, not buttons: the page is a server component and the URL already
+ * expresses the state, so a paged section stays shareable, crawlable and
+ * back-button-able. Same reasoning as the facet chips above.
+ *
+ * Only a window of numbers is rendered. Dining has 39 pages and Unclassified
+ * has 50 — a full run of page links would be longer than the content.
+ */
+function Pager({
+  slug,
+  format,
+  page,
+  totalPages,
+}: {
+  slug: string
+  format?: string
+  page: number
+  totalPages: number
+}) {
+  if (totalPages <= 1) return null
+
+  const href = (n: number) => {
+    const qs = new URLSearchParams()
+    if (format) qs.set('format', format)
+    if (n > 1) qs.set('page', String(n))
+    const q = qs.toString()
+    return `/${slug}${q ? `?${q}` : ''}`
+  }
+
+  const window_ = 2
+  const numbers: number[] = []
+  for (let n = Math.max(1, page - window_); n <= Math.min(totalPages, page + window_); n++) {
+    numbers.push(n)
+  }
+
+  return (
+    <nav className="facets" style={{ marginTop: 'var(--space-l)' }} aria-label="Pagination">
+      {page > 1 ? (
+        <Link className="facet" href={href(page - 1)} rel="prev">
+          ← Newer
+        </Link>
+      ) : null}
+
+      {numbers[0] > 1 ? (
+        <>
+          <Link className="facet" href={href(1)}>
+            1
+          </Link>
+          {numbers[0] > 2 ? <span className="meta">…</span> : null}
+        </>
+      ) : null}
+
+      {numbers.map((n) => (
+        <Link
+          className="facet"
+          key={n}
+          href={href(n)}
+          aria-current={n === page ? 'page' : undefined}
+          data-active={n === page || undefined}
+        >
+          {n}
+        </Link>
+      ))}
+
+      {numbers[numbers.length - 1] < totalPages ? (
+        <>
+          {numbers[numbers.length - 1] < totalPages - 1 ? <span className="meta">…</span> : null}
+          <Link className="facet" href={href(totalPages)}>
+            {totalPages}
+          </Link>
+        </>
+      ) : null}
+
+      {page < totalPages ? (
+        <Link className="facet" href={href(page + 1)} rel="next">
+          Older →
+        </Link>
+      ) : null}
+    </nav>
   )
 }
