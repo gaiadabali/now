@@ -86,6 +86,11 @@ export default buildConfig({
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
       beforeNavLinks: ['/components/nav/NavMasthead#NavMasthead'],
+      // The commerce console has had no link anywhere since it was absorbed:
+      // the only routes in were a badge inside its own masthead and typing
+      // the URL. Role-gated on the COMMERCE dimension, which is independent
+      // of editorial standing.
+      afterNavLinks: ['/components/nav/NavConsole#NavConsole'],
       // The account menu Payload does not have. Its avatar is a plain link
       // to the profile page, so there was nowhere to put "sign out" except
       // an unlabelled arrow at the foot of the nav. `actions` renders into
