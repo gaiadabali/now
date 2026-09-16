@@ -107,17 +107,17 @@ test('an unrecognised transport name is refused', () => {
 })
 
 test('port 465 implies implicit TLS without setting SMTP_SECURE', () => {
-  // The documented production config (Hostinger). Getting this wrong means
+  // The documented production config (Google Workspace). Getting this wrong means
   // speaking plaintext at a port expecting TLS, which fails as a timeout
   // rather than as anything that names the cause.
-  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.hostinger.com', SMTP_PORT: '465' })
+  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.gmail.com', SMTP_PORT: '465' })
   assert.equal(result.ok, true)
-  assert.equal(result.ok && result.transport.name, 'smtp://smtp.hostinger.com:465')
+  assert.equal(result.ok && result.transport.name, 'smtp://smtp.gmail.com:465')
   assert.equal(result.ok && (result.transport as SmtpTransport).settings.secure, true)
 })
 
 test('port 587 stays STARTTLS, not implicit TLS', () => {
-  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.hostinger.com', SMTP_PORT: '587' })
+  const result = createTransportFromEnv({ SMTP_HOST: 'smtp.gmail.com', SMTP_PORT: '587' })
   assert.equal(result.ok && (result.transport as SmtpTransport).settings.secure, false)
 })
 
@@ -133,7 +133,7 @@ test('SMTP_SECURE still overrides the port-derived default', () => {
 test('self-signed certs are never allowed in production, whatever the env says', () => {
   const result = createTransportFromEnv({
     NODE_ENV: 'production',
-    SMTP_HOST: 'smtp.hostinger.com',
+    SMTP_HOST: 'smtp.gmail.com',
     SMTP_PORT: '465',
     SMTP_ALLOW_SELF_SIGNED: 'true',
   })

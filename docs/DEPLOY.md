@@ -304,44 +304,62 @@ act.
   Postgres and the API will answer `/healthz` regardless, because that probe
   does not touch a city database. Do not read a green deploy as "the content
   is live".
-- **A Hostinger mailbox, and the two secrets that depend on it** (E8, reader
-  accounts). Without these `/account/*` is broken in production while the rest
-  of the site is fine — sign-up, verification and password reset all need mail,
-  and the app refuses to start with a console transport under
+- **A Google Workspace app password, and the two secrets that depend on it**
+  (E8, reader accounts). Without these `/account/*` is broken in production
+  while the rest of the site is fine — sign-up, verification and password reset
+  all need mail, and the app refuses to start with a console transport under
   `NODE_ENV=production` rather than pretending to send.
 
-  Hostinger, matching the other gaiada properties: `gaiada.com`'s DNS is
-  already there, so SPF and DKIM are one panel rather than a second vendor to
-  verify. **Verified reachable 2026-09-16** — `smtp.hostinger.com:465` answers
-  `220 ESMTP smtp.hostinger.com` with a valid certificate, so host, port and
-  implicit TLS are settled; only the credential is outstanding.
+  **Google Workspace, not Hostinger.** An earlier draft of this file said
+  Hostinger, on the assumption that mail follows the DNS registrar. It does
+  not. Checked live 2026-09-16:
 
-  1. hPanel → Emails → create a mailbox on `gaiada.com` (`hello@` is what
-     `.env.example` assumes). SMTP_USER is the **full address**, and
-     SMTP_PASSWORD is that *mailbox's* password — not the hPanel login.
-  2. Set on each web service:
+  ```
+  MX    gaiada.com        ->  smtp.google.com (1)
+  TXT   gaiada.com        ->  v=spf1 include:_spf.google.com ~all
+  TXT   _dmarc.gaiada.com ->  v=DMARC1; p=none; ...; adkim=s; aspf=s
+  ```
+
+  SPF authorises Google **and nothing else**, and DMARC asks for strict
+  alignment on both legs. Sending through Hostinger would have failed SPF and
+  landed every verification mail in spam — which, from a reader's side, is
+  indistinguishable from no mail ever being sent.
+
+  1. Use (or create) a Workspace mailbox to send as — `hello@gaiada.com` is
+     what `.env.example` assumes.
+  2. Google account → Security → **App passwords** (needs 2-Step
+     Verification). Google rejects the plain account password over SMTP.
+  3. Set on each web service:
 
      ```
      MAIL_TRANSPORT=smtp
-     SMTP_HOST=smtp.hostinger.com
+     SMTP_HOST=smtp.gmail.com
      SMTP_PORT=465            # implicit TLS; SMTP_SECURE is derived from this
      SMTP_USER=hello@gaiada.com
-     SMTP_PASSWORD=…
-     MAIL_FROM_EMAIL=hello@gaiada.com
-     MAIL_FROM_NAME="NOW! Jakarta"      # per city
+     SMTP_PASSWORD=…          # the 16-character app password
+     MAIL_FROM_EMAIL=hello@gaiada.com    # must align with SMTP_USER (aspf=s)
+     MAIL_FROM_NAME="NOW! Jakarta"       # per city
      MAIL_SUPPORT_EMAIL=hello@gaiada.com
      SITE_BASE_URL=https://now-jakarta.gaiada.com   # per city
-     READER_SESSION_SECRET=…   # openssl rand -base64 48
+     READER_SESSION_SECRET=…  # openssl rand -base64 48
      ```
-
-     SMTP will not send "as" an address the mailbox does not own, unlike an
-     API provider — so `MAIL_FROM_EMAIL` must be the mailbox itself.
 
      `READER_SESSION_SECRET` **must differ from `PAYLOAD_SECRET`**; the app
      throws at startup if they match. Readers and staff are separate
      populations with separate cookies, and a shared signing key would leave
      the `aud` claim as the only thing between a reader token and the admin
      (docs/READER-IDENTITY.md).
-  3. Check SPF and DKIM in hPanel after the mailbox exists. A correct SMTP
-     config with no DKIM delivers straight to spam, which looks identical to
-     "no mail was sent" from the reader's side.
+
+  **Limit:** 2,000 messages/day on `smtp.gmail.com`. Ample for verification and
+  reset mail. `smtp-relay.gmail.com` allows 10,000/day and authenticates by IP
+  — helios has a static one — if that ever becomes the constraint.
+
+  ⚠️ **DKIM is not published for `gaiada.com`.** `google._domainkey.gaiada.com`
+  does not resolve (checked 2026-09-16), while the DMARC record already asks
+  for strict DKIM alignment (`adkim=s`). Nothing is being rejected today
+  because the policy is `p=none`, so this is a deliverability and
+  reputation problem rather than an outage — but every message sent is failing
+  the DKIM leg of its own DMARC policy, and it must be fixed before that policy
+  is ever tightened to `quarantine` or `reject`. Workspace admin → Apps →
+  Gmail → Authenticate email → generate the key, then publish the TXT record in
+  hPanel.
