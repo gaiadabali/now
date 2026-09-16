@@ -398,7 +398,8 @@ export async function activePlaces(limit = 120): Promise<PlaceRow[]> {
     )
     return rows.map((r) => ({
       slug: String(r.slug),
-      name: String(r.name),
+      // Decoded in the helper, not at each call site, so no page can forget.
+      name: decodeEntities(String(r.name)),
       area: r.area ? String(r.area) : null,
       type: r.type ? String(r.type) : null,
       subtype: r.subtype ? String(r.subtype) : null,
@@ -446,7 +447,7 @@ export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> 
     if (!r) return null
     return {
       slug: String(r.slug),
-      name: String(r.name),
+      name: decodeEntities(String(r.name)),
       area: r.area ? String(r.area) : null,
       type: r.type ? String(r.type) : null,
       subtype: r.subtype ? String(r.subtype) : null,

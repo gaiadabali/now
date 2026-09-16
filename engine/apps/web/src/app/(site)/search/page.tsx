@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { getSiteConfig } from '@/lib/site'
+import { decodeEntities, stripTags } from '@/lib/html'
 
 /**
  * Search — the reader-facing surface for the engine's hybrid retrieval.
@@ -120,9 +121,20 @@ export default async function SearchPage({
                 return (
                   <article key={hit.entity_id}>
                     <h2 style={{ fontSize: 'var(--t-h3)', marginBottom: 'var(--space-2xs)' }}>
-                      {slug ? <Link href={`/${slug}`}>{hit.title}</Link> : hit.title}
+                      {/*
+                        Decoded here as well as in the Payload mapper: these
+                        hits come from engine-api, not the Local API, so they
+                        bypass `toArticle` entirely. 81 Bali titles store
+                        entities, and a result reading "Catch &amp; Grill" is
+                        the same bug on a different surface.
+                      */}
+                      {slug ? (
+                        <Link href={`/${slug}`}>{decodeEntities(hit.title ?? '')}</Link>
+                      ) : (
+                        decodeEntities(hit.title ?? '')
+                      )}
                     </h2>
-                    {hit.dek ? <p className="dek">{hit.dek}</p> : null}
+                    {hit.dek ? <p className="dek">{stripTags(hit.dek)}</p> : null}
                   </article>
                 )
               })}
