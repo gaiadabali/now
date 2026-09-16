@@ -1,0 +1,261 @@
+/* ============================================================================
+   The commerce console, inside the team editor
+   ----------------------------------------------------------------------------
+   These pages live under `(payload)` but outside Payload's own catch-all, so
+   they inherit Payload's root layout — its <html>, its stylesheet, its
+   providers — and none of its chrome. They bring their own masthead and this
+   file, and nothing else.
+
+   It used to be `globals.css`: its own grey/blue palette, its own type
+   stack, and a `body { … }` reset, all loaded INSIDE Payload's admin. That
+   is why it is no longer named that. Every colour below is now a
+   `--theme-*` variable, which means it is the ramp from `styles/admin.css`
+   — so this surface follows the brand, and follows the editor into dark
+   mode, without knowing either exists.
+   ========================================================================= */
+
+.console__masthead {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--base) * 0.9);
+  padding: calc(var(--base) * 0.5) var(--gutter-h);
+  border-bottom: 1px solid var(--theme-elevation-150);
+  background: var(--theme-elevation-0);
+}
+
+/* The city's mark, at dateline height. Same role as on the sign-in screen:
+   one account opens both cities, so something on screen has to say which
+   one these partner terms belong to. */
+.console__logo {
+  display: block;
+  width: auto;
+  height: calc(var(--base) * 1.15);
+}
+
+/* Ink on nothing, so it needs its own stock on a dark ground — same
+   reasoning as `.graphic-logo` in styles/admin.css. */
+html[data-theme='dark'] .console__logo {
+  padding: 0.35em 0.5em;
+  background: var(--paper);
+}
+
+.console__brand {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--base) * 0.5);
+  text-decoration: none;
+  color: inherit;
+}
+
+.console__brand-label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500);
+}
+
+.console__nav {
+  display: flex;
+  gap: calc(var(--base) * 0.7);
+}
+
+.console__nav a {
+  color: var(--theme-text);
+  text-decoration: none;
+}
+
+.console__nav a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* First badge after the nav carries the gap; the rest sit beside it. */
+.console__nav + .console__badge {
+  margin-left: auto;
+}
+
+.console__badge {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-l);
+  color: var(--theme-elevation-500);
+  cursor: help;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.console__badge--link {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.console__badge--link:hover {
+  border-color: var(--theme-elevation-400);
+  color: var(--theme-text);
+}
+
+.console__main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(var(--base) * 1.4) var(--gutter-h) calc(var(--base) * 4);
+}
+
+/* ---------------------------------------------------------------------------
+   Page furniture.
+   Every class is prefixed `console__`, and that prefix is load-bearing rather
+   than a style preference. These pages are rendered INSIDE Payload's own
+   document, and Payload already ships `.card` (a flex row) and `.pill`. The
+   plain names these pages were written with — from when the console was its
+   own app on its own hostname — silently inherited both: the counters came
+   out as "1,562   organisations" side by side instead of stacked.
+   Element selectors stay scoped under `.console__main` for the same reason.
+   ------------------------------------------------------------------------ */
+
+.console__main h1 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--theme-elevation-1000);
+}
+
+/* A section heading below the page's own. These were second and third
+   `<h1>`s on the same page — the same size on screen, and three top-level
+   headings to anything reading the document outline. */
+.console__subhead {
+  margin: calc(var(--base) * 1.6) 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  color: var(--theme-elevation-1000);
+}
+
+.console__muted {
+  color: var(--theme-elevation-500);
+}
+
+.console__sub {
+  max-width: 66ch;
+  margin: 0 0 var(--base);
+  color: var(--theme-elevation-600);
+}
+
+.console__main a {
+  color: var(--theme-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--theme-elevation-300);
+}
+
+.console__main a:hover {
+  text-decoration-color: var(--now-accent);
+}
+
+/* Rules, not boxes — the broadsheet's own way of holding a table together. */
+.console__main table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--theme-elevation-1000);
+  background: var(--theme-elevation-0);
+}
+
+.console__main th,
+.console__main td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--theme-elevation-150);
+  text-align: left;
+  vertical-align: top;
+}
+
+.console__main th {
+  color: var(--theme-elevation-600);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.console__main td.console__num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.console__pill {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-l);
+  font-size: 0.75rem;
+}
+
+/* Status, not brand: these stay on Payload's semantic scale deliberately —
+   see the note at the top of styles/admin.css. */
+.console__pill--live {
+  border-color: var(--theme-success-250);
+  background: var(--theme-success-50);
+  color: var(--theme-success-600);
+}
+
+.console__pill--expired {
+  border-color: var(--theme-error-250);
+  background: var(--theme-error-50);
+  color: var(--theme-error-600);
+}
+
+/* Counters. Rule above each, no card — the figure carries itself. */
+.console__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  margin-bottom: calc(var(--base) * 1.4);
+  border-top: 1px solid var(--theme-elevation-1000);
+  border-bottom: 1px solid var(--theme-elevation-150);
+  background: var(--theme-elevation-150);
+}
+
+.console__card {
+  padding: 0.9rem 1rem;
+  background: var(--theme-elevation-0);
+}
+
+.console__card .console__n {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--theme-elevation-1000);
+}
+
+.console__card .console__k {
+  color: var(--theme-elevation-600);
+  font-size: 0.8125rem;
+}
+
+.console__empty {
+  padding: 2rem;
+  border: 1px dashed var(--theme-elevation-200);
+  color: var(--theme-elevation-500);
+  text-align: center;
+}
+
+.console__search {
+  margin-bottom: var(--base);
+}
+
+.console__search input {
+  width: 280px;
+  max-width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.console__search input:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}

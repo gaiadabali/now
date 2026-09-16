@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getOrg, listPartnerships } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
+import { consoleHref } from '../../paths'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,22 +15,22 @@ export default async function Org({ params }: { params: Promise<{ id: string }> 
 
   return (
     <>
-      <p className="sub"><Link href="/orgs">← Partners</Link></p>
+      <p className="console__sub"><Link href={consoleHref('/orgs')}>← Partners</Link></p>
       <h1>{org.name}</h1>
-      <p className="sub">
+      <p className="console__sub">
         <code>{org.slug}</code>
         {org.website ? <> · <a href={org.website} rel="noreferrer nofollow" target="_blank">{org.website}</a></> : null}
       </p>
 
-      <h1 style={{ fontSize: '1.1rem', marginTop: '1.5rem' }}>Partnerships</h1>
-      <p className="sub">
+      <h2 className="console__subhead">Partnerships</h2>
+      <p className="console__sub">
         A budget-exhausted or expired partnership still appears here. It simply
         stops being <em>live</em> — §11 keeps relevance and billing separate,
         and expiry is resolved at query time rather than by a nightly job.
       </p>
 
       {partnerships.length === 0 ? (
-        <div className="empty">No partnerships recorded for this organisation.</div>
+        <div className="console__empty">No partnerships recorded for this organisation.</div>
       ) : (
         <table>
           <thead>
@@ -41,7 +42,7 @@ export default async function Org({ params }: { params: Promise<{ id: string }> 
                 <td>{p.site_slug ? <code>{p.site_slug}</code> : '—'}</td>
                 <td>{p.tier ?? '—'}</td>
                 <td>
-                  <span className={`pill ${p.is_live ? 'live' : 'expired'}`}>
+                  <span className={`console__pill console__pill--${p.is_live ? 'live' : 'expired'}`}>
                     {p.is_live ? 'live' : (p.status ?? 'inactive')}
                   </span>
                 </td>

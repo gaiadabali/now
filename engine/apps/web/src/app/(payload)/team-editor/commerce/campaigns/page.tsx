@@ -10,7 +10,7 @@ export default async function Campaigns() {
   return (
     <>
       <h1>Campaigns</h1>
-      <p className="sub">
+      <p className="console__sub">
         Budget and pacing live here; the ledger that spends against them is
         <code> engine.ad_events</code>. A campaign that has exhausted its budget
         stays eligible organically — it just stops being logged as a billable
@@ -18,14 +18,14 @@ export default async function Campaigns() {
       </p>
 
       {campaigns.length === 0 ? (
-        <div className="empty">
+        <div className="console__empty">
           No campaigns yet. E4.1 loaded the org roster and the partnerships
           schema; campaign management is the rest of E4.
         </div>
       ) : (
         <table>
           <thead>
-            <tr><th>Organisation</th><th>Site</th><th>Objective</th><th>Status</th><th>Pacing</th><th className="num">Budget</th><th className="num">Placements</th></tr>
+            <tr><th>Organisation</th><th>Site</th><th>Objective</th><th>Status</th><th>Pacing</th><th className="console__num">Budget</th><th className="console__num">Placements</th></tr>
           </thead>
           <tbody>
             {campaigns.map((c) => (
@@ -33,10 +33,10 @@ export default async function Campaigns() {
                 <td>{c.org_name ?? '—'}</td>
                 <td>{c.site_slug ? <code>{c.site_slug}</code> : 'all'}</td>
                 <td>{c.objective ?? '—'}</td>
-                <td><span className={`pill ${c.status === 'active' ? 'live' : ''}`}>{c.status ?? 'draft'}</span></td>
+                <td><span className={`console__pill${c.status === 'active' ? ' console__pill--live' : ''}`}>{c.status ?? 'draft'}</span></td>
                 <td>{c.pacing ?? '—'}</td>
-                <td className="num">{c.budget ?? '—'}</td>
-                <td className="num">{c.placement_count || ''}</td>
+                <td className="console__num">{c.budget ?? '—'}</td>
+                <td className="console__num">{c.placement_count || ''}</td>
               </tr>
             ))}
           </tbody>
