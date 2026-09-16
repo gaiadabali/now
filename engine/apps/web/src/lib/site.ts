@@ -32,6 +32,24 @@ export type SiteConfig = {
   // logo is a wide wordmark and is unreadable at 16px, so it is not a
   // substitute. Optional so a config row without them still validates.
   brand: { logo: string; logoAlt: string; favicon?: string; appleIcon?: string }
+  /**
+   * Real, published contact details — taken from each city's live site, not
+   * invented. Optional and rendered only where present: nowbali.co.id
+   * publishes no email address (it uses a form), so Bali has none here rather
+   * than a plausible-looking guess.
+   */
+  contact?: {
+    address?: string[]
+    phone?: string[]
+    editorial?: string
+    sales?: string
+  }
+  /**
+   * The city's podcast, where one exists. Bali publishes a real show; Jakarta
+   * does not, so Jakarta has no key here and its page says so plainly rather
+   * than advertising something that does not exist.
+   */
+  podcast?: { name: string; spotifyShowId?: string; url: string }
   nav: NavItem[]
   footer: FooterColumn[]
 }

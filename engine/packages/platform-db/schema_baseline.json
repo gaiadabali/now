@@ -1,5 +1,5 @@
 {
-  "hash": "8cddf51d06be11012f556e37b288e00520383f77b1454ff238dfe9194bff910f",
+  "hash": "562d5dc0ddaa2cc765a533e556461862c9aec16fe6e84c4d584b1639881cc1a2",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -893,6 +893,102 @@
             "def": "CREATE UNIQUE INDEX uq_itinerary_stops_seq ON engine.itinerary_stops USING btree (day_id, seq)",
             "method": "btree",
             "name": "uq_itinerary_stops_seq"
+          }
+        ],
+        "partitioned": false
+      },
+      "newsletter_subscribers": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'unsubscribed'::text])))",
+            "name": "newsletter_subscribers_status_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_slug",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'pending'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "source",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "confirmed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "i",
+              "d",
+              "}"
+            ],
+            "name": "newsletter_subscribers_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_subscribers_pkey ON engine.newsletter_subscribers USING btree (id)",
+            "method": "btree",
+            "name": "newsletter_subscribers_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_subscribers_site_email_uq ON engine.newsletter_subscribers USING btree (site_slug, email_norm)",
+            "method": "btree",
+            "name": "newsletter_subscribers_site_email_uq"
+          },
+          {
+            "def": "CREATE INDEX newsletter_subscribers_site_status_ix ON engine.newsletter_subscribers USING btree (site_slug, status)",
+            "method": "btree",
+            "name": "newsletter_subscribers_site_status_ix"
           }
         ],
         "partitioned": false

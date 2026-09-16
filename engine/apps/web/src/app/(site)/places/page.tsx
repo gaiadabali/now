@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import { activePlaces, placeReviewCounts } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
+import { formatCount } from '@/lib/format'
 
 /**
  * Places — the venue directory.
@@ -50,7 +51,7 @@ export default async function PlacesPage() {
         <section className="band">
           <p className="dek" style={{ maxWidth: '52ch' }}>
             The directory is not open yet. We are working through{' '}
-            {counts.pending.toLocaleString(site.locale)} venue records from the archive and will
+            {formatCount(counts.pending)} venue records from the archive and will
             list each one only once an editor has checked it.
           </p>
           <p className="dek" style={{ marginTop: 'var(--space-m)' }}>
@@ -77,8 +78,8 @@ export default async function PlacesPage() {
             ))}
           </div>
           <p className="dek" style={{ marginTop: 'var(--space-l)' }}>
-            {places.length.toLocaleString(site.locale)} verified of{' '}
-            {counts.total.toLocaleString(site.locale)}.
+            {formatCount(places.length)} verified of{' '}
+            {formatCount(counts.total)}.
           </p>
         </section>
       )}

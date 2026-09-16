@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import type { SiteConfig } from '@/lib/site'
+import { subscribe } from '@/lib/newsletter'
 
 /* ---------------------------------------------------------------- rules -- */
 
@@ -75,8 +76,13 @@ export function Signup({ site }: { site: SiteConfig }) {
         <br />
         attention, once a week.
       </h2>
-      {/* Comp: inert. Wires to the newsletter endpoint in phase 3. */}
-      <form className="signup__form" action="/api/subscribe" method="post">
+      {/*
+        Posts to the real server action, same as /subscribe. It used to POST
+        to `/api/subscribe`, a route that has never existed — so this
+        component, which appears on nearly every page, silently discarded
+        every address typed into it.
+      */}
+      <form className="signup__form" action={subscribe}>
         <label className="visually-hidden" htmlFor="signup-email">
           Email address
         </label>
@@ -88,6 +94,7 @@ export function Signup({ site }: { site: SiteConfig }) {
           placeholder="your@email.com"
           required
         />
+        <input type="hidden" name="source" value="rail" />
         <button className="signup__btn" type="submit">
           Join
         </button>

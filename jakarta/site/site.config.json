@@ -98,7 +98,7 @@
       "links": [
         {
           "label": "NOW! Bali",
-          "href": "https://www.nowbali.co.id"
+          "href": "https://now-bali.gaiada.com"
         },
         {
           "label": "Subscribe",
@@ -127,5 +127,17 @@
         }
       ]
     }
-  ]
+  ],
+  "contact": {
+    "address": [
+      "Jl. Kemang Utara VII No. 19",
+      "Lembong House Unit #C",
+      "Kel. Bangka, Jakarta Selatan"
+    ],
+    "phone": [
+      "+62 719 9312"
+    ],
+    "editorial": "nowjakarta@phoenix.co.id",
+    "sales": "sales@phoenix.co.id"
+  }
 }

@@ -14,7 +14,7 @@ import {
   sectionLabel,
   sectionOf,
 } from '@/lib/content'
-import { formatDate, readingTime } from '@/lib/format'
+import { formatCount, formatDate, readingTime } from '@/lib/format'
 import { stripTags } from '@/lib/html'
 import { getSiteConfig } from '@/lib/site'
 
@@ -247,7 +247,7 @@ async function SectionIndex({
           )
         })}
         <span className="facets__result">
-          {result.total.toLocaleString(locale)} {result.total === 1 ? 'story' : 'stories'}
+          {formatCount(result.total)} {result.total === 1 ? 'story' : 'stories'}
           {result.totalPages > 1 ? ` · page ${result.page} of ${result.totalPages}` : ''}
         </span>
       </div>

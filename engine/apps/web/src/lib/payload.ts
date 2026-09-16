@@ -458,3 +458,194 @@ export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> 
     return null
   }
 }
+
+
+export type AreaTerm = { slug: string; label: string; count: number }
+export type AreaRegion = AreaTerm & { areas: AreaTerm[] }
+export type AreaTree = {
+  /** This city, with its sub-regions. Empty when the registry has no term
+   *  matching the site slug. */
+  local: { label: string; total: number; own: AreaTerm | null; regions: AreaRegion[] }
+  /** The rest of Indonesia — the sibling city and the national catch-all. */
+  indonesia: AreaTerm[]
+  /** Everywhere else. */
+  international: AreaTerm[]
+}
+
+/**
+ * The location taxonomy as a tree, split into this city / rest of Indonesia /
+ * international.
+ *
+ * `/areas` used to render one flat, count-sorted list of every location term
+ * with any coverage. On Bali that put BALI, UBUD and SEMINYAK next to EUROPE,
+ * JAPAN and NORTH JAKARTA in a single wall of 90-odd chips — technically
+ * accurate and useless as a way to find a neighbourhood.
+ *
+ * The taxonomy already has the shape needed: `indonesia` and `international`
+ * are roots, `bali` and `jakarta` sit under `indonesia`, and each city's
+ * sub-regions sit under it. So this is a grouping problem, not a data problem.
+ *
+ * The city is taken from the SITE CONFIG's slug, never a literal — §3.5, and
+ * `npm run lint:site-literals` enforces it. If no location term matches that
+ * slug the local group comes back empty rather than guessing, and the page
+ * still renders the other two.
+ */
+export async function locationTree(citySlug: string): Promise<AreaTree> {
+  const empty: AreaTree = {
+    local: { label: '', total: 0, own: null, regions: [] },
+    indonesia: [],
+    international: [],
+  }
+  const platformUrl = process.env.PLATFORM_DATABASE_URI ?? process.env.PLATFORM_DATABASE_URL
+  if (!platformUrl) return empty
+
+  try {
+    const { rows: counts } = await cityPool().query(
+      `SELECT term_id::text AS term_id, count(DISTINCT entity_id)::int AS count
+         FROM engine.entity_terms
+        WHERE entity_type = 'article'
+        GROUP BY 1`,
+    )
+    const countById = new Map<string, number>(counts.map((c) => [String(c.term_id), Number(c.count)]))
+
+    const platform = new pg.Pool({ connectionString: platformUrl, max: 2, statement_timeout: 5_000 })
+    let terms: Array<{ id: string; slug: string; label: string; parent: string | null }>
+    try {
+      const { rows } = await platform.query(
+        `SELECT t.id::text AS id, t.slug, t.label, t.parent_id::text AS parent
+           FROM engine.terms t
+           JOIN engine.facets f ON f.id = t.facet_id
+          WHERE f.key = 'location'`,
+      )
+      terms = rows.map((r) => ({
+        slug: String(r.slug),
+        label: String(r.label),
+        id: String(r.id),
+        parent: r.parent ? String(r.parent) : null,
+      }))
+    } finally {
+      await platform.end()
+    }
+    if (terms.length === 0) return empty
+
+    const byId = new Map(terms.map((t) => [t.id, t]))
+    const childrenOf = new Map<string | null, typeof terms>()
+    for (const t of terms) {
+      const list = childrenOf.get(t.parent) ?? []
+      list.push(t)
+      childrenOf.set(t.parent, list)
+    }
+    const toTerm = (t: (typeof terms)[number]): AreaTerm => ({
+      slug: t.slug,
+      label: t.label,
+      count: countById.get(t.id) ?? 0,
+    })
+    // Counts include descendants, so a region reads as the whole region rather
+    // than as whatever happens to be tagged at exactly that level.
+    const subtreeCount = (id: string): number => {
+      let total = countById.get(id) ?? 0
+      for (const child of childrenOf.get(id) ?? []) total += subtreeCount(child.id)
+      return total
+    }
+
+    const city = terms.find((t) => t.slug === citySlug)
+    const indonesiaRoot = terms.find((t) => t.slug === 'indonesia' && t.parent === null)
+    const internationalRoot = terms.find((t) => t.slug === 'international' && t.parent === null)
+
+    const byCountThenLabel = (a: AreaTerm, b: AreaTerm) =>
+      b.count - a.count || a.label.localeCompare(b.label)
+
+    const regions: AreaRegion[] = city
+      ? (childrenOf.get(city.id) ?? [])
+          .map((region) => ({
+            slug: region.slug,
+            label: region.label,
+            count: subtreeCount(region.id),
+            areas: (childrenOf.get(region.id) ?? [])
+              .map(toTerm)
+              .filter((a) => a.count > 0)
+              .sort(byCountThenLabel),
+          }))
+          .filter((r) => r.count > 0 || r.areas.length > 0)
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+      : []
+
+    // The sibling city and the national catch-all, minus this city itself.
+    const indonesia = indonesiaRoot
+      ? (childrenOf.get(indonesiaRoot.id) ?? [])
+          .filter((t) => t.slug !== citySlug)
+          .map((t) => ({ ...toTerm(t), count: subtreeCount(t.id) }))
+          .filter((t) => t.count > 0)
+          .sort(byCountThenLabel)
+      : []
+
+    const international = internationalRoot
+      ? (childrenOf.get(internationalRoot.id) ?? [])
+          .map((t) => ({ ...toTerm(t), count: subtreeCount(t.id) }))
+          .filter((t) => t.count > 0)
+          .sort(byCountThenLabel)
+      : []
+
+    return {
+      local: {
+        label: city?.label ?? '',
+        total: city ? subtreeCount(city.id) : 0,
+        own: city ? toTerm(city) : null,
+        regions,
+      },
+      indonesia,
+      international,
+    }
+  } catch {
+    // An index that cannot reach the taxonomy is empty, not broken.
+    return empty
+  }
+}
+
+export type ArchiveStats = {
+  articles: number
+  sinceYear: number | null
+  authors: number
+  areas: number
+}
+
+/**
+ * Real numbers for the pages that describe the publication.
+ *
+ * About and Advertise need to say something concrete, and the honest source
+ * is the archive itself rather than a figure someone typed once and nobody
+ * revisited. Bali has published since 2013 and Jakarta since 2019; both
+ * numbers grow on their own, and neither can go stale in a way that misleads.
+ *
+ * Deliberately NOT audience figures. We have no measured readership — the
+ * beacon is not live (§6, and `views` is hardcoded to 0 for the same reason)
+ * — so any traffic claim on an Advertise page would be invented. What we can
+ * state truthfully is the size and reach of the archive.
+ */
+export async function archiveStats(): Promise<ArchiveStats> {
+  const zero: ArchiveStats = { articles: 0, sinceYear: null, authors: 0, areas: 0 }
+  try {
+    const { rows } = await cityPool().query(
+      `SELECT count(*)::int AS articles,
+              EXTRACT(YEAR FROM min(published_at))::int AS since_year
+         FROM public.articles
+        WHERE _status = 'published'
+          AND published_at IS NOT NULL AND published_at <= now()`,
+    )
+    const { rows: authorRows } = await cityPool().query(
+      'SELECT count(*)::int AS n FROM public.authors',
+    )
+    const { rows: areaRows } = await cityPool().query(
+      `SELECT count(DISTINCT term_id)::int AS n
+         FROM engine.entity_terms WHERE entity_type = 'article'`,
+    )
+    return {
+      articles: Number(rows[0]?.articles ?? 0),
+      sinceYear: rows[0]?.since_year ? Number(rows[0].since_year) : null,
+      authors: Number(authorRows[0]?.n ?? 0),
+      areas: Number(areaRows[0]?.n ?? 0),
+    }
+  } catch {
+    return zero
+  }
+}
