@@ -1,5 +1,5 @@
 {
-  "hash": "173ac77c59f6f272c5a3650d8b74cb06220514adf41e4dac1692aee074ee2300",
+  "hash": "10a958b6b2bf70e46c31bac70b2f4cc37375683a31220ad7487f20557f901f4e",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -49,6 +49,13 @@
         "columns": [
           {
             "default": null,
+            "name": "body_text_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
             "name": "entity_id",
             "nullable": "NO",
             "type": "integer",
@@ -60,13 +67,6 @@
             "nullable": "NO",
             "type": "tsvector",
             "udt": "tsvector"
-          },
-          {
-            "default": null,
-            "name": "body_text_hash",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
           },
           {
             "default": "now()",
@@ -113,6 +113,13 @@
         "checks": [],
         "columns": [
           {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
             "default": null,
             "name": "entity_a",
             "nullable": "NO",
@@ -139,13 +146,6 @@
             "nullable": "NO",
             "type": "text",
             "udt": "text"
-          },
-          {
-            "default": "now()",
-            "name": "computed_at",
-            "nullable": "NO",
-            "type": "timestamp with time zone",
-            "udt": "timestamptz"
           }
         ],
         "constraints": [
@@ -206,14 +206,21 @@
         "columns": [
           {
             "default": null,
-            "name": "entity_type",
+            "name": "dim",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
           },
           {
             "default": null,
-            "name": "entity_id",
+            "name": "entity_type",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
@@ -226,25 +233,18 @@
             "udt": "text"
           },
           {
-            "default": "now()",
-            "name": "updated_at",
-            "nullable": "NO",
-            "type": "timestamp with time zone",
-            "udt": "timestamptz"
-          },
-          {
-            "default": null,
-            "name": "dim",
-            "nullable": "NO",
-            "type": "integer",
-            "udt": "int4"
-          },
-          {
             "default": null,
             "name": "text_hash",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           },
           {
             "default": null,
@@ -315,14 +315,35 @@
         "columns": [
           {
             "default": null,
-            "name": "entity_type",
+            "name": "confidence",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
           },
           {
             "default": null,
-            "name": "entity_id",
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'ai'::text",
+            "name": "source",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
@@ -340,27 +361,6 @@
             "nullable": "NO",
             "type": "numeric",
             "udt": "numeric"
-          },
-          {
-            "default": "'ai'::text",
-            "name": "source",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": null,
-            "name": "confidence",
-            "nullable": "YES",
-            "type": "numeric",
-            "udt": "numeric"
-          },
-          {
-            "default": "now()",
-            "name": "created_at",
-            "nullable": "NO",
-            "type": "timestamp with time zone",
-            "udt": "timestamptz"
           }
         ],
         "constraints": [
@@ -420,20 +420,6 @@
         "checks": [],
         "columns": [
           {
-            "default": "gen_random_uuid()",
-            "name": "id",
-            "nullable": "NO",
-            "type": "uuid",
-            "udt": "uuid"
-          },
-          {
-            "default": null,
-            "name": "session_id",
-            "nullable": "NO",
-            "type": "uuid",
-            "udt": "uuid"
-          },
-          {
             "default": null,
             "name": "anon_id",
             "nullable": "NO",
@@ -442,10 +428,24 @@
           },
           {
             "default": null,
-            "name": "surface",
+            "name": "entity_id",
             "nullable": "NO",
             "type": "text",
             "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "position",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
           },
           {
             "default": null,
@@ -456,17 +456,17 @@
           },
           {
             "default": null,
-            "name": "entity_id",
+            "name": "session_id",
             "nullable": "NO",
-            "type": "text",
-            "udt": "text"
+            "type": "uuid",
+            "udt": "uuid"
           },
           {
             "default": null,
-            "name": "position",
-            "nullable": "YES",
-            "type": "integer",
-            "udt": "int4"
+            "name": "surface",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": "now()",
@@ -524,13 +524,6 @@
         ],
         "columns": [
           {
-            "default": "gen_random_uuid()",
-            "name": "id",
-            "nullable": "NO",
-            "type": "uuid",
-            "udt": "uuid"
-          },
-          {
             "default": null,
             "name": "anon_id",
             "nullable": "NO",
@@ -539,24 +532,17 @@
           },
           {
             "default": null,
-            "name": "user_id",
+            "name": "device",
             "nullable": "YES",
-            "type": "uuid",
-            "udt": "uuid"
-          },
-          {
-            "default": null,
-            "name": "session_id",
-            "nullable": "NO",
-            "type": "uuid",
-            "udt": "uuid"
-          },
-          {
-            "default": null,
-            "name": "entity_type",
-            "nullable": "NO",
             "type": "text",
             "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "dwell_ms",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
           },
           {
             "default": null,
@@ -567,22 +553,22 @@
           },
           {
             "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
             "name": "kind",
             "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": null,
-            "name": "surface",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": null,
-            "name": "rail",
-            "nullable": "YES",
             "type": "text",
             "udt": "text"
           },
@@ -595,17 +581,17 @@
           },
           {
             "default": null,
-            "name": "dwell_ms",
+            "name": "query",
             "nullable": "YES",
-            "type": "integer",
-            "udt": "int4"
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": null,
-            "name": "scroll_pct",
+            "name": "rail",
             "nullable": "YES",
-            "type": "numeric",
-            "udt": "numeric"
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": null,
@@ -616,14 +602,28 @@
           },
           {
             "default": null,
-            "name": "utm",
+            "name": "scroll_pct",
             "nullable": "YES",
-            "type": "jsonb",
-            "udt": "jsonb"
+            "type": "numeric",
+            "udt": "numeric"
           },
           {
             "default": null,
-            "name": "device",
+            "name": "session_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "surface",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "target_url",
             "nullable": "YES",
             "type": "text",
             "udt": "text"
@@ -637,17 +637,17 @@
           },
           {
             "default": null,
-            "name": "query",
+            "name": "user_id",
             "nullable": "YES",
-            "type": "text",
-            "udt": "text"
+            "type": "uuid",
+            "udt": "uuid"
           },
           {
             "default": null,
-            "name": "target_url",
+            "name": "utm",
             "nullable": "YES",
-            "type": "text",
-            "udt": "text"
+            "type": "jsonb",
+            "udt": "jsonb"
           }
         ],
         "constraints": [
@@ -699,27 +699,6 @@
         "columns": [
           {
             "default": null,
-            "name": "entity_type",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": null,
-            "name": "entity_id",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": null,
-            "name": "score",
-            "nullable": "NO",
-            "type": "numeric",
-            "udt": "numeric"
-          },
-          {
-            "default": null,
             "name": "components",
             "nullable": "YES",
             "type": "jsonb",
@@ -731,6 +710,27 @@
             "nullable": "NO",
             "type": "timestamp with time zone",
             "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "entity_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "score",
+            "nullable": "NO",
+            "type": "numeric",
+            "udt": "numeric"
           }
         ],
         "constraints": [
@@ -785,10 +785,17 @@
           },
           {
             "default": null,
-            "name": "segment_id",
+            "name": "candidates",
             "nullable": "NO",
-            "type": "text",
-            "udt": "text"
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           },
           {
             "default": null,
@@ -798,13 +805,6 @@
             "udt": "text"
           },
           {
-            "default": null,
-            "name": "candidates",
-            "nullable": "NO",
-            "type": "jsonb",
-            "udt": "jsonb"
-          },
-          {
             "default": "1",
             "name": "rung",
             "nullable": "NO",
@@ -812,11 +812,11 @@
             "udt": "int2"
           },
           {
-            "default": "now()",
-            "name": "computed_at",
+            "default": null,
+            "name": "segment_id",
             "nullable": "NO",
-            "type": "timestamp with time zone",
-            "udt": "timestamptz"
+            "type": "text",
+            "udt": "text"
           }
         ],
         "constraints": [
@@ -868,6 +868,27 @@
         "checks": [],
         "columns": [
           {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "meters",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "'drive'::text",
+            "name": "mode",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
             "default": null,
             "name": "place_a",
             "nullable": "NO",
@@ -887,27 +908,6 @@
             "nullable": "NO",
             "type": "integer",
             "udt": "int4"
-          },
-          {
-            "default": null,
-            "name": "meters",
-            "nullable": "NO",
-            "type": "integer",
-            "udt": "int4"
-          },
-          {
-            "default": "'drive'::text",
-            "name": "mode",
-            "nullable": "NO",
-            "type": "text",
-            "udt": "text"
-          },
-          {
-            "default": "now()",
-            "name": "computed_at",
-            "nullable": "NO",
-            "type": "timestamp with time zone",
-            "udt": "timestamptz"
           }
         ],
         "constraints": [
@@ -958,11 +958,11 @@
         "checks": [],
         "columns": [
           {
-            "default": null,
-            "name": "type",
+            "default": "'{}'::text[]",
+            "name": "complements",
             "nullable": "NO",
-            "type": "text",
-            "udt": "text"
+            "type": "ARRAY",
+            "udt": "_text"
           },
           {
             "default": "true",
@@ -972,11 +972,11 @@
             "udt": "bool"
           },
           {
-            "default": "'{}'::text[]",
-            "name": "complements",
+            "default": null,
+            "name": "type",
             "nullable": "NO",
-            "type": "ARRAY",
-            "udt": "_text"
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": "now()",
