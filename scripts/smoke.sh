@@ -127,6 +127,36 @@ smoke_city() {
   cul_n="$(grep -oE 'href="/[a-z0-9-]{15,}"' <<<"$cul" | sort -u | wc -l | tr -d ' ')"
   [ "$cul_n" -ge 5 ] && ok "/culture lists $cul_n articles"                      || bad "/culture lists only $cul_n articles — did the term lookup fail?"
 
+  # ESCAPED MARKUP IN THE BODY. The archive stores paragraphs as HTML and the
+  # reader rendered them with `<p>{p}</p>`, so React escaped them and readers
+  # saw `<strong>Open daily from 5.30pm</strong>` and whole mailto anchors in
+  # the middle of the copy. Every article with any formatting was affected.
+  if grep -qE '&lt;(strong|em|a |br|mark)' <<<"$art"; then
+    bad "$first shows escaped HTML tags as text"
+  else
+    ok "article body renders markup rather than printing it"
+  fi
+
+  # FACET ARITHMETIC. The chips are counts; if they do not sum to All, the
+  # page is visibly wrong. Bali dining read ALL 1251 over chips summing to
+  # 739, because the 512 articles with no format were counted in the total and
+  # then filtered out of the chip row.
+  # The first count in document order is All; the rest are the chips. Read
+  # positionally rather than by matching the word "All", which is a label and
+  # may be styled or translated. awk, not bc: bc is not in Git Bash.
+  local dining counts all_n chip_sum
+  dining="$(body "$base/dining")"
+  counts="$(grep -oE 'class="facet__count">[0-9]+' <<<"$dining" | grep -oE '[0-9]+$')"
+  all_n="$(head -1 <<<"$counts")"
+  chip_sum="$(tail -n +2 <<<"$counts" | awk '{s+=$1} END {print s+0}')"
+  if [ -z "$all_n" ] || [ -z "$counts" ]; then
+    bad "could not read facet counts on /dining"
+  elif [ "$all_n" = "$chip_sum" ]; then
+    ok "facet chips sum to All ($all_n)"
+  else
+    bad "facet chips sum to $chip_sum but All says $all_n"
+  fi
+
   # PAGINATION. Half the archive used to be unreachable by browsing — a
   # section showed a fixed twelve of its several hundred articles, and
   # untyped articles had no section at all. Two things must hold: a later

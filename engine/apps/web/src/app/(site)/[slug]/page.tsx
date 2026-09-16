@@ -15,6 +15,7 @@ import {
   sectionOf,
 } from '@/lib/content'
 import { formatDate, readingTime } from '@/lib/format'
+import { stripTags } from '@/lib/html'
 import { getSiteConfig } from '@/lib/site'
 
 /**
@@ -74,7 +75,9 @@ async function ArticlePage({ slug }: { slug: string }) {
   // way a sub-editor would. In production this comes from a `pullquote`
   // block in the Lexical body (see `bodyBlocks.ts` in the CMS package).
   const quoteIndex = Math.min(3, article.paras.length - 1)
-  const quote = article.paras[quoteIndex]
+  // Plain text: a pull quote is typeset, not marked up, and slicing it to 180
+  // characters would otherwise cut through the middle of a tag.
+  const quote = stripTags(article.paras[quoteIndex] ?? '')
 
   return (
     <article>
@@ -96,7 +99,7 @@ async function ArticlePage({ slug }: { slug: string }) {
             <span className="byline__sep">·</span>
             <time dateTime={article.date}>{formatDate(article.date, locale, tz)}</time>
             <span className="byline__sep">·</span>
-            <span>{readingTime(article.paras)} min read</span>
+            <span>{readingTime(article.paras.map(stripTags))} min read</span>
           </div>
         </header>
       </div>
@@ -119,8 +122,15 @@ async function ArticlePage({ slug }: { slug: string }) {
       <div className="shell band">
         <div className="split">
           <div className="prose">
+            {/*
+              dangerouslySetInnerHTML is correct here and the name is louder
+              than the risk: `article.paras` is sanitised in the mapper (see
+              lib/payload.ts), so a page cannot receive unvetted markup. The
+              alternative — what this used to do — escaped the archive's own
+              formatting and printed `<strong>` tags at readers.
+            */}
             {article.paras.slice(0, quoteIndex + 1).map((p, i) => (
-              <p key={i}>{p}</p>
+              <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
             ))}
 
             <figure className="pullquote">
@@ -132,7 +142,7 @@ async function ArticlePage({ slug }: { slug: string }) {
 
             {article.paras.slice(quoteIndex + 1).map((p, i, arr) => (
               <p key={i}>
-                {p}
+                <span dangerouslySetInnerHTML={{ __html: p }} />
                 {i === arr.length - 1 ? <span className="endmark" aria-label="End of article" /> : null}
               </p>
             ))}

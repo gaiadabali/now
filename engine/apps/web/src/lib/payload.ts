@@ -20,6 +20,7 @@ import pg from 'pg'
 import { getPayload } from 'payload'
 
 import type { Article } from '@/lib/content'
+import { decodeEntities, sanitizeHtml, stripTags } from '@/lib/html'
 
 /**
  * One Local API handle for the process.
@@ -166,13 +167,25 @@ function heroUrl(doc: PayloadDoc): string {
   return String(card?.url ?? hero.url ?? '')
 }
 
+/**
+ * Body paragraphs, sanitised here rather than at the point of render.
+ *
+ * The field is `html` and holds real markup. The reader printed it with
+ * `<p>{p}</p>`, so React escaped it and readers saw
+ * `<strong>Open daily from 5.30pm</strong>` and whole mailto anchors in the
+ * middle of the copy — on every article with any formatting.
+ *
+ * Sanitising in the mapper means no page can forget to: a component receiving
+ * `article.paras` is receiving vetted HTML by construction. See lib/html.ts
+ * for the allowlist and why it is hand-written.
+ */
 function paragraphs(doc: PayloadDoc): string[] {
   const blocks = doc.bodyBlocks
   if (!Array.isArray(blocks)) return []
   return blocks
     .filter((b): b is PayloadDoc => Boolean(b) && (b as PayloadDoc).type === 'paragraph')
-    .map((b) => String(b.html ?? ''))
-    .filter(Boolean)
+    .map((b) => sanitizeHtml(String(b.html ?? '')))
+    .filter((html) => stripTags(html).length > 0)
 }
 
 /**
@@ -184,7 +197,9 @@ export function toArticle(doc: PayloadDoc): Article {
   const primaryType = (doc.primaryType as string | null) ?? null
   return {
     id: Number(doc.id),
-    title: String(doc.title ?? ''),
+    // Decoded, not escaped-through. 81 Bali titles store entities — "Catch
+    // &amp; Grill" — and a plain-text field renders them literally.
+    title: decodeEntities(String(doc.title ?? '')),
     slug: slugFromPermalink(doc.legacyPermalink as string | null),
     date: String(doc.publishedAt ?? doc.createdAt ?? ''),
     // The view model's `section` is the human-facing label the fixture era
@@ -197,7 +212,9 @@ export function toArticle(doc: PayloadDoc): Article {
     categories: primaryType ? [primaryType] : [],
     tags: [],
     image: heroUrl(doc),
-    dek: String(doc.dek ?? ''),
+    // The dek is plain text in the view model (it becomes a meta description
+    // and a card subtitle), so any stray markup is stripped rather than kept.
+    dek: stripTags(String(doc.dek ?? '')),
     paras: paragraphs(doc),
     // Deliberately 0, never imported. §6: WordPress view counts are
     // bot-contaminated, and `getMostRead` must be recomputed from beacon data

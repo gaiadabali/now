@@ -71,6 +71,16 @@ const SECTION_MAP: Record<string, string[]> = {
 export const UNCLASSIFIED = 'unclassified'
 
 /**
+ * The `?format=` value meaning "has no format".
+ *
+ * A sentinel is needed because absence cannot be expressed as a value in a
+ * query string, and `?format=` with an empty value is indistinguishable from
+ * the parameter being absent — which means All. Chosen to be something no
+ * `enum_articles_format` label could ever collide with.
+ */
+export const NO_FORMAT = '__none'
+
+/**
  * Sections backed by a `format` rather than a `primaryType`.
  *
  * Guides are not a subject, they are a shape — a city guide about food is
@@ -200,7 +210,11 @@ export async function getSectionPage(
     where: {
       ...PUBLISHED,
       ...where,
-      ...(format ? { format: { equals: format } } : {}),
+      ...(format
+        ? format === NO_FORMAT
+          ? { format: { exists: false } }
+          : { format: { equals: format } }
+        : {}),
     },
     sort: '-publishedAt',
     // A page past the end returns empty rather than throwing; the page
@@ -317,12 +331,24 @@ export async function getSectionFacets(slug: string): Promise<Facet[]> {
   )
   const total = rows.reduce((sum, r) => sum + r.count, 0)
 
+  // The untyped bucket is a CHIP, not a dropped row.
+  //
+  // It used to be filtered out by `r.format && ...`, so Bali's dining index
+  // read "ALL 1251" above chips summing to 739 — the 512 articles with no
+  // format were counted in the total and then discarded, which reads as an
+  // arithmetic error on the page. They are also the ones editors most need to
+  // find, since an unformatted article is unfiled work.
+  const unformatted = rows.find((r) => !r.format)?.count ?? 0
+
   return [
     { label: 'All', value: null, count: total },
     ...rows
       .filter((r) => r.format && r.count > 0)
       .map((r) => ({ label: humanise(r.format!), value: r.format, count: r.count }))
       .sort((a, b) => b.count - a.count),
+    ...(unformatted > 0
+      ? [{ label: 'Unformatted', value: NO_FORMAT, count: unformatted }]
+      : []),
   ]
 }
 
@@ -369,11 +395,100 @@ export async function getMostRead(limit = 5): Promise<Article[]> {
  * So this stays a simple, honest fallback until the beacon lands, at which
  * point it becomes one fetch.
  */
+/**
+ * Sections worth recommending, in the order a reader is offered them.
+ *
+ * `unclassified` is absent on purpose: it is the editors' work queue, not a
+ * recommendation. `editorial` sits last — it is real coverage, but a reader
+ * who has just finished a restaurant review is better served by somewhere to
+ * stay than by general commentary.
+ */
+const RECOMMEND_ORDER = ['stay', 'things-to-do', 'events', 'dining', 'wellness', 'guides', 'editorial']
+
+/**
+ * Read Next — deliberately NOT more of the same.
+ *
+ * This used to call `getBySection(sectionOf(article))`, which recommended the
+ * one thing a reader demonstrably already has: an article about Raja's
+ * Balinese Cuisine offered three more restaurants. A reader finishing a
+ * restaurant review has chosen where to eat. What they have not chosen is
+ * where to stay, what to do, or what is on.
+ *
+ * So the current section is excluded outright, and the remainder is taken
+ * round-robin so three results come from three DIFFERENT sections rather than
+ * three from whichever one happens to have published most recently.
+ *
+ * One query, not one per section: fetch a generous recent slice with the
+ * article's own types excluded in SQL, then spread it here. An article page
+ * should not cost six round trips to fill a rail of three.
+ *
+ * The rotation is seeded from the article id so that two dining articles
+ * published the same week do not show an identical rail, while any single
+ * article stays stable across renders — this is server-rendered and cached,
+ * so randomness would mean a rail that changes under the reader.
+ */
 export async function getRelated(article: Article, limit = 3): Promise<Article[]> {
   const section = sectionOf(article)
-  const candidates = await getBySection(section, limit + 1)
-  return candidates.filter((a) => a.id !== article.id).slice(0, limit)
+  const pool = RECOMMEND_ORDER.filter((s) => s !== section)
+  if (pool.length === 0) return []
+
+  // One small query PER SECTION, in parallel, rather than one big recent slice.
+  //
+  // The single-query version was cheaper but could not guarantee variety: it
+  // took the 60 most recent non-dining articles and spread those, so when
+  // recent publishing clustered — as it does — a dining article got two
+  // wellness recommendations out of three. Asking each section directly
+  // guarantees one from each, which is the actual requirement. Six queries of
+  // two rows, issued together, cost less than the media batch that follows.
+  const perSection = await Promise.all(
+    pool.map(async (key) => {
+      const types = SECTION_TO_TYPES[key]
+      const formats = FORMAT_SECTIONS[key]
+      if (!types && !formats) return [] as Article[]
+      const payload = await payloadClient()
+      const { docs } = await payload.find({
+        collection: 'articles',
+        where: {
+          and: [
+            PUBLISHED,
+            { id: { not_equals: article.id } },
+            formats ? { format: { in: formats } } : { primaryType: { in: types } },
+          ],
+        },
+        sort: '-publishedAt',
+        limit: 2,
+        depth: 1,
+      })
+      return toArticles(docs)
+    }),
+  )
+
+  const available = pool
+    .map((key, i) => [key, perSection[i]] as const)
+    .filter(([, items]) => items.length > 0)
+  if (available.length === 0) return []
+
+  // Rotate by article id so two dining pieces published the same week do not
+  // carry an identical rail, while any one article stays stable across
+  // renders — this is server-rendered and cached, so randomness would mean a
+  // rail that shifts under the reader.
+  const rotation = article.id % available.length
+  const rotated = [...available.slice(rotation), ...available.slice(0, rotation)]
+
+  const picked: Article[] = []
+  const seen = new Set<number>()
+  for (let round = 0; picked.length < limit && round < 2; round++) {
+    for (const [, items] of rotated) {
+      const candidate = items[round]
+      if (!candidate || seen.has(candidate.id)) continue
+      seen.add(candidate.id)
+      picked.push(candidate)
+      if (picked.length === limit) break
+    }
+  }
+  return picked
 }
+
 
 /*
  * Comp-phase stand-ins for content the engine will supply. They live under

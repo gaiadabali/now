@@ -1,0 +1,254 @@
+/**
+ * Rendering legacy WordPress body HTML safely.
+ *
+ * The archive's paragraphs are HTML — `bodyBlocks[].html`, and the field is
+ * named that because it is. The reader rendered them with `<p>{p}</p>`, which
+ * makes React escape the markup and print it: readers saw
+ * `<strong>Open daily from 5.30pm</strong>` and whole mailto anchors, in the
+ * body of every article that had any formatting at all.
+ *
+ * Fixing that means emitting real HTML, which means sanitising it first. The
+ * content comes from our own database, but it came into our database from
+ * twenty years of WordPress, and "our own data" is exactly how stored XSS
+ * survives. So this is an ALLOWLIST: anything not named here is dropped.
+ *
+ * Hand-written rather than pulled from npm because the alternative is DOMPurify
+ * plus jsdom in a server bundle for a job this size, and because the artifact
+ * CSP forbids loading a sanitiser at runtime. It is deliberately small enough
+ * to audit in one sitting.
+ */
+
+/** Inline tags worth keeping. Nothing that can execute, load, or position. */
+const ALLOWED_TAGS = new Set([
+  'a',
+  'b',
+  'strong',
+  'i',
+  'em',
+  'u',
+  's',
+  'br',
+  'span',
+  'sup',
+  'sub',
+  'code',
+  'abbr',
+  'q',
+  'cite',
+])
+
+/**
+ * `mark` is deliberately NOT allowed even though the archive is full of it.
+ *
+ * WordPress's editor used `<mark style="background-color:rgba(0,0,0,0)"
+ * class="has-inline-color has-vivid-cyan-blue-color">` purely to colour link
+ * text. Keeping the tag without its style — and style is never kept — leaves a
+ * highlight the author never intended, so the honest thing is to unwrap it and
+ * keep the text.
+ */
+const UNWRAP_TAGS = new Set(['mark', 'font', 'p', 'div'])
+
+/** Per-tag attribute allowlist. Everything else, `style` and `class` and every
+ *  `on*` handler included, is dropped. */
+const ALLOWED_ATTRS: Record<string, Set<string>> = {
+  a: new Set(['href', 'title']),
+  abbr: new Set(['title']),
+  q: new Set(['cite']),
+}
+
+/** Schemes a link may use. `javascript:` and `data:` are the reason this exists. */
+const SAFE_HREF = /^(https?:|mailto:|tel:|#|\/)/i
+
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: '\u00a0',
+  ndash: '–',
+  mdash: '—',
+  lsquo: '\u2018',
+  rsquo: '\u2019',
+  ldquo: '\u201c',
+  rdquo: '\u201d',
+  hellip: '…',
+  eacute: 'é',
+  egrave: 'è',
+  agrave: 'à',
+  ccedil: 'ç',
+  uuml: 'ü',
+  ouml: 'ö',
+  auml: 'ä',
+}
+
+/**
+ * `&amp;` → `&`, `&#8217;` → `’`.
+ *
+ * Titles are plain text in the view model, so React escapes them on render and
+ * a stored entity shows as itself: 81 Bali titles read "Catch &amp; Grill" on
+ * the page. The entity is in the database, so decoding is a read concern.
+ *
+ * Runs once, not to a fixed point: decoding repeatedly would turn a literal
+ * `&amp;amp;` — which is how an author writes a visible `&amp;` — into `&`.
+ */
+export function decodeEntities(text: string): string {
+  if (!text.includes('&')) return text
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body: string) => {
+    if (body[0] === '#') {
+      const code =
+        body[1] === 'x' || body[1] === 'X'
+          ? Number.parseInt(body.slice(2), 16)
+          : Number.parseInt(body.slice(1), 10)
+      // Reject NaN, NUL and anything outside Unicode. A malformed numeric
+      // entity stays as written rather than becoming a replacement character.
+      if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff) return match
+      try {
+        return String.fromCodePoint(code)
+      } catch {
+        return match
+      }
+    }
+    return ENTITIES[body.toLowerCase()] ?? match
+  })
+}
+
+/** Every tag removed, entities decoded. For text that must not be markup:
+ *  pull quotes, meta descriptions, reading-time word counts. */
+export function stripTags(html: string): string {
+  return decodeEntities(html.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim()
+}
+
+function escapeText(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function sanitizeAttrs(tag: string, raw: string): string {
+  const allowed = ALLOWED_ATTRS[tag]
+  if (!allowed) return ''
+
+  const out: string[] = []
+  const attr = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g
+  let m: RegExpExecArray | null
+  while ((m = attr.exec(raw)) !== null) {
+    const name = m[1].toLowerCase()
+    if (!allowed.has(name)) continue
+    const value = decodeEntities(m[3] ?? m[4] ?? m[5] ?? '')
+    if (name === 'href') {
+      // Whitespace and control characters are stripped before testing, because
+      // `java\tscript:` is a scheme browsers have historically honoured.
+      const cleaned = value.replace(/[\u0000-\u0020]/g, '')
+      if (!SAFE_HREF.test(cleaned)) continue
+      out.push(`href="${escapeText(cleaned)}"`)
+      continue
+    }
+    out.push(`${name}="${escapeText(value)}"`)
+  }
+  return out.length ? ' ' + out.join(' ') : ''
+}
+
+/** Elements whose CONTENT is not markup. Unwrapping these would dump code
+ *  into the page as text, so they are skipped whole. */
+const RAW_TEXT_TAGS = new Set([
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+  'svg',
+  'math',
+  'template',
+  'noscript',
+  'xmp',
+])
+
+/**
+ * Matches ONE complete tag at position 0, quoted attribute values included, so
+ * a `>` inside an attribute does not end the tag early.
+ */
+const TAG_AT_START =
+  /^<\s*(\/?)\s*([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^\s=/>]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*))?)*)\s*\/?\s*>/
+
+/**
+ * Returns HTML containing only allowlisted tags and attributes.
+ *
+ * A SCANNER, not a sequence of regex passes. The pass-based version had a real
+ * hole, found by the test below: stripping `<script...>` first could cut
+ * through the middle of an attribute value, and the leftover
+ * `<a href="data:text/html,` — an unterminated tag — then slipped past the
+ * final escape, because that escape had to spare the `<` of tags it had just
+ * written. Scanning once removes the whole class of problem: at any `<` the
+ * input either yields a complete, parseable tag or the character is escaped to
+ * `&lt;` and treated as text. There is no third outcome.
+ */
+export function sanitizeHtml(html: string): string {
+  if (!html) return ''
+
+  let out = ''
+  let i = 0
+
+  while (i < html.length) {
+    const lt = html.indexOf('<', i)
+    if (lt === -1) {
+      out += html.slice(i)
+      break
+    }
+    out += html.slice(i, lt)
+
+    // Comments, doctypes, CDATA and processing instructions: dropped whole.
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt + 4)
+      i = end === -1 ? html.length : end + 3
+      continue
+    }
+    if (html.startsWith('<!', lt) || html.startsWith('<?', lt)) {
+      const end = html.indexOf('>', lt)
+      i = end === -1 ? html.length : end + 1
+      continue
+    }
+
+    const m = TAG_AT_START.exec(html.slice(lt))
+    if (!m) {
+      // Not a well-formed tag — a comparison, or a truncated one. Text.
+      out += '&lt;'
+      i = lt + 1
+      continue
+    }
+
+    const [matched, closing, rawTag, rawAttrs] = m
+    const tag = rawTag.toLowerCase()
+    i = lt + matched.length
+
+    if (RAW_TEXT_TAGS.has(tag)) {
+      if (!closing) {
+        // Skip to the matching close, or to the end if it never closes.
+        const close = new RegExp(`</\s*${tag}\s*>`, 'i').exec(html.slice(i))
+        i = close ? i + close.index + close[0].length : html.length
+      }
+      continue
+    }
+
+    if (UNWRAP_TAGS.has(tag) || !ALLOWED_TAGS.has(tag)) continue
+    if (closing) {
+      out += `</${tag}>`
+      continue
+    }
+    if (tag === 'br') {
+      out += '<br/>'
+      continue
+    }
+
+    const attrs = sanitizeAttrs(tag, rawAttrs)
+    // Every external link gets rel: `noopener` closes the window.opener hole
+    // and `noreferrer` keeps our URLs out of third-party logs. Applied here
+    // rather than trusted from the source markup, which is inconsistent.
+    const rel = tag === 'a' && /href="https?:/i.test(attrs) ? ' rel="noreferrer noopener"' : ''
+    out += `<${tag}${attrs}${rel}>`
+  }
+
+  return out
+}
