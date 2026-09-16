@@ -51,7 +51,29 @@ def introspect_schema(connection: Connection, schema: str = "engine") -> dict[st
                 "SELECT column_name, data_type, udt_name, is_nullable, column_default "
                 "FROM information_schema.columns "
                 "WHERE table_schema = :schema AND table_name = :table "
-                "ORDER BY ordinal_position"
+                # BY NAME, not ordinal_position. Postgres assigns a column its
+                # position from how it arrived: inline in CREATE TABLE, or
+                # appended by ALTER TABLE ADD COLUMN. A table built by running
+                # every migration from empty and the same table built by
+                # migrating a database that already existed therefore differ
+                # in column ORDER while being identical in every way that has
+                # a consequence -- same columns, types, nullability, defaults.
+                #
+                # Hashing the ordinal made that cosmetic difference a drift
+                # failure. `embeddings.vec` sat fifth in every real city
+                # database and seventh in a fresh migrate, and the gate was
+                # red on main from 2026-09-14 for that alone, with no way to
+                # fix it that did not involve rewriting a populated table.
+                #
+                # Sorting by name compares what the schema IS rather than how
+                # it got there. A column added, removed, renamed or retyped
+                # still changes the set -- which is what the gate is for, and
+                # what its self-test asserts by adding a rogue column.
+                #
+                # Key column order is NOT sorted this way: see the array_agg
+                # below, where ordinal_position is load-bearing because the
+                # order of columns in an index changes what it can serve.
+                "ORDER BY column_name"
             ),
             {"schema": schema, "table": table},
         ).fetchall()
