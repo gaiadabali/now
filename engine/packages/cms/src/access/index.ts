@@ -1,4 +1,4 @@
-import type { Access, FieldAccess } from 'payload'
+import type { Access } from 'payload'
 
 export type Role = 'admin' | 'editor' | 'author'
 
@@ -41,7 +41,5 @@ export const canPublish = (user: unknown): boolean => {
   const role = roleOf(user)
   return role === 'admin' || role === 'editor'
 }
-
-export const readOnlyForAuthors: FieldAccess = ({ req }) => canPublish(req.user)
 
 export { roleOf }

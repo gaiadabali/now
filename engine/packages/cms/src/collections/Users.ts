@@ -1,15 +1,20 @@
 import type { CollectionConfig } from 'payload'
 
-import { isAdmin, readOnlyForAuthors } from '../access'
 import { platformStrategy } from '../auth/platformStrategy'
 
 /**
- * `users` — shadow projections of the platform identity store. Roles per
- * ARCHITECTURE.md editorial essentials: editor / author / admin.
- *   - admin:  full access, including user management and deletes
- *   - editor: publish, delete content, cannot manage other users' roles
+ * `users` — shadow projections of the platform identity store.
+ *
+ * The `role` column here is what every other collection's access rules read,
+ * per ARCHITECTURE.md's editorial essentials:
+ *   - admin:  full access, including deletes
+ *   - editor: publish and delete content
  *   - author: create/edit own drafts, cannot publish (enforced in
  *     `src/hooks/enforcePublishRole.ts`) or delete
+ *
+ * It is READ here and written only by the sign-in upsert — see the access
+ * block below. Managing who has which role is the platform's job, not this
+ * collection's, and the rows are a cache of that decision.
  */
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -27,12 +32,39 @@ export const Users: CollectionConfig = {
     disableLocalStrategy: true,
     strategies: [{ name: 'platform-identity', authenticate: platformStrategy }],
   },
-  admin: { useAsTitle: 'email', defaultColumns: ['email', 'role'] },
+  admin: {
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'role'],
+    description:
+      'A read-only mirror of the platform identity store. Accounts and roles ' +
+      'are managed there; every field here is rewritten at the user’s next sign-in.',
+  },
+  // Read-only, and that is the design rather than a restriction.
+  //
+  // Every row here is a projection, rewritten from `now_platform.public.users`
+  // by the raw upsert in `@now/auth`'s `upsertShadowUser` on EVERY sign-in:
+  //
+  //     ON CONFLICT (email) DO UPDATE SET name = …, role = …
+  //
+  // docs/ADMIN-CONSOLIDATION.md states the same thing from the other side —
+  // "Role is re-read from the platform on every sign-in" — which is what
+  // makes a revoked role take effect. The cost is that an edit made here is
+  // not rejected, it is *accepted and then silently discarded*: an admin
+  // demotes someone, the UI says saved, and their next sign-in restores the
+  // old role with nothing logged anywhere. Refusing the write is the honest
+  // behaviour; the field descriptions below say where the real value lives.
+  //
+  // This does not weaken anything. The upsert runs on a direct pool and
+  // never passes through Payload, so these rules gate the admin UI only —
+  // which is exactly the surface that was lying.
   access: {
     read: () => true,
-    create: isAdmin,
-    update: isAdmin,
-    delete: isAdmin,
+    // Creating a row here makes a user with NULL hash/salt who cannot sign
+    // in; the platform is where an account begins.
+    create: () => false,
+    update: () => false,
+    // Deleting one changes nothing either: the next sign-in recreates it.
+    delete: () => false,
   },
   fields: [
     // Declared EXPLICITLY, which it would not need to be with Payload's local
@@ -48,7 +80,13 @@ export const Users: CollectionConfig = {
       required: true,
       unique: true,
       index: true,
-      admin: { description: 'Matched against the platform identity store at sign-in.' },
+      admin: {
+        readOnly: true,
+        description:
+          'Matched against the platform identity store at sign-in, and the key the ' +
+          'shadow upsert conflicts on. Changing it here would orphan this row rather ' +
+          'than rename the account.',
+      },
     },
     {
       name: 'role',
@@ -62,11 +100,13 @@ export const Users: CollectionConfig = {
       // on the enum and that person cannot sign in AT ALL, which is a lockout
       // dressed up as a database error.
       options: ['admin', 'editor', 'author', 'none'],
-      access: {
-        // Only an editor/admin may change someone's role.
-        update: readOnlyForAuthors,
+      admin: {
+        readOnly: true,
+        description:
+          'Mirrored from the platform’s editorial_role on every sign-in. Change it ' +
+          'in the platform identity store; a change made here would be reverted.',
       },
     },
-    { name: 'name', type: 'text' },
+    { name: 'name', type: 'text', admin: { readOnly: true } },
   ],
 }
