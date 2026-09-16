@@ -75,3 +75,32 @@ export async function requireCommerceAccess(): Promise<StaffUser> {
   if (!canReadCommerce(user)) redirect('/team-editor')
   return user
 }
+
+/** May this user create staff accounts and change other people's roles? */
+export function canManageStaff(user: StaffUser): boolean {
+  return user.role === 'admin'
+}
+
+/**
+ * The gate the staff surface calls first — in every page AND every action.
+ *
+ * **The editorial dimension, not the commercial one.** Commerce `admin` is
+ * admin *of partner data*; granting it the power to mint editorial accounts
+ * would make the two dimensions one again, which is the thing
+ * docs/ADMIN-CONSOLIDATION.md separated them to avoid. A partner manager who
+ * needs to onboard someone asks an editorial admin.
+ *
+ * Per route and per action, for the reason spelled out on
+ * `requireCommerceAccess` above — with one thing added that matters more
+ * here. A server action is not "inside" the page that rendered its form: it
+ * compiles to its own POST endpoint with its own stable id, reachable by
+ * anyone who has ever seen the page's payload. A guard on the page protects
+ * the table; it does nothing at all for the action that grants roles. Hence
+ * `requireStaffAdmin()` as the first line of every export in
+ * `team-editor/staff/actions.ts`, not once in a layout.
+ */
+export async function requireStaffAdmin(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canManageStaff(user)) redirect('/team-editor')
+  return user
+}

@@ -86,11 +86,22 @@ export default buildConfig({
         Logo: '/components/graphics/SiteLogo#SiteLogo',
       },
       beforeNavLinks: ['/components/nav/NavMasthead#NavMasthead'],
-      // The commerce console has had no link anywhere since it was absorbed:
-      // the only routes in were a badge inside its own masthead and typing
-      // the URL. Role-gated on the COMMERCE dimension, which is independent
-      // of editorial standing.
-      afterNavLinks: ['/components/nav/NavConsole#NavConsole'],
+      // Both of the surfaces Payload's nav will never list on its own. Its
+      // nav enumerates COLLECTIONS, and neither of these is one: the commerce
+      // console and the staff admin are plain Next pages reading
+      // `now_platform` over SQL, which this Payload instance cannot reach.
+      // Without a link here they are typed-URL-only — survivable for the
+      // console, self-defeating for the one surface an admin needs in order
+      // to onboard anybody.
+      //
+      // Order is deliberate: Commerce sits above Staff because far more
+      // people have a commerce role than an editorial admin one. Each
+      // component decides for itself whether to render, against the role
+      // dimension it actually cares about.
+      afterNavLinks: [
+        '/components/nav/NavConsole#NavConsole',
+        '/components/nav/StaffLink#StaffLink',
+      ],
       // The account menu Payload does not have. Its avatar is a plain link
       // to the profile page, so there was nowhere to put "sign out" except
       // an unlabelled arrow at the foot of the nav. `actions` renders into
