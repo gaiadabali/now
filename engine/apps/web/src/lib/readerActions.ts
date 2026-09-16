@@ -21,12 +21,14 @@ import { redirect } from 'next/navigation'
 
 import {
   allowInsecureLinks,
+  currentReader,
   mailBranding,
   readerMailer,
   readerSecret,
   readerStore,
   siteBaseUrl,
 } from '@/lib/reader'
+import { savePrefs } from '@/lib/preferences'
 
 /**
  * Register, sign in, sign out, verify, reset (E8.3).
@@ -294,4 +296,40 @@ export async function completeReset(form: FormData): Promise<void> {
 
   await establishSession(result.reader.id, result.reader.email)
   redirect('/account?status=password_changed')
+}
+
+// --- preferences (E8.4) ----------------------------------------------------
+
+/**
+ * Saves the §17 picker.
+ *
+ * Multi-select arrives as repeated checkbox values, which `FormData.getAll`
+ * gives us directly — no client JavaScript anywhere in this flow, so the
+ * picker works on a page that has not hydrated, exactly like the rest of the
+ * account forms.
+ *
+ * Validation against the live vocabulary happens in `savePrefs`, not here: a
+ * hand-posted form must not be able to write a slug the taxonomy does not
+ * have, and putting that check next to the write means every caller gets it.
+ */
+export async function savePreferences(form: FormData): Promise<void> {
+  const reader = await currentReader()
+  if (!reader) redirect('/account/login')
+
+  const list = (name: string): string[] =>
+    form.getAll(name).filter((v): v is string => typeof v === 'string' && v.length > 0)
+  const one = (name: string): string | null => {
+    const value = form.get(name)
+    return typeof value === 'string' && value.length > 0 ? value : null
+  }
+
+  await savePrefs(reader.id, {
+    interests: list('interests'),
+    topics: list('topics'),
+    areas: list('areas'),
+    persona: one('persona'),
+    budget: one('budget'),
+  })
+
+  redirect('/account?status=prefs_saved')
 }

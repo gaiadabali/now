@@ -54,7 +54,13 @@ export async function GET(request: Request): Promise<Response> {
 
   // Signed in on success: they have just proven control of the mailbox, and a
   // password prompt here is friction with no security value.
-  const response = NextResponse.redirect(`${origin}/account?status=verified`, 303)
+  //
+  // Straight to the picker rather than the account page. §17 budgets the whole
+  // preference flow at 30 seconds, and the moment someone has just clicked a
+  // link to get here is the moment they are most willing to spend twenty of
+  // them. Nothing on it is required, so it costs a reader who is not
+  // interested exactly one click.
+  const response = NextResponse.redirect(`${origin}/account/preferences?status=verified`, 303)
   response.cookies.set(
     READER_SESSION_COOKIE,
     issueReaderToken(
