@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, Field, Submit, type StatusMessage } from '@/components/account'
-import { currentReader } from '@/lib/reader'
+import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signIn } from '@/lib/readerActions'
 
 export const metadata: Metadata = {
@@ -55,6 +55,10 @@ export default async function LoginPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   if (await currentReader()) redirect('/account')
 
   const query = (await searchParams) ?? {}

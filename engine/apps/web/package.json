@@ -14,8 +14,9 @@
     "generate:importmap": "payload generate:importmap",
     "test": "node --test --experimental-strip-types test/*.test.ts",
     "sync:beacon": "node scripts/sync-beacon.mjs",
-    "prebuild": "node scripts/sync-beacon.mjs",
-    "predev": "node scripts/sync-beacon.mjs"
+    "prebuild": "node scripts/sync-beacon.mjs && node scripts/lint-account-gate.mjs",
+    "predev": "node scripts/sync-beacon.mjs",
+    "lint:account-gate": "node scripts/lint-account-gate.mjs"
   },
   "dependencies": {
     "next": "15.4.11",

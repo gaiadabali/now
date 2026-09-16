@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
+import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, Field, Submit, type StatusMessage } from '@/components/account'
 import { MIN_PASSWORD_LENGTH } from '@now/auth'
-import { currentReader } from '@/lib/reader'
+import { currentReader, accountsEnabled } from '@/lib/reader'
 import { register } from '@/lib/readerActions'
 import { getSiteConfig } from '@/lib/site'
 
@@ -66,6 +66,10 @@ export default async function RegisterPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   if (await currentReader()) redirect('/account')
 
   const query = (await searchParams) ?? {}

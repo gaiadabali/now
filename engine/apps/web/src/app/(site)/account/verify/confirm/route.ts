@@ -7,7 +7,7 @@ import {
 } from '@now/auth'
 import { NextResponse } from 'next/server'
 
-import { readerSecret, readerStore } from '@/lib/reader'
+import { readerSecret, readerStore, accountsEnabled } from '@/lib/reader'
 import { stitchAnonymousHistory } from '@/lib/stitch'
 
 /**
@@ -33,6 +33,9 @@ import { stitchAnonymousHistory } from '@/lib/stitch'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request): Promise<Response> {
+  // Unreachable when mail is not configured (F141) — a verification link that
+  // could never have been sent has nothing to confirm.
+  if (!accountsEnabled()) return new NextResponse(null, { status: 404 })
   const token = new URL(request.url).searchParams.get('token')
   const origin = new URL(request.url).origin
 

@@ -20,6 +20,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import {
+  accountsEnabled,
   allowInsecureLinks,
   currentReader,
   mailBranding,
@@ -105,7 +106,19 @@ export async function register(form: FormData): Promise<void> {
   // deployment error that affects everyone equally, and discovering it after
   // the insert leaves an account nobody can verify and a visitor looking at a
   // 500 — which is exactly what happened the first time this ran.
-  if (!(await linkConfigUsable())) {
+  // Checked BEFORE any row is created — both of them.
+  //
+  // The link check was already here. The mail check was NOT, and that was the
+  // bug that reached production (F141): `sendVerification` swallows failures so
+  // a transient bounce does not cost someone their registration, which is right
+  // when mail usually works. When mail is not configured AT ALL it is exactly
+  // wrong — every sign-up creates a real account with a real password hash,
+  // tells the person to check their inbox, and sends nothing. They cannot
+  // verify, cannot reset, and are given no sign that anything failed.
+  //
+  // "Cannot send at all" is a deployment error affecting everyone equally, so
+  // saying so plainly reveals nothing about any address.
+  if (!accountsEnabled() || !(await linkConfigUsable())) {
     redirect('/account/register?status=unavailable')
   }
 
@@ -255,6 +268,11 @@ export async function requestReset(form: FormData): Promise<void> {
   // may not own, so the limit protects a third party's inbox, not just us.
   if (!rateLimit(`reset:${emailNorm}`, 3, 60 * 60_000)) {
     redirect('/account/forgot?status=sent')
+  }
+  // A reset that cannot be mailed is a reset that cannot happen. Answering
+  // "check your email" anyway would be the same lie registration was telling.
+  if (!accountsEnabled()) {
+    redirect('/account/forgot?status=unavailable')
   }
 
   const store = readerStore()

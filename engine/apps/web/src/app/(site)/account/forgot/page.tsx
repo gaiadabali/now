@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 
 import { AccountShell, Field, Submit, type StatusMessage } from '@/components/account'
 import { requestReset } from '@/lib/readerActions'
+import { accountsEnabled } from '@/lib/reader'
 
 export const metadata: Metadata = {
   title: 'Reset your password',
@@ -14,6 +16,10 @@ export default async function ForgotPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The whole surface is unreachable when mail is not configured — a form that
+  // cannot complete is worse than no form (F141). notFound(), not a message:
+  // an explanation would invite people to keep trying.
+  if (!accountsEnabled()) notFound()
   const query = (await searchParams) ?? {}
   // One outcome, always. Whether the address has an account, whether it is
   // suspended, whether the request was rate-limited — all land here with the
@@ -26,7 +32,13 @@ export default async function ForgotPage({
           head: 'Check your email.',
           body: 'If that address has an account, a reset link is on its way. It expires in an hour and works once.',
         }
-      : undefined
+      : query.status === 'unavailable'
+        ? {
+            tone: 'bad',
+            head: 'Password reset is temporarily unavailable.',
+            body: 'Nothing was sent. Please try again shortly.',
+          }
+        : undefined
 
   return (
     <AccountShell
