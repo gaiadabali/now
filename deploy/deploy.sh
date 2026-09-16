@@ -91,6 +91,17 @@ info "tag $IMAGE_TAG"
 # Tags are `sha-<short sha>`, so the check is free and offline: the tag names
 # the commit the image was built from, and HEAD must be that commit.
 # ---------------------------------------------------------------------------
+if [[ "$IMAGE_TAG" == sha-* ]] && ! git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  # SAY SO rather than skipping quietly. helios's /opt/now-engine was
+  # assembled by scp and is not a checkout, so this guard silently did
+  # nothing there — which is worse than not having it, because the deploy
+  # looked verified. The city config no longer drifts (it is baked into the
+  # image), but docker-compose.yml and garage.toml are still copied here by
+  # hand, and a stale compose file is its own class of confusing failure.
+  printf '[33m  warn[0m %s
+' "not a git checkout — cannot verify these files match $IMAGE_TAG"
+fi
+
 if [[ "$IMAGE_TAG" == sha-* ]] && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   want="${IMAGE_TAG#sha-}"
   have="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null)"
