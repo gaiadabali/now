@@ -280,6 +280,15 @@ html[data-theme='dark'] .graphic-icon {
    ink rule separate it from the page instead of the hairline it had.
    ======================================================================== */
 
+:root {
+  /* 275 -> 320. At 275 the gutter ate 120 of it, leaving 155px of usable
+     column — which is why "Classification review queue" broke onto two lines
+     and the masthead had nowhere to go. The extra 45px buys a single-line
+     label for every collection we have and room for the wordmark to be read
+     rather than recognised. */
+  --nav-width: 320px;
+}
+
 .nav {
   background: var(--theme-elevation-50);
   border-right: 1px solid var(--theme-elevation-1000);
@@ -289,7 +298,18 @@ html[data-theme='dark'] .graphic-icon {
    with a masthead that has to reach the edges. */
 .nav__scroll {
   --nav-padding-block-start: 0;
+  /* Payload reserves two base units at the foot for a controls row that is
+     now empty (its only child was the logout icon, replaced by the labelled
+     one in the account block). Left alone it strands the account block ~195px
+     above the bottom edge, which reads as a mistake rather than as margin. */
+  --nav-padding-block-end: calc(var(--base) * 0.9);
   padding-inline: 0;
+}
+
+/* The container itself, not just its child — an empty flex row with a gap
+   still occupies height. */
+.nav__controls {
+  display: none;
 }
 
 .nav__wrap,
@@ -333,9 +353,9 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 .now-nav-masthead__kicker {
-  margin: calc(var(--base) * 0.45) 0 0;
+  margin: calc(var(--base) * 0.5) 0 0;
   color: var(--now-accent);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -347,17 +367,26 @@ html[data-theme='dark'] .now-nav-masthead__logo {
    on the reader site, rather than a grey word floating above a list. */
 .nav-group__toggle,
 .nav__label {
-  padding-bottom: calc(var(--base) * 0.3);
+  padding-bottom: calc(var(--base) * 0.45);
   border-bottom: 1px solid var(--theme-elevation-200);
   color: var(--theme-elevation-600);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   letter-spacing: 0.16em;
 }
 
+/* Set to the space available rather than to a habit. Eight collections in a
+   full-height column leaves most of it empty, and a 15px link in 275px of
+   sidebar reads as a footnote — smaller, in fact, than Payload's own 17.5px,
+   which is the wrong direction to have taken it.
+   
+   1.125rem with a line and a half of rhythm fills the column honestly and
+   makes the list scannable from a normal sitting distance. Anything larger
+   starts wrapping "Classification review queue" onto three lines. */
 .nav__link {
-  padding-block: calc(var(--base) * 0.28);
+  padding-block: calc(var(--base) * 0.42);
   color: var(--theme-elevation-700);
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
+  line-height: 1.35;
   transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -410,10 +439,22 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   display: none;
 }
 
+/* Pinned to the foot of the column. `.nav__wrap` is a flex column that
+   already grows to fill the sidebar, so `margin-top: auto` drops this to the
+   bottom instead of leaving it stranded under the last collection with three
+   hundred pixels of nothing beneath it. `width: 100%` because that wrap sets
+   `align-items: flex-start`, which otherwise shrinks this to its contents
+   and leaves the rule above it a stub.
+
+   It also puts identity where a sidebar conventionally keeps it, so the eye
+   does not have to find it halfway up. */
 .now-nav-account {
   display: grid;
-  gap: calc(var(--base) * 0.5);
-  padding-top: calc(var(--base) * 0.7);
+  gap: calc(var(--base) * 0.6);
+  width: 100%;
+  margin-top: auto;
+  padding-top: calc(var(--base) * 0.9);
+  padding-bottom: calc(var(--base) * 0.4);
   border-top: 1px solid var(--theme-elevation-200);
 }
 
@@ -425,9 +466,9 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 .now-avatar--nav {
-  width: 26px;
-  height: 26px;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  font-size: 17px;
 }
 
 .now-nav-account__names {
@@ -444,19 +485,19 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 
 .now-nav-account__name {
   color: var(--theme-elevation-1000);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 
 .now-nav-account__role {
   color: var(--theme-elevation-500);
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
 }
 
 .now-nav-account__out {
   color: var(--theme-elevation-600);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
