@@ -57,6 +57,57 @@ export function canManagePartners(user: StaffUser): boolean {
   return user.commerceRole === 'admin' || user.commerceRole === 'partner_manager'
 }
 
+/** May this user see editorial content at all? */
+export function canReadEditorial(user: StaffUser): boolean {
+  return Boolean(user.role) && user.role !== 'none'
+}
+
+/**
+ * The gate every classification-report page calls first.
+ *
+ * The editorial mirror of `requireCommerceAccess`, and for the same reasons:
+ * per route rather than in a layout, because a layout guard is a rendering
+ * convenience and not an access control; and a redirect rather than a 403,
+ * because a commerce-only user is legitimately signed in and simply has no
+ * route here.
+ *
+ * Author-or-above deliberately, not editor-or-above. It matches
+ * `isAuthorOrAbove` on the `classification-reviews` collection — the access
+ * rule that actually decides whether the correction this page offers will be
+ * accepted. Gating the page more tightly than the write it wraps would mean
+ * choosing a second, looser or stricter answer to the same question, and the
+ * one that counts is Payload's: every write below goes through the Local API
+ * with `overrideAccess: false` and this user attached, so the collection is
+ * the enforcement and this is the courtesy.
+ */
+export async function requireEditorialAccess(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canReadEditorial(user)) redirect('/team-editor')
+  return user
+}
+
+/**
+ * The same gate, but returning the user document Payload itself produced
+ * rather than this file's `StaffUser` view of it.
+ *
+ * `StaffUser` is a hand-written shape for rendering — four fields this app
+ * cares about. Payload's Local API wants the real document: it hands whatever
+ * it is given to every `access` function and every hook as `req.user`, and
+ * `reviewQueueHooks.autoPopulateOnDecision` reads `req.user.id` off it to
+ * stamp `reviewedBy`. Passing the trimmed shape would work by coincidence
+ * today and stop working the moment an access rule reads a field this type
+ * never declared. So a write path asks for this and a render path asks for
+ * `requireEditorialAccess` — one `payload.auth` either way.
+ */
+export async function requireEditorialActor() {
+  const payload = await payloadClient()
+  const { user } = await payload.auth({ headers: await nextHeaders() })
+  if (!user) redirect('/team-editor/login')
+  const role = (user as StaffUser).role
+  if (!role || role === 'none') redirect('/team-editor')
+  return user
+}
+
 /**
  * The gate every commerce page calls first.
  *
