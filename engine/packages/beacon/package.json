@@ -11,6 +11,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "size": "node scripts/measure-size.js",
+    "pretest": "node scripts/build.js",
     "test": "node test/beacon.test.js"
   },
   "devDependencies": {

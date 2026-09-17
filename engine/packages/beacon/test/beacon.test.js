@@ -311,4 +311,81 @@ test('no meta and no data-entity does not throw', () => {
   assert.ok(lastBody(env), 'expected a batch even with no entity');
 });
 
+// The three below are the difference between a batch the server writes and a
+// batch it rejects whole. Each one used to produce a payload that 4xx'd —
+// and because a rejected batch is dropped, not retried, it also took every
+// good event queued beside it. Asserting the encoding is the only way this
+// stays fixed: nothing else in this package can see the server's validation.
+
+test('a page with no entity sends the URL encoding, not an empty entity_id', () => {
+  const env = makeBeacon({ attrs: { 'data-entity': '', 'data-surface': 'site' }, url: 'https://reader.test/' });
+  env.window.NOWB('flush');
+  const view = lastBody(env).interactions.find((e) => e.kind === 'view');
+  assert.ok(view, 'expected a view interaction');
+  // entity_id '' is a 422 for the whole batch (min_length=1 server-side).
+  assert.strictEqual(view.entity_type, 'url');
+  assert.strictEqual(view.entity_id, 'https://reader.test/');
+  assert.strictEqual(view.surface, 'site');
+});
+
+test('an untagged INTERNAL link click carries the href as entity_type url', () => {
+  const env = makeBeacon();
+  const a = env.document.createElement('a');
+  a.href = 'https://reader.test/some-other-article/';
+  a.textContent = 'read this';
+  env.document.body.appendChild(a);
+  a.click();
+  env.window.NOWB('flush');
+  const click = lastBody(env).interactions.find((e) => e.kind === 'click');
+  assert.ok(click, 'expected a click interaction');
+  // 'article' + an href is what the server rejects with 400: entity_id must
+  // be a native integer PK for any entity_type other than url/search_query.
+  assert.strictEqual(click.entity_type, 'url');
+  assert.strictEqual(click.entity_id, 'https://reader.test/some-other-article/');
+});
+
+test('a TAGGED link click keeps the entity id and its rail position', () => {
+  const env = makeBeacon();
+  const a = env.document.createElement('a');
+  a.href = 'https://reader.test/some-other-article/';
+  a.setAttribute('data-nowb-entity', '4429');
+  a.setAttribute('data-nowb-rail', 'read-next');
+  a.setAttribute('data-nowb-position', '2');
+  env.document.body.appendChild(a);
+  a.click();
+  env.window.NOWB('flush');
+  const click = lastBody(env).interactions.find((e) => e.kind === 'click');
+  assert.ok(click, 'expected a click interaction');
+  assert.strictEqual(click.entity_type, 'article');
+  assert.strictEqual(click.entity_id, '4429');
+  assert.strictEqual(click.rail, 'read-next');
+  assert.strictEqual(click.position, 2);
+});
+
+test('page() re-attributes a client-side navigation and closes the old page', () => {
+  const env = makeBeacon();
+  env.window.NOWB('page', { entity: '4429', entityType: 'article', surface: 'article' });
+  env.window.NOWB('flush');
+  const body = lastBody(env);
+  const kinds = body.interactions.map((e) => e.kind);
+  // boot view (of article-1), dwell closing it, view of the new page.
+  assert.deepStrictEqual(kinds, ['view', 'dwell', 'view']);
+  assert.strictEqual(body.interactions[0].entity_id, 'article-1');
+  // The dwell closes the page being LEFT, so it must still carry that page's
+  // identity even though the host has already routed away.
+  assert.strictEqual(body.interactions[1].kind, 'dwell');
+  assert.strictEqual(body.interactions[1].entity_id, 'article-1');
+  assert.strictEqual(body.interactions[1].entity_type, 'article');
+  assert.strictEqual(body.interactions[2].entity_id, '4429');
+  assert.strictEqual(body.interactions[2].surface, 'article');
+});
+
+test('page() declaring the page already in view is a no-op', () => {
+  const env = makeBeacon();
+  env.window.NOWB('page', { entity: 'article-1', entityType: 'article', surface: 'article' });
+  env.window.NOWB('flush');
+  const kinds = lastBody(env).interactions.map((e) => e.kind);
+  assert.deepStrictEqual(kinds, ['view'], 'expected no second view for the same page');
+});
+
 runAll();

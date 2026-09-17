@@ -59,6 +59,23 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 /** Schemes a link may use. `javascript:` and `data:` are the reason this exists. */
 const SAFE_HREF = /^(https?:|mailto:|tel:|#|\/)/i
 
+/**
+ * May this URL be an `href`?
+ *
+ * Exported because `sanitizeHtml` is not the only place a stored URL becomes a
+ * link. `body_blocks[].url` on an `embed` block is a bare string field, never
+ * markup, so it never passes through the scanner below — and React stopped
+ * sanitising `href` values in v16, so `<a href={url}>` with a stored
+ * `javascript:` URL is a working XSS. Same allowlist, same reasoning, one
+ * definition: a second copy of this rule is a second chance to get it wrong.
+ *
+ * Whitespace and control characters are stripped before the test because
+ * `java\tscript:` is a scheme browsers have historically honoured.
+ */
+export function isSafeHref(url: string): boolean {
+  return SAFE_HREF.test(Array.from(url).filter((c) => c.charCodeAt(0) > 0x20).join(''))
+}
+
 const ENTITIES: Record<string, string> = {
   amp: '&',
   lt: '<',
@@ -141,8 +158,8 @@ function sanitizeAttrs(tag: string, raw: string): string {
     if (name === 'href') {
       // Whitespace and control characters are stripped before testing, because
       // `java\tscript:` is a scheme browsers have historically honoured.
-      const cleaned = value.replace(/[\u0000-\u0020]/g, '')
-      if (!SAFE_HREF.test(cleaned)) continue
+      const cleaned = Array.from(value).filter((c) => c.charCodeAt(0) > 0x20).join('')
+      if (!isSafeHref(cleaned)) continue
       out.push(`href="${escapeText(cleaned)}"`)
       continue
     }
@@ -184,12 +201,38 @@ const TAG_AT_START =
  * written. Scanning once removes the whole class of problem: at any `<` the
  * input either yields a complete, parseable tag or the character is escaped to
  * `&lt;` and treated as text. There is no third outcome.
+ *
+ * The output is also BALANCED, which it was not until the team editor's
+ * classification report put 87 of these strings on one page and React's
+ * hydration started failing on it. The archive is full of paragraphs with an
+ * `<a>` or a `<strong>` that is never closed — WordPress tolerated it — and
+ * this function used to hand that straight through. Inside a single
+ * `dangerouslySetInnerHTML` that looks harmless, because `</p>` appears to
+ * close it. It does not: HTML's adoption agency algorithm keeps an unclosed
+ * formatting element on the list of active formatting elements and
+ * RE-CREATES it inside the next element, so the browser's DOM gains a node
+ * the server never rendered, every following sibling shifts by one, and
+ * hydration fails from there down.
+ *
+ * That is the visible symptom. The reason it is worth fixing in the sanitiser
+ * rather than in the one page that noticed: unbalanced output means this
+ * function's result does not stay inside the element it is put in. An
+ * unclosed `<a href="http://spam">` in the last paragraph of an article
+ * silently turns the byline, the tags and the related-articles rail into part
+ * of that link. Reconstruction is what makes it escape, and a sanitiser whose
+ * output escapes its container is not finished sanitising.
+ *
+ * Unmatched CLOSING tags are dropped for the mirror-image reason: `</strong>`
+ * with nothing open closes something the caller opened, not something this
+ * string did.
  */
 export function sanitizeHtml(html: string): string {
   if (!html) return ''
 
   let out = ''
   let i = 0
+  // Tags opened and not yet closed, innermost last.
+  const open: string[] = []
 
   while (i < html.length) {
     const lt = html.indexOf('<', i)
@@ -226,7 +269,12 @@ export function sanitizeHtml(html: string): string {
     if (RAW_TEXT_TAGS.has(tag)) {
       if (!closing) {
         // Skip to the matching close, or to the end if it never closes.
-        const close = new RegExp(`</\s*${tag}\s*>`, 'i').exec(html.slice(i))
+        // `\\s`, not `\s`: inside a template literal `\s` is not a recognised
+        // escape, so JS drops the backslash and the pattern becomes a LITERAL
+        // "s*" — `</script >` then failed to match and everything after it was
+        // dropped as still-inside-the-script. Content loss rather than a
+        // sanitiser bypass, but silent either way.
+        const close = new RegExp(`</\\s*${tag}\\s*>`, 'i').exec(html.slice(i))
         i = close ? i + close.index + close[0].length : html.length
       }
       continue
@@ -234,10 +282,17 @@ export function sanitizeHtml(html: string): string {
 
     if (UNWRAP_TAGS.has(tag) || !ALLOWED_TAGS.has(tag)) continue
     if (closing) {
-      out += `</${tag}>`
+      // Close back to the matching opener, so `<b><i></b>` becomes
+      // `<b><i></i></b>` rather than the crossed pair the source wrote.
+      // Nothing matching means nothing of ours is open: drop it.
+      const at = open.lastIndexOf(tag)
+      if (at === -1) continue
+      for (let d = open.length - 1; d >= at; d--) out += `</${open[d]}>`
+      open.length = at
       continue
     }
     if (tag === 'br') {
+      // Void: never pushed, because there is nothing to close.
       out += '<br/>'
       continue
     }
@@ -248,7 +303,11 @@ export function sanitizeHtml(html: string): string {
     // rather than trusted from the source markup, which is inconsistent.
     const rel = tag === 'a' && /href="https?:/i.test(attrs) ? ' rel="noreferrer noopener"' : ''
     out += `<${tag}${attrs}${rel}>`
+    open.push(tag)
   }
+
+  // Whatever the source left hanging, close here — innermost first.
+  for (let d = open.length - 1; d >= 0; d--) out += `</${open[d]}>`
 
   return out
 }

@@ -88,6 +88,30 @@
   var SCROLL_MILESTONES = [25, 50, 75, 100];
   var MAX_QUEUE = 200; // hard cap so a runaway page can't leak memory
 
+  // The wire's one encoding for "this value is a URL, not a reference to an
+  // entity": the server routes entity_type 'url' into
+  // engine.interactions.target_url and leaves entity_id NULL. Every other
+  // entity_type must carry a native integer PK, and anything else is a 400
+  // that takes the WHOLE batch with it — there is no per-row tolerance.
+  var URL_ENTITY_TYPE = 'url';
+
+  // engine.interactions' text columns are validated at 2048 chars server-side
+  // (schemas.py _MAX_TEXT_FIELD). One over-long value 422s the entire batch,
+  // so truncate here rather than lose every event queued beside it.
+  var MAX_TEXT_LEN = 2048;
+
+  function clampText(v) {
+    return v && v.length > MAX_TEXT_LEN ? v.slice(0, MAX_TEXT_LEN) : v;
+  }
+
+  function pageUrl() {
+    try {
+      return clampText(String((win.location && win.location.href) || ''));
+    } catch (e) {
+      return '';
+    }
+  }
+
   // ---------------------------------------------------------------------
   // Small safe utilities — everything here must never throw.
   // ---------------------------------------------------------------------
@@ -422,7 +446,7 @@
       anon_id: getAnonId(),
       session_id: getSessionId(),
       device: device(),
-      referrer: doc.referrer || undefined,
+      referrer: clampText(doc.referrer) || undefined,
       utm: currentUtm(),
       ts: now()
     };
@@ -439,8 +463,34 @@
     touchSession();
     var evt = baseFields();
     evt.kind = kind;
-    evt.entity_type = opts.entityType || cfg.entityType;
-    evt.entity_id = opts.entityId != null ? opts.entityId : cfg.entity;
+    var entityType = opts.entityType || cfg.entityType;
+    var entityId = opts.entityId != null ? opts.entityId : cfg.entity;
+
+    // A page that names no entity — the home page, a section index, search —
+    // still produces real behaviour, and most sessions begin on one. It used
+    // to send entity_id: '' and the server answered 422 for the whole batch,
+    // so a single home-page view also destroyed every rail click queued
+    // beside it. That is how the tables stayed at zero rows.
+    //
+    // Rejected: sending the slug or a synthetic id — that invents an entity
+    // that does not exist, and entity_id is the column the ranker joins on.
+    // Rejected: dropping the event, which is what the README's "data-entity
+    // required for view/dwell/exit" literally implies — silence here is the
+    // un-backfillable loss ARCHITECTURE §19 exists to prevent.
+    // Chosen: the encoding the contract already has for a URL that is not an
+    // entity reference (entity_type 'url' -> target_url, entity_id NULL). The
+    // row then says exactly what it is and fabricates nothing. If the schema
+    // ever grows a first-class page_url, this is the line to revisit.
+    if (entityId == null || entityId === '') {
+      entityType = URL_ENTITY_TYPE;
+      entityId = pageUrl();
+      // No entity and no readable location leaves nothing the server would
+      // accept; queueing it would only 422 the batch it travels in.
+      if (!entityId) return;
+    }
+
+    evt.entity_type = entityType;
+    evt.entity_id = entityId;
     evt.surface = opts.surface || cfg.surface;
     if (opts.rail != null) evt.rail = opts.rail;
     if (opts.position != null) evt.position = opts.position;
@@ -473,7 +523,78 @@
   // ---------------------------------------------------------------------
   // Automatic instrumentation
   // ---------------------------------------------------------------------
+  // What the page currently in view is "about". Held explicitly because the
+  // `dwell` that closes a page is emitted AFTER the host has already routed
+  // away: the URL fallback would otherwise read location.href and stamp the
+  // departing page's reading time with the arriving page's address. Observed
+  // exactly that in Chromium — a 3.8s dwell on the home page filed against
+  // the article the reader had just opened.
+  var currentPage = null;
+
+  function describePage() {
+    var entity = cfg.entity;
+    return {
+      key: entity || pageUrl(),
+      entityId: entity || pageUrl(),
+      entityType: entity ? cfg.entityType : URL_ENTITY_TYPE,
+      surface: cfg.surface
+    };
+  }
+
   function initView() {
+    currentPage = describePage();
+    track('view', {});
+  }
+
+  /**
+   * `NOWB('page', { entity, entityType, surface })` — declare that the host
+   * has navigated to a different page WITHOUT a document load.
+   *
+   * The beacon was written for a WordPress theme, where every article view is
+   * a fresh document and reading `document.currentScript` once is enough. The
+   * NOW! reader site is a Next App Router app: after the first load, every
+   * link is a client-side navigation, the script never re-executes, and
+   * everything below stayed frozen on whichever page the reader happened to
+   * land on. Measured in Chromium before this existed: a reader who entered on
+   * the home page and clicked through to an article produced ONE view — of the
+   * home page — and a dwell filed under `surface: site` with no entity at all.
+   * The article read was not recorded as read. That is the majority of real
+   * sessions, and it is the traffic §10's ranker needs entity-attributed.
+   *
+   * It emits `dwell` for the page being left (the only moment that duration is
+   * knowable — `exit` still fires once, for the tab) and resets the scroll
+   * milestones, which are per-page, not per-tab.
+   *
+   * A repeat declaration of the page already in view is a no-op, so the host
+   * may call it unconditionally on mount — including the mount that follows
+   * the initial document load, where `initView` has already fired.
+   */
+  function setPage(opts) {
+    opts = opts || {};
+    if (isDisabled()) return;
+
+    var nextEntity = opts.entity || '';
+    var nextKey = nextEntity || pageUrl();
+    if (currentPage && nextKey === currentPage.key) return;
+
+    if (currentPage) {
+      track('dwell', {
+        dwellMs: dwellMs(),
+        scrollPct: maxScrollPct,
+        entityId: currentPage.entityId,
+        entityType: currentPage.entityType,
+        surface: currentPage.surface
+      });
+    }
+
+    cfg.entity = nextEntity;
+    if (opts.entityType) cfg.entityType = opts.entityType;
+    if (opts.surface) cfg.surface = opts.surface;
+
+    pageEnteredAt = now();
+    maxScrollPct = 0;
+    reportedMilestones = {};
+    currentPage = describePage();
     track('view', {});
   }
 
@@ -527,13 +648,26 @@
         isExternal = false;
       }
 
-      var entityId = el.getAttribute('data-nowb-entity') || el.href;
+      var tagged = el.getAttribute('data-nowb-entity');
+      var entityId = tagged || clampText(el.href);
       var railAttr = el.getAttribute('data-nowb-rail');
       var posAttr = el.getAttribute('data-nowb-position');
 
+      // An UNTAGGED link carries an href, and an href is a URL whether the
+      // link points off-site or not — so it takes the 'url' encoding in both
+      // cases. This used to send an internal click as entity_type 'article'
+      // with the href in entity_id, which the server rejects outright
+      // ("entity_id must be a native integer id") with a 400 that drops the
+      // whole batch. Every internal link on the site is untagged unless a
+      // component opts in, so in practice the first click a reader made
+      // deleted the events collected around it.
+      //
+      // `kind` still separates the two (click vs outbound) — internal versus
+      // external is a property of the navigation, not of how the id is
+      // encoded, and conflating the two is what caused this.
       track(isExternal ? 'outbound' : 'click', {
         entityId: entityId,
-        entityType: el.getAttribute('data-nowb-entity-type') || (isExternal ? 'url' : cfg.entityType),
+        entityType: el.getAttribute('data-nowb-entity-type') || (tagged ? cfg.entityType : URL_ENTITY_TYPE),
         rail: railAttr || undefined,
         position: posAttr != null ? parseInt(posAttr, 10) : undefined
       });
@@ -621,6 +755,8 @@
       case 'identify':
         userId = args[0] || undefined;
         return;
+      case 'page':
+        return setPage(args[0]);
       case 'track':
         return track(args[0], args[1]);
       case 'impression':
@@ -635,6 +771,7 @@
   });
 
   api.impression = safe(impression);
+  api.page = safe(setPage);
   api.track = safe(track);
   api.thumbsDown = safe(function (opts) { return track('thumbs_down', opts); });
   api.identify = safe(function (id) { userId = id || undefined; });

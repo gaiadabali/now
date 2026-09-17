@@ -57,6 +57,57 @@ export function canManagePartners(user: StaffUser): boolean {
   return user.commerceRole === 'admin' || user.commerceRole === 'partner_manager'
 }
 
+/** May this user see editorial content at all? */
+export function canReadEditorial(user: StaffUser): boolean {
+  return Boolean(user.role) && user.role !== 'none'
+}
+
+/**
+ * The gate every classification-report page calls first.
+ *
+ * The editorial mirror of `requireCommerceAccess`, and for the same reasons:
+ * per route rather than in a layout, because a layout guard is a rendering
+ * convenience and not an access control; and a redirect rather than a 403,
+ * because a commerce-only user is legitimately signed in and simply has no
+ * route here.
+ *
+ * Author-or-above deliberately, not editor-or-above. It matches
+ * `isAuthorOrAbove` on the `classification-reviews` collection — the access
+ * rule that actually decides whether the correction this page offers will be
+ * accepted. Gating the page more tightly than the write it wraps would mean
+ * choosing a second, looser or stricter answer to the same question, and the
+ * one that counts is Payload's: every write below goes through the Local API
+ * with `overrideAccess: false` and this user attached, so the collection is
+ * the enforcement and this is the courtesy.
+ */
+export async function requireEditorialAccess(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canReadEditorial(user)) redirect('/team-editor')
+  return user
+}
+
+/**
+ * The same gate, but returning the user document Payload itself produced
+ * rather than this file's `StaffUser` view of it.
+ *
+ * `StaffUser` is a hand-written shape for rendering — four fields this app
+ * cares about. Payload's Local API wants the real document: it hands whatever
+ * it is given to every `access` function and every hook as `req.user`, and
+ * `reviewQueueHooks.autoPopulateOnDecision` reads `req.user.id` off it to
+ * stamp `reviewedBy`. Passing the trimmed shape would work by coincidence
+ * today and stop working the moment an access rule reads a field this type
+ * never declared. So a write path asks for this and a render path asks for
+ * `requireEditorialAccess` — one `payload.auth` either way.
+ */
+export async function requireEditorialActor() {
+  const payload = await payloadClient()
+  const { user } = await payload.auth({ headers: await nextHeaders() })
+  if (!user) redirect('/team-editor/login')
+  const role = (user as StaffUser).role
+  if (!role || role === 'none') redirect('/team-editor')
+  return user
+}
+
 /**
  * The gate every commerce page calls first.
  *
@@ -73,5 +124,34 @@ export function canManagePartners(user: StaffUser): boolean {
 export async function requireCommerceAccess(): Promise<StaffUser> {
   const user = await requireUser()
   if (!canReadCommerce(user)) redirect('/team-editor')
+  return user
+}
+
+/** May this user create staff accounts and change other people's roles? */
+export function canManageStaff(user: StaffUser): boolean {
+  return user.role === 'admin'
+}
+
+/**
+ * The gate the staff surface calls first — in every page AND every action.
+ *
+ * **The editorial dimension, not the commercial one.** Commerce `admin` is
+ * admin *of partner data*; granting it the power to mint editorial accounts
+ * would make the two dimensions one again, which is the thing
+ * docs/ADMIN-CONSOLIDATION.md separated them to avoid. A partner manager who
+ * needs to onboard someone asks an editorial admin.
+ *
+ * Per route and per action, for the reason spelled out on
+ * `requireCommerceAccess` above — with one thing added that matters more
+ * here. A server action is not "inside" the page that rendered its form: it
+ * compiles to its own POST endpoint with its own stable id, reachable by
+ * anyone who has ever seen the page's payload. A guard on the page protects
+ * the table; it does nothing at all for the action that grants roles. Hence
+ * `requireStaffAdmin()` as the first line of every export in
+ * `team-editor/staff/actions.ts`, not once in a layout.
+ */
+export async function requireStaffAdmin(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canManageStaff(user)) redirect('/team-editor')
   return user
 }

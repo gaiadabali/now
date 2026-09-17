@@ -290,6 +290,15 @@ html[data-theme='dark'] .graphic-icon {
 }
 
 .nav {
+  /* The sidebar's own inset, NOT `--gutter-h`.
+     
+     `--gutter-h` is the main content column's gutter — 60px at this
+     breakpoint. Applied to a 320px sidebar it spent 120px of the 320 on
+     empty margin, so the widening bought nothing: labels still wrapped and
+     the wordmark had 200px to live in. A gutter sized for an 1100px column
+     is simply the wrong measure for a 320px one. */
+  --now-nav-pad: 1.35rem;
+
   background: var(--theme-elevation-50);
   border-right: 1px solid var(--theme-elevation-1000);
 }
@@ -314,7 +323,7 @@ html[data-theme='dark'] .graphic-icon {
 
 .nav__wrap,
 .nav__controls {
-  padding-inline: var(--gutter-h);
+  padding-inline: var(--now-nav-pad);
 }
 
 /* --- the masthead ------------------------------------------------------- */
@@ -326,8 +335,15 @@ html[data-theme='dark'] .graphic-icon {
      left a 155px box holding a 35px logo. The negative margin pulls it back
      to the nav's edges; the padding then puts the wordmark on the same
      left edge as the collection links. */
-  margin-inline: calc(var(--gutter-h) * -1);
-  padding: calc(var(--base) * 0.9) var(--gutter-h) calc(var(--base) * 0.7);
+  /* `.nav__wrap` is a flex column with `align-items: flex-start`, so a child
+     is only as wide as its content — negative margins alone moved the box
+     left without widening it, and the heavy rule under the masthead stopped
+     dead at 178px of a 320px sidebar. `align-self: stretch` opts this one
+     child out of that alignment so it fills the cross axis; the negative
+     margins then carry it out past the wrap's padding to the nav's edges. */
+  align-self: stretch;
+  margin-inline: calc(var(--now-nav-pad) * -1);
+  padding: calc(var(--base) * 0.9) var(--now-nav-pad) calc(var(--base) * 0.7);
   margin-bottom: calc(var(--base) * 1.1);
   border-bottom: 3px solid var(--theme-elevation-1000);
   background: var(--theme-elevation-0);
@@ -341,7 +357,10 @@ html[data-theme='dark'] .graphic-icon {
 .now-nav-masthead__logo {
   display: block;
   width: 100%;
-  max-width: 11rem;
+  /* Raised with the inset reduction: there are now ~277px of usable column
+     rather than 200, and a wordmark that has to be recognised rather than
+     read is doing half a job. */
+  max-width: 13.5rem;
   height: auto;
 }
 
@@ -405,11 +424,39 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 .nav__link-indicator {
-  inset-inline-start: calc(var(--gutter-h) * -1 + 2px);
+  inset-inline-start: calc(var(--now-nav-pad) * -1 + 2px);
   width: 3px;
   height: 1.1em;
   border-radius: 0;
   background: var(--now-accent);
+}
+
+/* A link in the nav to a page that is NOT a Payload collection — today just
+   `/team-editor/staff`, which cannot be one because staff identity lives in
+   the platform database (docs/ADMIN-CONSOLIDATION.md). Payload's nav only
+   lists collections, so without this the page is reachable by typed URL
+   alone. Set to match `.nav__link` exactly rather than to stand out: it is a
+   destination in the same list, not an advertisement. */
+.now-nav-extra {
+  display: block;
+  /* Same flex-start trap as the masthead: without this the element is only
+     as wide as "Staff & roles" and its `border-top` renders as an 85px stub
+     instead of a divider. */
+  width: 100%;
+  margin-top: calc(var(--base) * 0.9);
+  padding-block: calc(var(--base) * 0.42);
+  border-top: 1px solid var(--theme-elevation-200);
+  color: var(--theme-elevation-700);
+  font-size: 1.125rem;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.now-nav-extra:hover,
+.now-nav-extra:focus-visible {
+  color: var(--theme-elevation-1000);
+  text-decoration: none;
 }
 
 /* --- who is signed in --------------------------------------------------- */
@@ -436,6 +483,31 @@ html[data-theme='dark'] .now-nav-masthead__logo {
    it, so the icon and the empty row it lived in both go. */
 .nav__log-out {
   display: none;
+}
+
+/* A second nav group, for surfaces that are not Payload collections. Matches
+   the collection group's kicker-over-a-rule so the sidebar reads as one list
+   with two sections rather than a list plus an afterthought. */
+.now-nav-group {
+  width: 100%;
+  margin-top: calc(var(--base) * 1.1);
+}
+
+.now-nav-group__label {
+  margin: 0 0 calc(var(--base) * 0.45);
+  padding-bottom: calc(var(--base) * 0.45);
+  border-bottom: 1px solid var(--theme-elevation-200);
+  color: var(--theme-elevation-600);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.now-nav-group__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 /* ---------------------------------------------------------------------------

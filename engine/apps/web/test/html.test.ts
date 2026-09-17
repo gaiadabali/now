@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { decodeEntities, sanitizeHtml, stripTags } from '../src/lib/html.ts'
+import { decodeEntities, isSafeHref, sanitizeHtml, stripTags } from '../src/lib/html.ts'
 
 // ---------------------------------------------------------------------------
 // What the archive actually contains
@@ -101,4 +101,73 @@ test('stripTags yields plain text for pull quotes and counts', () => {
     stripTags('<strong>Raja&#8217;s</strong> Balinese <em>Cuisine</em>'),
     'Raja\u2019s Balinese Cuisine',
   )
+})
+
+// ---------------------------------------------------------------------------
+// Balance — the output must not escape the element it is put in
+// ---------------------------------------------------------------------------
+
+test('closes tags the archive left open', () => {
+  // Found for real: the classification report renders 87 of these strings as
+  // sibling <p>s, and an unclosed <strong> in one of them made the browser
+  // reconstruct it inside the next — an element the server never rendered, and
+  // a hydration failure from there down.
+  assert.equal(sanitizeHtml('<strong>Open daily from 5.30pm'), '<strong>Open daily from 5.30pm</strong>')
+  assert.equal(
+    sanitizeHtml('<a href="https://example.com">Book'),
+    '<a href="https://example.com" rel="noreferrer noopener">Book</a>',
+  )
+})
+
+test('closes nested tags innermost first', () => {
+  assert.equal(sanitizeHtml('<em><strong>Both left open'), '<em><strong>Both left open</strong></em>')
+})
+
+test('uncrosses tags the source crossed', () => {
+  assert.equal(sanitizeHtml('<b><i>x</b>y'), '<b><i>x</i></b>y')
+})
+
+test('drops a closing tag that closes nothing of ours', () => {
+  // Otherwise it closes something the CALLER opened: the surrounding <p>, or
+  // worse, the layout element above it.
+  assert.equal(sanitizeHtml('</strong>text'), 'text')
+  assert.equal(sanitizeHtml('text</a>'), 'text')
+  // The dropped tags around it must not confuse the stack either.
+  assert.equal(sanitizeHtml('<p>a</p><p>b</p>'), 'ab')
+})
+
+test('br is void and is never closed', () => {
+  assert.equal(sanitizeHtml('one<br>two'), 'one<br/>two')
+})
+
+// ---------------------------------------------------------------------------
+// isSafeHref — the same allowlist, for URLs that are never markup
+// ---------------------------------------------------------------------------
+
+test('isSafeHref accepts the schemes the archive legitimately uses', () => {
+  assert.equal(isSafeHref('https://www.google.com/maps/embed?pb=!1m18'), true)
+  assert.equal(isSafeHref('http://example.com'), true)
+  assert.equal(isSafeHref('mailto:hello@example.com'), true)
+  assert.equal(isSafeHref('tel:+62361762828'), true)
+  assert.equal(isSafeHref('/places/some-venue'), true)
+  assert.equal(isSafeHref('#section'), true)
+})
+
+test('isSafeHref rejects executable and data schemes, obfuscation included', () => {
+  // body_blocks[].url on an embed block becomes an href without ever passing
+  // through sanitizeHtml, and React has not sanitised href since v16.
+  assert.equal(isSafeHref('javascript:alert(1)'), false)
+  assert.equal(isSafeHref('java\tscript:alert(1)'), false)
+  assert.equal(isSafeHref(' javascript:alert(1)'), false)
+  assert.equal(isSafeHref('JaVaScRiPt:alert(1)'), false)
+  assert.equal(isSafeHref('data:text/html,<script>alert(1)</script>'), false)
+  assert.equal(isSafeHref('vbscript:msgbox(1)'), false)
+  assert.equal(isSafeHref(''), false)
+})
+
+test('a raw-text element closed with whitespace still ends where it should', () => {
+  // `</script >` — the template literal wrote a literal "s*" instead of \\s*,
+  // so this used to fail to match and everything after it was dropped.
+  assert.equal(sanitizeHtml('a<script>evil()</script >b'), 'ab')
+  assert.equal(sanitizeHtml('a<style>x{}</style\t>b'), 'ab')
 })

@@ -22,6 +22,8 @@ export function StoryCard({
   locale,
   timeZone,
   priority = false,
+  rail,
+  position,
 }: {
   article: Article
   variant?: Variant
@@ -31,10 +33,33 @@ export function StoryCard({
   locale: string
   timeZone: string
   priority?: boolean
+  /**
+   * Which rail rendered this card, and where in it (1-based). Both or
+   * neither: a position without a rail cannot be corrected for position bias
+   * and a rail without a position is the bias itself, unmeasured.
+   *
+   * Untagged, a click on this card reaches the beacon as a bare URL — the
+   * entity is only inferable by re-resolving the href server-side, and the
+   * fact that a rail showed it is lost outright. Tagged, the click carries
+   * the article id, the rail and the slot, and `BeaconRoute` can register the
+   * impression that ARCHITECTURE §10's ranker needs to know what was shown
+   * and not clicked.
+   */
+  rail?: string
+  position?: number
 }) {
   const section = sectionOf(article)
   const href = `/${article.slug}`
   const withImage = variant !== 'index'
+  // On the headline link only, not the figure link beside it: both point at
+  // the same article, and tagging both would let one card report two clicks.
+  const attribution = {
+    'data-nowb-entity': String(article.id),
+    'data-nowb-entity-type': 'article',
+    ...(rail && position !== undefined
+      ? { 'data-nowb-rail': rail, 'data-nowb-position': String(position) }
+      : {}),
+  }
 
   return (
     <article className={`card${variant === 'standard' ? '' : ` card--${variant}`}`}>
@@ -60,7 +85,9 @@ export function StoryCard({
 
       <div className="card__body">
         <h3 className="card__headline display">
-          <Link href={href}>{article.title}</Link>
+          <Link href={href} {...attribution}>
+            {article.title}
+          </Link>
         </h3>
 
         {showDek && variant !== 'index' ? <p className="card__dek">{article.dek}</p> : null}

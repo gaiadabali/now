@@ -1,3 +1,6 @@
+import { Suspense } from 'react'
+
+import { BeaconRoute } from '@/components/BeaconRoute'
 import { currentReader } from '@/lib/reader'
 
 /**
@@ -18,11 +21,14 @@ import { currentReader } from '@/lib/reader'
  *
  * ## Why the endpoint is derived rather than configured
  *
- * The beacon defaults to `<script origin>/v1/{site}/events`, and the engine
- * API is path-routed on the city hostname (ADMIN-CONSOLIDATION.md) — so
- * serving the script from this origin resolves to the right endpoint without
- * a per-city environment variable that could be wrong. `NEXT_PUBLIC_BEACON_ENDPOINT`
- * overrides it for the case where that stops being true.
+ * The beacon defaults to `<script origin>/v1/{site}/events`, so serving the
+ * script from this origin resolves to the right endpoint without a per-city
+ * environment variable that could be wrong. That path is served by
+ * `app/v1/[site]/events/route.ts`, which forwards to `ENGINE_API_URL` — this
+ * comment used to claim the edge path-routed `/v1` on the city hostname, and
+ * it does not: batches 404'd against this very app for as long as the tag has
+ * been here. `NEXT_PUBLIC_BEACON_ENDPOINT` still overrides, for a deployment
+ * that does front the API on a public origin of its own.
  *
  * ## Identity
  *
@@ -62,16 +68,25 @@ export async function Beacon({
   }
 
   return (
-    <script
-      src="/beacon.min.js"
-      async
-      data-site={site}
-      data-entity={entity}
-      data-entity-type={entity ? entityType : undefined}
-      data-surface={surface}
-      data-user={userId}
-      data-endpoint={process.env.NEXT_PUBLIC_BEACON_ENDPOINT || undefined}
-    />
+    <>
+      <script
+        src="/beacon.min.js"
+        async
+        data-site={site}
+        data-entity={entity}
+        data-entity-type={entity ? entityType : undefined}
+        data-surface={surface}
+        data-user={userId}
+        data-endpoint={process.env.NEXT_PUBLIC_BEACON_ENDPOINT || undefined}
+      />
+      {/* The tag above covers the document load and nothing after it. This
+          covers every client-side navigation that follows, which on an App
+          Router site is most of a session — see BeaconRoute.tsx. Suspense
+          because it reads searchParams, which Next requires a boundary for. */}
+      <Suspense fallback={null}>
+        <BeaconRoute />
+      </Suspense>
+    </>
   )
 }
 

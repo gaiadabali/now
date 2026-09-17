@@ -90,6 +90,12 @@ NOWB('impression', { surface: 'article', rail: 'complementary', entityId: '4821'
 // Equivalent direct method form:
 NOWB.impression({ surface: 'article', rail: 'complementary', entityId: '4821', position: 1 });
 
+// Tell the beacon the host navigated WITHOUT a document load (SPA routing).
+// Emits `dwell` for the page being left, then `view` for the new one, and
+// resets the per-page scroll milestones. Re-declaring the page already in
+// view is a no-op, so it is safe to call unconditionally on every mount.
+NOWB('page', { entity: '4429', entityType: 'article', surface: 'article' });
+
 // Explicit user signal
 NOWB('thumbsDown', { entityType: 'place', entityId: '4821' });
 
@@ -103,6 +109,11 @@ NOWB('consent', 'denied');
 // Force an immediate flush (rarely needed — batching handles this)
 NOWB('flush');
 ```
+
+On a single-page app — the NOW! reader site is one — `NOWB('page', …)` is not
+optional decoration: the script executes once per document, so without it
+every article a reader opens by clicking a link is attributed to whatever page
+they first landed on, and only the landing page ever gets a `view`.
 
 Automatic instrumentation (no calls needed): `view` fires on load; `scroll`
 fires at 25/50/75/100% depth; `click`/`outbound` fire from a single
@@ -155,6 +166,26 @@ dedicated free-text field for a search query. Rather than adding one
 unilaterally, the query travels as `entity_type: "search_query"`,
 `entity_id: <query text, truncated to 200 chars>`. If E0.2 later adds a
 first-class `query` field, this is the one deliberate deviation to revisit.
+
+**`entity_type: "url"` is the encoding for "this is a URL, not an entity".**
+The server writes it to `engine.interactions.target_url` and leaves
+`entity_id` NULL; every *other* `entity_type` must carry a native integer
+Payload PK, and anything else is a `400` that drops the entire batch. Three
+cases produce it:
+
+| Case | `kind` | `entity_id` |
+|---|---|---|
+| An untagged link, off-site | `outbound` | the absolute `href` |
+| An untagged link, on-site | `click` | the absolute `href` |
+| A page that names no entity (home, section index, search) | `view`/`scroll`/`dwell`/`exit` | `location.href` |
+
+The last two were the bugs that kept `engine.interactions` at zero rows: an
+internal click used to send the href under the *page's* `entity_type`, and a
+page with no `data-entity`/`nowb:entity` used to send `entity_id: ""` — a
+`400` and a `422` respectively, each taking every good event queued beside it.
+A first-class `page_url` column would be a cleaner home for the third case;
+until the schema has one, `target_url` holds it losslessly rather than the
+event being dropped.
 
 ### `impression`
 
