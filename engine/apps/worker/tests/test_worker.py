@@ -4,6 +4,7 @@ thread into an unhealthy container."""
 
 from __future__ import annotations
 
+import inspect
 import threading
 
 import pytest
@@ -135,11 +136,31 @@ def test_nonsense_integer_fails_loudly(monkeypatch):
         Settings.from_env()
 
 
-@pytest.mark.parametrize("raw,expected", [("false", False), ("0", False), ("no", False),
-                                          ("true", True), ("1", True), ("", True)])
+TOGGLE_CASES = [("false", False), ("0", False), ("no", False),
+                ("true", True), ("1", True), ("", True)]
+
+
+@pytest.mark.parametrize("raw,expected", TOGGLE_CASES)
 def test_reembed_toggle(monkeypatch, raw, expected):
     monkeypatch.setenv("ENGINE_WORKER_RUN_REEMBED_CONSUMER", raw)
     assert Settings.from_env().run_reembed_consumer is expected
+
+
+@pytest.mark.parametrize("raw,expected", TOGGLE_CASES)
+def test_classification_toggle(monkeypatch, raw, expected):
+    """Its own switch, not a second reading of the one above: the two handlers
+    share a thread, so moving re-embedding to its own service would otherwise
+    silently take the review path with it."""
+    monkeypatch.setenv("ENGINE_WORKER_APPLY_CLASSIFICATION_REVIEWS", raw)
+    assert Settings.from_env().apply_classification_reviews is expected
+
+
+def test_classification_is_applied_unless_switched_off(monkeypatch):
+    """An unset variable must mean on. A compose file that says nothing about
+    this flag is the common case, and defaulting to off would ship the exact
+    silence this handler exists to end."""
+    monkeypatch.delenv("ENGINE_WORKER_APPLY_CLASSIFICATION_REVIEWS", raising=False)
+    assert Settings.from_env().apply_classification_reviews is True
 
 
 def test_partition_lookahead_exceeds_the_cli_default():
@@ -176,9 +197,9 @@ class FakeRedis:
 
 
 async def test_heartbeat_written_when_consumer_is_healthy(monkeypatch):
-    monkeypatch.setattr(main, "_reembed_failed", threading.Event())
+    monkeypatch.setattr(main, "_consumer_failed", threading.Event())
     alive = threading.Thread(target=lambda: None)
-    monkeypatch.setattr(main, "_reembed_thread", None)  # not started == not yet dead
+    monkeypatch.setattr(main, "_consumer_thread", None)  # not started == not yet dead
 
     redis = FakeRedis()
     ctx = {"redis": redis, "settings": Settings(run_reembed_consumer=True)}
@@ -200,7 +221,7 @@ async def test_heartbeat_withheld_when_consumer_died(monkeypatch):
 
     failed = threading.Event()
     failed.set()
-    monkeypatch.setattr(main, "_reembed_failed", failed)
+    monkeypatch.setattr(main, "_consumer_failed", failed)
 
     redis = FakeRedis()
     ctx = {"redis": redis, "settings": Settings(run_reembed_consumer=True)}
@@ -217,7 +238,7 @@ async def test_heartbeat_ignores_consumer_when_it_is_disabled(monkeypatch):
 
     failed = threading.Event()
     failed.set()
-    monkeypatch.setattr(main, "_reembed_failed", failed)
+    monkeypatch.setattr(main, "_consumer_failed", failed)
 
     redis = FakeRedis()
     ctx = {"redis": redis, "settings": Settings(run_reembed_consumer=False)}
@@ -244,54 +265,72 @@ async def test_drop_old_partitions_is_a_noop_without_retention():
 # ---------------------------------------------------------------------------
 
 
-def test_reembed_consumer_calls_a_method_that_exists(monkeypatch):
-    """Drives `_run_reembed_consumer` against a worker that exposes ONLY the
-    real ReembedWorker API.
+def test_consumer_is_constructed_and_driven_through_its_real_api(monkeypatch):
+    """Drives `_run_domain_event_consumer` against a stand-in that exposes ONLY
+    the real `DomainEventWorker` API.
 
-    Asserting `hasattr(ReembedWorker, "run_forever")` is not enough — that
-    stays true no matter what main.py actually calls, which is how the
-    original typo survived. The call site is what has to be exercised: it
-    called `run()`, which has never existed, so the thread raised
-    AttributeError on its first line at every start and the consumer never
-    ran in production. Its exception handler is deliberately broad, so the
-    only evidence was an unhealthy container.
+    Asserting `hasattr(..., "run_forever")` is not enough — that stays true no
+    matter what main.py actually calls, which is how the original typo
+    survived. The call site is what has to be exercised: it called `run()`,
+    which has never existed, so the thread raised AttributeError on its first
+    line at every start and the consumer never ran in production. Its
+    exception handler is deliberately broad, so the only evidence was an
+    unhealthy container.
 
-    Here that same handler is the assertion: if the call site names a method
-    the real class does not have, the failure flag latches and this fails.
+    Now it also has to survive a constructor signature: the handler for
+    `classification.reviewed` is switched from `Settings`, and a keyword the
+    class does not accept fails exactly the same silent way. `real_api` is
+    read off `DomainEventWorker`, so everything inherited from
+    `ReembedWorker` still counts.
     """
 
     import now_embeddings.cli as embed_cli
     import now_embeddings.worker as embed_worker
 
-    real_api = {n for n in dir(embed_worker.ReembedWorker) if not n.startswith("_")}
+    from app import consumer as consumer_mod
+
+    real_api = {n for n in dir(consumer_mod.DomainEventWorker) if not n.startswith("_")}
+    accepted = set(
+        inspect.signature(consumer_mod.DomainEventWorker.__init__).parameters
+    ) | set(inspect.signature(embed_worker.ReembedWorker.__init__).parameters)
     calls: list[str] = []
+    constructed: dict = {}
 
     class OnlyTheRealAPI:
-        """Raises AttributeError for anything the real class lacks."""
+        """Raises for anything the real class lacks — attribute or keyword."""
 
         def __init__(self, **kwargs):
-            pass
+            unknown = set(kwargs) - accepted
+            assert not unknown, (
+                f"app/main.py passes {sorted(unknown)} to the consumer, which its "
+                f"constructor does not accept (it takes {sorted(accepted - {'self'})})"
+            )
+            constructed.update(kwargs)
 
         def __getattr__(self, name):
             if name not in real_api:
                 raise AttributeError(
-                    f"ReembedWorker has no attribute {name!r} — "
+                    f"DomainEventWorker has no attribute {name!r} — "
                     f"app/main.py calls it but the real API is {sorted(real_api)}"
                 )
             calls.append(name)
             return lambda *a, **k: None
 
-    monkeypatch.setattr(embed_worker, "ReembedWorker", OnlyTheRealAPI)
+    monkeypatch.setattr(consumer_mod, "DomainEventWorker", OnlyTheRealAPI)
     monkeypatch.setattr(embed_cli, "_provider", lambda name: object())
-    monkeypatch.setattr(main, "_reembed_failed", threading.Event())
+    monkeypatch.setattr(main, "_consumer_failed", threading.Event())
 
-    main._run_reembed_consumer(Settings(run_reembed_consumer=True))
+    main._run_domain_event_consumer(Settings(run_reembed_consumer=True))
 
-    assert not main._reembed_failed.is_set(), (
-        "the re-embed consumer failed to start — app/main.py calls a method "
-        "ReembedWorker does not have"
+    assert not main._consumer_failed.is_set(), (
+        "the domain-event consumer failed to start — see the logged traceback"
     )
-    assert calls, "the consumer never called into ReembedWorker at all"
+    assert calls, "the consumer never called into DomainEventWorker at all"
+    assert "apply_classification_reviews" in constructed, (
+        "the classification handler's switch never reaches the consumer, so "
+        "ENGINE_WORKER_APPLY_CLASSIFICATION_REVIEWS would do nothing"
+    )
+
 
 
 # ---------------------------------------------------------------------------

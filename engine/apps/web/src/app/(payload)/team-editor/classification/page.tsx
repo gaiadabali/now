@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { requireEditorialAccess } from '@/lib/auth'
+import { requireReviewerAccess } from '@/lib/auth'
 import { CONFIDENCE_GATE, getClassificationQueue, getQueueTotals } from '@/lib/classification'
 
 import { classifyHref } from './paths'
@@ -38,7 +38,7 @@ export default async function ClassificationQueue({
 }: {
   searchParams: Promise<{ q?: string; all?: string }>
 }) {
-  await requireEditorialAccess()
+  await requireReviewerAccess()
   const { q, all } = await searchParams
   const belowGateOnly = all !== '1'
   const [totals, rows] = await Promise.all([

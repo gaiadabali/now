@@ -40,17 +40,31 @@
 
 name: now-engine
 
-# Shared by both Payload instances. Kept out of either service so that
-# neither city reads as the "primary" one whose settings the other inherits.
-x-cms-shared: &cms-shared
-  NODE_ENV: production
-  PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
-  PLATFORM_DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_platform
-  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-  GARAGE_S3_ENDPOINT: http://garage:3900
-  GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID:-}
-  GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
-  GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET:-now-media}
+# There is no `x-cms-shared` any more, and its absence is the point.
+#
+# It used to carry the Payload runtime's environment for two standalone
+# `cms-<city>` services. Phase 2 of docs/ADMIN-CONSOLIDATION.md moved Payload
+# into `web-<city>` and deleted those services — but left the anchor behind,
+# referenced by nothing. YAML does not complain about an unused anchor, and
+# `docker compose config` renders a valid file, so nothing ever failed. What
+# happened instead is that everything in it silently stopped reaching Payload:
+#
+#   REDIS_URL   — `packages/cms/src/lib/redis.ts` logs "REDIS_URL is not set —
+#                 domain events will not be emitted" and returns false from
+#                 every publish. So `article.published` has not reached the
+#                 worker's re-embed consumer since consolidation, and
+#                 `classification.reviewed` would have gone nowhere either.
+#   GARAGE_*    — `Media` is `disableLocalStorage: true`, so with no S3
+#                 credentials an upload has no destination at all. This is one
+#                 of two obstacles to media, not the whole story: `garage` and
+#                 `imgproxy` also sit behind the `media` profile and have never
+#                 been started on helios, because E1.3 (mirroring
+#                 wp-content/uploads into the bucket) is still blocked. See
+#                 DEPLOY.md section 6. Restoring the variables is necessary and
+#                 not sufficient.
+#
+# Everything it held now lives in `x-web-shared` below, which is the anchor
+# the services that run Payload actually use.
 
 # Shared by both reader-site instances. SITE_SLUG is deliberately NOT here:
 # it is the one thing that differs, and an anchor carrying the differentiator
@@ -77,6 +91,25 @@ x-web-shared: &web-shared
   # password — the credential lives in the platform — so this secret is what
   # makes a sign-in trustworthy.
   PAYLOAD_SECRET: ${PAYLOAD_SECRET:?}
+  # The domain-event transport. Payload announces `article.published` and
+  # `classification.reviewed` on it and the worker consumes them; without it
+  # every publish is a no-op that logs and returns false, which is what has
+  # been happening since the admin moved in here. Plain `REDIS_URL`, not the
+  # `ENGINE_*_REDIS_URL` spelling the Python services read — the CMS reads
+  # this name (packages/cms/src/lib/redis.ts).
+  REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+  # Media has nowhere to go without these: `Media` sets
+  # `disableLocalStorage: true`, so the S3 adapter is the only destination.
+  # Left defaulting to empty rather than `:?` so a deployment that has not
+  # provisioned Garage credentials still boots — the symptom is then a failing
+  # upload, which is visible, instead of a stack that will not start. On helios
+  # the credentials are real but `garage` itself is not running (media profile,
+  # DEPLOY.md section 6), so these point at a service that has to be turned on
+  # in the same change that unblocks the mirror.
+  GARAGE_S3_ENDPOINT: http://garage:3900
+  GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID:-}
+  GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
+  GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET:-now-media}
 
 x-logging: &default-logging
   driver: json-file
@@ -304,6 +337,13 @@ services:
     depends_on:
       engine-api:
         condition: service_healthy
+      # Payload runs in here and announces domain events on Redis. Waiting for
+      # it is not strictly required — `publishDomainEvent` never throws and a
+      # dropped announcement only costs one re-embed — but a city that boots
+      # before its transport publishes nothing for the first few seconds and
+      # says so only in a log nobody is reading at that moment.
+      redis:
+        condition: service_healthy
     networks: [now-internal]
     logging: *default-logging
     deploy:
@@ -324,6 +364,13 @@ services:
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
     depends_on:
       engine-api:
+        condition: service_healthy
+      # Payload runs in here and announces domain events on Redis. Waiting for
+      # it is not strictly required — `publishDomainEvent` never throws and a
+      # dropped announcement only costs one re-embed — but a city that boots
+      # before its transport publishes nothing for the first few seconds and
+      # says so only in a log nobody is reading at that moment.
+      redis:
         condition: service_healthy
     networks: [now-internal]
     logging: *default-logging
