@@ -201,6 +201,11 @@ Verified on helios 2026-09-14: 4310-4316 are all unlistened AND unreferenced.
 
 ## 5. First deploy
 
+Clone it, and if you inherit a box where someone did not, say so in this
+document rather than working around it — helios is exactly that box today
+(§7). A clone is what makes "does this match the sha we think we deployed"
+answerable at all.
+
 ```bash
 ssh helios
 git clone https://github.com/gaiadabali/now.git /opt/now-engine
@@ -244,15 +249,85 @@ docker compose -f deploy/docker-compose.yml --env-file deploy/.env \
 
 ## 7. Routine deploy and rollback
 
+**`/opt/now-engine` is not a git checkout.** §5 says to clone it and this
+section used to open with `git pull`, and neither has ever been true of the
+running box: there is no `.git` there at all, and `deploy/deploy.sh` and
+`deploy/docker-compose.yml` were copied up by hand at some point. `deploy.sh`
+itself knows — it prints `warn: not a git checkout — cannot verify these files
+match sha-<tag>` and carries on. So a compose or script change does **not**
+arrive by pulling, and a deploy that needs one silently rolls out the old file
+against the new images.
+
+This is the procedure that was actually run on 2026-09-17, in this order.
+
 ```bash
-git pull && deploy/deploy.sh --pull --tag sha-<short>   # after CI is green
-deploy/deploy.sh --rollback sha-<previous>              # no migration
+# 1. LOCAL — confirm the box has no edits of its own before overwriting it.
+#    If these differ, someone changed something on the box and you need to
+#    know what before you destroy it.
+ssh helios 'sha1sum /opt/now-engine/deploy/docker-compose.yml /opt/now-engine/deploy/deploy.sh'
+git show <deployed-sha>:deploy/docker-compose.yml | sha1sum
+git show <deployed-sha>:deploy/deploy.sh          | sha1sum
+
+# 2. ON THE BOX — back up all three, timestamped. Rollback is not only the
+#    image tag; if compose changed, the old compose has to come back too.
+ssh helios 'cd /opt/now-engine/deploy && S=$(date +%Y%m%d-%H%M%S)   && cp docker-compose.yml docker-compose.yml.bak-$S   && cp deploy.sh deploy.sh.bak-$S && cp .env .env.bak-$S && echo $S'
+
+# 3. LOCAL -> BOX — copy what changed.
+scp deploy/docker-compose.yml deploy/deploy.sh deploy/.env.example helios:/tmp/
+ssh helios 'cd /opt/now-engine/deploy && cp /tmp/docker-compose.yml /tmp/deploy.sh /tmp/.env.example .   && chmod +x deploy.sh && rm -f /tmp/docker-compose.yml /tmp/deploy.sh /tmp/.env.example'
+
+# 4. ON THE BOX — any new variables, into deploy/.env. See the quoting trap
+#    in §8 before writing a value containing double quotes.
+
+# 5. ON THE BOX — roll out. Never before CI's `publish images` is green for
+#    that sha, or the pull fails on a tag that does not exist.
+ssh helios 'cd /opt/now-engine && deploy/deploy.sh --pull --tag sha-<short>'
+
+# 6. ON THE BOX — verify the environment reached the PROCESS, not just .env.
+ssh helios 'docker exec now-engine-api printenv <EVERY_NEW_VAR>'
+```
+
+```bash
+deploy/deploy.sh --rollback sha-<previous>   # images only — see below
 deploy/deploy.sh --status
 ```
+
+`deploy.sh` writes the rolled-out tag back into `deploy/.env` after the health
+checks pass, so `.env` records what is serving traffic. It did not until
+2026-09-17, and the box was found running `sha-103c013` with `.env` still
+naming `sha-d4bc080` — a bare `deploy.sh --pull`, which this file documents as
+"roll out IMAGE_TAG from .env", would have rolled production eleven builds
+backwards and reported success.
+
+**Rollback is not symmetric with deploy.** `--rollback` changes the image tag
+and nothing else. If the rollout also changed `docker-compose.yml` or `.env`,
+restore those from step 2's backup in the same breath, or you are running old
+images against new config — which is a state nothing has ever been tested in.
 
 Rollback does not reverse migrations, and nothing in this script touches the
 postgres volume. A migration that must be undone is a separate, deliberate
 act.
+
+### Verify the environment inside the container, never in `.env`
+
+Three separate times this project has shipped a variable that was correct in
+the file and absent from the process:
+
+- `REDIS_URL` and `GARAGE_*` sat in an `x-cms-shared` YAML anchor that the
+  admin consolidation left referenced by nothing. Valid YAML, clean
+  `docker compose config`, and Payload published no domain events for weeks.
+- `ENGINE_API_EXTRA_ALLOWED_ORIGINS` was added to `.env` while `engine-api`
+  has no `env_file`, so it reached compose's interpolation and stopped there.
+- The same variable then had its quotes eaten by the dotenv parser (§8).
+
+`docker compose config` caught none of them — it renders from the same parsed
+`.env`, so it is a witness to its own mistake. The only check that cannot lie:
+
+```bash
+docker exec <container> printenv <VAR>
+```
+
+Do it for every variable a rollout adds or changes, before declaring it done.
 
 ## 8. Still required, and not doable from here
 
@@ -376,9 +451,31 @@ act.
   collecting nothing. Measured 2026-09-17 — zero interactions on either city
   since 2026-09-09.
 
+  **Single-quote it in `deploy/.env`. The unquoted form below is what this
+  document used to give, and it took production down on 2026-09-17.**
+
   ```
-  ENGINE_API_EXTRA_ALLOWED_ORIGINS={"jakarta":["https://now-jakarta.gaiada.com"],"bali":["https://now-bali.gaiada.com"]}
+  ENGINE_API_EXTRA_ALLOWED_ORIGINS='{"jakarta":["https://now-jakarta.gaiada.com"],"bali":["https://now-bali.gaiada.com"]}'
   ```
+
+  Compose's dotenv parser strips the inner double quotes out of an unquoted
+  value, so the container receives
+  `{jakarta:[https://now-jakarta.gaiada.com],...}` — not JSON. `engine-api`
+  then refuses to boot, `deploy.sh` correctly declines to start the web
+  containers behind an unhealthy dependency, and the site is down until the
+  quoting is fixed. Wrapping the whole value in single quotes survives the
+  parser intact.
+
+  `docker compose config` shows the WRONG value confidently, because it renders
+  from the same parsed `.env`. Verify with
+  `docker exec now-engine-api printenv ENGINE_API_EXTRA_ALLOWED_ORIGINS`.
+
+  **Leave the validator strict.** `config.py` treats a blank value as "no extra
+  origins" — that is deliberate, because emptying this variable is how it is
+  meant to end — but malformed JSON still refuses to boot. That strictness is
+  the only reason the quoting bug was ninety loud seconds instead of a green
+  deploy that collected nothing and said why to nobody. The instinct under
+  pressure will be to make it tolerant. Do not.
 
   Keyed by site slug, never a flat list — a flat list would let one city's
   origin write behaviour into another city's database. **Delete these entries
