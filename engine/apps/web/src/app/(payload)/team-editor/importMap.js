@@ -1,3 +1,4 @@
+import { BodyBlocksEditor as BodyBlocksEditor_9204eff1c02293afe46fc31085457cce } from '../../../../../../packages/cms/src/fields/BodyBlocksEditor'
 import { StaffAvatar as StaffAvatar_5bb10f5d3c0a02d91561a6a314109b92 } from '../../../../../../packages/cms/src/components/graphics/StaffAvatar'
 import { SiteIcon as SiteIcon_cac4c003ece38d4713a604f6952c4c76 } from '../../../../../../packages/cms/src/components/graphics/SiteIcon'
 import { SiteLogo as SiteLogo_ff21b9e695f6f5ae7cdb03100ed9e724 } from '../../../../../../packages/cms/src/components/graphics/SiteLogo'
@@ -11,6 +12,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "/fields/BodyBlocksEditor#BodyBlocksEditor": BodyBlocksEditor_9204eff1c02293afe46fc31085457cce,
   "/components/graphics/StaffAvatar#StaffAvatar": StaffAvatar_5bb10f5d3c0a02d91561a6a314109b92,
   "/components/graphics/SiteIcon#SiteIcon": SiteIcon_cac4c003ece38d4713a604f6952c4c76,
   "/components/graphics/SiteLogo#SiteLogo": SiteLogo_ff21b9e695f6f5ae7cdb03100ed9e724,

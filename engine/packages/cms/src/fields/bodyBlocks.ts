@@ -41,12 +41,29 @@ const KNOWN_BLOCK_TYPES = new Set([
 
 export const bodyBlocksField: Field = {
   name: 'bodyBlocks',
-  label: 'Body blocks',
+  label: 'Body',
   type: 'json',
   admin: {
+    /**
+     * The stored shape is unchanged and everything above still holds. What
+     * changed is who has to look at it: a `json` field renders as a code
+     * editor, and an article here averages 15 blocks and runs to 596, so
+     * fixing a typo meant finding the sentence inside a quoted string and not
+     * breaking the escaping around it. This field's own description used to
+     * warn "edit with care — this is the loader's output format, not prose",
+     * which was accurate, and was also an admission that the surface had been
+     * built for the importer rather than for the person using it.
+     *
+     * `BodyBlocksEditor` edits the same array in place — `blockModel.ts`
+     * guarantees, with tests, that a block the writer did not touch comes back
+     * as the very same object — and puts the body beside it at reader
+     * typography. Registered by path through the generated importMap, like
+     * every other custom component in this config.
+     */
+    components: { Field: '/fields/BodyBlocksEditor#BodyBlocksEditor' },
     description:
-      'E1.2 block array (heading/paragraph/image/gallery/list/quote/embed/separator/columns/raw_html). ' +
-      'Stored as jsonb, unmodified. Edit with care — this is the loader\'s output format, not prose.',
+      'E1.2 block array (heading/paragraph/image/gallery/list/quote/embed/separator/columns/raw_html), ' +
+      'stored as jsonb and unmodified. Blocks you do not edit are saved back byte-identical.',
   },
   validate: (value: unknown) => {
     if (value === undefined || value === null) return true // optional until E1.8 loads content
