@@ -47,6 +47,24 @@
  * not. Keying on `autosave` would have fixed the autosave case and left the
  * manual "Save draft" button emitting the same lie — which is why the wider
  * signal is the right one.
+ *
+ * VERIFIED AGAINST EVERY PATH, not just those three. now-ed read every file in
+ * `@payloadcms/ui` that writes `_status: 'draft'`:
+ *
+ *   Autosave, SaveDraftButton, EditMany   send `draft=true`  -> silenced
+ *   UnpublishButton, UnpublishMany        no draft flag      -> announced
+ *   DuplicateDocument                     no draft flag, but a CREATE that
+ *                                         lands in draft     -> nothing (below)
+ *
+ * `UnpublishMany` was the case that mattered most: it PATCHes `_status:'draft'`
+ * from a `where` clause with no draft flag anywhere, so a bulk unpublish is
+ * still correctly announced. Silencing that would have been far worse than the
+ * bug being fixed.
+ *
+ * One trap worth recording: grepping for the literal `draft=true` does NOT
+ * match `Autosave/index.js`, because the flag is assembled by
+ * `qs.stringify({ autosave: true, depth: 0, draft: true, … })` and the string
+ * never appears in the source. A grep alone says the central case is wrong.
  */
 
 export type ArticleEvent = 'article.published' | 'article.unpublished' | 'article.republished'

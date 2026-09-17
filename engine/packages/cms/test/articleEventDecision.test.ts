@@ -108,6 +108,28 @@ test('saving a draft that was never published announces nothing', () => {
   assert.equal(decideArticleEvent(inputs()), null)
 })
 
+test('duplicating an article announces nothing, even though it carries no draft flag', () => {
+  // The one draft-writing path with no `draft` query parameter that is NOT an
+  // unpublish. `DuplicateDocument` POSTs to /{slug}/{id}/duplicate with
+  // `{_status:'draft'}` and a query of only `locale`, so `isDraftWrite` is
+  // false and this arrives as a create landing in draft.
+  //
+  // The logic already handles it, via the `!isPublished && !wasPublished`
+  // clause — but that clause sits directly below the `operation === 'create'`
+  // branch, and reordering the two would turn every duplicate of a published
+  // article into an `article.published` for a draft nobody can read. Pinned so
+  // that cannot happen quietly. Found by now-ed reading every draft-status
+  // writer in @payloadcms/ui rather than the three I had.
+  assert.equal(
+    decideArticleEvent(inputs({ operation: 'create', isPublished: false, isDraftWrite: false })),
+    null,
+  )
+  assert.equal(
+    decideArticleEvent(inputs({ operation: 'create', isPublished: false, wasPublished: false })),
+    null,
+  )
+})
+
 // --- reading the flag ----------------------------------------------------
 
 test('the draft flag is read as the string a query parameter actually is', () => {
