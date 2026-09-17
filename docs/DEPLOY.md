@@ -330,10 +330,22 @@ The failure mode is not a deploy that fails. It is a deploy that goes
   a missing migration into a generic apology on a public form.
 
 Caught on 2026-09-17 before it shipped, on a newsletter double-opt-in change
-carrying revision `0010`: the confirmation columns did not exist in
-production, and the handler's own `try/catch` would have turned every
-`/subscribe` submission into "Something went wrong at our end" — traded for a
-feature that could not work yet anyway.
+carrying revision `0010`. The confirmation columns did not exist in
+production — **and the failure would not have been visible.** That change
+gates its own INSERT behind "is mail configured", production has no SMTP, and
+so every submission would have short-circuited to `?status=unavailable`
+before reaching the missing columns. Its redemption route fails the same
+quiet way: a missing column throws, the `catch` returns `invalid`, and a
+broken confirmation link is indistinguishable from an expired one.
+
+It would have deployed green and stayed green — until the day someone
+configured mail and unknowingly removed the guard that was hiding it, then
+debugged a missing migration as a mail problem, while switching on a feature
+they had every reason to believe was already live.
+
+That is the shape to fear. An immediate break is at least self-announcing.
+This one waits for an unrelated change to expose it, and surfaces in front of
+whoever is least equipped to recognise it.
 
 **So, before any rollout: does this range of commits add an Alembic
 revision?**
