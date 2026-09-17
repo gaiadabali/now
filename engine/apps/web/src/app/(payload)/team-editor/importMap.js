@@ -6,6 +6,7 @@ import { NavReview as NavReview_f4c00f2907caec8209614c481f3b2e92 } from '../../.
 import { NavConsole as NavConsole_5b4f4e7166ab8f1cff5a527c2cbb7dcf } from '../../../../../../packages/cms/src/components/nav/NavConsole'
 import { StaffLink as StaffLink_fa193af2b2d971cc552cf1c992e5f147 } from '../../../../../../packages/cms/src/components/nav/StaffLink'
 import { NavMasthead as NavMasthead_5122c282b3359210927c31f70530cdf6 } from '../../../../../../packages/cms/src/components/nav/NavMasthead'
+import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -18,5 +19,6 @@ export const importMap = {
   "/components/nav/NavConsole#NavConsole": NavConsole_5b4f4e7166ab8f1cff5a527c2cbb7dcf,
   "/components/nav/StaffLink#StaffLink": StaffLink_fa193af2b2d971cc552cf1c992e5f147,
   "/components/nav/NavMasthead#NavMasthead": NavMasthead_5122c282b3359210927c31f70530cdf6,
+  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

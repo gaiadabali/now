@@ -175,21 +175,39 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  plugins: hasGarageCreds
-    ? [
-        s3Storage({
-          collections: { media: true },
-          bucket: process.env.GARAGE_MEDIA_BUCKET ?? 'now-media',
-          config: {
-            endpoint: process.env.GARAGE_S3_ENDPOINT,
-            region: process.env.GARAGE_S3_REGION ?? 'garage',
-            credentials: {
-              accessKeyId: process.env.GARAGE_ACCESS_KEY_ID ?? '',
-              secretAccessKey: process.env.GARAGE_SECRET_ACCESS_KEY ?? '',
-            },
-            forcePathStyle: true,
-          },
-        }),
-      ]
-    : [],
+  // ALWAYS REGISTERED, switched off by `enabled` rather than by its absence.
+  //
+  // This used to be `hasGarageCreds ? [s3Storage(...)] : []`, and that shape
+  // took the production admin down on 2026-09-17. The plugin contributes a
+  // client component, `@payloadcms/storage-s3/client#S3ClientUploadHandler`,
+  // which Payload resolves through the generated `importMap.js` — and the
+  // importMap is generated at BUILD time, in an environment that has no Garage
+  // credentials. Registering the plugin conditionally on a RUN-time value
+  // therefore produced a build whose manifest did not contain the component
+  // the running config asked for. Payload logs `getFromImportMap:
+  // PayloadComponent not found in importMap` and renders NOTHING: every route
+  // under /team-editor, the sign-in screen included, served valid HTML with an
+  // empty Suspense boundary inside it. No error page, no failed request, and a
+  // passing health check.
+  //
+  // `enabled: false` keeps the plugin in the config — so its component is in
+  // the importMap of every build — while leaving it inert. The credentials
+  // then decide behaviour, not the shape of the manifest, and supplying them
+  // at run time can no longer disagree with what was baked at build time.
+  plugins: [
+    s3Storage({
+      enabled: hasGarageCreds,
+      collections: { media: true },
+      bucket: process.env.GARAGE_MEDIA_BUCKET ?? 'now-media',
+      config: {
+        endpoint: process.env.GARAGE_S3_ENDPOINT,
+        region: process.env.GARAGE_S3_REGION ?? 'garage',
+        credentials: {
+          accessKeyId: process.env.GARAGE_ACCESS_KEY_ID ?? '',
+          secretAccessKey: process.env.GARAGE_SECRET_ACCESS_KEY ?? '',
+        },
+        forcePathStyle: true,
+      },
+    }),
+  ],
 })
