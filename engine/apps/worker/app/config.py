@@ -31,6 +31,19 @@ def _int(name: str, default: int) -> int:
         raise ValueError(f"{name} must be an integer, got {raw!r}") from exc
 
 
+#: Everything not in here is true, including the empty string — compose
+#: passes an unset variable as `""` and "not configured" must mean "on" for
+#: both flags below, not "silently off".
+_FALSEY = {"0", "false", "no"}
+
+
+def _bool(name: str, default: bool = True) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in _FALSEY
+
+
 def _optional_int(name: str) -> int | None:
     raw = os.environ.get(name)
     if raw is None or raw.strip() == "":
@@ -52,12 +65,26 @@ class Settings:
     # is the default and not a number.
     interaction_retention_days: int | None = None
 
-    # Whether this process also runs the re-embed-on-publish stream consumer
-    # (now_embeddings.worker.ReembedWorker) in a supervised thread. On by
+    # Whether this process also runs the domain-event stream consumer
+    # (app.consumer.DomainEventWorker) in a supervised thread. On by
     # default: one container is cheaper than two on a 2 vCPU / 7 GB box, and
     # the consumer is IO-bound. Turn it off to run it as its own service.
+    #
+    # The name is `..._RUN_REEMBED_CONSUMER` and stays that way: it is what
+    # `deploy/docker-compose.yml` already sets on the live box, and renaming
+    # it would silently fall back to the default on the next deploy. The
+    # thread it gates now carries the classification handler too.
     run_reembed_consumer: bool = True
     reembed_provider: str = "local"
+
+    # Whether that same consumer also applies `classification.reviewed` into
+    # `engine.entity_terms` (app/classification.py). Its own switch, not a
+    # second copy of the one above: the two handlers share a thread, so
+    # turning re-embedding off to move it to its own service would otherwise
+    # silently take the review path with it. Kept as `ENGINE_WORKER_*` with
+    # the same true-by-default parsing as its neighbour, so a compose file
+    # that says nothing gets the behaviour this ticket exists to deliver.
+    apply_classification_reviews: bool = True
 
     heartbeat_key: str = HEARTBEAT_KEY
     heartbeat_ttl_seconds: int = 180
@@ -74,10 +101,8 @@ class Settings:
             interaction_retention_days=_optional_int(
                 "ENGINE_WORKER_INTERACTION_RETENTION_DAYS"
             ),
-            run_reembed_consumer=os.environ.get(
-                "ENGINE_WORKER_RUN_REEMBED_CONSUMER", "true"
-            ).lower()
-            not in {"0", "false", "no"},
+            run_reembed_consumer=_bool("ENGINE_WORKER_RUN_REEMBED_CONSUMER"),
+            apply_classification_reviews=_bool("ENGINE_WORKER_APPLY_CLASSIFICATION_REVIEWS"),
             reembed_provider=os.environ.get("ENGINE_WORKER_REEMBED_PROVIDER", "local"),
             heartbeat_ttl_seconds=_int("ENGINE_WORKER_HEARTBEAT_TTL_SECONDS", 180),
         )

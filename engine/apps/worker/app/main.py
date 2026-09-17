@@ -1,4 +1,4 @@
-"""arq worker: cron schedule + the re-embed stream consumer.
+"""arq worker: cron schedule + the domain-event stream consumer.
 
     arq app.main.WorkerSettings
 
@@ -8,11 +8,20 @@ Two kinds of work share this process.
 heartbeat. arq is here for `cron_jobs`; the queue is incidental, because the
 fan-out unit is a site, not a task.
 
-**The re-embed consumer** is `now_embeddings.worker.ReembedWorker`, which
-already existed and already handles `article.published` off the Redis Stream
-with a consumer group. It is not reimplemented here — this app gives it a
-process to live in. It is synchronous and blocking, so it runs in a daemon
-thread rather than the event loop.
+**The domain-event consumer** is `app.consumer.DomainEventWorker`: the
+`now_embeddings.worker.ReembedWorker` that already existed and already
+handled `article.published` off the Redis Stream with a consumer group,
+subclassed to also apply `classification.reviewed` into
+`engine.entity_terms` (see `app/classification.py` for why that write
+belongs to this process and not to the CMS). Neither handler is
+reimplemented here — this app gives them a process to live in. It is
+synchronous and blocking, so it runs in a daemon thread rather than the
+event loop.
+
+One thread, one consumer group, two handlers, on purpose: a Redis consumer
+group is the unit of delivery, and this process already owns one. See
+`app/consumer.py` for what happened the last time a second one was written
+instead.
 
 Running it in-process is a deliberate trade. Two containers would isolate a
 crash; one container fits a 2 vCPU / 7 GB box that already hosts three other
@@ -36,24 +45,31 @@ from app.config import Settings
 logger = logging.getLogger(__name__)
 
 # Module-level so shutdown and the health command can see it.
-_reembed_thread: threading.Thread | None = None
-_reembed_failed = threading.Event()
+_consumer_thread: threading.Thread | None = None
+_consumer_failed = threading.Event()
 
 
-def _run_reembed_consumer(settings: Settings) -> None:
+def _run_domain_event_consumer(settings: Settings) -> None:
     """Body of the supervised thread. Never raises out — a thread that dies
     with an exception takes its traceback nowhere useful."""
 
     try:
         from now_embeddings.cli import _provider
-        from now_embeddings.worker import ReembedWorker
+
+        from app.consumer import DomainEventWorker
 
         provider = _provider(settings.reembed_provider)
-        worker = ReembedWorker(provider=provider, redis_url=settings.redis_url)
-        logger.info(
-            "re-embed consumer starting (provider=%s)", settings.reembed_provider
+        worker = DomainEventWorker(
+            provider=provider,
+            redis_url=settings.redis_url,
+            apply_classification_reviews=settings.apply_classification_reviews,
         )
-        # `run_forever`, not `run` — ReembedWorker exposes run_once (bounded,
+        logger.info(
+            "domain-event consumer starting (provider=%s, classification_reviews=%s)",
+            settings.reembed_provider,
+            "on" if settings.apply_classification_reviews else "off",
+        )
+        # `run_forever`, not `run` — the base class exposes run_once (bounded,
         # used by tests and `worker --once`) and run_forever (the loop). There
         # is no `run`, so this raised AttributeError on the first line of the
         # thread, every start, and the consumer never once ran in production.
@@ -64,8 +80,8 @@ def _run_reembed_consumer(settings: Settings) -> None:
         # Latching the flag is the point: the heartbeat job reads it and
         # stops renewing, which is what turns "a thread quietly died" into
         # an unhealthy container.
-        _reembed_failed.set()
-        logger.exception("re-embed consumer died — worker will report unhealthy")
+        _consumer_failed.set()
+        logger.exception("domain-event consumer died — worker will report unhealthy")
 
 
 async def startup(ctx: dict) -> None:
@@ -84,16 +100,16 @@ async def startup(ctx: dict) -> None:
     )
 
     if settings.run_reembed_consumer:
-        global _reembed_thread
-        _reembed_thread = threading.Thread(
-            target=_run_reembed_consumer,
+        global _consumer_thread
+        _consumer_thread = threading.Thread(
+            target=_run_domain_event_consumer,
             args=(settings,),
-            name="reembed-consumer",
+            name="domain-event-consumer",
             daemon=True,
         )
-        _reembed_thread.start()
+        _consumer_thread.start()
     else:
-        logger.info("re-embed consumer disabled by configuration")
+        logger.info("domain-event consumer disabled by configuration")
 
 
 async def shutdown(ctx: dict) -> None:
@@ -109,11 +125,11 @@ async def heartbeat_or_fail(ctx: dict) -> dict:
 
     settings: Settings = ctx["settings"]
     if settings.run_reembed_consumer:
-        if _reembed_failed.is_set() or (
-            _reembed_thread is not None and not _reembed_thread.is_alive()
+        if _consumer_failed.is_set() or (
+            _consumer_thread is not None and not _consumer_thread.is_alive()
         ):
-            logger.error("re-embed consumer is not running; withholding heartbeat")
-            return {"heartbeat": "withheld", "reason": "reembed consumer down"}
+            logger.error("domain-event consumer is not running; withholding heartbeat")
+            return {"heartbeat": "withheld", "reason": "domain-event consumer down"}
     return await jobs.heartbeat(ctx)
 
 
