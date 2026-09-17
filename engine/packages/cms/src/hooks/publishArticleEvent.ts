@@ -1,6 +1,7 @@
 import type { CollectionAfterChangeHook } from 'payload'
 
 import { publishDomainEvent } from '../lib/redis'
+import { decideArticleEvent, isDraftWrite } from './articleEventDecision'
 
 /**
  * afterChange hook — Articles.
@@ -9,9 +10,14 @@ import { publishDomainEvent } from '../lib/redis'
  * state (draft→published or a re-publish of new content), and
  * `article.unpublished` when an editor reverts a live article to draft.
  * Payload's drafts feature (`versions.drafts: true`) stores the published
- * state in the internal `_status` column; we diff `previousDoc._status`
- * against `doc._status` rather than trying to infer intent from field
- * changes.
+ * state in the internal `_status` column.
+ *
+ * The decision of WHICH event — including the rule that a draft write
+ * announces nothing at all — lives in `articleEventDecision.ts`, separately
+ * and under test. It is there because diffing the two `_status` values is not
+ * sufficient and shipped a false `article.unpublished` to production: see that
+ * file for what went wrong, what it cost, and why the discriminator is
+ * Payload's `draft` query parameter rather than its `autosave` one.
  *
  * This hook computes nothing about the article — no embeddings, no tags,
  * no facets. It only announces that a publish happened, with enough
@@ -24,18 +30,12 @@ export const publishArticleEvent: CollectionAfterChangeHook = async ({
   operation,
   req,
 }) => {
-  const wasPublished = previousDoc?._status === 'published'
-  const isPublished = doc._status === 'published'
-
-  if (!isPublished && !wasPublished) {
-    return doc // never left draft — nothing to announce
-  }
-
-  const event = isPublished && (!wasPublished || operation === 'create') ? 'article.published' : null
-  const unpublishEvent = wasPublished && !isPublished ? 'article.unpublished' : null
-  const contentChangedWhilePublished = wasPublished && isPublished ? 'article.republished' : null
-
-  const eventName = event ?? unpublishEvent ?? contentChangedWhilePublished
+  const eventName = decideArticleEvent({
+    wasPublished: previousDoc?._status === 'published',
+    isPublished: doc._status === 'published',
+    operation: operation === 'create' ? 'create' : 'update',
+    isDraftWrite: isDraftWrite(req.query),
+  })
   if (!eventName) return doc
 
   await publishDomainEvent({
