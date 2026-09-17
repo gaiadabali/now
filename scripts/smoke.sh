@@ -196,6 +196,51 @@ smoke_city() {
     *)           bad "/team-editor/login returns $lg" ;;
   esac
 
+  # UNRESOLVED PAYLOAD COMPONENTS. A negative assertion, and the only marker
+  # that discriminates a working admin from a blank one in bytes curl can see.
+  #
+  # Written after a deploy where every /team-editor route served 200 with
+  # ~55 KB of valid HTML and an empty page. Supplying GARAGE_* at RUN time
+  # switched on the s3Storage plugin, whose client component is resolved
+  # through importMap.js — generated at BUILD time, in an image built without
+  # those credentials. The entry was not there, the component rendered as
+  # nothing, and Payload reported it only as a warning.
+  #
+  # Everything the obvious instinct reaches for is IDENTICAL in both states,
+  # measured against captured broken/healthy pairs of two admin routes:
+  #
+  #                        login B/H      review B/H
+  #     staff-login          5 / 5          0 / 0
+  #     password            11 / 11        11 / 11
+  #     Sign in              3 / 3          0 / 0
+  #     <form                0 / 0          0 / 0     (client-rendered:
+  #     <input               0 / 0          0 / 0      zero even when healthy)
+  #     getFromImportMap     1 / 0          1 / 0     <- the only tell
+  #
+  # Nor does size: login broke LARGER (75717 vs 68159) and review broke
+  # SMALLER (74920 vs 80267), so a "at least N bytes" check is not merely
+  # weak, it is wrong in one direction or the other depending on the route.
+  #
+  # Deliberately NOT keyed on `storage-s3`, which also discriminates 3/0. That
+  # would catch only the instance we have already had. This catches the class:
+  # any Payload component that cannot be resolved from the manifest, whatever
+  # registered it.
+  #
+  # What this CANNOT do: prove a person can sign in. The form is client
+  # rendered, so curl never sees it in any state. Honest scope is "no
+  # unresolved components, and a status line". For "the form works", drive a
+  # browser — see scripts/smoke-browser.mjs.
+  local ic route_html
+  for route in "/team-editor" "/team-editor/login"; do
+    route_html="$(body "$base$route")"
+    ic="$(grep -c 'getFromImportMap' <<<"$route_html" || true)"
+    if [ "${ic:-0}" -eq 0 ]; then
+      ok "$route resolves every Payload component"
+    else
+      bad "$route has UNRESOLVED Payload components — it will render blank in a browser despite this 200"
+    fi
+  done
+
   # The admin is a client app; if its chunks 404 the page dies in the browser
   # while the server still reports 200 — exactly the failure mode reported.
   local adm_html chunk chunk_bad=0 chunk_n=0
