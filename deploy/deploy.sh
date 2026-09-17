@@ -199,5 +199,29 @@ for pair in "web-jakarta:${WEB_JAKARTA_HOST_PORT:-4311}" "web-bali:${WEB_BALI_HO
   done
 done
 
+# ---------------------------------------------------------------------------
+# Record what is now running, so `.env` stops lying about it.
+#
+# `--tag` used to override IMAGE_TAG in this process and nowhere else, so every
+# tagged rollout left `.env` naming an older build — and `deploy.sh --pull`
+# with no `--tag` is documented, three lines from the top of this file, as
+# "roll out IMAGE_TAG from .env". Found on 2026-09-17 with the box serving
+# sha-103c013 and `.env` still saying sha-d4bc080, eleven builds behind: a bare
+# `--pull` would have rolled production backwards, on purpose, with a green
+# health check at the end of it.
+#
+# Written after verification rather than before, because the file should record
+# what is serving traffic, not what was attempted.
+if grep -q '^IMAGE_TAG=' "$DEPLOY_DIR/.env"; then
+  # `sed -i` in place: the file is 0600 and owned by root, and an atomic
+  # write-and-rename here would have to recreate that, which is more ways to
+  # get it wrong than to get it right.
+  sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" "$DEPLOY_DIR/.env" \
+    && ok "recorded IMAGE_TAG=${IMAGE_TAG} in deploy/.env"
+else
+  printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG" >> "$DEPLOY_DIR/.env" \
+    && ok "added IMAGE_TAG=${IMAGE_TAG} to deploy/.env"
+fi
+
 printf '\n\033[32mdeployed\033[0m %s\n' "$IMAGE_TAG"
 printf 'rollback with: deploy/deploy.sh --rollback <previous tag>\n'

@@ -292,6 +292,13 @@ deploy/deploy.sh --rollback sha-<previous>   # images only — see below
 deploy/deploy.sh --status
 ```
 
+`deploy.sh` writes the rolled-out tag back into `deploy/.env` after the health
+checks pass, so `.env` records what is serving traffic. It did not until
+2026-09-17, and the box was found running `sha-103c013` with `.env` still
+naming `sha-d4bc080` — a bare `deploy.sh --pull`, which this file documents as
+"roll out IMAGE_TAG from .env", would have rolled production eleven builds
+backwards and reported success.
+
 **Rollback is not symmetric with deploy.** `--rollback` changes the image tag
 and nothing else. If the rollout also changed `docker-compose.yml` or `.env`,
 restore those from step 2's backup in the same breath, or you are running old
