@@ -20,6 +20,34 @@ class Settings(BaseSettings):
     env: str = "development"
     log_level: str = "INFO"
 
+    # --- Extra beacon origins, per site ------------------------------------
+    # `ENGINE_API_EXTRA_ALLOWED_ORIGINS={"jakarta":["https://now-jakarta.example"]}`
+    #
+    # The events allowlist is built from `sites.hostname` (decision C2), which
+    # holds the site's *canonical* hostname. That is not always where the site
+    # is being served: during a pre-cutover phase the engine runs on a staging
+    # domain while `hostname` still names the domain the legacy site occupies.
+    # When those differ, every beacon batch is rejected 403 — the site's own
+    # origin judged exactly like a hostile one — and nothing is collected.
+    # That is what happened in production and it cost a week, because the 403
+    # never said which origin had been refused.
+    #
+    # Deliberately NOT "just change `sites.hostname`": that column also drives
+    # `metadataBase` in the reader app, so moving it would drag canonical and
+    # OG URLs onto the staging domain. `hostname` stays the post-cutover truth
+    # and this names where the site is served *today*. After a cutover the
+    # entry becomes redundant and can be deleted, which is the property that
+    # makes this the right shape rather than a permanent parallel config.
+    #
+    # Keyed by site slug, never a flat list: a flat list would let one city's
+    # origin write behaviour into another city's database, which is the
+    # boundary the per-site check exists to hold.
+    #
+    # A dict of lists, so pydantic-settings parses the JSON itself. Hand-rolled
+    # "slug:origin,slug:origin" parsing would be one more thing to get subtly
+    # wrong for no gain.
+    extra_allowed_origins: dict[str, list[str]] = {}
+
     # --- Platform DB (single shared pool) ---------------------------------
     platform_database_url: str = (
         "postgresql+asyncpg://now:now@localhost:5432/now_platform"

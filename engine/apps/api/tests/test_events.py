@@ -49,6 +49,8 @@ from app.domain.events.normalize import (
 )
 from app.main import create_app
 
+import logging
+
 from tests.conftest import TEST_DB_HOST, TEST_DB_PASSWORD, TEST_DB_PORT, TEST_DB_USER, make_test_settings
 
 
@@ -833,3 +835,135 @@ def test_no_real_site_literals_in_events_source() -> None:
                 if word in text:
                     offenders.append(f"{f}: contains '{word}'")
     assert not offenders, "\n".join(offenders)
+
+# --- extra allowed origins (the pre-cutover staging domain) ------------------
+#
+# `sites.hostname` is the site's CANONICAL host and is not always the host it is
+# served from. In production the engine ran on now-jakarta.gaiada.com while the
+# registry still said nowjakarta.co.id — the legacy site, on another server — so
+# every beacon batch was 403'd and nothing was collected for a week.
+
+# NOTE FOR ANYONE ASSERTING ON LOGS IN THIS FILE: the app configures its own
+# logging and `engine_api.*` does NOT propagate to root, so pytest's `caplog`
+# captures nothing here. An assertion written the obvious way passes vacuously
+# against an empty string — which is exactly what the first version of
+# `test_rejection_is_logged_with_both_sides` did, and it only surfaced because
+# a full-suite run happened to order things differently. Attach a handler to
+# the specific logger instead, as that test does.
+
+STAGING_ORIGIN = "https://alpha-staging.example.test"
+
+
+def test_staging_origin_is_rejected_without_configuration() -> None:
+    """The production bug, reproduced: the site's own front end, refused."""
+    settings = make_test_settings()
+    app = create_app(settings)
+    with TestClient(app) as c:
+        resp = c.post(
+            "/v1/alpha/events",
+            json={"interactions": [], "impressions": []},
+            headers={"Origin": STAGING_ORIGIN},
+        )
+    assert resp.status_code == 403
+
+
+def test_extra_allowed_origin_is_accepted() -> None:
+    settings = make_test_settings(extra_allowed_origins={"alpha": [STAGING_ORIGIN]})
+    app = create_app(settings)
+    with TestClient(app) as c:
+        resp = c.post(
+            "/v1/alpha/events",
+            json={"interactions": [], "impressions": []},
+            headers={"Origin": STAGING_ORIGIN},
+        )
+    assert resp.status_code == 204
+    assert resp.headers["access-control-allow-origin"] == STAGING_ORIGIN
+
+
+def test_extra_origins_do_not_leak_between_sites() -> None:
+    """The reason this is keyed by slug and not a flat list.
+
+    An origin allowed for alpha must not be able to write behaviour into
+    beta's database — that is the boundary the per-site check exists to hold,
+    and a flat list would quietly dissolve it.
+    """
+    settings = make_test_settings(extra_allowed_origins={"alpha": [STAGING_ORIGIN]})
+    app = create_app(settings)
+    with TestClient(app) as c:
+        resp = c.post(
+            "/v1/beta/events",
+            json={"interactions": [], "impressions": []},
+            headers={"Origin": STAGING_ORIGIN},
+        )
+    assert resp.status_code == 403
+
+
+def test_registry_origin_still_works_alongside_extras() -> None:
+    """Configuring an extra must not replace what the registry already allows."""
+    settings = make_test_settings(extra_allowed_origins={"alpha": [STAGING_ORIGIN]})
+    app = create_app(settings)
+    with TestClient(app) as c:
+        resp = c.post(
+            "/v1/alpha/events",
+            json={"interactions": [], "impressions": []},
+            headers={"Origin": ALPHA_ORIGIN},
+        )
+    assert resp.status_code == 204
+
+
+def test_extra_origin_allowed_on_preflight_too() -> None:
+    """A preflight refusal is the first thing a browser hits."""
+    settings = make_test_settings(extra_allowed_origins={"alpha": [STAGING_ORIGIN]})
+    app = create_app(settings)
+    with TestClient(app) as c:
+        resp = c.options(
+            "/v1/alpha/events",
+            headers={
+                "Origin": STAGING_ORIGIN,
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+    assert resp.status_code == 204
+    assert resp.headers["access-control-allow-origin"] == STAGING_ORIGIN
+
+
+def test_rejection_is_logged_with_both_sides() -> None:
+    """The missing log line is what made the outage expensive.
+
+    A 403 that does not say which origin was refused, or what was expected,
+    turns a five-minute diagnosis into an SSH session and a hand-built repro.
+
+    Captured by attaching a handler to the logger rather than via `caplog`:
+    the app configures its own logging and does not propagate to root, so
+    `caplog` sees nothing here and the test would pass vacuously on an empty
+    string if it asserted the other way round.
+    """
+    events_logger = logging.getLogger("engine_api.events")
+    records: list[logging.LogRecord] = []
+
+    class _Capture(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    handler = _Capture(level=logging.WARNING)
+    previous_level = events_logger.level
+    events_logger.addHandler(handler)
+    events_logger.setLevel(logging.WARNING)
+    try:
+        settings = make_test_settings()
+        app = create_app(settings)
+        with TestClient(app) as c:
+            resp = c.post(
+                "/v1/alpha/events",
+                json={"interactions": [], "impressions": []},
+                headers={"Origin": STAGING_ORIGIN},
+            )
+        assert resp.status_code == 403
+    finally:
+        events_logger.removeHandler(handler)
+        events_logger.setLevel(previous_level)
+
+    assert records, "the rejection must be logged at all"
+    logged = " ".join(r.getMessage() for r in records)
+    assert STAGING_ORIGIN in logged, "the refused origin must be in the log"
+    assert ALPHA_ORIGIN in logged, "what WAS allowed must be in the log"

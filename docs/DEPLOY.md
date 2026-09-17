@@ -363,3 +363,49 @@ act.
   is ever tightened to `quarantine` or `reject`. Workspace admin → Apps →
   Gmail → Authenticate email → generate the key, then publish the TXT record in
   hPanel.
+- **`ENGINE_API_EXTRA_ALLOWED_ORIGINS` on the API, while the engine is served
+  from a domain `sites.hostname` does not name.**
+
+  The beacon's only gate is a CORS origin allowlist built from
+  `sites.hostname` (decision C2). The registry currently holds the
+  **post-cutover** hostnames — `nowjakarta.co.id`, `nowbali.co.id`, which
+  resolve to `187.77.123.72`, the legacy WordPress site on another host —
+  while the engine is served from `now-jakarta.gaiada.com` /
+  `now-bali.gaiada.com`. Until those agree, every beacon batch is rejected
+  `403`: the site's own front end judged exactly like a hostile one, silently,
+  collecting nothing. Measured 2026-09-17 — zero interactions on either city
+  since 2026-09-09.
+
+  ```
+  ENGINE_API_EXTRA_ALLOWED_ORIGINS={"jakarta":["https://now-jakarta.gaiada.com"],"bali":["https://now-bali.gaiada.com"]}
+  ```
+
+  Keyed by site slug, never a flat list — a flat list would let one city's
+  origin write behaviour into another city's database. **Delete these entries
+  after the cutover**, when the registry hostname becomes the served hostname
+  and they turn redundant. That they expire is the point; do not treat this as
+  permanent parallel config.
+
+  Do NOT "fix" this by editing `sites.hostname` instead. That column also
+  drives `metadataBase` in the reader app, so moving it would drag canonical
+  and OG URLs onto the staging domain.
+
+- **`SITE_BASE_URL` per city, before the account surface is switched on.**
+
+  `lib/reader.ts`'s `siteBaseUrl()` falls back to `https://${site.hostname}`
+  when this is unset — so with the registry as above, every verification and
+  password-reset link would point at the **legacy WordPress site**, on a
+  different server, and simply not work. Latent today only because
+  `/account/*` correctly serves 404 while mail is unconfigured (F141).
+
+  ```
+  SITE_BASE_URL=https://now-jakarta.gaiada.com     # per city
+  ```
+
+  Treat this as a precondition of enabling accounts, alongside the Workspace
+  app password and `READER_SESSION_SECRET` above — not as a default that
+  happens to be right.
+
+  The same fallback shape sits behind `metadataBase`, which is why canonical
+  URLs currently point at the legacy site. That one is a deliberate SEO
+  decision to make, not a bug to patch here.

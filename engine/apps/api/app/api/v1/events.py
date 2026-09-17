@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from now_config import SiteConfig, SiteNotFoundError
 
-from app.domain.events.cors import origin_is_allowed
+from app.domain.events.cors import allowed_origins_for_site, origin_is_allowed
 from app.domain.events.schemas import EventsBatchIn
 from app.domain.events.service import EventOutOfRangeError, EventsWriteError, write_events
 from app.infra.db.deps import get_city_db
@@ -101,7 +101,17 @@ async def preflight_events(site: str, request: Request) -> Response:
 
     if origin is None:
         return Response(status_code=204)
-    if not origin_is_allowed(origin, site_config, env=settings.env):
+    extra_origins = settings.extra_allowed_origins.get(site, ())
+    if not origin_is_allowed(origin, site_config, env=settings.env, extra=extra_origins):
+        # Same reasoning as the POST path. A preflight refusal is the FIRST
+        # thing a browser hits, so this is often the earliest evidence
+        # available that an origin is misconfigured.
+        logger.warning(
+            "events preflight origin rejected: site=%s origin=%s allowed=%s",
+            site,
+            origin,
+            ",".join(allowed_origins_for_site(site_config, extra_origins)),
+        )
         return Response(status_code=403)
 
     requested_headers = request.headers.get("access-control-request-headers", "content-type")
@@ -164,7 +174,23 @@ async def post_events(
     site_config = await _resolve_site_config(request, site)
     settings = request.app.state.settings
     origin = request.headers.get("origin")
-    if origin is not None and not origin_is_allowed(origin, site_config, env=settings.env):
+    extra_origins = settings.extra_allowed_origins.get(site, ())
+    if origin is not None and not origin_is_allowed(
+        origin, site_config, env=settings.env, extra=extra_origins
+    ):
+        # Logged with BOTH sides of the comparison, because the absence of this
+        # line is what made the production outage expensive: the beacon was
+        # firing, the endpoint was reachable, every batch 403'd, and nothing
+        # anywhere said which origin had been refused or what was expected. It
+        # took an SSH session and a hand-built repro to learn that the site's
+        # own front end was being judged like a hostile one. None of these
+        # values are secret — they are a public hostname and a config list.
+        logger.warning(
+            "events origin rejected: site=%s origin=%s allowed=%s",
+            site,
+            origin,
+            ",".join(allowed_origins_for_site(site_config, extra_origins)),
+        )
         raise HTTPException(
             status_code=403, detail=f"origin '{origin}' is not allowed for site '{site}'"
         )
