@@ -119,26 +119,85 @@ export function moveBy(blocks: Block[], index: number, delta: number): Block[] {
 }
 
 /**
- * Inline markup the editor is willing to produce.
+ * Tags to UNWRAP — keep the words, drop the element around them.
  *
- * Note what this is NOT: a security boundary. The archive already contains
- * `<mark style>`, `<span style>` and worse from twenty years of WordPress,
- * and the reader sanitises on render — `apps/web/src/lib/html.ts` is the
- * allowlist that actually defends the page. This is a tidiness rule for text
- * this editor itself creates, so a paste from Word does not quietly add a
- * decade more of `<font>` tags to a file we are trying to clean up.
+ * A DENY-LIST, NOT AN ALLOW-LIST, AND THAT INVERSION IS THE WHOLE POINT.
+ * This started as an allow-list of `B STRONG I EM A BR`, on the reasoning that
+ * an editor should only produce markup it understands. Then a test of the real
+ * surface deleted a photograph: `<img>` was not on the list, unwrapping a void
+ * element removes it, and the paragraph came back without its image. Measured
+ * afterwards across both cities, inside prose blocks:
+ *
+ *     STRONG  56,724     MARK  10,342     IMG   1,282
+ *     A       22,706     SPAN   4,060     SUP   1,000
+ *     BR      21,900     U      2,749     I       673
+ *     EM      17,267     B      1,737     DIV     657     IFRAME 42
+ *
+ * An allow-list of six would have silently destroyed the img, sup, iframe,
+ * small, time and sub content of any paragraph a writer happened to click
+ * into. For an editing surface over a twenty-year archive the correct default
+ * is PRESERVE THE UNKNOWN: an unrecognised tag is far likelier to be somebody's
+ * content than somebody's mistake.
+ *
+ * So only presentational wrappers are named and everything else survives.
+ * `MARK` and `SPAN` are here because in this archive they are almost entirely
+ * `style="background-color:rgba(0,0,0,0)"` noise from the old editor; `DIV`
+ * and `P` because a block-level element inside a paragraph is invalid anyway
+ * and its children are the content.
+ *
+ * NOT A SECURITY BOUNDARY, and it must not be mistaken for one. The reader
+ * sanitises on render — `apps/web/src/lib/html.ts` is the allowlist that
+ * defends the page — and this editor cannot introduce a new tag in any case:
+ * `execCommand` produces bold, italic and links, and paste is forced to plain
+ * text. This is a tidiness rule for markup passing through, nothing more.
  */
-const ALLOWED_INLINE = new Set(['B', 'STRONG', 'I', 'EM', 'A', 'BR'])
+const UNWRAP = new Set(['SPAN', 'MARK', 'DIV', 'P', 'FONT', 'CENTER', 'SECTION', 'BUTTON'])
 
 /**
- * Reduce pasted or contentEditable-produced markup to the inline tags above.
+ * Attributes worth keeping, by tag.
+ *
+ * Everything else goes — `style`, `class`, `id`, every `on*` handler, and the
+ * `wp-image-22536` classes the old editor sprinkled everywhere. What stays is
+ * what carries meaning rather than appearance, which is why `alt` is on the
+ * list and `width` is not: a stated width is a 2015 layout decision, and the
+ * reader's own CSS is a better answer to it than the number is.
+ */
+const KEEP_ATTRS: Record<string, Set<string>> = {
+  A: new Set(['href', 'title', 'target', 'rel']),
+  IMG: new Set(['src', 'alt', 'title']),
+  IFRAME: new Set(['src', 'title', 'allow', 'allowfullscreen']),
+  TIME: new Set(['datetime']),
+}
+
+/** Exported for the tests: the policy is data, so it can be checked without a
+ * DOM, while the walk below stays where a real parser is free. */
+export function keepAttribute(tag: string, attr: string): boolean {
+  return KEEP_ATTRS[tag.toUpperCase()]?.has(attr.toLowerCase()) ?? false
+}
+
+export function shouldUnwrap(tag: string): boolean {
+  return UNWRAP.has(tag.toUpperCase())
+}
+
+/**
+ * Links this editor is willing to leave in an `href`. Relative and fragment
+ * links are fine; of the absolute schemes only http(s), mailto and tel belong
+ * in prose. A `javascript:` href would be caught by the reader's sanitiser
+ * too, but leaving it in the stored data means it is one sanitiser bug away
+ * from mattering.
+ */
+export function isEditableHref(href: string): boolean {
+  return /^(https?:|mailto:|tel:|[/#])/i.test(href.trim())
+}
+
+/**
+ * Tidy markup that has passed through the editor, without destroying content.
  *
  * Runs in the browser and uses the DOM to parse, deliberately: a regex parser
- * for HTML is the wrong tool and this code already only ever runs where a
- * real parser is free. Callers must therefore only invoke it client-side; the
- * guard returns the input untouched rather than throwing, because losing a
- * writer's paragraph to an environment check would be worse than leaving one
- * stray tag in it.
+ * for HTML is the wrong tool, and this only ever runs where a real parser is
+ * free. The environment guard returns the input untouched rather than throwing
+ * — losing a writer's paragraph to an environment check would be worse than
+ * leaving a stray tag in it.
  */
 export function cleanInline(html: string): string {
   if (typeof document === 'undefined') return html
@@ -151,35 +210,34 @@ export function cleanInline(html: string): string {
     for (const child of Array.from(node.childNodes)) {
       if (child.nodeType === Node.TEXT_NODE) continue
       if (child.nodeType !== Node.ELEMENT_NODE) {
+        // Comments and processing instructions. Not content.
         child.remove()
         continue
       }
       const el = child as HTMLElement
       walk(el)
 
-      if (!ALLOWED_INLINE.has(el.tagName)) {
-        // Unwrap rather than delete. A `<span style>` around a sentence is
-        // noise; the sentence is not, and deleting the element would take the
-        // writer's words with it.
+      if (shouldUnwrap(el.tagName)) {
+        // Unwrap, never delete. A `<span style>` around a sentence is noise;
+        // the sentence is not.
         el.replaceWith(...Array.from(el.childNodes))
         continue
       }
-      // Strip every attribute but the one that carries meaning.
+
       for (const attr of Array.from(el.attributes)) {
-        if (!(el.tagName === 'A' && attr.name === 'href')) el.removeAttribute(attr.name)
+        if (!keepAttribute(el.tagName, attr.name)) el.removeAttribute(attr.name)
       }
+
       if (el.tagName === 'A') {
         const href = el.getAttribute('href') ?? ''
-        // Relative and fragment links are fine; of the absolute schemes only
-        // http(s) and mailto belong in prose. A `javascript:` href reaching
-        // the reader would be sanitised there too, but leaving it in the
-        // stored data means it is one sanitiser bug away from mattering.
-        const safe = /^(https?:|mailto:|[/#])/i.test(href)
-        if (!safe) el.replaceWith(...Array.from(el.childNodes))
-        else {
-          el.setAttribute('rel', 'noreferrer noopener')
-          if (/^https?:/i.test(href)) el.setAttribute('target', '_blank')
+        if (!isEditableHref(href)) {
+          // A link this editor will not vouch for loses its anchor and keeps
+          // its words.
+          el.replaceWith(...Array.from(el.childNodes))
+          continue
         }
+        el.setAttribute('rel', 'noreferrer noopener')
+        if (/^https?:/i.test(href)) el.setAttribute('target', '_blank')
       }
     }
   }
@@ -283,4 +341,93 @@ export function convert(block: Block, to: 'paragraph' | 'heading'): Block {
 /** Heading edits have to write both fields, for the reason `convert` gives. */
 export function setHeading(block: Block, text: string, level: number): Block {
   return { ...block, text, html: text, level }
+}
+
+/**
+ * Does this block hold paragraph breaks that only LOOK like paragraphs?
+ *
+ * Found from a screenshot of the real editor, which is the best kind of bug
+ * report: an article was a single `paragraph` block of 2,494 characters with
+ * ten newlines inside it. The importer never split it. HTML collapses those
+ * newlines to spaces, so the reader gets one run-on paragraph — and the
+ * preview pane, correctly, showed exactly that while the editor's own
+ * `white-space: pre-wrap` was drawing them as separate paragraphs. The
+ * editor was the one lying.
+ *
+ * It is not rare. Measured across both cities: 11,042 paragraph blocks in
+ * 3,675 articles carry a newline, and 163 articles are a single block like
+ * that one. So this is a content-quality problem the archive arrived with,
+ * and the editor's job is to make it visible and one click to fix rather
+ * than to render it flatteringly.
+ */
+export function hasHardBreaks(block: Block): boolean {
+  if (block.type !== 'paragraph' && block.type !== 'quote') return false
+  return SPLIT_ON.test(String(block.html ?? ''))
+}
+
+/**
+ * A newline, or two or more consecutive `<br>`.
+ *
+ * A SINGLE `<br>` is deliberately not a split point. In this archive it is
+ * usually load-bearing — address lines, an opening-hours list, the name and
+ * phone number of a restaurant — and breaking those into separate paragraphs
+ * would space them apart and be a worse result than leaving them. A blank
+ * line, or a doubled `<br>`, is what someone meant as a paragraph break.
+ *
+ * Global + `lastIndex` reset: a `RegExp` with `g` carries state between
+ * `.test()` calls, which would make `hasHardBreaks` alternate true/false on
+ * the same input. Cheaper to rebuild it per call than to remember that.
+ */
+const SPLIT_ON = /(?:\s*<br\s*\/?>\s*){2,}|\n+/i
+
+/**
+ * Split one run-on block into the paragraphs it was always meant to be.
+ *
+ * Returns the pieces, or `[block]` unchanged when there is nothing to split —
+ * so a caller can apply it unconditionally and a no-op stays a no-op.
+ *
+ * Keys other than `html` are copied onto every piece. For a paragraph that is
+ * only `type`, so it does not arise today; doing it anyway means a block that
+ * later gains an attribute does not silently lose it here, and the wrong
+ * behaviour (a duplicated attribute) is visible where the wrong behaviour of
+ * dropping it would not be.
+ */
+export function splitOnHardBreaks(block: Block): Block[] {
+  const html = String(block.html ?? '')
+  const pieces = html
+    .split(new RegExp(SPLIT_ON.source, 'gi'))
+    .map((piece) => piece.trim())
+    .filter(carriesSomething)
+
+  if (pieces.length < 2) return [block]
+  return pieces.map((piece) => ({ ...block, html: piece }))
+}
+
+/**
+ * Elements that ARE the content, even with no text in them.
+ *
+ * This exists because of a deleted photograph. The filter above was once
+ * `plainText(piece).length > 0`, meaning "drop the whitespace-only
+ * fragments" — and a fragment holding nothing but `<img src=…>` has no text,
+ * so splitting a paragraph silently threw the image away. Caught by driving
+ * the real editor over a real article, not by reading the code, and it is the
+ * second time the same instinct — "no words, no value" — cost content in this
+ * file. The first was an allow-list of inline tags doing exactly the same
+ * thing to the same image.
+ *
+ * So the rule is stated positively: a fragment survives if it has visible
+ * text OR if it holds one of these. Anything else — a stray `<br>`, an empty
+ * `<b></b>`, whitespace — is genuinely nothing and goes.
+ */
+const CARRIES_CONTENT = /<(img|iframe|video|audio|embed|object|svg|picture|source|table)\b/i
+
+function carriesSomething(piece: string): boolean {
+  if (piece.length === 0) return false
+  return plainText(piece).length > 0 || CARRIES_CONTENT.test(piece)
+}
+
+/** How many blocks in this article are run-on — for the count the toolbar
+ * shows, so the offer to fix them is proportionate to how many there are. */
+export function countHardBreaks(blocks: Block[]): number {
+  return blocks.filter(hasHardBreaks).length
 }

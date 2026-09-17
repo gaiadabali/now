@@ -62,8 +62,9 @@ export const bodyBlocksField: Field = {
      */
     components: { Field: '/fields/BodyBlocksEditor#BodyBlocksEditor' },
     description:
-      'E1.2 block array (heading/paragraph/image/gallery/list/quote/embed/separator/columns/raw_html), ' +
-      'stored as jsonb and unmodified. Blocks you do not edit are saved back byte-identical.',
+      'The article itself. Write on the left, read it back on the right. Every action is in ' +
+      'the bar at the top and acts on whichever block you are in. Blocks you do not touch are ' +
+      'saved back exactly as they were.',
   },
   validate: (value: unknown) => {
     if (value === undefined || value === null) return true // optional until E1.8 loads content

@@ -905,28 +905,6 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   margin-bottom: var(--base);
 }
 
-.now-be__bar {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--theme-elevation-150);
-}
-
-.now-be__count {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: var(--theme-elevation-800);
-}
-
-.now-be__bar-note {
-  font-size: 0.8125rem;
-  color: var(--theme-elevation-500);
-  max-width: 48ch;
-}
-
 /* The preview takes the larger share deliberately: the editor column is a
    working surface and the preview is the thing being made. */
 .now-be__panes {
@@ -1005,106 +983,7 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   min-width: 0;
 }
 
-.now-be__tools {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.15rem;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-/* The controls appear on hover or when anything inside the row has focus, so
-   a long article reads as prose rather than as a column of buttons — but they
-   are always reachable by keyboard, which `:focus-within` is what guarantees. */
-.now-be__row:hover .now-be__tools,
-.now-be__row:focus-within .now-be__tools {
-  opacity: 1;
-}
-
-.now-be__tools button {
-  min-width: 1.75rem;
-  padding: 0.2rem 0.35rem;
-  border: 1px solid var(--theme-elevation-150);
-  border-radius: var(--style-radius-s);
-  background: var(--theme-input-bg);
-  color: var(--theme-elevation-700);
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-
-.now-be__tools button:hover:not(:disabled) {
-  border-color: var(--theme-elevation-400);
-  color: var(--theme-elevation-1000);
-}
-
-.now-be__tools button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.now-be__danger:hover:not(:disabled) {
-  border-color: var(--now-accent) !important;
-  color: var(--now-accent) !important;
-}
-
-.now-be__insert {
-  position: relative;
-  display: inline-flex;
-}
-
-.now-be__menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  min-width: 9rem;
-  background: var(--theme-input-bg);
-  border: 1px solid var(--theme-elevation-200);
-  box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
-}
-
-.now-be__menu button {
-  border: 0 !important;
-  border-radius: 0 !important;
-  text-align: left;
-  padding: 0.4rem 0.6rem !important;
-}
-
-.now-be__menu button:hover {
-  background: var(--theme-elevation-100);
-}
-
 /* --- editing prose ------------------------------------------------------- */
-
-.now-be__prose-wrap {
-  position: relative;
-}
-
-.now-be__inline-tools {
-  display: flex;
-  gap: 0.15rem;
-  margin-bottom: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.now-be__prose-wrap:focus-within .now-be__inline-tools,
-.now-be__prose-wrap:hover .now-be__inline-tools {
-  opacity: 1;
-}
-
-.now-be__inline-tools button {
-  padding: 0.1rem 0.45rem;
-  border: 1px solid var(--theme-elevation-150);
-  border-radius: var(--style-radius-s);
-  background: var(--theme-input-bg);
-  color: var(--theme-elevation-700);
-  font-size: 0.75rem;
-  cursor: pointer;
-}
 
 /* The editing surface uses the READER's serif at reading size. A writer
    judging rhythm and sentence length against 13px admin sans is judging a
@@ -1118,7 +997,12 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   border: 1px solid transparent;
   border-radius: var(--style-radius-s);
   outline: none;
-  white-space: pre-wrap;
+  /* NO `white-space: pre-wrap`, and its absence is the point. It used to be
+     here, and it made this the only surface in the system that drew a
+     paragraph's buried newlines as paragraph breaks — 11,042 blocks across
+     3,675 articles have them, HTML collapses them, and the reader gets one
+     wall of text. The editor was flattering the content. Now it shows what a
+     reader gets, and the toolbar offers to split them for real. */
 }
 
 .now-be__prose:hover {
@@ -1135,25 +1019,9 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   color: var(--theme-elevation-400);
 }
 
-.now-be__heading-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.now-be__level {
-  flex: 0 0 auto;
-  padding: 0.2rem 0.3rem;
-  border: 1px solid var(--theme-elevation-150);
-  border-radius: var(--style-radius-s);
-  background: var(--theme-input-bg);
-  color: var(--theme-elevation-600);
-  font-size: 0.75rem;
-}
-
 .now-be__heading {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: block;
+  width: 100%;
   font-family: var(--font-serif);
   font-weight: 700;
   color: var(--theme-text);
@@ -1268,6 +1136,229 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   color: var(--theme-elevation-0);
 }
 
+/* ---------------------------------------------------------------------------
+   The toolbar
+   ---------------------------------------------------------------------------
+   ALWAYS VISIBLE, and that is a correction rather than a preference. The first
+   version of this surface hid every control until hover — inline formatting
+   per paragraph, block controls per row. It looked clean and taught nobody
+   anything: the first question asked on seeing it was what the two halves
+   were for, which is the answer to whether hover-revealed tools are
+   discoverable.
+
+   Sticky, so it is still there on block forty of a long article. Two rows:
+   actions above, state below. Grouped with a word over each group, because
+   `B` `I` `H2` `↑` in one undifferentiated strip is a puzzle, and the groups
+   are what make it a tool.
+
+   Buttons are 1.9rem tall with real padding. Cramped hit targets are the
+   difference between a toolbar someone uses all day and one they tolerate.
+   ------------------------------------------------------------------------ */
+
+.now-be__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-bottom: 0.9rem;
+  background: var(--theme-elevation-0);
+  border-bottom: 1px solid var(--theme-elevation-200);
+}
+
+.now-be__tb-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  padding: 0.5rem 0;
+}
+
+.now-be__tb-row--status {
+  gap: 0.9rem;
+  padding-top: 0;
+  padding-bottom: 0.55rem;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+}
+
+.now-be__tb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* The group name, not a heading — set small and quiet so it labels without
+   competing with the buttons it labels. */
+.now-be__tb-label {
+  margin-right: 0.25rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-450, var(--theme-elevation-400));
+  white-space: nowrap;
+}
+
+.now-be__tb-btn {
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-input-bg);
+  color: var(--theme-elevation-800);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.now-be__tb-btn:hover:not(:disabled) {
+  border-color: var(--theme-elevation-500);
+  background: var(--theme-elevation-50);
+}
+
+.now-be__tb-btn:focus-visible {
+  outline: 2px solid var(--now-accent);
+  outline-offset: 1px;
+}
+
+/* Disabled means "not applicable to the block you are in", which is
+   information. Faded rather than hidden, so the writer learns that H2 exists
+   and why it is unavailable on an image, instead of watching the toolbar
+   change shape under them. */
+.now-be__tb-btn:disabled {
+  opacity: 0.33;
+  cursor: default;
+}
+
+/* The current heading level, stated. Ink and weight rather than a fill: a
+   filled button in this palette reads as a primary action. */
+.now-be__tb-btn.is-on {
+  border-color: var(--theme-elevation-1000);
+  color: var(--theme-elevation-1000);
+  font-weight: 700;
+}
+
+.now-be__tb-btn--b { font-weight: 700; }
+.now-be__tb-btn--i { font-style: italic; font-family: var(--font-serif); }
+
+.now-be__tb-btn--danger:hover:not(:disabled) {
+  border-color: var(--now-accent);
+  color: var(--now-accent);
+  background: var(--theme-elevation-0);
+}
+
+.now-be__tb-status {
+  font-variant-numeric: tabular-nums;
+}
+
+.now-be__tb-status strong {
+  color: var(--theme-elevation-900);
+  font-weight: 600;
+}
+
+.now-be__tb-hint {
+  color: var(--theme-elevation-450, var(--theme-elevation-400));
+}
+
+.now-be__tb-saves {
+  margin-left: auto;
+  color: var(--theme-elevation-450, var(--theme-elevation-400));
+}
+
+/* The one place the accent earns its keep in this surface: an offer to repair
+   content that is wrong on the live site. Not an error — the article is
+   readable — so it is an invitation, bordered rather than filled. */
+.now-be__tb-fix {
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--now-accent);
+  border-radius: var(--style-radius-s);
+  background: var(--theme-elevation-0);
+  color: var(--now-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.now-be__tb-fix:hover {
+  background: var(--now-accent);
+  color: var(--theme-elevation-0);
+}
+
+/* ---------------------------------------------------------------------------
+   Pane labels
+   ---------------------------------------------------------------------------
+   "Write" and "How it will read". Named because the owner's first question on
+   seeing this surface was what the left and right were for — and "Preview"
+   would have implied a fidelity this pane does not have, which is why the
+   right-hand label carries its own disclaimer.
+   ------------------------------------------------------------------------ */
+
+.now-be__pane-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--theme-elevation-100);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-600);
+}
+
+.now-be__pane-note {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 0.75rem;
+  color: var(--theme-elevation-450, var(--theme-elevation-400));
+}
+
+/* ---------------------------------------------------------------------------
+   Row numbering and the run-on warning
+   ------------------------------------------------------------------------ */
+
+.now-be__gutter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.now-be__num {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-elevation-300);
+}
+
+/* Said on the row that has the problem, not only counted in the bar — a
+   writer fixing one paragraph should be able to fix the one in front of them
+   without reasoning about a number at the top of the page. */
+.now-be__warn {
+  margin: 0.4rem 0 0;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--now-accent);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--theme-elevation-600);
+}
+
+.now-be__link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--now-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 /* --- the preview pane ---------------------------------------------------- */
 
 .now-bp {
@@ -1368,4 +1459,69 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 .now-bp__empty {
   color: var(--theme-elevation-400);
   font-size: 0.875rem;
+}
+
+/* List items, as a list. They used to be single-line inputs bound to the
+   stored markup, so a writer saw `<strong><a href="https://…" target="_blank"`
+   in a text box — honest, and the most uncomfortable thing left on the surface
+   once the toolbar landed. Each item is now the same contentEditable a
+   paragraph uses, which is also what lets the toolbar's bold and link work
+   inside a bullet. */
+.now-be__items {
+  margin: 0.35rem 0 0;
+  padding-left: 1.6rem;
+  list-style: decimal;
+}
+
+.now-be__items--bullets {
+  list-style: disc;
+}
+
+/* `display: list-item`, NOT flex. A flex or grid container has no `::marker`,
+   so laying the row out that way silently removed the bullets — and the
+   preview beside it still had them, which is the two panes disagreeing about
+   something a writer is looking straight at. The remove button floats
+   instead. */
+.now-be__items li {
+  display: list-item;
+  margin-bottom: 0.15rem;
+}
+
+.now-be__items li .now-be__prose {
+  display: inline-block;
+  width: calc(100% - 1.8rem);
+  vertical-align: top;
+  font-size: 1rem;
+}
+
+.now-be__item-x {
+  float: right;
+  margin-top: 0.2rem;
+  padding: 0 0.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--style-radius-s);
+  background: none;
+  color: var(--theme-elevation-300);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.now-be__items li:hover .now-be__item-x,
+.now-be__items li:focus-within .now-be__item-x {
+  border-color: var(--theme-elevation-150);
+  color: var(--theme-elevation-600);
+}
+
+.now-be__item-x:hover {
+  border-color: var(--now-accent) !important;
+  color: var(--now-accent) !important;
+}
+
+/* An empty editable shows what belongs in it. `:empty` alone misses a div
+   holding a stray <br>, which is what a browser leaves behind when the last
+   character is deleted. */
+.now-be__prose[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--theme-elevation-400);
 }

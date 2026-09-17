@@ -7,7 +7,9 @@ import {
   asBlocks,
   cleanInline,
   convert,
+  countHardBreaks,
   describe,
+  hasHardBreaks,
   insertAt,
   INSERTABLE,
   moveBy,
@@ -16,13 +18,14 @@ import {
   removeAt,
   replaceAt,
   setHeading,
+  splitOnHardBreaks,
   wordCount,
   type Block,
 } from './blockModel'
 import { BlockPreview } from './BlockPreview'
 
 /**
- * The writing surface. Prose on the left, the article on the right.
+ * The writing surface: write on the left, read it back on the right.
  *
  * WHAT IT REPLACES, and why that was not a matter of taste. `body_blocks` is a
  * `json` field, so Payload renders it as a code editor — and an article in
@@ -30,60 +33,67 @@ import { BlockPreview } from './BlockPreview'
  * typing a JSON object; fixing a typo meant finding the sentence inside a
  * quoted string and not breaking the escaping around it. The field's own
  * description said "edit with care — this is the loader's output format, not
- * prose", which is an accurate warning and an admission that the surface was
- * built for the importer rather than for the person using it.
+ * prose", which was accurate and was also an admission that the surface had
+ * been built for the importer rather than for the person using it.
  *
  * WHAT IT DOES NOT CHANGE: the stored format, at all. `fields/bodyBlocks.ts`
  * explains why the block array is deliberately not Payload rich text — E1.2's
  * cleaner emits this shape, verified at ~0% content loss over 4,772 articles,
  * and re-modelling it as a Lexical AST would need a lossy two-way converter.
- * That reasoning is still right. So this edits the same array in place and
- * `blockModel.ts` guarantees, with tests, that a block the writer did not
- * touch comes back as the very same object.
+ * That reasoning is still right, so this edits the same array in place and
+ * `blockModel.ts` guarantees with tests that a block nobody touched comes back
+ * as the very same object.
  *
- * WHY THE PREVIEW IS THE BODY AND NOT THE PAGE. Payload has a live-preview
- * feature that puts the real site in an iframe, and it is the better answer
- * eventually. It needs draft-mode plumbing through the reader's article route
- * — the public site — and today is not the day to reach into that for a
- * writing convenience. What a writer checks while writing is paragraphing,
- * emphasis, where the images fall and whether a heading is in the right place,
- * and this shows all of it at reader typography, instantly, with no dependency
- * on the reader at all. It is a body preview and the header above it says so,
- * rather than implying a fidelity it does not have.
+ * ONE TOOLBAR, ALWAYS VISIBLE, AND THAT IS A CORRECTION. The first version
+ * hid its controls until hover: inline bold/italic per paragraph, block
+ * controls per row, all of it invisible until the mouse happened to be in the
+ * right place. It looked clean and it taught nobody anything — the owner's
+ * first question on seeing the surface was what the two halves were for,
+ * which is the answer to whether hover-revealed tools are discoverable. So
+ * every action a writer needs now lives in one bar at the top of the column,
+ * it stays on screen as they scroll, and it says what it does in words.
  *
- * THE EDITORIAL SCENARIOS IT IS BUILT AROUND, in the order they happen:
+ * The bar acts on the block with focus, and says which one that is. The
+ * rejected alternative was a floating bubble over the selection, which is
+ * prettier and is also the pattern that makes people hunt for a control they
+ * saw once.
  *
- *   Fixing a typo in a published piece. The most common edit by a wide
- *   margin. Click the sentence, type, done — the block is contentEditable in
- *   place, and autosave (1500ms, already configured on the collection) means
- *   there is no save button to hunt for.
+ * WHY THE PREVIEW IS THE BODY AND NOT THE PAGE. Payload's own live preview
+ * puts the real route in an iframe and is the better answer eventually; it
+ * needs draft-mode plumbing through the public site, which is not a thing to
+ * reach into for a writing convenience. What a writer checks while writing is
+ * paragraphing, emphasis, where the images fall and whether a heading landed
+ * right. All of that is here, instantly. The pane is labelled "How it will
+ * read" rather than "Preview" for the same reason the bar is labelled at all.
  *
- *   Adding or moving a paragraph. Every block has insert-below and move
- *   controls; no dragging, because drag-and-drop in a long article is a way
- *   to drop a paragraph somewhere you cannot find it, and a keyboard is
- *   faster for one place anyway.
- *
- *   Reading it back. The right pane, which is why it is a pane and not a
- *   button.
- *
- *   Meeting a block nobody should hand-edit — `columns`, `raw_html`, an
- *   Instagram card stored as a `quote`. Shown faithfully, movable, deletable,
- *   and editable only through an explicit "edit source" toggle. 1.6% of the
- *   archive, and the 1.6% most likely to be destroyed by a helpful editor.
- *
- * ONE THING YOU WILL SEE IN THE CONSOLE AND SHOULD NOT CHASE. On an article
- * that has an unpublished draft, React reports a hydration mismatch inside the
- * preview. It is not this component: Payload renders the field from one
- * version on the server and the client settles on the other, so the two
- * renders genuinely hold different block arrays. Measured — the warning
- * appears on an article with a draft and does not appear on articles without
- * one, and it appeared for the JSON code editor too, just invisibly, because a
- * mismatch inside a textarea does not announce itself. React repairs it by
- * re-rendering on the client, which is correct and cheap. Suppressing it here
- * would only hide the next real mismatch.
+ * THE RUN-ON PARAGRAPH PROBLEM, found from a screenshot of this very surface.
+ * The archive contains 11,042 paragraph blocks across 3,675 articles whose
+ * text has newlines buried inside it, and 163 articles that are a single
+ * block — a whole piece in one paragraph. HTML collapses those newlines, so
+ * the reader gets one wall of text. The first version of this editor styled
+ * its text `white-space: pre-wrap`, which drew them as separate paragraphs
+ * and made the editor the only surface in the system telling a flattering
+ * lie. That is gone. Instead the bar counts them and offers to split them,
+ * and any block holding one says so on its own row.
  */
 
-type EditorProps = { path?: string; field?: { label?: unknown } }
+type EditorProps = { path?: string }
+
+/**
+ * The text the toolbar is acting on: which block, the live DOM node, and where
+ * to write the result back to.
+ *
+ * Held in a ref rather than in state because the toolbar has to read the node
+ * AFTER `execCommand` has mutated it, and a state round-trip would be a render
+ * too late.
+ *
+ * `write` is a callback rather than "patch `html` on block `index`" because
+ * the same editable serves two shapes: a paragraph, where the text IS
+ * `block.html`, and one item of a list, where it is `block.items[j]`. Without
+ * it, bold inside a bullet would either not work or would overwrite the whole
+ * list with one item.
+ */
+type Active = { index: number; el: HTMLDivElement; write: (html: string) => void } | null
 
 export function BodyBlocksEditor({ path = 'bodyBlocks' }: EditorProps) {
   const { value, setValue } = useField<unknown>({ path })
@@ -91,35 +101,99 @@ export function BodyBlocksEditor({ path = 'bodyBlocks' }: EditorProps) {
 
   const [focused, setFocused] = useState<number | null>(null)
   const [sourceOpen, setSourceOpen] = useState<Set<number>>(new Set())
+  const active = useRef<Active>(null)
 
   const apply = useCallback((next: Block[]) => setValue(next), [setValue])
 
   const words = useMemo(() => wordCount(blocks), [blocks])
+  const runOns = useMemo(() => countHardBreaks(blocks), [blocks])
 
-  // An article with no body at all is the new-article case, and an empty grey
-  // box teaches nobody anything. One paragraph is the smallest possible
-  // starting point that is also a demonstration of how the surface works.
-  const start = () => apply([{ type: 'paragraph', html: '' }])
+  const current = focused === null ? null : (blocks[focused] ?? null)
+
+  /** Read the focused editable back out of the DOM and store it. Called after
+   * every inline command, because `execCommand` edits the node and tells React
+   * nothing. */
+  const commitActive = useCallback(() => {
+    const a = active.current
+    if (!a) return
+    a.write(cleanInline(a.el.innerHTML))
+  }, [])
+
+  const inline = useCallback(
+    (command: string, arg?: string) => {
+      const a = active.current
+      if (!a) return
+      a.el.focus()
+      document.execCommand(command, false, arg)
+      commitActive()
+    },
+    [commitActive],
+  )
+
+  const insert = useCallback(
+    (block: Block) => {
+      // Below the focused block, or at the end when nothing has focus — which
+      // is what someone who has just opened the article and pressed a button
+      // means by it.
+      const at = focused === null ? blocks.length : focused + 1
+      apply(insertAt(blocks, at, block))
+      setFocused(at)
+    },
+    [apply, blocks, focused],
+  )
 
   return (
     <div className="now-be">
-      <header className="now-be__bar">
-        <div className="now-be__count">
-          {blocks.length} block{blocks.length === 1 ? '' : 's'} · {words.toLocaleString()} word
-          {words === 1 ? '' : 's'}
-        </div>
-        <div className="now-be__bar-note">
-          Saves as you type. The right pane is the body at reader typography —
-          not the finished page.
-        </div>
-      </header>
+      <Toolbar
+        blocks={blocks}
+        focused={focused}
+        current={current}
+        words={words}
+        runOns={runOns}
+        onInline={inline}
+        onInsert={insert}
+        onReplace={(next) => focused !== null && apply(replaceAt(blocks, focused, next))}
+        onMove={(delta) => {
+          if (focused === null) return
+          apply(moveBy(blocks, focused, delta))
+          setFocused(Math.max(0, Math.min(focused + delta, blocks.length - 1)))
+        }}
+        onDelete={() => {
+          if (focused === null || !current) return
+          const label = plainText(String(current.html ?? '')) || describe(current)
+          if (!confirm(`Delete this ${current.type}?\n\n"${label.slice(0, 80)}"`)) return
+          apply(removeAt(blocks, focused))
+          setFocused(null)
+        }}
+        onSplitAll={() => {
+          if (runOns === 0) return
+          if (
+            !confirm(
+              `Split ${runOns} run-on block${runOns === 1 ? '' : 's'} into separate paragraphs?\n\n` +
+                'These are paragraphs the importer never split. A reader sees them as one ' +
+                'block of text today. Nothing else about the article changes.',
+            )
+          )
+            return
+          apply(blocks.flatMap((b) => splitOnHardBreaks(b)))
+          setFocused(null)
+        }}
+      />
 
       <div className="now-be__panes">
-        <div className="now-be__edit">
+        <section className="now-be__edit" aria-label="Write">
+          <h4 className="now-be__pane-label">Write</h4>
           {blocks.length === 0 ? (
             <div className="now-be__empty">
               <p>This article has no body yet.</p>
-              <button type="button" className="now-be__btn now-be__btn--primary" onClick={start}>
+              <button
+                type="button"
+                className="now-be__btn now-be__btn--primary"
+                onClick={() => {
+                  apply([{ type: 'paragraph', html: '' }])
+                  setFocused(0)
+                }}
+              >
                 Start writing
               </button>
             </div>
@@ -132,7 +206,12 @@ export function BodyBlocksEditor({ path = 'bodyBlocks' }: EditorProps) {
                 total={blocks.length}
                 isFocused={focused === i}
                 showSource={sourceOpen.has(i)}
-                onFocus={() => setFocused(i)}
+                onActivate={(el, write) => {
+                  active.current = { index: i, el, write }
+                  setFocused(i)
+                }}
+                onFocusRow={() => setFocused(i)}
+                onCommit={commitActive}
                 onToggleSource={() =>
                   setSourceOpen((prev) => {
                     const next = new Set(prev)
@@ -143,24 +222,22 @@ export function BodyBlocksEditor({ path = 'bodyBlocks' }: EditorProps) {
                 }
                 onPatch={(patch) => apply(patchAt(blocks, i, patch))}
                 onReplace={(next) => apply(replaceAt(blocks, i, next))}
-                onMove={(delta) => {
-                  apply(moveBy(blocks, i, delta))
-                  setFocused(Math.max(0, Math.min(i + delta, blocks.length - 1)))
-                }}
-                onRemove={() => {
-                  apply(removeAt(blocks, i))
-                  setFocused(null)
-                }}
-                onInsert={(made) => {
-                  apply(insertAt(blocks, i + 1, made))
-                  setFocused(i + 1)
+                onSplit={() => {
+                  const pieces = splitOnHardBreaks(block)
+                  if (pieces.length < 2) return
+                  apply([...blocks.slice(0, i), ...pieces, ...blocks.slice(i + 1)])
+                  setFocused(i)
                 }}
               />
             ))
           )}
-        </div>
+        </section>
 
-        <aside className="now-be__preview" aria-label="Preview">
+        <aside className="now-be__preview" aria-label="How it will read">
+          <h4 className="now-be__pane-label">
+            How it will read
+            <span className="now-be__pane-note">the body only — no masthead or navigation</span>
+          </h4>
           <BlockPreview blocks={blocks} />
         </aside>
       </div>
@@ -169,6 +246,206 @@ export function BodyBlocksEditor({ path = 'bodyBlocks' }: EditorProps) {
 }
 
 // ---------------------------------------------------------------------------
+// The toolbar
+// ---------------------------------------------------------------------------
+
+type ToolbarProps = {
+  blocks: Block[]
+  focused: number | null
+  current: Block | null
+  words: number
+  runOns: number
+  onInline: (command: string, arg?: string) => void
+  onInsert: (block: Block) => void
+  onReplace: (next: Block) => void
+  onMove: (delta: number) => void
+  onDelete: () => void
+  onSplitAll: () => void
+}
+
+/** `onMouseDown` preventing default on every toolbar button is load-bearing,
+ * not defensive. Without it, pressing the button blurs the text the writer had
+ * selected, the selection collapses, and `execCommand` has nothing to act on —
+ * bold silently does nothing, which is the single most common way a hand-built
+ * toolbar is broken. */
+const hold = (e: React.MouseEvent) => e.preventDefault()
+
+function Toolbar(props: ToolbarProps) {
+  const { current, focused, blocks, words, runOns } = props
+  // `list` counts as prose for the Text group: its items are edited in the
+  // same contentEditable, so bold and links work inside a bullet.
+  const isProse =
+    current?.type === 'paragraph' || current?.type === 'quote' || current?.type === 'list'
+  const isHeading = current?.type === 'heading'
+  const nothingFocused = focused === null || !current
+
+  return (
+    <div className="now-be__toolbar">
+      <div className="now-be__tb-row">
+        <span className="now-be__tb-group" role="group" aria-label="Text style">
+          <span className="now-be__tb-label">Text</span>
+          <button
+            type="button"
+            className="now-be__tb-btn now-be__tb-btn--b"
+            title="Bold (Ctrl+B)"
+            disabled={!isProse}
+            onMouseDown={hold}
+            onClick={() => props.onInline('bold')}
+          >
+            B
+          </button>
+          <button
+            type="button"
+            className="now-be__tb-btn now-be__tb-btn--i"
+            title="Italic (Ctrl+I)"
+            disabled={!isProse}
+            onMouseDown={hold}
+            onClick={() => props.onInline('italic')}
+          >
+            I
+          </button>
+          <button
+            type="button"
+            className="now-be__tb-btn"
+            title="Link the selected words"
+            disabled={!isProse}
+            onMouseDown={hold}
+            onClick={() => {
+              const url = prompt('Link to:')
+              if (url) props.onInline('createLink', url)
+            }}
+          >
+            Link
+          </button>
+          <button
+            type="button"
+            className="now-be__tb-btn"
+            title="Remove the link from the selected words"
+            disabled={!isProse}
+            onMouseDown={hold}
+            onClick={() => props.onInline('unlink')}
+          >
+            Unlink
+          </button>
+        </span>
+
+        <span className="now-be__tb-group" role="group" aria-label="This block">
+          <span className="now-be__tb-label">This block</span>
+          <button
+            type="button"
+            className="now-be__tb-btn"
+            title="Turn this block into a paragraph"
+            disabled={!isHeading}
+            onMouseDown={hold}
+            onClick={() => current && props.onReplace(convert(current, 'paragraph'))}
+          >
+            Paragraph
+          </button>
+          {[2, 3, 4].map((level) => (
+            <button
+              key={level}
+              type="button"
+              className={`now-be__tb-btn${isHeading && Number(current?.level) === level ? ' is-on' : ''}`}
+              title={`Make this a level ${level} heading`}
+              disabled={nothingFocused || !(isProse || isHeading)}
+              onMouseDown={hold}
+              onClick={() => {
+                if (!current) return
+                const asHeading = isHeading ? current : convert(current, 'heading')
+                props.onReplace(setHeading(asHeading, String(asHeading.text ?? ''), level))
+              }}
+            >
+              H{level}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="now-be__tb-btn"
+            title="Move this block up"
+            disabled={nothingFocused || focused === 0}
+            onMouseDown={hold}
+            onClick={() => props.onMove(-1)}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="now-be__tb-btn"
+            title="Move this block down"
+            disabled={nothingFocused || focused === blocks.length - 1}
+            onMouseDown={hold}
+            onClick={() => props.onMove(1)}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            className="now-be__tb-btn now-be__tb-btn--danger"
+            title="Delete this block"
+            disabled={nothingFocused}
+            onMouseDown={hold}
+            onClick={props.onDelete}
+          >
+            Delete
+          </button>
+        </span>
+
+        <span className="now-be__tb-group" role="group" aria-label="Insert">
+          <span className="now-be__tb-label">Insert</span>
+          {INSERTABLE.map((item) => (
+            <button
+              key={item.type}
+              type="button"
+              className="now-be__tb-btn"
+              title={
+                focused === null
+                  ? `Add a ${item.label.toLowerCase()} at the end`
+                  : `Add a ${item.label.toLowerCase()} below the block you are in`
+              }
+              onMouseDown={hold}
+              onClick={() => props.onInsert(item.make())}
+            >
+              {item.label}
+            </button>
+          ))}
+        </span>
+      </div>
+
+      <div className="now-be__tb-row now-be__tb-row--status">
+        <span className="now-be__tb-status">
+          {blocks.length} block{blocks.length === 1 ? '' : 's'} · {words.toLocaleString()} word
+          {words === 1 ? '' : 's'}
+          {current ? (
+            <>
+              {' '}
+              · in a <strong>{current.type}</strong>
+            </>
+          ) : (
+            <span className="now-be__tb-hint"> · click a paragraph to start</span>
+          )}
+        </span>
+
+        {runOns > 0 ? (
+          <button
+            type="button"
+            className="now-be__tb-fix"
+            onMouseDown={hold}
+            onClick={props.onSplitAll}
+            title="These paragraphs have line breaks buried inside them, which a reader never sees — they arrive as one block of text."
+          >
+            Fix {runOns} run-on paragraph{runOns === 1 ? '' : 's'}
+          </button>
+        ) : null}
+
+        <span className="now-be__tb-saves">Saves as you type</span>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// One block
+// ---------------------------------------------------------------------------
 
 type RowProps = {
   block: Block
@@ -176,40 +453,60 @@ type RowProps = {
   total: number
   isFocused: boolean
   showSource: boolean
-  onFocus: () => void
+  onActivate: (el: HTMLDivElement, write: (html: string) => void) => void
+  onFocusRow: () => void
+  onCommit: () => void
   onToggleSource: () => void
   onPatch: (patch: Record<string, unknown>) => void
   onReplace: (next: Block) => void
-  onMove: (delta: number) => void
-  onRemove: () => void
-  onInsert: (block: Block) => void
+  onSplit: () => void
 }
 
+const STRUCTURED = ['heading', 'image', 'gallery', 'list', 'embed', 'separator']
+
 function BlockRow(props: RowProps) {
-  const { block, index, total, isFocused } = props
-  const editable = block.type === 'paragraph' || block.type === 'quote'
+  const { block, isFocused } = props
+  const isProse = block.type === 'paragraph' || block.type === 'quote'
+  const opaque = !isProse && !STRUCTURED.includes(block.type)
 
   return (
     <div
       className={`now-be__row now-be__row--${block.type}${isFocused ? ' is-focused' : ''}`}
-      onFocus={props.onFocus}
+      onFocus={props.onFocusRow}
     >
       <div className="now-be__gutter">
         <span className="now-be__kind">{block.type}</span>
+        <span className="now-be__num">{props.index + 1}</span>
       </div>
 
       <div className="now-be__body">
-        {editable ? <InlineEditor block={block} onPatch={props.onPatch} /> : null}
+        {isProse ? (
+          <InlineEditor
+            html={String(block.html ?? '')}
+            onActivate={(el) => props.onActivate(el, (html) => props.onPatch({ html }))}
+            onCommit={props.onCommit}
+          />
+        ) : null}
         {block.type === 'heading' ? <HeadingEditor block={block} onReplace={props.onReplace} /> : null}
         {block.type === 'image' ? <ImageEditor block={block} onPatch={props.onPatch} /> : null}
         {block.type === 'gallery' ? <GalleryEditor block={block} onPatch={props.onPatch} /> : null}
-        {block.type === 'list' ? <ListEditor block={block} onPatch={props.onPatch} /> : null}
+        {block.type === 'list' ? (
+          <ListEditor
+            block={block}
+            onPatch={props.onPatch}
+            onActivate={props.onActivate}
+            onCommit={props.onCommit}
+          />
+        ) : null}
         {block.type === 'embed' ? <EmbedEditor block={block} onPatch={props.onPatch} /> : null}
         {block.type === 'separator' ? <hr className="now-be__rule" /> : null}
-
-        {!editable &&
-        !['heading', 'image', 'gallery', 'list', 'embed', 'separator'].includes(block.type) ? (
-          <OpaqueBlock block={block} showSource={props.showSource} onToggle={props.onToggleSource} onPatch={props.onPatch} />
+        {opaque ? (
+          <OpaqueBlock
+            block={block}
+            showSource={props.showSource}
+            onToggle={props.onToggleSource}
+            onPatch={props.onPatch}
+          />
         ) : null}
 
         {block.type === 'quote' ? (
@@ -220,74 +517,20 @@ function BlockRow(props: RowProps) {
             onBlur={(e) => props.onPatch({ cite: e.target.value || null })}
           />
         ) : null}
-      </div>
 
-      <div className="now-be__tools">
-        <button type="button" title="Move up" disabled={index === 0} onClick={() => props.onMove(-1)}>
-          ↑
-        </button>
-        <button
-          type="button"
-          title="Move down"
-          disabled={index === total - 1}
-          onClick={() => props.onMove(1)}
-        >
-          ↓
-        </button>
-        {block.type === 'paragraph' || block.type === 'heading' ? (
-          <button
-            type="button"
-            title={block.type === 'heading' ? 'Make a paragraph' : 'Make a heading'}
-            onClick={() => props.onReplace(convert(block, block.type === 'heading' ? 'paragraph' : 'heading'))}
-          >
-            {block.type === 'heading' ? '¶' : 'H'}
-          </button>
+        {/* Said on the row that has the problem, not only counted in the bar.
+            A writer fixing one paragraph should be able to fix the one in front
+            of them without reasoning about a number at the top of the page. */}
+        {hasHardBreaks(block) ? (
+          <p className="now-be__warn">
+            This holds line breaks a reader never sees — it arrives as one block of text.{' '}
+            <button type="button" className="now-be__link-btn" onMouseDown={hold} onClick={props.onSplit}>
+              Split into paragraphs
+            </button>
+          </p>
         ) : null}
-        <InsertMenu onInsert={props.onInsert} />
-        <button
-          type="button"
-          className="now-be__danger"
-          title="Delete this block"
-          onClick={() => {
-            // The only destructive control here, and the only one that asks.
-            // Undo in a field component means fighting Payload's own form
-            // state; a sentence naming what is about to go is cheaper and
-            // more honest than an undo that half works.
-            if (confirm(`Delete this ${block.type}? "${plainText(String(block.html ?? describe(block))).slice(0, 60)}"`))
-              props.onRemove()
-          }}
-        >
-          ✕
-        </button>
       </div>
     </div>
-  )
-}
-
-function InsertMenu({ onInsert }: { onInsert: (b: Block) => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <span className="now-be__insert">
-      <button type="button" title="Insert below" onClick={() => setOpen((o) => !o)}>
-        +
-      </button>
-      {open ? (
-        <span className="now-be__menu">
-          {INSERTABLE.map((item) => (
-            <button
-              key={item.type}
-              type="button"
-              onClick={() => {
-                onInsert(item.make())
-                setOpen(false)
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </span>
-      ) : null}
-    </span>
   )
 }
 
@@ -297,118 +540,94 @@ function InsertMenu({ onInsert }: { onInsert: (b: Block) => void }) {
  * UNCONTROLLED ON PURPOSE. A `contentEditable` whose `innerHTML` React owns
  * puts the caret back at position zero on every render, which makes typing
  * past the first character impossible. So the DOM holds the text while the
- * writer is in it, and the value is read out on blur. `defaultHtml` is
- * captured once per mount and the row's `key` is what remounts it.
+ * writer is in it, and the value is read out on blur and after every toolbar
+ * command.
  *
  * THE INITIAL TEXT IS WRITTEN IN AN EFFECT, and it has to be. Rendering it
- * with `dangerouslySetInnerHTML` is the tidier-looking option and it produces
- * a hydration mismatch every time: a browser normalises markup as it parses
- * it into a `contentEditable` — `<br/>` becomes `<br>`, attribute order moves,
- * entities re-encode — so the DOM React finds on the client is never quite the
- * string it sent from the server. React's repair for that is to throw the
- * subtree away and rebuild it, which on a page of thirteen paragraphs is both
- * slow and exactly the wrong thing to do to a field someone might be typing
- * in.
- *
- * Writing it after mount means the server and the client's first render are
- * the same empty div, so there is nothing to mismatch, and the effect then
- * mutates the DOM behind React's back — which is precisely the uncontrolled
- * behaviour the caret needs. Nothing is lost by the content being absent from
- * the server HTML: this is an admin surface behind a session, and the preview
- * pane carries the same text anyway.
+ * with `dangerouslySetInnerHTML` looks tidier and produces a hydration
+ * mismatch every time: a browser normalises markup as it parses it into a
+ * `contentEditable` — `<br/>` becomes `<br>`, attribute order moves, entities
+ * re-encode — so the DOM React finds on the client is never quite the string
+ * it sent from the server, and React's repair is to throw the subtree away.
+ * Writing it after mount means both first renders are the same empty div.
  *
  * Bold and italic come from `execCommand`, which is deprecated and has no
- * replacement that works in every browser today. What it produces is then run
- * through `cleanInline`, so its worst habits — `<font>`, nested `<span
- * style>` — never reach storage.
+ * replacement that works in every browser today. What it produces is run
+ * through `cleanInline`, so its worst habits never reach storage.
  */
-function InlineEditor({ block, onPatch }: { block: Block; onPatch: (p: Record<string, unknown>) => void }) {
+function InlineEditor({
+  html,
+  placeholder,
+  onActivate,
+  onCommit,
+}: {
+  html: string
+  placeholder?: string
+  onActivate: (el: HTMLDivElement) => void
+  onCommit: () => void
+}) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const defaultHtml = useRef(String(block.html ?? ''))
+  const defaultHtml = useRef(html)
 
   useEffect(() => {
     if (ref.current) ref.current.innerHTML = defaultHtml.current
   }, [])
 
-  const commit = () => {
+  /**
+   * RE-SYNC WHEN THE VALUE CHANGES UNDERNEATH US, which is a bug fix with a
+   * screenshot behind it. Splitting a run-on paragraph turns one block into
+   * five; React reuses this component for the first of them, the mount effect
+   * above does not run again, and the DOM keeps the whole original text while
+   * the preview correctly shows the five. The editor and the preview then
+   * disagreed — the one thing this surface must never do.
+   *
+   * Guarded on focus. If the writer is typing in this element, the value
+   * arriving from the parent is their own keystrokes coming back, and writing
+   * it into the DOM would move the caret to the end of the paragraph on every
+   * autosave. So the DOM wins while they are in it, and state wins when they
+   * are not.
+   */
+  useEffect(() => {
     const el = ref.current
     if (!el) return
-    const cleaned = cleanInline(el.innerHTML)
-    if (cleaned !== String(block.html ?? '')) onPatch({ html: cleaned })
-  }
-
-  const exec = (command: string) => {
-    ref.current?.focus()
-    document.execCommand(command)
-    commit()
-  }
-
-  const link = () => {
-    const url = prompt('Link to:')
-    if (!url) return
-    ref.current?.focus()
-    document.execCommand('createLink', false, url)
-    commit()
-  }
+    if (el.innerHTML === html) return
+    if (document.activeElement === el) return
+    el.innerHTML = html
+  }, [html])
 
   return (
-    <div className="now-be__prose-wrap">
-      <div className="now-be__inline-tools" aria-hidden="true">
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('bold')}>
-          B
-        </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => exec('italic')}>
-          I
-        </button>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={link}>
-          Link
-        </button>
-      </div>
-      <div
-        ref={ref}
-        className="now-be__prose"
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-multiline="true"
-        tabIndex={0}
-        onBlur={commit}
-        onPaste={(e) => {
-          // Paste as text. The alternative is inheriting Google Docs' inline
-          // styling wholesale, which is how the archive got into the state
-          // this editor exists to help clean up.
-          e.preventDefault()
-          const text = e.clipboardData.getData('text/plain')
-          document.execCommand('insertText', false, text)
-        }}
-      />
-    </div>
+    <div
+      ref={ref}
+      className="now-be__prose"
+      data-placeholder={placeholder}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-multiline="true"
+      tabIndex={0}
+      onFocus={() => ref.current && onActivate(ref.current)}
+      onBlur={onCommit}
+      onPaste={(e) => {
+        // Paste as text. The alternative is inheriting Google Docs' inline
+        // styling wholesale, which is how the archive got into the state this
+        // editor exists to help clean up.
+        e.preventDefault()
+        const text = e.clipboardData.getData('text/plain')
+        document.execCommand('insertText', false, text)
+      }}
+    />
   )
 }
 
 function HeadingEditor({ block, onReplace }: { block: Block; onReplace: (b: Block) => void }) {
   const level = Number(block.level ?? 2)
   return (
-    <div className="now-be__heading-wrap">
-      <select
-        className="now-be__level"
-        value={String(level)}
-        onChange={(e) => onReplace(setHeading(block, String(block.text ?? ''), Number(e.target.value)))}
-        aria-label="Heading level"
-      >
-        {[2, 3, 4].map((l) => (
-          <option key={l} value={l}>
-            H{l}
-          </option>
-        ))}
-      </select>
-      <input
-        className={`now-be__heading now-be__heading--${level}`}
-        defaultValue={String(block.text ?? plainText(String(block.html ?? '')))}
-        placeholder="Heading"
-        onBlur={(e) => onReplace(setHeading(block, e.target.value, level))}
-      />
-    </div>
+    <input
+      className={`now-be__heading now-be__heading--${level}`}
+      defaultValue={String(block.text ?? plainText(String(block.html ?? '')))}
+      placeholder="Heading"
+      onBlur={(e) => onReplace(setHeading(block, e.target.value, level))}
+    />
   )
 }
 
@@ -416,11 +635,11 @@ function HeadingEditor({ block, onReplace }: { block: Block; onReplace: (b: Bloc
  * Images: alt and caption, and nothing else.
  *
  * `media_ref` points at the legacy WordPress host and there is nowhere to
- * upload a replacement — `Media` is `disableLocalStorage: true` and the
- * bucket behind it has never been started. Offering a file picker that cannot
- * work would be worse than offering none. What a writer can usefully change
- * is the alt text, which is an accessibility obligation and is empty or
- * useless on a great many of these ("Dance-8216"), and the caption.
+ * upload a replacement — `Media` is `disableLocalStorage: true` and the bucket
+ * behind it has never been started. A file picker that cannot work would be
+ * worse than none. What a writer can usefully change is the alt text, which is
+ * an accessibility obligation and is empty or useless on a great many of these
+ * ("Dance-8216"), and the caption.
  */
 function ImageEditor({ block, onPatch }: { block: Block; onPatch: (p: Record<string, unknown>) => void }) {
   const src = String(block.media_ref ?? '')
@@ -470,47 +689,78 @@ function GalleryEditor({ block, onPatch }: { block: Block; onPatch: (p: Record<s
         onBlur={(e) => onPatch({ caption: e.target.value || null })}
       />
       <p className="now-be__hint">
-        {images.length} image{images.length === 1 ? '' : 's'}. Per-image alt text is edited on the
-        gallery source, below — galleries are rearranged by the importer, not here.
+        {images.length} image{images.length === 1 ? '' : 's'}, in the order the importer found them.
       </p>
     </div>
   )
 }
 
-/** List items are stored as inline HTML strings. One line each, as text, is
- * the honest editor for that: a writer adding a bullet is not thinking about
- * markup, and the ones that already contain links keep them because an
- * untouched item is never rewritten. */
-function ListEditor({ block, onPatch }: { block: Block; onPatch: (p: Record<string, unknown>) => void }) {
+/**
+ * List items — edited as the text they are, not as the markup they are stored
+ * as.
+ *
+ * These were plain `<input>`s bound to the stored string, which meant a writer
+ * looking at a bulleted list saw
+ * `A Three-Day stay at <strong><a href="https://…" target="_blank" rel="nore…`
+ * in a single-line box. Honest, and the single most uncomfortable thing left
+ * on the surface once the toolbar landed. Every item is now the same
+ * `contentEditable` a paragraph uses, so the list reads as a list and the
+ * toolbar's bold, italic and link work inside a bullet — which is what makes
+ * one toolbar for everything true rather than nearly true.
+ *
+ * Items that already carry links keep them, because an untouched item is never
+ * rewritten.
+ */
+function ListEditor({
+  block,
+  onPatch,
+  onActivate,
+  onCommit,
+}: {
+  block: Block
+  onPatch: (p: Record<string, unknown>) => void
+  onActivate: (el: HTMLDivElement, write: (html: string) => void) => void
+  onCommit: () => void
+}) {
   const items = Array.isArray(block.items) ? block.items.map(String) : []
   const ordered = Boolean(block.ordered)
+
+  const writeItem = (at: number) => (html: string) => {
+    const next = items.slice()
+    next[at] = html
+    onPatch({ items: next })
+  }
+
   return (
     <div className="now-be__list">
       <label className="now-be__hint">
-        <input
-          type="checkbox"
-          checked={ordered}
-          onChange={(e) => onPatch({ ordered: e.target.checked })}
-        />{' '}
+        <input type="checkbox" checked={ordered} onChange={(e) => onPatch({ ordered: e.target.checked })} />{' '}
         Numbered
       </label>
-      {items.map((item, i) => (
-        <input
-          key={i}
-          className="now-be__meta"
-          defaultValue={item}
-          onBlur={(e) => {
-            const next = items.slice()
-            next[i] = e.target.value
-            onPatch({ items: next })
-          }}
-        />
-      ))}
-      <button
-        type="button"
-        className="now-be__btn"
-        onClick={() => onPatch({ items: [...items, ''] })}
-      >
+
+      <ol className={`now-be__items${ordered ? '' : ' now-be__items--bullets'}`}>
+        {items.map((item, i) => (
+          <li key={i}>
+            <InlineEditor
+              html={item}
+              placeholder="List item"
+              onActivate={(el) => onActivate(el, writeItem(i))}
+              onCommit={onCommit}
+            />
+            <button
+              type="button"
+              className="now-be__item-x"
+              title="Remove this item"
+              onMouseDown={hold}
+              onClick={() => onPatch({ items: items.filter((_, j) => j !== i) })}
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ol>
+
+      <button type="button" className="now-be__btn" onClick={() => onPatch({ items: [...items, ''] })}>
         Add item
       </button>
     </div>
@@ -535,10 +785,9 @@ function EmbedEditor({ block, onPatch }: { block: Block; onPatch: (p: Record<str
  * A block this editor will not pretend to understand.
  *
  * `columns` nests block arrays two deep, `raw_html` is whatever the cleaner
- * could not classify, and the archive's `quote` blocks are mostly embedded
- * Instagram cards. Fifty, three and twenty rows respectively. A structured
- * editor for those would be a way to damage them; a source box the writer has
- * to ask for is a way to fix one when they genuinely need to.
+ * could not classify. Fifty and three rows respectively across the archive. A
+ * structured editor for those would be a way to damage them; a source box the
+ * writer has to ask for is a way to fix one when they genuinely need to.
  */
 function OpaqueBlock({
   block,
