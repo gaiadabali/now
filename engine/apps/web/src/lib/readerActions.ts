@@ -30,6 +30,7 @@ import {
   siteBaseUrl,
 } from '@/lib/reader'
 import { savePrefs } from '@/lib/preferences'
+import { rateLimit } from '@/lib/rateLimit'
 import { stitchAnonymousHistory } from '@/lib/stitch'
 
 /**
@@ -50,40 +51,9 @@ import { stitchAnonymousHistory } from '@/lib/stitch'
  * whoever is testing a breach list against it.
  */
 
-// --- rate limiting ---------------------------------------------------------
-
-type Bucket = { count: number; resetAt: number }
-const buckets = new Map<string, Bucket>()
-
-/**
- * A crude fixed-window limiter, in process memory.
- *
- * **Per instance, and lost on restart.** With more than one container this
- * allows N times the intended rate, and it is not a defence against a
- * distributed attempt. It is here because the alternative today is *nothing*,
- * and unmetered password attempts against a known address are worth slowing
- * even imperfectly. Redis is already in the compose file and is where this
- * belongs — tracked as E8.3a rather than left implicit.
- *
- * Per-account lockout (`DEFAULT_READER_LOCKOUT`, 10 attempts) is the real
- * protection and lives in the database where every instance sees it. This only
- * blunts the shape lockout cannot see: many addresses, few attempts each.
- */
-function rateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now()
-  const bucket = buckets.get(key)
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs })
-    // Opportunistic sweep; the map is bounded by distinct keys per window.
-    if (buckets.size > 10_000) {
-      for (const [k, v] of buckets) if (v.resetAt <= now) buckets.delete(k)
-    }
-    return true
-  }
-  if (bucket.count >= limit) return false
-  bucket.count += 1
-  return true
-}
+// Rate limiting moved to `lib/rateLimit.ts` (E8.3a): Redis-backed so the
+// budget is shared across containers and survives a redeploy, with a logged
+// in-process fallback when Redis is unreachable.
 
 function field(form: FormData, name: string): string {
   const value = form.get(name)
@@ -98,7 +68,7 @@ export async function register(form: FormData): Promise<void> {
   const name = field(form, 'name')
   const emailNorm = normaliseReaderEmail(email)
 
-  if (!rateLimit(`register:${emailNorm}`, 5, 60 * 60_000)) {
+  if (!(await rateLimit(`register:${emailNorm}`, 5, 60 * 60_000))) {
     redirect('/account/register?status=slow_down')
   }
 
@@ -204,7 +174,7 @@ export async function signIn(form: FormData): Promise<void> {
   const password = field(form, 'password')
   const emailNorm = normaliseReaderEmail(email)
 
-  if (!rateLimit(`login:${emailNorm}`, 15, 15 * 60_000)) {
+  if (!(await rateLimit(`login:${emailNorm}`, 15, 15 * 60_000))) {
     redirect('/account/login?status=slow_down')
   }
 
@@ -248,7 +218,7 @@ export async function signOut(): Promise<void> {
 
 export async function resendVerification(form: FormData): Promise<void> {
   const email = normaliseReaderEmail(field(form, 'email'))
-  if (!rateLimit(`resend:${email}`, 3, 60 * 60_000)) {
+  if (!(await rateLimit(`resend:${email}`, 3, 60 * 60_000))) {
     redirect('/account/verify?status=slow_down')
   }
   const reader = await readerStore().findByEmail(email)
@@ -266,7 +236,7 @@ export async function requestReset(form: FormData): Promise<void> {
 
   // Tighter than sign-in: each request sends mail to an address the requester
   // may not own, so the limit protects a third party's inbox, not just us.
-  if (!rateLimit(`reset:${emailNorm}`, 3, 60 * 60_000)) {
+  if (!(await rateLimit(`reset:${emailNorm}`, 3, 60 * 60_000))) {
     redirect('/account/forgot?status=sent')
   }
   // A reset that cannot be mailed is a reset that cannot happen. Answering
