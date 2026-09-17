@@ -229,7 +229,8 @@ There are no CMS or console instances to check any more — `deploy.sh`'s own
 web-bali, and the admin is a path on the two web instances.
 
 The databases still need loading (E1.8) and migrations (`now-db`). `deploy.sh`
-does not do this yet — it is a rollout driver, not a migration runner.
+does not do this yet — it is a rollout driver, not a migration runner. §7 says
+what that means the day you forget it.
 
 ## 6. The media path is off
 
@@ -307,6 +308,44 @@ images against new config — which is a state nothing has ever been tested in.
 Rollback does not reverse migrations, and nothing in this script touches the
 postgres volume. A migration that must be undone is a separate, deliberate
 act.
+
+### `deploy.sh` applies no migrations, and that is a trap rather than a gap
+
+It is stated in §5 in one clause, easy to read past, so here it is as the
+thing that will actually happen.
+
+**Nothing in this pipeline runs a migration.** Not CI, not the image build,
+not `deploy.sh` — grep it. Alembic revision `0009` reached production because
+a human opened a shell and ran it, and knew to.
+
+The failure mode is not a deploy that fails. It is a deploy that goes
+**green** while shipping code whose schema does not exist yet:
+
+- CI passes, because CI has a test database built from the new migrations.
+- The image builds, because a migration is not part of a build.
+- `deploy.sh` reports healthy, because the containers start and answer — the
+  code that needs the new column has not been reached by a request yet.
+- Then a visitor touches the one endpoint that uses it, the INSERT throws on
+  a column that is not there, and whatever error handling that path has turns
+  a missing migration into a generic apology on a public form.
+
+Caught on 2026-09-17 before it shipped, on a newsletter double-opt-in change
+carrying revision `0010`: the confirmation columns did not exist in
+production, and the handler's own `try/catch` would have turned every
+`/subscribe` submission into "Something went wrong at our end" — traded for a
+feature that could not work yet anyway.
+
+**So, before any rollout: does this range of commits add an Alembic
+revision?**
+
+```bash
+git diff --name-only <deployed-sha>..<new-sha> -- '*/migrations/versions/*'
+```
+
+If it prints anything, the migration is applied deliberately, by hand, before
+the images that need it go out — and `--rollback` does not undo it, which is
+its own reason to apply it as a separate, considered act rather than as part
+of a rollout.
 
 ### Verify the environment inside the container, never in `.env`
 
