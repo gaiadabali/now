@@ -195,13 +195,18 @@ different from the vocabulary case (which reads `engine`, read-only) because
   superseded term can be retired — `entity_terms`' primary key is
   `(entity_type, entity_id, term_id)`, so "eat" corrected to "drink" is a new key, not an
   update of the old one). Actually upserting `engine.entity_terms` with
-  `source='editor'` is `engine-worker`'s job (out of this package's scope, and not built
-  yet) — exactly principle 2's "machines write engine", never Payload.
+  `source='editor'` is `engine-worker`'s job (out of this package's scope) — exactly
+  principle 2's "machines write engine", never Payload. That consumer now exists:
+  `engine/apps/worker/app/classification.py`, reached through the same stream consumer
+  that already handled `article.published`. It supersedes by facet cardinality rather
+  than by `previous_term_id` alone, for reasons its module docstring sets out, and
+  `engine/apps/worker/scripts/verify_classification_reviewed.py` is its end-to-end proof.
 
 **Proving a re-run cannot clobber an editor correction** (the property this ticket says
-matters most) required standing in for that not-yet-built `engine-worker`, since nothing
-consumes `classification.reviewed` today. `scripts/verify-review-no-clobber.mjs` does,
-end to end, against real Postgres and real Redis:
+matters most) required standing in for `engine-worker`, which did not exist when this was
+written. `scripts/verify-review-no-clobber.mjs` still does, end to end, against real
+Postgres and real Redis — and remains valid, because the real consumer writes the same
+shape this script simulates in step 3:
 1. Writes a real `engine.entity_terms` row directly via raw SQL (`source='ai'`) —
    simulating E2.1's classifier, the only "machine" ever meant to write there. This is
    the one place in this ticket's deliverables that touches `engine` directly, and it is
