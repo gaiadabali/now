@@ -55,13 +55,14 @@ name: now-engine
 #                 worker's re-embed consumer since consolidation, and
 #                 `classification.reviewed` would have gone nowhere either.
 #   GARAGE_*    — `Media` is `disableLocalStorage: true`, so with no S3
-#                 credentials an upload has no destination at all. This is one
-#                 of two obstacles to media, not the whole story: `garage` and
-#                 `imgproxy` also sit behind the `media` profile and have never
-#                 been started on helios, because E1.3 (mirroring
-#                 wp-content/uploads into the bucket) is still blocked. See
-#                 DEPLOY.md section 6. Restoring the variables is necessary and
-#                 not sufficient.
+#                 credentials an upload has no destination at all. These have
+#                 NOT been restored to `x-web-shared`, and the comment there
+#                 explains why at length: supplying them enables a plugin whose
+#                 client component is missing from the baked importMap, which
+#                 blanks the entire admin. Media is blocked on E1.3 regardless
+#                 — `garage` has never been started on helios (DEPLOY.md
+#                 section 6) — so there was nothing to gain by restoring them
+#                 and an outage to lose.
 #
 # Everything it held now lives in `x-web-shared` below, which is the anchor
 # the services that run Payload actually use.
@@ -98,18 +99,29 @@ x-web-shared: &web-shared
   # `ENGINE_*_REDIS_URL` spelling the Python services read — the CMS reads
   # this name (packages/cms/src/lib/redis.ts).
   REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-  # Media has nowhere to go without these: `Media` sets
-  # `disableLocalStorage: true`, so the S3 adapter is the only destination.
-  # Left defaulting to empty rather than `:?` so a deployment that has not
-  # provisioned Garage credentials still boots — the symptom is then a failing
-  # upload, which is visible, instead of a stack that will not start. On helios
-  # the credentials are real but `garage` itself is not running (media profile,
-  # DEPLOY.md section 6), so these point at a service that has to be turned on
-  # in the same change that unblocks the mirror.
-  GARAGE_S3_ENDPOINT: http://garage:3900
-  GARAGE_ACCESS_KEY_ID: ${GARAGE_ACCESS_KEY_ID:-}
-  GARAGE_SECRET_ACCESS_KEY: ${GARAGE_SECRET_ACCESS_KEY:-}
-  GARAGE_MEDIA_BUCKET: ${GARAGE_MEDIA_BUCKET:-now-media}
+  # NO GARAGE_* HERE, AND IT IS NOT AN OVERSIGHT — it took the production
+  # admin down on 2026-09-17 and must stay out until the importMap is fixed.
+  #
+  # `payload.config.ts` registers `s3Storage` only when the three Garage
+  # variables are present. That plugin contributes a client component,
+  # `@payloadcms/storage-s3/client#S3ClientUploadHandler`, which Payload
+  # resolves through the generated `importMap.js` — and the importMap is
+  # generated at BUILD time, in an environment that has no Garage
+  # credentials. So the entry does not exist in the image.
+  #
+  # Supplying the credentials at RUN time therefore enables a plugin whose
+  # component cannot be resolved. Payload logs
+  # `getFromImportMap: PayloadComponent not found in importMap` and the entire
+  # admin renders as a blank page — every route under /team-editor, including
+  # the sign-in screen, served as valid HTML with an empty Suspense boundary
+  # inside it. No error, no failed request, nothing in the browser console.
+  # A 55 KB page with nothing on it.
+  #
+  # The real fix is to generate the importMap with the plugin enabled and
+  # commit it, so the entry is in the image whether or not the credentials
+  # are set. Until that ships, these four lines are the difference between a
+  # working admin and a blank one, and the media path is blocked on E1.3
+  # anyway — `garage` has never been started on helios.
 
 x-logging: &default-logging
   driver: json-file
