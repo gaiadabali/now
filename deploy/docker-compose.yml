@@ -236,6 +236,27 @@ services:
       NOW_PG_USER: ${POSTGRES_USER}
       NOW_PG_PASSWORD: ${POSTGRES_PASSWORD}
       ENGINE_API_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # Origins the beacon may post from that `engine.sites.hostname` does not
+      # name — the staging domains, while the registry still holds the
+      # post-cutover ones. A JSON object keyed by site slug; see DEPLOY.md
+      # section 8 for the value and for when to delete it.
+      #
+      # THIS LINE IS THE WHOLE POINT OF THE CHANGE. Setting the variable in
+      # `deploy/.env` makes it visible to compose's own interpolation and
+      # nothing more — `engine-api` has no `env_file`, so nothing in `.env`
+      # reaches the container unless it is named here. Without this line the
+      # rollout would have produced a stack that looks configured, keeps
+      # returning 403 to every beacon batch, and gives no hint why. That is
+      # the same shape of failure that cost this project `REDIS_URL` for a
+      # week; it is not a coincidence that it nearly happened twice in one
+      # morning, and it is why the `x-cms-shared` comment above is written at
+      # the length it is.
+      #
+      # Safe to leave empty: `config.py` reads a blank value as "no extra
+      # origins" rather than as malformed JSON. That is a deliberate property
+      # of this variable and it has its own tests (tests/test_config.py),
+      # because emptying it is how it is meant to end.
+      ENGINE_API_EXTRA_ALLOWED_ORIGINS: ${ENGINE_API_EXTRA_ALLOWED_ORIGINS:-}
     depends_on:
       postgres:
         condition: service_healthy

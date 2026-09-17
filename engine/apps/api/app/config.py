@@ -9,9 +9,12 @@ optional Redis rate-limit backend.
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
+from typing import Annotated, Any
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -43,10 +46,38 @@ class Settings(BaseSettings):
     # origin write behaviour into another city's database, which is the
     # boundary the per-site check exists to hold.
     #
-    # A dict of lists, so pydantic-settings parses the JSON itself. Hand-rolled
-    # "slug:origin,slug:origin" parsing would be one more thing to get subtly
-    # wrong for no gain.
-    extra_allowed_origins: dict[str, list[str]] = {}
+    # A dict of lists, so the JSON is parsed for us rather than by hand-rolled
+    # "slug:origin,slug:origin" splitting, which would be one more thing to get
+    # subtly wrong for no gain.
+    #
+    # `NoDecode` + the validator below, and NOT the plain annotation, because
+    # of how this variable reaches the process. pydantic-settings decodes a
+    # complex field from the environment as JSON *before* any validator runs,
+    # so a blank value is not read as "unset" — it is malformed JSON, and the
+    # whole app dies at import with `SettingsError: error parsing value for
+    # field "extra_allowed_origins"`.
+    #
+    # That matters because blank is exactly what a container gets from a
+    # compose `${VAR:-}` default, or from a `.env` line left as `VAR=`. The
+    # variable is temporary by design — it exists until the DNS cutover and is
+    # then meant to be deleted — so "someone empties it and redeploys" is the
+    # normal end of its life, not an edge case, and it must not take the API
+    # down when it happens. Blank means none.
+    extra_allowed_origins: Annotated[dict[str, list[str]], NoDecode] = {}
+
+    @field_validator("extra_allowed_origins", mode="before")
+    @classmethod
+    def _parse_extra_allowed_origins(cls, value: Any) -> Any:
+        """Blank is none; anything else must still be valid JSON."""
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return {}
+            # Deliberately not tolerant beyond blank. A misspelt allowlist is a
+            # security control that silently does not apply, so a malformed one
+            # should still refuse to boot rather than quietly allow nothing.
+            return json.loads(text)
+        return value
 
     # --- Platform DB (single shared pool) ---------------------------------
     platform_database_url: str = (
