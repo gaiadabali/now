@@ -843,6 +843,14 @@ def test_no_real_site_literals_in_events_source() -> None:
 # registry still said nowjakarta.co.id — the legacy site, on another server — so
 # every beacon batch was 403'd and nothing was collected for a week.
 
+# NOTE FOR ANYONE ASSERTING ON LOGS IN THIS FILE: the app configures its own
+# logging and `engine_api.*` does NOT propagate to root, so pytest's `caplog`
+# captures nothing here. An assertion written the obvious way passes vacuously
+# against an empty string — which is exactly what the first version of
+# `test_rejection_is_logged_with_both_sides` did, and it only surfaced because
+# a full-suite run happened to order things differently. Attach a handler to
+# the specific logger instead, as that test does.
+
 STAGING_ORIGIN = "https://alpha-staging.example.test"
 
 
