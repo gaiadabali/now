@@ -66,7 +66,30 @@ try {
   page.on('pageerror', (e) => consoleErrors.push(String(e)))
 
   const url = `${base}/team-editor/login`
-  await page.goto(url, { waitUntil: 'networkidle', timeout: 45_000 })
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+
+  // WAIT ON THE SELECTOR, NOT ON A CLOCK.
+  //
+  // The first version used `waitUntil: 'networkidle'` and then counted
+  // immediately. That is better than a fixed sleep and still the wrong shape:
+  // network quiet is a PROXY for "the form exists", and a proxy is exactly
+  // what this script was written to stop trusting. now-fc hit the real version
+  // of this within an hour of the incident — a 6s wait against a 9.7s first
+  // compile reported "still blank, 0 inputs" on a server that was fine, and
+  // briefly invented a second root cause.
+  //
+  // So: wait for the thing being asserted. A slow page then passes once it
+  // arrives, and a genuinely blank one fails on the timeout with the right
+  // message instead of a misleading count of zero.
+  let formArrived = true
+  try {
+    await page.waitForSelector('input[type="password"]', { state: 'attached', timeout: 30_000 })
+  } catch {
+    formArrived = false
+  }
+  if (!formArrived) {
+    bad('login never rendered a password field within 30s — blank, or far too slow to use')
+  }
 
   // The three things that make this a sign-in screen rather than a blank one.
   const password = await page.locator('input[type="password"]').count()
