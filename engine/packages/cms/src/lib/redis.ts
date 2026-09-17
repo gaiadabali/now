@@ -18,7 +18,17 @@ let client: Redis | null = null
 function getClient(): Redis | null {
   const url = process.env.REDIS_URL
   if (!url) {
-    console.error('[cms] REDIS_URL is not set — domain events will not be emitted')
+    // Names the remedy, not just the symptom. This fires on every event that
+    // would have been published, so a developer editing an article sees it —
+    // but "will not be emitted" leaves them to go and find out what to set,
+    // and in practice nobody did: the whole event path was inert in
+    // development for months, which is why a publish hook that announced a
+    // false `article.unpublished` could only be caught in production.
+    console.error(
+      '[cms] REDIS_URL is not set — domain events will not be emitted. ' +
+        'Set it from .env.example (host port, e.g. redis://:<password>@localhost:6379/0) ' +
+        'and watch them with scripts/tail-domain-events.sh',
+    )
     return null
   }
   if (!client) {
