@@ -23,17 +23,35 @@ blockers/follow-ups for the honest limits of that.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from now_config import SiteConfig
 
 
-def allowed_origins_for_site(site: SiteConfig) -> tuple[str, str]:
-    """The origins this site's own front end is served from. `nav`/
-    `brand_tokens` etc. are jsonb config the schema owner could later use to
-    list additional origins (a CDN preview domain, a staging alias) per
-    site without another migration -- not needed yet since every registered
-    site's `hostname` column alone is sufficient (ARCHITECTURE.md §2/§14
-    topology: one production hostname per city, no site literals here)."""
-    return (f"https://{site.hostname}", f"https://www.{site.hostname}")
+def allowed_origins_for_site(
+    site: SiteConfig, extra: Sequence[str] | None = None
+) -> tuple[str, ...]:
+    """The origins this site's own front end is served from.
+
+    `hostname` is the site's CANONICAL host, which is not always the host it
+    is currently served from. Before a cutover the engine runs on a staging
+    domain while `hostname` still names the domain the legacy site holds — and
+    then this allowlist rejects the site's own front end, 403, silently, and
+    the beacon collects nothing. That is not hypothetical: it is what
+    production did, for a week.
+
+    `extra` is that gap, supplied per site from
+    `ENGINE_API_EXTRA_ALLOWED_ORIGINS` (see `app/config.py` for why it is
+    configuration rather than a change to `hostname`). It is normally empty,
+    and becomes empty again once the cutover makes it redundant.
+    """
+    origins = [f"https://{site.hostname}", f"https://www.{site.hostname}"]
+    if extra:
+        # Deduplicated, order preserved — an operator listing an origin the
+        # registry already covers should be a no-op, not a doubled entry in a
+        # rejection log.
+        origins.extend(o for o in extra if o and o not in origins)
+    return tuple(origins)
 
 
 def _is_local_dev_origin(origin: str) -> bool:
@@ -43,8 +61,10 @@ def _is_local_dev_origin(origin: str) -> bool:
     return origin == "http://localhost" or origin.startswith("http://localhost:")
 
 
-def origin_is_allowed(origin: str, site: SiteConfig, *, env: str) -> bool:
-    if origin in allowed_origins_for_site(site):
+def origin_is_allowed(
+    origin: str, site: SiteConfig, *, env: str, extra: Sequence[str] | None = None
+) -> bool:
+    if origin in allowed_origins_for_site(site, extra):
         return True
     if env != "production" and _is_local_dev_origin(origin):
         return True
