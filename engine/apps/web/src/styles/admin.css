@@ -290,6 +290,15 @@ html[data-theme='dark'] .graphic-icon {
 }
 
 .nav {
+  /* The sidebar's own inset, NOT `--gutter-h`.
+     
+     `--gutter-h` is the main content column's gutter — 60px at this
+     breakpoint. Applied to a 320px sidebar it spent 120px of the 320 on
+     empty margin, so the widening bought nothing: labels still wrapped and
+     the wordmark had 200px to live in. A gutter sized for an 1100px column
+     is simply the wrong measure for a 320px one. */
+  --now-nav-pad: 1.35rem;
+
   background: var(--theme-elevation-50);
   border-right: 1px solid var(--theme-elevation-1000);
 }
@@ -314,7 +323,7 @@ html[data-theme='dark'] .graphic-icon {
 
 .nav__wrap,
 .nav__controls {
-  padding-inline: var(--gutter-h);
+  padding-inline: var(--now-nav-pad);
 }
 
 /* --- the masthead ------------------------------------------------------- */
@@ -326,8 +335,15 @@ html[data-theme='dark'] .graphic-icon {
      left a 155px box holding a 35px logo. The negative margin pulls it back
      to the nav's edges; the padding then puts the wordmark on the same
      left edge as the collection links. */
-  margin-inline: calc(var(--gutter-h) * -1);
-  padding: calc(var(--base) * 0.9) var(--gutter-h) calc(var(--base) * 0.7);
+  /* `.nav__wrap` is a flex column with `align-items: flex-start`, so a child
+     is only as wide as its content — negative margins alone moved the box
+     left without widening it, and the heavy rule under the masthead stopped
+     dead at 178px of a 320px sidebar. `align-self: stretch` opts this one
+     child out of that alignment so it fills the cross axis; the negative
+     margins then carry it out past the wrap's padding to the nav's edges. */
+  align-self: stretch;
+  margin-inline: calc(var(--now-nav-pad) * -1);
+  padding: calc(var(--base) * 0.9) var(--now-nav-pad) calc(var(--base) * 0.7);
   margin-bottom: calc(var(--base) * 1.1);
   border-bottom: 3px solid var(--theme-elevation-1000);
   background: var(--theme-elevation-0);
@@ -341,7 +357,10 @@ html[data-theme='dark'] .graphic-icon {
 .now-nav-masthead__logo {
   display: block;
   width: 100%;
-  max-width: 11rem;
+  /* Raised with the inset reduction: there are now ~277px of usable column
+     rather than 200, and a wordmark that has to be recognised rather than
+     read is doing half a job. */
+  max-width: 13.5rem;
   height: auto;
 }
 
@@ -405,7 +424,7 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 .nav__link-indicator {
-  inset-inline-start: calc(var(--gutter-h) * -1 + 2px);
+  inset-inline-start: calc(var(--now-nav-pad) * -1 + 2px);
   width: 3px;
   height: 1.1em;
   border-radius: 0;
@@ -420,6 +439,10 @@ html[data-theme='dark'] .now-nav-masthead__logo {
    destination in the same list, not an advertisement. */
 .now-nav-extra {
   display: block;
+  /* Same flex-start trap as the masthead: without this the element is only
+     as wide as "Staff & roles" and its `border-top` renders as an 85px stub
+     instead of a divider. */
+  width: 100%;
   margin-top: calc(var(--base) * 0.9);
   padding-block: calc(var(--base) * 0.42);
   border-top: 1px solid var(--theme-elevation-200);
