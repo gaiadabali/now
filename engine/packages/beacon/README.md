@@ -369,3 +369,25 @@ running `demo/server.js`.
   sends, so a hard failure silently drops that batch (acceptable for a
   best-effort analytics beacon per ARCHITECTURE.md's tone; flagging in case
   that tradeoff needs revisiting once real traffic hits it).
+
+## You cannot test the origin allowlist with OPTIONS
+
+The beacon posts to `/v1/{site}/events` on its **own** origin, and the reader
+app proxies that to the engine API (`apps/web/src/app/v1/[site]/events/route.ts`).
+That route exports `POST` and nothing else, so an `OPTIONS` request is answered
+by Next itself and **never reaches the API** — it returns 204 regardless of the
+`Origin` header, including for an origin the allowlist would refuse.
+
+This cost real time on 2026-09-17. A preflight was used as a write-free way to
+check the allowlist after deploying a fix to it, `https://evil.example` came
+back 204, and it briefly looked like the gate was wide open. It was not: the
+API logged zero OPTIONS requests for the period, because none arrived.
+
+Two consequences worth keeping straight:
+
+- **To test the allowlist, POST.** A valid batch from a refused origin returns
+  403 before anything is written, so it is safe to use as a probe.
+- **Nothing is broken by the missing OPTIONS handler.** Same-origin requests
+  never preflight, and the beacon is same-origin by construction — that is the
+  whole reason the proxy exists. The handler is absent because it is unreachable,
+  not because it was forgotten.
