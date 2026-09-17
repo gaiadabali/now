@@ -99,6 +99,7 @@ export default buildConfig({
       // component decides for itself whether to render, against the role
       // dimension it actually cares about.
       afterNavLinks: [
+        '/components/nav/NavReview#NavReview',
         '/components/nav/NavConsole#NavConsole',
         '/components/nav/StaffLink#StaffLink',
       ],

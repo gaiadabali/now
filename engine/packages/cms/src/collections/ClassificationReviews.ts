@@ -1,6 +1,6 @@
 import type { CollectionConfig, Endpoint } from 'payload'
 
-import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { canReview, isAdmin, isReviewer } from '../access'
 import {
   autoPopulateOnDecision,
   CLASSIFICATION_FACETS,
@@ -116,6 +116,15 @@ export function buildClassificationReviewsCollection(vocabulary: VocabularyMap):
     path: '/throughput',
     method: 'get',
     handler: async (req) => {
+      // A custom endpoint does NOT inherit the collection's `access` — Payload
+      // mounts it as a bare route and hands it `req`, and the `payload.find`
+      // below runs with `overrideAccess` defaulting to true. So closing `read`
+      // to reviewers would have left this one door open: who is reviewing and
+      // how fast, to anyone who knew the URL. Gated explicitly, same rule.
+      if (!canReview(req.user)) {
+        return Response.json({ error: 'Not found.' }, { status: 404 })
+      }
+
       const hoursParam = Number(req.query?.hours)
       const windowHours = Number.isFinite(hoursParam) && hoursParam > 0 ? hoursParam : 24
       const since = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString()
@@ -151,6 +160,16 @@ export function buildClassificationReviewsCollection(vocabulary: VocabularyMap):
     slug: 'classification-reviews',
     labels: { singular: 'Classification review', plural: 'Classification review queue' },
     admin: {
+      /**
+       * Hidden from anyone who cannot decide a row.
+       *
+       * Not security — `access` below is that, and this function runs in the
+       * browser where the user chooses what it returns. It is honesty: a
+       * writer who could see "Classification review queue" in the sidebar,
+       * click it, and get an empty list has been told the tool is broken
+       * rather than that the job is not theirs.
+       */
+      hidden: ({ user }) => !canReview(user),
       useAsTitle: 'facetKey',
       defaultColumns: [
         'entityType',
@@ -171,11 +190,38 @@ export function buildClassificationReviewsCollection(vocabulary: VocabularyMap):
     // it is worth most" (this ticket's deliverable #1). Payload's `Sort`
     // type ascends on a bare field name, descends on a `-`-prefixed one.
     defaultSort: 'confidence',
+    /**
+     * REVIEW IS NOT WRITING. This queue is closed to authors on every verb.
+     *
+     * It used to be `read: () => true, create/update: isAuthorOrAbove`, which
+     * meant three separate things that all turned out to be wrong:
+     *
+     *   - `read: () => true` is not "any logged-in user", it is *anonymous*.
+     *     Payload runs collection access on the REST API too, so
+     *     `GET /api/classification-reviews` served the whole queue —
+     *     6,485 rows of what the classifier is least sure about, plus its
+     *     reasoning — to anyone who asked, unauthenticated.
+     *   - `update: isAuthorOrAbove` is collection-wide and has no opinion
+     *     about *which* row. Any author could decide any review in the city,
+     *     and a decision is not reversible back to `pending` (see
+     *     `autoPopulateOnDecision` — there is no legitimate path back).
+     *   - Hansel's rule, plainly: review is separate from add-and-modify, and
+     *     belongs to the people who handle it, not to every writer.
+     *
+     * `isReviewer` on read as well as write, because a queue you may look at
+     * but not act on is not a lesser permission here — it is the engine's
+     * own confidence data, and the only reason to open it is to decide it.
+     *
+     * What still creates rows: E2.1's classifier, through the Local API,
+     * where `overrideAccess` defaults to true — a machine writing its own
+     * proposals is not a user and never passes through these rules. Only the
+     * admin UI and the REST API do.
+     */
     access: {
-      read: () => true,
-      create: isAuthorOrAbove,
-      update: isAuthorOrAbove,
-      delete: isEditorOrAbove,
+      read: isReviewer,
+      create: isReviewer,
+      update: isReviewer,
+      delete: isAdmin,
     },
     hooks: {
       beforeChange: [deriveEntityType, autoPopulateOnDecision],

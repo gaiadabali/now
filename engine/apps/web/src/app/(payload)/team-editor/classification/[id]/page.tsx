@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import { requireEditorialAccess } from '@/lib/auth'
+import { requireReviewerAccess } from '@/lib/auth'
 import { readBody } from '@/lib/bodyBlocks'
 import {
   CONFIDENCE_GATE,
@@ -81,7 +81,7 @@ export default async function ClassificationReport({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireEditorialAccess()
+  await requireReviewerAccess()
 
   const { id } = await params
   const articleId = Number(id)
@@ -291,13 +291,12 @@ export default async function ClassificationReport({
             stays permanently distinguishable from a guess — a classifier re-run
             is required to leave it alone. It is applied to the article&rsquo;s own
             field immediately and announced as a{' '}
-            <code>classification.reviewed</code> domain event;{' '}
-            <strong>
-              the matching <code>engine.entity_terms</code> row still says{' '}
-              <code>ai</code> or <code>inferred</code> until engine-worker
-              consumes that event
-            </strong>
-            , which is not built yet.
+            <code>classification.reviewed</code> domain event, which
+            engine-worker consumes to rewrite the matching{' '}
+            <code>engine.entity_terms</code> row as <code>editor</code> and
+            retire the term it replaced. That last step is asynchronous, so the
+            assignments above can read <code>ai</code> or <code>inferred</code>{' '}
+            for a moment after a decision.
           </>
         )}
       </p>

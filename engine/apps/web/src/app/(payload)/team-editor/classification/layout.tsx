@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 import { getSiteConfig } from '@/lib/site'
 
-import { classifyHref, EDITOR_ROOT } from './paths'
+import { classifyHref, EDITOR_ROOT, REVIEW_ROOT } from './paths'
 import './report.css'
 
 export const metadata = {
@@ -28,7 +28,7 @@ export const metadata = {
  * can be spotted afterwards.
  *
  * Auth is Payload's, and it is per route: every page under this group calls
- * `requireEditorialAccess()` before it reads anything. Not in this layout, on
+ * `requireReviewerAccess()` before it reads anything. Not in this layout, on
  * purpose — a layout guard is a rendering convenience, not an access control
  * (see lib/auth.ts).
  */
@@ -45,8 +45,13 @@ export default async function ClassificationLayout({ children }: { children: Rea
           <span className="classify__brand-label">Classification</span>
         </Link>
 
+        {/* Two ways in, because there are two jobs. The desk is the queue
+            grouped by the mistake behind it — where the work gets done. "By
+            article" is the per-article report, which answers a different
+            question: what does the engine believe about THIS one. */}
         <nav className="classify__nav">
-          <Link href={classifyHref()}>Queue</Link>
+          <Link href={REVIEW_ROOT}>Review desk</Link>
+          <Link href={classifyHref()}>By article</Link>
         </nav>
 
         <Link

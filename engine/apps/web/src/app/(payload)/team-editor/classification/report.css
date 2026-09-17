@@ -642,3 +642,225 @@ html[data-theme='dark'] .classify__logo {
   font-size: 0.9375rem;
   color: var(--theme-elevation-600);
 }
+
+/* ---------------------------------------------------------------------------
+   The review desk — the queue as patterns, not rows
+   ----------------------------------------------------------------------------
+   The desk lists 345 clusters where the queue has 6,485 proposals, so the
+   whole visual job here is comparison: which of these is worth ten minutes.
+   That makes the COUNT the first thing on every row, set in the display face
+   at a size that lets 666 and 12 be told apart without reading — a table of
+   right-aligned numbers would have been more orderly and much slower to scan.
+
+   No cards, no boxes. Same broadsheet discipline as the rest of this file:
+   a hairline rule between entries, and the type does the grouping.
+   ------------------------------------------------------------------------ */
+
+.classify__facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: var(--base);
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.classify__main .classify__facet {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-l);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  color: var(--theme-elevation-600);
+}
+
+.classify__main .classify__facet:hover {
+  border-color: var(--theme-elevation-400);
+  color: var(--theme-elevation-800);
+}
+
+/* The current filter is stated by weight and ink, not by a fill — a filled
+   chip in this palette reads as a status badge, which is what `classify__pill`
+   already means two hundred lines up. */
+.classify__main .classify__facet--on {
+  border-color: var(--theme-elevation-800);
+  color: var(--theme-elevation-1000);
+  font-weight: 600;
+}
+
+.classify__clusters {
+  margin: 0 0 var(--base);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--theme-elevation-100);
+}
+
+.classify__cluster {
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.classify__main .classify__cluster-link {
+  display: grid;
+  /* Count, rule, confidence. The middle column takes the slack so the number
+     on the left and the confidence on the right stay in their own columns all
+     the way down the list — that vertical alignment is what makes the list
+     scannable at all. */
+  grid-template-columns: 4.5rem 1fr auto;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  padding: 0.7rem 0;
+  text-decoration: none;
+  color: inherit;
+  border: 0;
+}
+
+.classify__main .classify__cluster-link:hover {
+  color: inherit;
+}
+
+.classify__cluster:hover {
+  background: var(--theme-elevation-50);
+}
+
+.classify__cluster-count {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-elevation-1000);
+}
+
+.classify__cluster-rule {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.classify__cluster-from {
+  font-weight: 600;
+  color: var(--theme-elevation-900);
+}
+
+.classify__cluster-arrow {
+  color: var(--theme-elevation-400);
+}
+
+.classify__cluster-to {
+  color: var(--theme-elevation-700);
+}
+
+.classify__cluster-conf {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-elevation-700);
+  white-space: nowrap;
+}
+
+/* The three examples sit under the rule they are examples of, indented to the
+   rule's own column so they read as its evidence rather than as another row. */
+.classify__cluster-eg {
+  margin: -0.35rem 0 0.7rem 5.5rem;
+  font-family: var(--font-serif);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--theme-elevation-500);
+}
+
+/* ---------------------------------------------------------------------------
+   One cluster's workbench
+   ------------------------------------------------------------------------ */
+
+.classify__crumb {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+}
+
+/* The rule, as a sentence. A heading rather than a label-and-value pair,
+   because the reviewer's whole decision is whether this sentence is true. */
+.classify__main h1.classify__rule {
+  max-width: 34ch;
+  line-height: 1.15;
+}
+
+.classify__rule-n {
+  font-variant-numeric: tabular-nums;
+}
+
+.classify__main h1.classify__rule code {
+  font-size: 0.6em;
+  white-space: nowrap;
+}
+
+.classify__rule-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: var(--base);
+  font-size: 0.8125rem;
+}
+
+.classify__reasons {
+  margin: 0 0 var(--base);
+  padding: 0;
+  list-style: none;
+}
+
+.classify__reason {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.classify__reason-n {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-500);
+  text-align: right;
+}
+
+.classify__reason .classify__reasoning {
+  margin: 0;
+}
+
+/* Inline per-row controls: no top margin, because in a table cell the row
+   itself already provides the separation the standalone form needed. */
+.classify__decide--inline {
+  margin-top: 0;
+  gap: 0.35rem;
+}
+
+.classify__decide--inline .classify__btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+/* The bulk control. Boxed — the one boxed thing on these pages — because it
+   is the only control here that acts on rows the reviewer cannot see, and it
+   should not look like the per-row buttons above it. */
+.classify__bulk {
+  margin: 0 0 calc(var(--base) * 2);
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--theme-elevation-200);
+  background: var(--theme-elevation-50);
+}
+
+.classify__bulk-scope {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--theme-elevation-700);
+}
+
+.classify__bulk-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.classify__bulk .classify__decide-note {
+  display: block;
+  margin-top: 0.6rem;
+}

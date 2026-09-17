@@ -63,26 +63,56 @@ export function canReadEditorial(user: StaffUser): boolean {
 }
 
 /**
- * The gate every classification-report page calls first.
+ * The gate for editorial surfaces that any writer may see.
  *
  * The editorial mirror of `requireCommerceAccess`, and for the same reasons:
  * per route rather than in a layout, because a layout guard is a rendering
  * convenience and not an access control; and a redirect rather than a 403,
  * because a commerce-only user is legitimately signed in and simply has no
  * route here.
- *
- * Author-or-above deliberately, not editor-or-above. It matches
- * `isAuthorOrAbove` on the `classification-reviews` collection — the access
- * rule that actually decides whether the correction this page offers will be
- * accepted. Gating the page more tightly than the write it wraps would mean
- * choosing a second, looser or stricter answer to the same question, and the
- * one that counts is Payload's: every write below goes through the Local API
- * with `overrideAccess: false` and this user attached, so the collection is
- * the enforcement and this is the courtesy.
  */
 export async function requireEditorialAccess(): Promise<StaffUser> {
   const user = await requireUser()
   if (!canReadEditorial(user)) redirect('/team-editor')
+  return user
+}
+
+/**
+ * May this user adjudicate the classifier — accept, correct, or reject what
+ * the engine decided about an article?
+ *
+ * Editor or admin. Deliberately NOT "any editorial user", which is what this
+ * surface shipped with. Reviewing is a different job from writing, not a
+ * stricter grade of it: the queue is the record of where the engine is wrong,
+ * and a decision here is stored with `source='editor'`, which the engine then
+ * treats as settled — §8.A's competitor exclusion spends it on a commercial
+ * guarantee. A writer correcting their own article's type is editing; a
+ * writer deciding 1,726 articles' worth of `type` is setting the taxonomy.
+ *
+ * Kept in step with `isReviewer` in `packages/cms/src/access` by saying the
+ * same thing rather than by importing it: this runs against a `StaffUser`
+ * from `payload.auth`, that one against a Payload `req`. If they ever
+ * disagree the collection wins, because it is the one the write goes through.
+ */
+export function canReviewClassification(user: StaffUser): boolean {
+  return user.role === 'admin' || user.role === 'editor'
+}
+
+/**
+ * The gate every classification-review page calls first.
+ *
+ * Matches `classification-reviews`' own `access` exactly. Gating the page
+ * differently from the write it wraps would mean two answers to one question;
+ * the one that counts is Payload's, since every write below goes through the
+ * Local API with `overrideAccess: false` and this user attached.
+ *
+ * Redirects to `/team-editor` rather than 403ing. A writer here is not an
+ * intruder — they are signed in and doing their job, and this simply is not
+ * part of it.
+ */
+export async function requireReviewerAccess(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canReviewClassification(user)) redirect('/team-editor')
   return user
 }
 
@@ -97,14 +127,18 @@ export async function requireEditorialAccess(): Promise<StaffUser> {
  * stamp `reviewedBy`. Passing the trimmed shape would work by coincidence
  * today and stop working the moment an access rule reads a field this type
  * never declared. So a write path asks for this and a render path asks for
- * `requireEditorialAccess` — one `payload.auth` either way.
+ * `requireReviewerAccess` — one `payload.auth` either way.
+ *
+ * Reviewer-gated, like the pages. A server action is not "inside" the page
+ * that rendered its form — it compiles to its own POST endpoint with a stable
+ * id, reachable by anyone who has ever loaded that page. The page guard
+ * protects the reading; this protects the deciding.
  */
-export async function requireEditorialActor() {
+export async function requireReviewerActor() {
   const payload = await payloadClient()
   const { user } = await payload.auth({ headers: await nextHeaders() })
   if (!user) redirect('/team-editor/login')
-  const role = (user as StaffUser).role
-  if (!role || role === 'none') redirect('/team-editor')
+  if (!canReviewClassification(user as StaffUser)) redirect('/team-editor')
   return user
 }
 

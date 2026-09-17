@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { requireEditorialActor } from '@/lib/auth'
+import { requireReviewerActor } from '@/lib/auth'
 import { reviewIdsForArticle } from '@/lib/classification'
 import { payloadClient } from '@/lib/payload'
 
@@ -33,13 +33,17 @@ import { classifyHref } from '../paths'
  *
  * TWO THINGS I CHECKED RATHER THAN ASSUMED BEFORE WIRING THIS UP:
  *
- * 1. The last link of that chain is not built. `engine-worker` does not
- *    consume `classification.reviewed` yet — `packages/cms/README.md` says so
- *    plainly, and `scripts/verify-review-no-clobber.mjs` stands in for it with
- *    a real SQL consumer to prove the loop. Until it is, a decision made here
- *    lands correctly in `classification_reviews` and on the article's own
- *    field, and the `engine.entity_terms` row still says `ai`/`inferred`. The
- *    report says that on screen rather than implying the round trip closed.
+ * 1. The last link of that chain is now built — `apps/worker/app/consumer.py`
+ *    and `app/classification.py` consume `classification.reviewed` and upsert
+ *    `engine.entity_terms` with `source='editor'`, retiring the superseded
+ *    assignment. It was NOT built when this action was written, and the honest
+ *    version of this note is that the gap has moved rather than closed: the
+ *    event only reaches the worker if the process publishing it has
+ *    `REDIS_URL` set. It did not in production until the compose fix that
+ *    landed with this change, which is why `article.published` had stopped
+ *    re-embedding too. `publishDomainEvent` never throws, so the failure mode
+ *    of that whole path is a log line and a decision that goes no further than
+ *    `public`.
  * 2. `public.classification_reviews` carries a `BEFORE UPDATE` trigger,
  *    `classification_reviews_no_clobber`, that rejects any update to a
  *    human-decided row which does not itself assert `source='editor'`. This
@@ -54,8 +58,8 @@ import { classifyHref } from '../paths'
  * `(payload)/api/[...slug]` handlers, which write on every save an editor
  * makes in the admin UI. This write goes through the same Local API those
  * handlers use, with `overrideAccess: false` and a real user attached, so
- * `classification-reviews`' own `access.update` (`isAuthorOrAbove`) is the
- * thing deciding whether it happens.
+ * `classification-reviews`' own `access.update` (`isReviewer` — editor or
+ * admin) is the thing deciding whether it happens.
  */
 
 export type DecisionResult = { ok: true; message: string } | { ok: false; error: string }
@@ -66,7 +70,7 @@ export async function decideReview(
   _previous: DecisionResult | null,
   form: FormData,
 ): Promise<DecisionResult> {
-  const user = await requireEditorialActor()
+  const user = await requireReviewerActor()
 
   const articleId = Number(form.get('articleId'))
   const reviewId = Number(form.get('reviewId'))
@@ -87,10 +91,11 @@ export async function decideReview(
 
   // The review must belong to the article whose page submitted it. The form
   // carries both ids and a form can be edited; without this check, a crafted
-  // post would let a signed-in author decide any review row in the city by
-  // number. Payload's access control would allow that — `isAuthorOrAbove` is
-  // collection-wide and has no opinion about which article a row is for — so
-  // this is the check, and it is on the server where it counts.
+  // post would let any reviewer decide any review row in the city by number,
+  // from a page about a different article. Payload's access control would
+  // allow that — `isReviewer` is collection-wide and has no opinion about
+  // which article a row is for — so this is the check, and it is on the
+  // server where it counts.
   const owned = await reviewIdsForArticle(articleId)
   if (!owned.includes(reviewId)) {
     return { ok: false, error: 'That review does not belong to this article.' }
@@ -108,7 +113,7 @@ export async function decideReview(
           : { reviewState: decision },
       user,
       // The editor's own standing decides this, not the fact that they reached
-      // the page. `requireEditorialActor` redirects a commerce-only account
+      // the page. `requireReviewerActor` redirects a commerce-only account
       // away, but the collection is what enforces the write.
       overrideAccess: false,
       depth: 0,
