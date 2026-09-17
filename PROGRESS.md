@@ -1094,7 +1094,7 @@ alongside (B2) · staff editing via direct-SQL admin pages, the commerce-console
 | E8.1b | **Wire the newsletter confirm route** — the template exists, nothing calls it; F135 is not closed until a subscriber can reach `confirmed` | E8.0, E8.1 | todo | | |
 | E8.2 | `ReaderStore` + reader session (`__Host-now-reader`, own secret, `aud`) | E8.1 | **done** | | 2026-09-16 |
 | E8.3 | Register · login · logout · verify · reset routes + forms | E8.0, E8.2 | **done** | | 2026-09-16 |
-| E8.3a | **Move rate limiting to Redis** — the current limiter is in-process, so N containers allow N× the rate | E8.3 | todo | | |
+| E8.3a | Rate limiting moved to Redis — shared budget, logged in-process fallback | E8.3 | **done** | | 2026-09-17 |
 | E8.4a | Account deletion — migration 0008: cascade `user_profiles`, `SET NULL` on `itineraries` (F138) | E8.1 | **done** | | 2026-09-16 |
 | E8.4b | **Drift gate was blind to `ON DELETE`** — now recorded and hashed (F139) | E8.4a | **done** | | 2026-09-16 |
 | E8.4 | 30-second onboarding picker (§17) → `stated_prefs` + `facet_affinity` seed | E8.3 | **done** | | 2026-09-16 |

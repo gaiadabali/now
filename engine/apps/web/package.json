@@ -31,7 +31,8 @@
     "graphql": "^16.8.1",
     "@now/auth": "*",
     "@now/mailer": "*",
-    "pg": "^8.13.1"
+    "pg": "^8.13.1",
+    "ioredis": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "22.10.2",
