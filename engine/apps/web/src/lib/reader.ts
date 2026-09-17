@@ -6,11 +6,16 @@ import {
   verifyReaderToken,
   type ReaderRecord,
 } from '@now/auth'
-import { Mailer, createTransportFromEnv } from '@now/mailer'
+import type { Mailer } from '@now/mailer'
 import { cookies } from 'next/headers'
 import pg from 'pg'
 
-import { getSiteConfig } from '@/lib/site'
+import { allowInsecureLinks, mailBranding, mailConfigured, sharedMailer, siteBaseUrl } from '@/lib/mail'
+
+// Re-exported so the account routes and actions keep importing from one place.
+// The implementations moved to `lib/mail.ts` when the newsletter needed the
+// same answers (E8.1b) — two surfaces, one definition of "can we send mail".
+export { allowInsecureLinks, mailBranding, siteBaseUrl }
 
 /**
  * Reader identity for the public site (E8.3 — docs/READER-IDENTITY.md).
@@ -74,16 +79,7 @@ export function readerSecret(): string {
  * hostname — and **never** from a request `Host` header. See
  * `packages/mailer/src/links.ts` for the attack that closes.
  */
-export async function siteBaseUrl(): Promise<string> {
-  const configured = process.env.SITE_BASE_URL
-  if (configured) return configured
-  const site = await getSiteConfig()
-  return `https://${site.hostname}`
-}
 
-export function allowInsecureLinks(): boolean {
-  return process.env.NODE_ENV !== 'production'
-}
 
 // --- mail ------------------------------------------------------------------
 
@@ -108,37 +104,17 @@ export function allowInsecureLinks(): boolean {
  */
 export function accountsEnabled(): boolean {
   if (process.env.READER_ACCOUNTS_ENABLED === 'false') return false
-  return createTransportFromEnv().ok
+  return mailConfigured()
 }
 
-let mailer: Mailer | null = null
 
-export function readerMailer(): Mailer {
-  if (mailer) return mailer
-  const selected = createTransportFromEnv()
-  // Thrown, not swallowed: a misconfigured transport means verification mail
-  // silently never arrives, and every account created in the meantime is
-  // stranded. Better to fail the request loudly than to accumulate them.
-  if (!selected.ok) throw new Error(`mail transport unavailable: ${selected.detail}`)
-  mailer = new Mailer({
-    transport: selected.transport,
-    from: {
-      email: process.env.MAIL_FROM_EMAIL ?? 'hello@example.com',
-      name: process.env.MAIL_FROM_NAME ?? 'NOW!',
-    },
-  })
-  return mailer
-}
-
-export async function mailBranding(): Promise<{ siteName: string; supportEmail: string }> {
-  const site = await getSiteConfig()
-  return {
-    siteName: site.name,
-    supportEmail: process.env.MAIL_SUPPORT_EMAIL ?? process.env.MAIL_FROM_EMAIL ?? '',
-  }
-}
 
 // --- who is signed in ------------------------------------------------------
+
+/** The account surface's name for the shared sender. */
+export function readerMailer(): Mailer {
+  return sharedMailer()
+}
 
 export type SignedInReader = {
   id: string

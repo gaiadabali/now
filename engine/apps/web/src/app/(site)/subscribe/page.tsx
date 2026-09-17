@@ -29,15 +29,37 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const STATUS: Record<string, { tone: 'ok' | 'bad'; head: string; body: string }> = {
-  ok: {
+  // Replaces an "ok" state that said "You are on the list. Nothing else is
+  // needed from you — the next edition will arrive on schedule." None of that
+  // was true: the row was `pending`, no confirmation had ever been sent, and
+  // no edition was coming (F135). A form that reports success it has not
+  // achieved is worse than one that reports failure.
+  check_email: {
+    tone: 'ok',
+    head: 'Check your email.',
+    body: 'We have sent you a link to confirm the address. Click it and you are on the list — until then you are not, and we will not write to you.',
+  },
+  confirmed: {
     tone: 'ok',
     head: 'You are on the list.',
-    body: 'We have your address. Nothing else is needed from you — the next edition will arrive on schedule.',
+    body: 'That is everything. The next edition will arrive on schedule.',
   },
+  // One message for lapsed, already-used and never-existed. Telling someone
+  // holding a guessed token which one they hit confirms whether it was real.
   invalid: {
+    tone: 'bad',
+    head: 'That link is no longer valid.',
+    body: 'Confirmation links last three days and work once. Enter your address again and we will send a fresh one.',
+  },
+  invalid_email: {
     tone: 'bad',
     head: 'That address did not look right.',
     body: 'Check it for a typo and try once more.',
+  },
+  unavailable: {
+    tone: 'bad',
+    head: 'Signups are temporarily unavailable.',
+    body: 'Nothing was saved and your address was not stored. Please try again shortly.',
   },
   error: {
     tone: 'bad',
