@@ -31,5 +31,10 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const token = url.searchParams.get('token') ?? ''
   const outcome = await confirmSubscription(token)
-  return NextResponse.redirect(`${url.origin}/subscribe?status=${outcome}`, 303)
+  // `unavailable` maps to its own status rather than sharing `invalid`'s: a
+  // link that failed because our database threw is still a good link, and
+  // telling the reader otherwise sends them to ask for a replacement that
+  // will fail identically.
+  const status = outcome === 'unavailable' ? 'confirm_unavailable' : outcome
+  return NextResponse.redirect(`${url.origin}/subscribe?status=${status}`, 303)
 }

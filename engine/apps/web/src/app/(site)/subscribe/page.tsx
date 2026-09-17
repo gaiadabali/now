@@ -61,6 +61,14 @@ const STATUS: Record<string, { tone: 'ok' | 'bad'; head: string; body: string }>
     head: 'Signups are temporarily unavailable.',
     body: 'Nothing was saved and your address was not stored. Please try again shortly.',
   },
+  // Deliberately NOT the `invalid` message. A failed query is not a stale
+  // link, and telling someone to request a new one — when the next one will
+  // fail the same way — sends them in a circle and hides an outage.
+  confirm_unavailable: {
+    tone: 'bad',
+    head: 'We could not confirm you just now.',
+    body: 'This is a problem at our end, not with your link. It is still good — try it again in a few minutes.',
+  },
   error: {
     tone: 'bad',
     head: 'Something went wrong at our end.',

@@ -1,5 +1,5 @@
 {
-  "hash": "66a6c5b22efe672f4d000c5ab33b6a53620a4525b8beccd4505df4d96d2abf3c",
+  "hash": "4c4274a291e38f2c88dfd83ae62934c9718c3c899dbb4c0f2882859d161cf691",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -917,6 +917,27 @@
         "columns": [
           {
             "default": null,
+            "name": "confirm_expires_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "confirm_sent_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "confirm_token_hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
             "name": "confirmed_at",
             "nullable": "YES",
             "type": "timestamp with time zone",
@@ -970,6 +991,13 @@
             "nullable": "NO",
             "type": "text",
             "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "unsubscribed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           }
         ],
         "constraints": [
@@ -982,6 +1010,11 @@
           }
         ],
         "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_confirm_token_uq ON engine.newsletter_subscribers USING btree (confirm_token_hash) WHERE (confirm_token_hash IS NOT NULL)",
+            "method": "btree",
+            "name": "newsletter_confirm_token_uq"
+          },
           {
             "def": "CREATE UNIQUE INDEX newsletter_subscribers_pkey ON engine.newsletter_subscribers USING btree (id)",
             "method": "btree",

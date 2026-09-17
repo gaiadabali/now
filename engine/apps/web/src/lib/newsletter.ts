@@ -133,14 +133,25 @@ export async function subscribe(formData: FormData): Promise<void> {
   redirect('/subscribe?status=check_email')
 }
 
-export type ConfirmOutcome = 'confirmed' | 'invalid'
+export type ConfirmOutcome = 'confirmed' | 'invalid' | 'unavailable'
 
 /**
  * Redeems a confirmation token exactly once.
  *
- * Every failure — lapsed, already used, never existed — collapses to
- * `invalid`. Distinguishing them would tell someone holding a guessed token
- * whether they had guessed a real one.
+ * Every failure OF THE TOKEN — lapsed, already used, never existed —
+ * collapses to `invalid`. Distinguishing them would tell someone holding a
+ * guessed token whether they had guessed a real one.
+ *
+ * A failure of the DATABASE is a different thing and returns `unavailable`.
+ * The first version collapsed that into `invalid` too, which meant a query
+ * that threw — a missing column after an unapplied migration, a connection
+ * refused — was reported to the reader as "that link is no longer valid, ask
+ * for a new one". They would ask, and the new one would fail identically, and
+ * nothing anywhere would say why. An outage wearing the costume of an ordinary
+ * outcome, which is the same fault this whole file was rewritten to remove.
+ *
+ * It leaks nothing: the branch is chosen by whether the query executed, never
+ * by what it found, so it cannot tell anyone whether a token was real.
  */
 export async function confirmSubscription(secret: string): Promise<ConfirmOutcome> {
   if (!secret) return 'invalid'
@@ -162,7 +173,7 @@ export async function confirmSubscription(secret: string): Promise<ConfirmOutcom
     )
     return rowCount === 1 ? 'confirmed' : 'invalid'
   } catch (error) {
-    console.error('[newsletter] confirmation failed:', error)
-    return 'invalid'
+    console.error('[newsletter] confirmation query failed:', error)
+    return 'unavailable'
   }
 }
