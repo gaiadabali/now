@@ -2,10 +2,11 @@
   "name": "@now-engine/cms",
   "version": "0.1.0",
   "private": true,
-  "description": "ONE Payload 3 config, instantiated per city (ARCHITECTURE.md \u00a73.5). A LIBRARY, not an app: apps/web serves the admin at /team-editor. Differentiated only by DATABASE_URI. Owns `public` in each city DB; never touches `engine`.",
+  "description": "ONE Payload 3 config, instantiated per city (ARCHITECTURE.md §3.5). A LIBRARY, not an app: apps/web serves the admin at /team-editor. Differentiated only by DATABASE_URI. Owns `public` in each city DB; never touches `engine`.",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
+    "test": "node --test --experimental-strip-types test/*.test.ts",
     "generate:types": "payload generate:types",
     "payload": "payload",
     "boot-check": "payload run scripts/boot-check.mjs",
