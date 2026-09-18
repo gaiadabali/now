@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { isAuthorOrAbove, isEditorOrAbove, isLoggedIn } from '../access'
 import { vocabularySelectField } from '../fields/vocabularySelect'
 import type { VocabularyMap } from '../lib/vocabulary'
+import { GROUPS } from './groups'
 
 /**
  * `places` — ARCHITECTURE.md §5 / §1 principle 1 ("places are first-class
@@ -31,6 +32,7 @@ export function buildPlacesCollection(vocabulary: VocabularyMap): CollectionConf
   return {
     slug: 'places',
     admin: {
+      group: GROUPS.places,
       useAsTitle: 'name',
       defaultColumns: ['name', 'type', 'subtype', 'priceBand', 'status'],
       description: 'Venues, hotels, restaurants and other places. Curated constantly — keep edits fast.',

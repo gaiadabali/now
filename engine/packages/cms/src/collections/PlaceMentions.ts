@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { GROUPS } from './groups'
 
 /**
  * `place_mentions` — ARCHITECTURE.md §5 / §11.
@@ -15,6 +16,7 @@ export const PlaceMentions: CollectionConfig = {
   slug: 'place-mentions',
   labels: { singular: 'Place mention', plural: 'Place mentions' },
   admin: {
+    group: GROUPS.engine,
     useAsTitle: 'surfaceText',
     defaultColumns: ['article', 'place', 'surfaceText', 'role'],
   },

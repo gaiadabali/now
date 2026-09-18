@@ -9,6 +9,7 @@ import {
 } from '../hooks/reviewQueueHooks'
 import type { VocabularyMap } from '../lib/vocabulary'
 import { optionsFor } from '../lib/vocabulary'
+import { GROUPS } from './groups'
 
 /**
  * `classification-reviews` — E2.8, the review queue for E2.1's confidence
@@ -170,6 +171,7 @@ export function buildClassificationReviewsCollection(vocabulary: VocabularyMap):
        * rather than that the job is not theirs.
        */
       hidden: ({ user }) => !canReview(user),
+      group: GROUPS.engine,
       useAsTitle: 'facetKey',
       defaultColumns: [
         'entityType',

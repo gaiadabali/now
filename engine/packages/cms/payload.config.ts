@@ -148,15 +148,26 @@ export default buildConfig({
     },
   },
   editor: lexicalEditor(),
+  // ORDER IS THE SIDEBAR ORDER, and now also the group order (S3.2).
+  //
+  // Payload renders sidebar groups in the order it first encounters them, so
+  // this list decides both. Editorial comes first because it is the daily
+  // work; Settings last because it is a read-only mirror nobody edits here.
+  // Within Editorial, Articles is first for the same reason.
+  //
+  // The previous order interleaved them — Articles, Places, Classification
+  // reviews, Events, Place mentions, Media, Authors, Users — which with
+  // grouping switched on would have produced Editorial, Places, Engine,
+  // Editorial again. Groups are not re-entrant.
   collections: [
-    buildArticlesCollection(vocabulary),
-    buildPlacesCollection(vocabulary),
-    buildClassificationReviewsCollection(vocabulary),
+    buildArticlesCollection(vocabulary), // ── Editorial
     Events,
-    PlaceMentions,
     Media,
     Authors,
-    Users,
+    buildPlacesCollection(vocabulary), // ── Places
+    buildClassificationReviewsCollection(vocabulary), // ── Engine
+    PlaceMentions,
+    Users, // ── Settings
   ],
   // db binds to exactly one database, per instance — this is the ONLY
   // per-city knob (ARCHITECTURE.md §3.5 point 4). `push` is disabled in

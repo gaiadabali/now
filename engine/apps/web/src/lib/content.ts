@@ -429,23 +429,34 @@ export async function getSectionFacets(slug: string): Promise<Facet[]> {
  * each of these is a single index hit on a unique or near-unique column. The
  * second only runs for an address the first did not answer.
  */
-export async function getBySlug(slug: string): Promise<Article | undefined> {
+export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): Promise<Article | undefined> {
   const payload = await payloadClient()
+
+  // Preview (S4). `draft: true` makes Payload return the newest version of
+  // each document rather than the published row, and the `_status` filter has
+  // to come off with it or a never-published draft is excluded by the very
+  // clause that protects everyone else.
+  //
+  // The ONLY caller that may pass this is the article page, and only when
+  // Next's draft mode is enabled — which `/preview` turns on after checking a
+  // staff session. A default of `false` here means every other surface (rails,
+  // sections, search, the home page) keeps asking for published content and
+  // cannot be talked into showing a draft by a query parameter.
+  const status = opts.draft ? {} : PUBLISHED
+  const find = { limit: 1, depth: 1, ...(opts.draft ? { draft: true } : {}) }
 
   const bySlug = await payload.find({
     collection: 'articles',
-    where: { ...PUBLISHED, slug: { equals: slug } },
-    limit: 1,
-    depth: 1,
+    where: { ...status, slug: { equals: slug } },
+    ...find,
   })
   const doc =
     bySlug.docs[0] ??
     (
       await payload.find({
         collection: 'articles',
-        where: { ...PUBLISHED, legacyPermalink: { equals: `/${slug}/` } },
-        limit: 1,
-        depth: 1,
+        where: { ...status, legacyPermalink: { equals: `/${slug}/` } },
+        ...find,
       })
     ).docs[0]
 
