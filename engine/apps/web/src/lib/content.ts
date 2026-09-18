@@ -353,18 +353,52 @@ export async function getSectionFacets(slug: string): Promise<Facet[]> {
 }
 
 
+/**
+ * One address, two places it can be recorded.
+ *
+ * **Why both, and in this order.** The 9,201 imported articles are addressed
+ * by `legacyPermalink`, and those URLs *are* the traffic (LIVE_RECON) — they
+ * must keep resolving forever, which is why that field is marked DO NOT EDIT
+ * in the CMS. But an article written today has no legacy permalink, and
+ * before S1.1 there was no other field to address it by, so it was
+ * unreachable. `slug` is now that field.
+ *
+ * `slug` is tried first because it is the one a writer controls and the one
+ * new work uses. `legacyPermalink` is tried second, as an OR rather than a
+ * fallback-on-empty, so that editing a legacy article's slug adds an address
+ * instead of replacing one: the old URL a reader bookmarked in 2019 still
+ * lands, and so does the new one. Migration
+ * `20260918_090000_articles_slug` seeded every existing slug from its own
+ * permalink, so for the whole archive the two queries agree and the second
+ * one never fires.
+ *
+ * Two queries rather than one `or`, because Payload's `or` across two indexed
+ * text fields plans as a bitmap OR over the whole table on Postgres, while
+ * each of these is a single index hit on a unique or near-unique column. The
+ * second only runs for an address the first did not answer.
+ */
 export async function getBySlug(slug: string): Promise<Article | undefined> {
   const payload = await payloadClient()
-  // Matched on `legacyPermalink`, not a title-derived slug: those URLs are
-  // the traffic (LIVE_RECON), and they must keep resolving after an edit.
-  const { docs } = await payload.find({
+
+  const bySlug = await payload.find({
     collection: 'articles',
-    where: { ...PUBLISHED, legacyPermalink: { equals: `/${slug}/` } },
+    where: { ...PUBLISHED, slug: { equals: slug } },
     limit: 1,
     depth: 1,
   })
-  if (!docs[0]) return undefined
-  const [article] = await toArticles([docs[0]])
+  const doc =
+    bySlug.docs[0] ??
+    (
+      await payload.find({
+        collection: 'articles',
+        where: { ...PUBLISHED, legacyPermalink: { equals: `/${slug}/` } },
+        limit: 1,
+        depth: 1,
+      })
+    ).docs[0]
+
+  if (!doc) return undefined
+  const [article] = await toArticles([doc])
   return article
 }
 

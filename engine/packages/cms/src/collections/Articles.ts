@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove } from '../access'
 import { bodyBlocksField } from '../fields/bodyBlocks'
+import { slugField } from '../fields/slug'
 import { vocabularySelectField } from '../fields/vocabularySelect'
 import { enforcePublishRole } from '../hooks/enforcePublishRole'
 import { publishArticleEvent } from '../hooks/publishArticleEvent'
@@ -62,6 +63,13 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
         required: true,
         admin: { description: 'The headline, as a reader sees it.' },
       },
+      // Directly under the headline, because that is where it comes from and
+      // where every other editor puts it. `legacyPermalink` below is the
+      // *old* site's address and stays untouchable; this is the one the story
+      // is served at from now on. Both resolve — see `getBySlug` in the
+      // reader app — so an imported article keeps its inbound links whatever
+      // happens to this field.
+      slugField,
       {
         name: 'dek',
         label: 'Dek (standfirst)',
