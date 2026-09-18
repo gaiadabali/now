@@ -269,38 +269,88 @@ html[data-theme='dark'] .graphic-icon {
 }
 
 /* ===========================================================================
-   THE SIDEBAR
+   THE RAIL (S6 — docs/DESIGN-SYSTEM.md §5)
    ---------------------------------------------------------------------------
-   It was 275px of empty column: no brand, a faint grey group label, eight
-   evenly-spaced links, and then six hundred pixels of nothing. Payload leaves
-   both ends of the nav open for exactly this and ships them empty.
+   S3.1 rebuilt this as a masthead over a contents list on a RECESSED PAPER
+   tint (`--theme-elevation-50`) — a real improvement on the empty 275px
+   column it replaced, but still a console dressed as a document: the same
+   warm ground as the page it sits beside, distinguished only by a hairline.
 
-   Rebuilt as the thing it actually is — a masthead with a contents list under
-   it, and the reader's identity at the foot. Recessed ground and a full-height
-   ink rule separate it from the page instead of the hairline it had.
+   S6's instruction is specific: "`--ink`, 232px, full height... same colour
+   as the magazine's dark band, doing a different job: there it is a feature,
+   here it holds the tool together and leaves the white for the work." So the
+   rail stops following the editor's own light/dark theme choice and becomes
+   one fixed block of `--ink` — deliberately, because the reasoning is the
+   same as the franchise band's: a tool that changes its own colour to match
+   a preference is not "holding the page together", it is one more variable
+   surface. The CONTENT beside it still honours light/dark; the rail does not.
+
+   That fixed-ink decision is why this section reaches for `color-mix()`
+   rather than a theme token for every tint on this ground — `--theme-
+   elevation-*` is Payload's alias onto the ramp AND ITS OWN INVERSION IN
+   DARK MODE, which is exactly the coupling being removed. `color-mix(in
+   srgb, var(--invert) N%, transparent)` computes a transparency of the one
+   token tokens.css already gives us for "type on `--ink`" — it is not a new
+   colour, it is that colour's opacity, which is what §5's own language asks
+   for ("Bebas at 40% opacity") almost verbatim.
+
+   320 -> 232. The S3.1 note above justified 320px against an 18px (1.125rem)
+   link label; §5 sizes items at Heebo 13px specifically, and a 232px column
+   holds "Classification reviews" on one line at that size with room spare —
+   measured, not assumed, since it was the failure mode the 320px width was
+   chosen to fix in the first place.
    ======================================================================== */
 
 :root {
-  /* 275 -> 320. At 275 the gutter ate 120 of it, leaving 155px of usable
-     column — which is why "Classification review queue" broke onto two lines
-     and the masthead had nowhere to go. The extra 45px buys a single-line
-     label for every collection we have and room for the wordmark to be read
-     rather than recognised. */
-  --nav-width: 320px;
+  --nav-width: 232px;
+
+  /* The rail's own accent, held apart from `--now-accent` on purpose. That
+     token switches between `--red` and a lighter tint depending on the
+     EDITOR'S theme choice, because it sits on a ground that switches too
+     (paper in light mode, near-black in dark). The rail no longer switches —
+     it is always `--ink` — so an accent that still tracked the editor's
+     theme would go muddy against unchanging near-black in light mode. This
+     is the exact literal `--now-accent` already uses for dark mode, reused
+     rather than invented, because the ground it sits on is the same ground
+     that value was tuned for. */
+  --rail-accent: #e8666a;
 }
 
 .nav {
-  /* The sidebar's own inset, NOT `--gutter-h`.
-     
-     `--gutter-h` is the main content column's gutter — 60px at this
-     breakpoint. Applied to a 320px sidebar it spent 120px of the 320 on
-     empty margin, so the widening bought nothing: labels still wrapped and
-     the wordmark had 200px to live in. A gutter sized for an 1100px column
-     is simply the wrong measure for a 320px one. */
-  --now-nav-pad: 1.35rem;
+  /* The sidebar's own inset, NOT `--gutter-h` — see the S3.1 note this
+     replaced: a gutter sized for an 1100px content column is the wrong
+     measure for a 232px rail. */
+  --now-nav-pad: 1.1rem;
 
-  background: var(--theme-elevation-50);
-  border-right: 1px solid var(--theme-elevation-1000);
+  background: var(--ink);
+  /* No rule at the edge: an ink block against `--paper` (or against the
+     editor's own dark ground) needs no hairline to read as a boundary — the
+     same reason the reader site's franchise band draws no border. */
+  border-right: 0;
+}
+
+/* Every Heebo label on this ground reads AA-plus against `--ink` at full
+   `--invert` (§7 requires this pairing specifically), so nothing under this
+   rule needs a contrast-safety net — the opacities below are for HIERARCHY
+   among items that all already pass, not for legibility. */
+.nav,
+.nav a,
+.nav button {
+  color: var(--invert);
+}
+
+/* §7's accessibility floor asks for a `--red` ring at 2px offset, and the
+   global `--accessibility-outline` this admin already sets is themed to
+   whichever ground the CONTENT column is on (paper in light mode, near-black
+   in dark). The rail no longer follows that toggle — it is always `--ink` —
+   so its focus ring is pinned to `--rail-accent` for the same reason the
+   active-item edge is: the darker `--red` this admin uses in light mode reads
+   at low contrast against permanent near-black, which is a keyboard user
+   losing their place, not a cosmetic mismatch. */
+.nav a:focus-visible,
+.nav button:focus-visible {
+  outline: 2px solid var(--rail-accent);
+  outline-offset: var(--accessibility-outline-offset, 2px);
 }
 
 /* Payload pads the scroll area for a nav that starts with links. Ours starts
@@ -330,23 +380,22 @@ html[data-theme='dark'] .graphic-icon {
 
 .now-nav-masthead {
   /* Full-bleed. This renders INSIDE `.nav__wrap`, which already carries
-     `--gutter-h` of inline padding, so without escaping it first the
-     masthead is padded twice — on a 275px sidebar with a 60px gutter that
-     left a 155px box holding a 35px logo. The negative margin pulls it back
-     to the nav's edges; the padding then puts the wordmark on the same
-     left edge as the collection links. */
-  /* `.nav__wrap` is a flex column with `align-items: flex-start`, so a child
-     is only as wide as its content — negative margins alone moved the box
-     left without widening it, and the heavy rule under the masthead stopped
-     dead at 178px of a 320px sidebar. `align-self: stretch` opts this one
-     child out of that alignment so it fills the cross axis; the negative
-     margins then carry it out past the wrap's padding to the nav's edges. */
+     inline padding, so without escaping it first the masthead is padded
+     twice. The negative margin pulls it back to the rail's edges; the
+     padding then puts the wordmark on the same left edge as the links below.
+
+     `.nav__wrap` is a flex column with `align-items: flex-start`, so a child
+     is only as wide as its content — `align-self: stretch` opts this one
+     child out of that so it fills the cross axis before the negative
+     margins carry it to the rail's edges. */
   align-self: stretch;
   margin-inline: calc(var(--now-nav-pad) * -1);
-  padding: calc(var(--base) * 0.9) var(--now-nav-pad) calc(var(--base) * 0.7);
+  padding: calc(var(--base) * 0.85) var(--now-nav-pad) calc(var(--base) * 0.7);
   margin-bottom: calc(var(--base) * 1.1);
-  border-bottom: 3px solid var(--theme-elevation-1000);
-  background: var(--theme-elevation-0);
+  /* An on-ink hairline, not `--edge` — `--edge` is `#1d1d1b`, which is
+     invisible on `--ink` (`#14130f`); the rule has to be cut into the ground
+     with the light token instead. */
+  border-bottom: 1px solid color-mix(in srgb, var(--invert) 22%, transparent);
 }
 
 .now-nav-masthead__link {
@@ -354,108 +403,156 @@ html[data-theme='dark'] .graphic-icon {
   text-decoration: none;
 }
 
+/* "The logo inverted at 26px" (§5) — a mark sized to be read as a mark, not
+   a block filling the column the way the 13.5rem-wide wordmark used to. Every
+   city's SVG is drawn in logo ink for paper, so on the now-permanent ink
+   ground it needs the same paper plate `.graphic-logo` wears in dark theme —
+   unconditionally here, because this ground no longer depends on the theme
+   toggle that rule is keyed on. */
 .now-nav-masthead__logo {
   display: block;
-  width: 100%;
-  /* Raised with the inset reduction: there are now ~277px of usable column
-     rather than 200, and a wordmark that has to be recognised rather than
-     read is doing half a job. */
-  max-width: 13.5rem;
-  height: auto;
-}
-
-/* Ink on nothing, so on a dark ground it needs its own stock — the same
-   reasoning as `.graphic-logo`. */
-html[data-theme='dark'] .now-nav-masthead__logo {
-  padding: 0.4em 0.55em;
+  height: 26px;
+  width: auto;
+  max-width: 100%;
+  padding: 0.3em 0.5em;
   background: var(--paper);
 }
 
 .now-nav-masthead__kicker {
-  margin: calc(var(--base) * 0.5) 0 0;
-  color: var(--now-accent);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  margin: calc(var(--base) * 0.55) 0 0;
+  /* Bebas, not red. `--red` is reserved on this admin for exactly three
+     things (this file's own header, restated in docs/DESIGN-SYSTEM.md §1):
+     the focus ring, the active-item edge below, and a primary action. A
+     fourth role — signage naming the surface — is not one of them, and
+     colouring it red would compete with the one item on this rail that red
+     is actually supposed to draw the eye to. */
+  color: color-mix(in srgb, var(--invert) 72%, transparent);
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
 }
 
 /* --- the contents list -------------------------------------------------- */
 
-/* "Collections" becomes a kicker over a rule, the way a section head works
-   on the reader site, rather than a grey word floating above a list. */
-.nav-group__toggle,
-.nav__label {
-  padding-bottom: calc(var(--base) * 0.45);
-  border-bottom: 1px solid var(--theme-elevation-200);
-  color: var(--theme-elevation-600);
-  font-size: 0.6875rem;
-  letter-spacing: 0.16em;
+/* Group headings — "Editorial · Places · Engine · Settings"
+   (packages/cms/src/collections/groups.ts) plus the non-collection group
+   this file adds below. Bebas at 40% opacity is the literal instruction
+   (§5); a solid grey label here would be exactly the "meets in the middle"
+   scale failure §1's three rules warn against — the group heading has to
+   read as quieter than the items under it, not merely differently coloured. */
+/* `.nav-group__label`, NOT `.nav-group__toggle` — the toggle is the button
+   that WRAPS the label div (`@payloadcms/ui/dist/elements/NavGroup/
+   index.js`: `${baseClass}__label` is a child of `${baseClass}__toggle`).
+   The S3.1 rule this replaced styled the button and relied on `color`
+   inheriting into the label, which Payload's own `@layer payload-default`
+   rule for `.nav-group__label` itself overrides — so the group headings
+   were silently rendering in Payload's default gold-on-dark, not the
+   grey this file intended, on every build since S3.1. Caught by looking at
+   a real screenshot rather than trusting the source, which is exactly the
+   F143 lesson this codebase keeps relearning: an unlayered rule only wins
+   the cascade for the element it actually targets. */
+.nav-group__label,
+.nav__label,
+.now-nav-group__label {
+  margin: 0 0 calc(var(--base) * 0.4);
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: color-mix(in srgb, var(--invert) 40%, transparent);
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
 }
 
-/* Set to the space available rather than to a habit. Eight collections in a
-   full-height column leaves most of it empty, and a 15px link in 275px of
-   sidebar reads as a footnote — smaller, in fact, than Payload's own 17.5px,
-   which is the wrong direction to have taken it.
-   
-   1.125rem with a line and a half of rhythm fills the column honestly and
-   makes the list scannable from a normal sitting distance. Anything larger
-   starts wrapping "Classification review queue" onto three lines. */
+/* Heebo 13px (§5), with a right-aligned count deliberately not built here —
+   `defaultColumns` on each collection is not a count of ITS OWN rows, and
+   Payload's nav renders links, not the query that would produce one. Adding
+   real counts means a component that queries every collection on every nav
+   render, which is exactly the kind of `admin.components` surface area F143
+   warns about; ARCHITECTURE.md's own gate is "verify in a browser after
+   touching `admin.components`", and I would rather report this undone than
+   ship a rail that renders blank because a count query threw during import-
+   map resolution. Flagged in the final report as a follow-up, not silently
+   dropped. */
 .nav__link {
-  padding-block: calc(var(--base) * 0.42);
-  color: var(--theme-elevation-700);
-  font-size: 1.125rem;
-  line-height: 1.35;
-  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+  padding-block: calc(var(--base) * 0.4);
+  color: color-mix(in srgb, var(--invert) 78%, transparent);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1), background 120ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .nav__link:hover,
 .nav a.nav__link:focus-visible {
-  color: var(--theme-elevation-1000);
+  color: var(--invert);
   text-decoration: none;
 }
 
-/* The current collection, stated by weight and ink rather than by a 2px bar
-   an eye has to hunt for. The bar stays, in the accent, as the anchor. */
+/* The current collection: full `--invert`, a touch heavier, and the 3px
+   `--red` inset edge plus a faint lift (§5: "the active item gets a 3px
+   `--red` inset left edge and a faint background lift"). The lift is what
+   makes the row itself legible as "current" at a glance, before a reader
+   even registers the edge — the edge alone, on a column of near-identical
+   rows, is easy to miss in peripheral vision. */
 .nav__link.active,
 .nav__link:has(.nav__link-indicator) {
-  color: var(--theme-elevation-1000);
-  font-weight: 600;
+  color: var(--invert);
+  font-weight: 500;
+  background: color-mix(in srgb, var(--invert) 8%, transparent);
 }
 
 .nav__link-indicator {
-  inset-inline-start: calc(var(--now-nav-pad) * -1 + 2px);
+  inset-inline-start: calc(var(--now-nav-pad) * -1);
   width: 3px;
   height: 1.1em;
   border-radius: 0;
-  background: var(--now-accent);
+  background: var(--rail-accent);
 }
 
-/* A link in the nav to a page that is NOT a Payload collection — today just
-   `/team-editor/staff`, which cannot be one because staff identity lives in
-   the platform database (docs/ADMIN-CONSOLIDATION.md). Payload's nav only
-   lists collections, so without this the page is reachable by typed URL
-   alone. Set to match `.nav__link` exactly rather than to stand out: it is a
-   destination in the same list, not an advertisement. */
+/* A link in the nav to a page that is NOT a Payload collection — today
+   `/team-editor/staff` and `/team-editor/platform`, which cannot be one
+   because both read the platform database
+   (docs/ADMIN-CONSOLIDATION.md). Payload's nav only lists collections, so
+   without this the page is reachable by typed URL alone. Set to match
+   `.nav__link` exactly rather than to stand out: it is a destination in the
+   same list, not an advertisement. */
 .now-nav-extra {
   display: block;
   /* Same flex-start trap as the masthead: without this the element is only
-     as wide as "Staff & roles" and its `border-top` renders as an 85px stub
-     instead of a divider. */
+     as wide as "Platform" and its `border-top` renders as a stub instead of
+     a divider. */
   width: 100%;
+  /* `.nav__link-indicator` is `position: absolute` (Payload's own default
+     SCSS) and expects to sit inset against ITS OWN link, not whichever
+     positioned ancestor happens to be nearest — `.nav__link` gets this for
+     free from Payload's base styles, `.now-nav-extra` does not, so without
+     it `RailLink`'s indicator span (see that file) positioned itself
+     against the nav's scroll container instead and rendered off-screen. */
+  position: relative;
   margin-top: calc(var(--base) * 0.9);
-  padding-block: calc(var(--base) * 0.42);
-  border-top: 1px solid var(--theme-elevation-200);
-  color: var(--theme-elevation-700);
-  font-size: 1.125rem;
-  line-height: 1.35;
+  padding-block: calc(var(--base) * 0.4);
+  border-top: 1px solid color-mix(in srgb, var(--invert) 16%, transparent);
+  color: color-mix(in srgb, var(--invert) 78%, transparent);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.4;
   text-decoration: none;
-  transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
+  transition: color 120ms cubic-bezier(0.2, 0, 0, 1), background 120ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* The current page, for `Platform`/`Staff & roles` — `RailLink` gives them
+   the same `.active` class and indicator span Payload's own collection
+   links get, so they need the same treatment `.nav__link.active` has. */
+.now-nav-extra.active {
+  color: var(--invert);
+  background: color-mix(in srgb, var(--invert) 8%, transparent);
 }
 
 .now-nav-extra:hover,
 .now-nav-extra:focus-visible {
-  color: var(--theme-elevation-1000);
+  color: var(--invert);
   text-decoration: none;
 }
 
@@ -468,14 +565,14 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   background-color: transparent;
   box-shadow: none;
   border-radius: 0;
-  color: var(--theme-elevation-600);
+  color: color-mix(in srgb, var(--invert) 55%, transparent);
   transition: color 120ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .hamburger:hover {
   background-color: transparent;
   box-shadow: none;
-  color: var(--now-accent);
+  color: var(--rail-accent);
 }
 
 /* Payload ships its own logout control in `.nav__controls` — an unlabelled
@@ -486,22 +583,11 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 }
 
 /* A second nav group, for surfaces that are not Payload collections. Matches
-   the collection group's kicker-over-a-rule so the sidebar reads as one list
-   with two sections rather than a list plus an afterthought. */
+   the collection group's Bebas-at-40%-opacity kicker so the rail reads as
+   one list with two sections rather than a list plus an afterthought. */
 .now-nav-group {
   width: 100%;
   margin-top: calc(var(--base) * 1.1);
-}
-
-.now-nav-group__label {
-  margin: 0 0 calc(var(--base) * 0.45);
-  padding-bottom: calc(var(--base) * 0.45);
-  border-bottom: 1px solid var(--theme-elevation-200);
-  color: var(--theme-elevation-600);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
 .now-nav-group__list {
@@ -729,6 +815,37 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   font-variant-numeric: tabular-nums;
 }
 
+/* --- the `_status` column: filled pills, not a word (§5) ------------------
+   `_status` is a real Payload `select` field (draft/published — see
+   `payload/dist/versions/baseFields.js`), so its list cell goes through the
+   same code path every select/radio cell does: `DefaultCell` appends
+   `selected--${value}` to the cell's wrapper span
+   (`@payloadcms/ui/dist/elements/Table/DefaultCell/index.js`). That is a
+   real, stable hook Payload already produces — not a class this file
+   invents — so the pills below cost no custom Cell component and no
+   import-map entry. Same "no honest Scheduled state" limitation as the
+   document header's `.status` pill above: `selected--scheduled` never
+   occurs, because nothing ever writes it. */
+.table td.cell-_status span[class*='selected--'] {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--style-radius-l);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+.table td.cell-_status .selected--draft {
+  background: #e4ded4;
+  color: var(--body);
+}
+
+.table td.cell-_status .selected--published {
+  background: var(--ok);
+  color: var(--paper);
+}
+
 /* "Create New" arrived as a small beige pill wedged against the title — the
    least prominent thing on a screen whose whole purpose is making one. It
    is the page's primary action, so it gets the ink treatment the sign-in
@@ -869,6 +986,20 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   .staff-login__submit {
     transition: none;
   }
+
+  /* §7's floor applies to every transition this pass added to the rail and
+     the writing screen — the colour/background fades on nav links, the
+     hamburger, the tab underline and the headline's focus rule — not only
+     the one this file already guarded. None of them move anything, but
+     "respected" means every transition collapses, not only the one most
+     recently reviewed. */
+  .nav__link,
+  .now-nav-extra,
+  .hamburger,
+  .tabs-field__tab-button,
+  .now-field--headline input {
+    transition: none;
+  }
 }
 
 .staff-login__note {
@@ -876,6 +1007,219 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   color: var(--theme-elevation-500);
   font-size: 0.875rem;
   text-align: center;
+}
+
+/* ============================================================================
+   THE WRITING SCREEN (S6 — docs/DESIGN-SYSTEM.md §5)
+   ----------------------------------------------------------------------------
+   "The one idea worth protecting: the headline field is set in Cormorant 300
+   at `--t-display`, on a `--hair` bottom rule with no box. A writer composes
+   the headline in the face and size a reader will meet it in, rather than
+   typing into a 14px input and hoping. Everything around it stays quiet so
+   that lands."
+
+   Reached entirely through `admin.className` on the field config
+   (packages/cms/src/collections/Articles.ts) rather than a custom `Field`
+   component — Payload folds `field.admin.className` onto the same wrapper
+   div every stock field renders (`fieldBaseClass, "text", className, …` in
+   `@payloadcms/ui/dist/fields/Text/Input.js`), so `title`, `slug` and `dek`
+   are still the exact same autosaving, validating fields they were; only the
+   class list on their wrapper changed. Nothing here touches
+   `admin.components`, so none of it needed an import-map regeneration or the
+   F143 browser check that would follow one — a `className` string is data,
+   not a component the map has to resolve.
+   ========================================================================= */
+
+.now-field--headline {
+  margin-bottom: calc(var(--base) * 0.3);
+}
+
+/* Quiet on purpose, not hidden: an empty document with no visible label above
+   a giant serif input reads as broken before a writer has typed anything, and
+   `aria-label`-only accessible names are the first thing a screen-reader user
+   loses when skimming a form by heading. Small and `--mute` is "present, not
+   competing" — the same instruction §5 gives the fields around it. */
+.now-field--headline > .field-label {
+  margin-bottom: 0.3rem;
+  color: var(--theme-elevation-500);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+
+.now-field--headline input {
+  height: auto;
+  padding: 0.15em 0 0.4em;
+  border: 0;
+  border-bottom: var(--hair);
+  border-radius: 0;
+  background: transparent;
+  color: var(--theme-elevation-1000);
+  font-family: var(--font-display);
+  font-size: var(--t-display);
+  font-weight: 300;
+  letter-spacing: var(--track-display);
+  line-height: 1.08;
+}
+
+.now-field--headline input::placeholder {
+  color: var(--theme-elevation-300);
+}
+
+/* The rule earns its keep on focus: `--hair` alone doesn't say "you are
+   editing this", and a giant serif input with no other chrome needs
+   something to say it. */
+.now-field--headline input:focus {
+  border-bottom-color: var(--now-accent);
+  box-shadow: none;
+  outline: none;
+}
+
+.now-field--headline input:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+/* The web address. Heebo 13px (§5) — a caption next to a display headline,
+   which is the scale contrast docs/DESIGN-SYSTEM.md §1 asks every screen to
+   keep. `.now-field--slugline` does NOT attempt the "domain in `--mute`, slug
+   in `--type`" compound rendering §5 describes literally: that needs the
+   actual registered hostname rendered next to the input, which means a
+   `beforeInput` slot component reading the deployed site's own config — a
+   real `admin.components` addition with its own import-map/F143 obligations
+   for a cosmetic prefix the field's own description already states in
+   words. Left for a follow-up; reported as such rather than silently
+   approximated. */
+.now-field--slugline input {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-800);
+}
+
+.now-field--slugline .field-description {
+  color: var(--theme-elevation-500);
+}
+
+/* The standfirst — italic Cormorant `--t-lede`, in a bordered field (§5).
+   Italic is reserved for exactly this voice (§1: "Italic Cormorant is the
+   standfirst voice… It is the one place italics appear"), so this is the
+   only textarea in the whole admin that gets it. */
+.now-field--standfirst textarea {
+  font-family: var(--font-display);
+  font-size: var(--t-lede);
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--theme-elevation-800);
+}
+
+/* --- tabs: "Story" and "Old site" ---------------------------------------- */
+
+/* Heebo micro capitals, active carrying a 2px `--red` underline (§5) — the
+   same device the reader site's own section tabs use, at admin scale. */
+.tabs-field__tab-button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--theme-elevation-500);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+
+.tabs-field__tab-button:hover {
+  color: var(--theme-elevation-800);
+}
+
+.tabs-field__tab-button--active {
+  border-bottom-color: var(--now-accent);
+  color: var(--theme-elevation-1000);
+}
+
+/* --- the sidebar: status, publish, and the four decisions beside it ------ */
+
+/* `--ivory` — "a department given weight" (§1) — for the column holding the
+   controls a writer checks last before publishing: status, the publish
+   button, and the four sidebar fields S3.3 moved here. Every collection with
+   sidebar fields gets this, not only Articles: Places and Events use the same
+   `DocumentFields` component for the same reason (when it is ready, not when
+   it is written), so scoping this to one collection would mean redoing the
+   same decision by hand each time a sidebar gains a field. */
+.document-fields__sidebar-wrap {
+  background: var(--ivory);
+}
+
+.document-fields__sidebar {
+  padding-top: calc(var(--base) * 0.4);
+}
+
+/* "Each with its one-line hint in `--faint`" (§5). Payload's own default is
+   a mid-grey tuned for the paper ramp, which under `--ivory` reads a shade
+   too dark to be a caption rather than a second sentence. */
+.document-fields__sidebar .field-description {
+  color: var(--faint);
+}
+
+.document-fields__sidebar .field-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* --- status, as form, not as a sentence (§5) ------------------------------
+   Draft / Published are real `_status` values; "Scheduled" is not — Payload's
+   `schedulePublish` queues a job and never writes a third `_status` value, so
+   there is no persisted state a CSS rule (or any rule) can key on to show a
+   filled gold "Scheduled" pill honestly. Rendering one from `publishedAt`
+   being in the future would be a guess dressed as a fact — indistinguishable
+   from a schedule that failed to run — and this codebase's whole S2 phase was
+   about removing exactly that kind of invented certainty. Draft/Published are
+   built below; Scheduled is reported as blocked on a real signal, not
+   approximated. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.15em 0.7em 0.2em;
+  border-radius: var(--style-radius-l);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status__label {
+  display: none;
+}
+
+/* Draft: filled `--hair`, `--body` type (§5) — `--hair` is a border token
+   (`1px solid #e4ded4`), so its colour component is pulled back out for a
+   fill rather than reused as a shorthand here. */
+.status[title$='Draft'],
+.status[title$='draft'] {
+  background: #e4ded4;
+  color: var(--body);
+}
+
+/* Published: filled `--ok`, white type (§5). */
+.status[title$='Published'],
+.status[title$='published'] {
+  background: var(--ok);
+  color: var(--paper);
+}
+
+/* "Changed" — a published doc with an unsaved draft on top of it. Not in
+   §5's table because it is Payload's own third state, not one of the three
+   named there; it reuses the Draft treatment since it IS a draft, on top of
+   whatever was last published. */
+.status[title$='Changed'],
+.status[title$='changed'] {
+  background: #e4ded4;
+  color: var(--body);
 }
 
 /* ============================================================================
@@ -2731,26 +3075,43 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   color: var(--theme-elevation-500);
 }
 
-/* One pill per jsonb field, on the index row. Governed and falling-back are
-   deliberately NOT colour-coded red/green: an ungoverned row is the normal,
-   correct state for a city the console has never touched, not a warning. */
+/* One pill per jsonb field, on the index row.
+ *
+ * SUPERSEDES S5.1's original call here, which was to leave governed and
+ * falling-back UNCOLOURED because "an ungoverned row is the normal, correct
+ * state for a city the console has never touched, not a warning." That
+ * reasoning is still correct on its own terms — ungoverned is not an
+ * error — but docs/DESIGN-SYSTEM.md §5 asks for governed-or-from-file as a
+ * named form regardless: "governed-or-from-file as a solid or grey chip."
+ * The resolution is to fill both states rather than colour only one of
+ * them red/green — `--ok` reads as "this is live and intentional", not as
+ * "this is good and the other one is bad", and the grey `--hair` fill for
+ * "falling back" is the same neutral, no-warning tone the previous outline
+ * was reaching for, just legible at a glance from across a table instead of
+ * needing a hover to read the border colour.
+ */
 .platform__pill {
   display: inline-block;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid var(--theme-elevation-150);
+  padding: 0.1rem 0.55rem;
   border-radius: var(--style-radius-l);
+  background: #e4ded4;
+  color: var(--mute);
   font-size: 0.75rem;
   white-space: nowrap;
 }
 
 .platform__pill--governed {
-  border-color: var(--theme-success-500, var(--theme-elevation-150));
-  color: var(--theme-success-500, var(--theme-text));
+  background: var(--ok);
+  color: var(--paper);
 }
 
+/* `invalid` keeps its own colour deliberately — it is the one state on this
+   table that IS a problem (a non-empty column whose shape a reader rejects),
+   so it is the one pill allowed to reach for `--red` rather than the neutral
+   fill every other state gets. */
 .platform__pill--invalid {
-  border-color: var(--theme-error-500, var(--theme-elevation-150));
-  color: var(--theme-error-500, var(--theme-text));
+  background: var(--red);
+  color: var(--paper);
 }
 
 .platform__fields {
@@ -2802,8 +3163,16 @@ html[data-theme='dark'] .now-nav-masthead__logo {
   color: var(--theme-elevation-500);
 }
 
+/* The winning side — whichever column `getSiteConfig()` would actually
+   return — gets `--ivory` and a 3px `--ok` inset edge (§5: "the winning side
+   on `--ivory` with a 3px `--ok` inset edge"). This is the screen the design
+   doc names by its use case ("the screen where someone renames Dining to
+   Resto & Bars"): the inset edge is what lets that person tell, without
+   reading either JSON block, which one their next save actually changes. */
 .platform__compare-col--winning {
-  border-color: var(--theme-elevation-400);
+  border-color: var(--theme-elevation-150);
+  background: var(--ivory);
+  box-shadow: inset 3px 0 0 var(--ok);
 }
 
 .platform__nav-list {
@@ -2894,4 +3263,107 @@ html[data-theme='dark'] .now-nav-masthead__logo {
 
 .platform__breadcrumb:hover {
   text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   The KPI row and facet coverage bars (S6 — docs/DESIGN-SYSTEM.md §5)
+   ---------------------------------------------------------------------------
+   "Four figures, Cormorant 300 at 2.4rem over Heebo micro capitals. A figure
+   that is bad turns `--red` — five of seven facets empty is a `--red`
+   number, not a grey one." Same construction as `.classify__cards` /
+   `.console__cards` (rule above each figure, no card), reused rather than
+   redrawn: all three are "a handful of numbers that matter more than a
+   table", and giving them three different frames would be exactly the kind
+   of inconsistency §5 exists to close.
+   ------------------------------------------------------------------------ */
+
+.platform__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1px;
+  margin-bottom: calc(var(--base) * 1.4);
+  border-top: 1px solid var(--theme-elevation-1000);
+  border-bottom: 1px solid var(--theme-elevation-150);
+  background: var(--theme-elevation-150);
+}
+
+.platform__kpi {
+  padding: 0.9rem 1rem;
+  background: var(--theme-elevation-0);
+}
+
+.platform__kpi-n {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--theme-elevation-1000);
+}
+
+/* The one figure allowed to break the ramp: a bad number has to be found
+   before it is read, which is the whole argument §1 makes for state as form
+   and colour rather than a sentence. */
+.platform__kpi-n--bad {
+  color: var(--red);
+}
+
+.platform__kpi-k {
+  color: var(--theme-elevation-600);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.platform__coverage {
+  margin: 0 0 calc(var(--base) * 1.4);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.platform__coverage-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr 5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.platform__coverage-key {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  text-transform: capitalize;
+  color: var(--theme-elevation-800);
+}
+
+.platform__coverage-bar {
+  display: block;
+  height: 8px;
+  background: var(--theme-elevation-100);
+  box-shadow: inset 0 0 0 1px var(--theme-elevation-150);
+}
+
+.platform__coverage-fill {
+  display: block;
+  height: 100%;
+  background: var(--type);
+}
+
+/* Zero coverage is the finding, not a rounding error — §5: "facet coverage
+   as bars: `--type` fill, and `--red` when the value is zero." A full-width
+   red bar reads as "this is empty and that is the point" faster than a
+   sliver at the axis would, which is easy to miss in a column of otherwise
+   healthy bars. */
+.platform__coverage-fill--zero {
+  background: var(--red);
+}
+
+.platform__coverage-n {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  text-align: right;
+  color: var(--theme-elevation-600);
 }

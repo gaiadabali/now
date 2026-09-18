@@ -29,6 +29,15 @@ import path from 'node:path'
 export type SiteBrand = {
   /** Display name, e.g. for the logo's alt text when the config gives none. */
   name: string
+  /**
+   * The bare city slug — added for `SurfaceKicker`, which needs just the
+   * city word ("TEAM EDITOR · {city}") rather than the full display name
+   * ("NOW! {city}") the rail's own wordmark already shows a few pixels
+   * above it. No literal city name lives in this file — see this package's
+   * own `lint:site-literals`, which bans the word anywhere in source,
+   * including comments describing it.
+   */
+  slug: string | null
   /** Wide wordmark. Unreadable at 16px — see `icon`. */
   logo: string
   logoAlt: string
@@ -93,6 +102,11 @@ export async function loadSiteBrand(): Promise<SiteBrand | null> {
 
     cached = {
       name: raw.name ?? 'NOW!',
+      // `slug` is `process.env.SITE_SLUG` itself, not a field read back out of
+      // the JSON — the env var is what selected this file in the first place,
+      // so it is already the trusted value and re-reading it from the parsed
+      // config would just be asking the same question twice.
+      slug,
       logo,
       logoAlt: raw.brand?.logoAlt ?? raw.name ?? 'NOW!',
       icon: raw.brand?.favicon ?? null,

@@ -1,7 +1,8 @@
 'use client'
 
 import { useAuth } from '@payloadcms/ui'
-import Link from 'next/link'
+
+import { RailLink } from './RailLink'
 
 /**
  * The way into `/team-editor/staff` from the sidebar.
@@ -31,11 +32,13 @@ export function StaffLink() {
   if (user?.role !== 'admin') return null
 
   return (
-    // `next/link`: since S3.1 `/team-editor/staff` is reached through
-    // Payload's own catch-all, the same as every collection link, so a
-    // client-side transition resolves instead of forcing a full reload.
-    <Link className="now-nav-extra" href="/team-editor/staff">
+    // `RailLink` wraps `next/link`: since S3.1 `/team-editor/staff` is
+    // reached through Payload's own catch-all, the same as every collection
+    // link, so a client-side transition resolves instead of forcing a full
+    // reload — and now also carries the active-state edge every other rail
+    // item gets (see `RailLink`'s own comment).
+    <RailLink className="now-nav-extra" href="/team-editor/staff">
       Staff &amp; roles
-    </Link>
+    </RailLink>
   )
 }

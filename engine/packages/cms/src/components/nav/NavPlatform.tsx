@@ -2,6 +2,8 @@
 
 import { useAuth } from '@payloadcms/ui'
 
+import { RailLink } from './RailLink'
+
 /**
  * The way into `/team-editor/platform` from the sidebar.
  *
@@ -34,8 +36,10 @@ export function NavPlatform() {
   if (user?.role !== 'admin') return null
 
   return (
-    <a className="now-nav-extra" href="/team-editor/platform">
+    // `activeMatch="prefix"`: stays current on `/team-editor/platform/
+    // sites/[slug]`, the only page this link's own subtree contains.
+    <RailLink activeMatch="prefix" className="now-nav-extra" href="/team-editor/platform">
       Platform
-    </a>
+    </RailLink>
   )
 }

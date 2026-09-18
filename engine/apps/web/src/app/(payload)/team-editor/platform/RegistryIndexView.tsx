@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { requireStaffAdmin } from '@/lib/auth'
 import { listRegistrySites } from '@/lib/queries'
 
+import { getFacetCoverage } from './facetCoverage'
 import { brandReport, jsonColumnGoverned, navReport, railsReport } from './registry'
 import { siteHref } from './paths'
 
@@ -27,7 +28,22 @@ import { siteHref } from './paths'
  */
 export async function RegistryIndexView() {
   await requireStaffAdmin()
-  const sites = await listRegistrySites()
+  const [sites, coverage] = await Promise.all([listRegistrySites(), getFacetCoverage()])
+
+  // Aggregated for the KPI row only — the per-site chips below still show the
+  // real per-field verdict `FieldPill` computes; this is the same three
+  // predicates summed across every row, not a new source of truth.
+  let governedFieldCount = 0
+  let totalFieldCount = 0
+  for (const site of sites) {
+    const nav = navReport(site.nav)
+    const brand = brandReport(site.brand_tokens)
+    const rails = railsReport(site.home_rails)
+    governedFieldCount += [nav.governed, brand.governed, rails.governed].filter(Boolean).length
+    totalFieldCount += 3
+  }
+  const facetsAtZero = coverage.rows.filter((row) => row.assignments === 0)
+  const maxAssignments = Math.max(1, ...coverage.rows.map((row) => row.assignments))
 
   return (
     <>
@@ -39,6 +55,49 @@ export async function RegistryIndexView() {
         correctly from the baked config. Open a site to change what wins.
       </p>
 
+      <div className="platform__kpis">
+        <div className="platform__kpi">
+          <div className="platform__kpi-n">{sites.length}</div>
+          <div className="platform__kpi-k">Site{sites.length === 1 ? '' : 's'} registered</div>
+        </div>
+        <div className="platform__kpi">
+          <div className="platform__kpi-n">
+            {governedFieldCount} / {totalFieldCount}
+          </div>
+          <div className="platform__kpi-k">Config fields governed here</div>
+        </div>
+        <div className="platform__kpi">
+          <div className="platform__kpi-n">{coverage.articleCount.toLocaleString()}</div>
+          <div className="platform__kpi-k">Classified articles, this city</div>
+        </div>
+        <div className="platform__kpi">
+          <div className={`platform__kpi-n ${facetsAtZero.length > 0 ? 'platform__kpi-n--bad' : ''}`}>
+            {facetsAtZero.length}
+          </div>
+          <div className="platform__kpi-k">
+            of {coverage.rows.length} facet{coverage.rows.length === 1 ? '' : 's'} with zero coverage
+          </div>
+        </div>
+      </div>
+
+      <h2>Facet coverage</h2>
+      <p className="platform__sub">{coverage.scopeNote}</p>
+      <ul className="platform__coverage">
+        {coverage.rows.map((row) => (
+          <li className="platform__coverage-row" key={row.facetKey}>
+            <span className="platform__coverage-key">{row.facetKey}</span>
+            <span className="platform__coverage-bar" role="img" aria-label={`${row.assignments.toLocaleString()} assignments`}>
+              <span
+                className={`platform__coverage-fill ${row.assignments === 0 ? 'platform__coverage-fill--zero' : ''}`}
+                style={{ width: row.assignments === 0 ? '100%' : `${Math.max(2, (row.assignments / maxAssignments) * 100)}%` }}
+              />
+            </span>
+            <span className="platform__coverage-n">{row.assignments.toLocaleString()}</span>
+          </li>
+        ))}
+      </ul>
+
+      <h2>Sites</h2>
       {sites.length === 0 ? (
         <div className="platform__empty">No sites are registered.</div>
       ) : (

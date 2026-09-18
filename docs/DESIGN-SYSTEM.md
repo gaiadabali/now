@@ -247,6 +247,16 @@ the fallback has filled it in.
   someone renames Dining to Resto & Bars.
 - Facet coverage as bars: `--type` fill, and `--red` when the value is zero.
 
+**The coverage figures are per city, and the screen must say so.** An earlier
+draft of this section quoted a two-city total (8,052 location assignments and
+"five facets at zero") as though one console screen showed it. It cannot: a
+Payload process binds to exactly one city database, so the console reads
+whichever city it is serving. Combining them needs the cross-city bridge
+through `now_platform` in SURFACES-PLAN S5.4, which does not exist. Label the
+scope on the screen rather than letting a single-city number read as the
+platform-wide one — that is the same mistake as a "Most Read" rail that is
+sorted by recency.
+
 ---
 
 ## 6. Copy

@@ -77,9 +77,14 @@ export const slugField: Field = {
   index: true,
   admin: {
     description:
-      'The last part of the story’s address — nowbali.co.id/this-bit. Filled in from the ' +
-      'headline when you leave it blank. Once the story is published, changing this breaks ' +
-      'every link anyone has already shared, so change it before publishing, not after.',
+      'The last part of the story’s web address. Filled in from the headline when you leave ' +
+      'it blank. Once the story is published, changing this breaks every link anyone has ' +
+      'already shared, so change it before publishing, not after.',
+    // Heebo 13px (docs/DESIGN-SYSTEM.md §5) — a caption beside the display
+    // headline above it, not another full-size input. See admin.css's own
+    // note on `.now-field--slugline` for what this deliberately does not
+    // attempt (a rendered domain prefix).
+    className: 'now-field--slugline',
   },
   hooks: {
     beforeValidate: [deriveFromTitle],
