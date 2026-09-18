@@ -45,6 +45,9 @@ venv/
 # ── node ──────────────────────────────────────────────────
 node_modules/
 .next/
+# Alternate build dirs for parallel work — see NEXT_DIST_DIR in
+# engine/apps/web/next.config.mjs. Never used by CI or the image.
+.next-*/
 .turbo/
 *.tsbuildinfo
 dist/

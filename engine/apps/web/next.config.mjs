@@ -8,6 +8,19 @@ const nextConfig = {
   // node_modules it actually imports. Keeps the runtime image small and is
   // what the Dockerfile copies.
   output: 'standalone',
+  // Lets two people (or two agents) work this app at once.
+  //
+  // `next dev` and `next build` both write to the same `distDir`, so two of
+  // them in one checkout corrupt each other's output — which is a real
+  // constraint here, because PROGRESS.md's execution model is parallel agents
+  // sharing a tree under a file-ownership map. Ownership stops them editing
+  // the same source; it does nothing about them writing the same build
+  // directory.
+  //
+  // Unset everywhere that matters: CI, the Dockerfile and every normal local
+  // run get `.next`, which is the only value `output: 'standalone'` and the
+  // image's COPY paths know about. `.next-*` is gitignored alongside it.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // This app is an npm workspace member, so its dependencies live in
   // engine/node_modules rather than beside it. Without an explicit tracing
   // root Next infers one from the app directory and traces a tree that no
