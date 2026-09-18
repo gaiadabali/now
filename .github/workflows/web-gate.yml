@@ -173,6 +173,20 @@ jobs:
         working-directory: engine
         run: npm ci
 
+      # The beacon FIRST, exactly as apps/web/Dockerfile does it. The web app's
+      # `prebuild` runs `scripts/sync-beacon.mjs`, which copies
+      # `packages/beacon/dist/beacon.min.js` into `public/` and exits 1 rather
+      # than skipping when it is missing — deliberately, because a site that
+      # silently stops collecting behaviour cannot be backfilled.
+      #
+      # That `dist/` is gitignored, so it exists on a developer's machine and
+      # in no clone. This gate's own first run failed here, which is the
+      # cleanest possible demonstration of why it exists: the step had been
+      # invisible to everyone whose checkout already had the file.
+      - name: Build the beacon
+        working-directory: engine
+        run: npm run build --workspace=@now-engine/beacon
+
       - name: Build
         working-directory: engine/apps/web
         run: npm run build
