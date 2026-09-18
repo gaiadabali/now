@@ -1,67 +1,110 @@
 /* ============================================================================
-   NOW! — design tokens
+   NOW! — design tokens · "The Edition" (S6)
    ----------------------------------------------------------------------------
-   Derived from the live sites' actual DNA, not invented:
-     · Cormorant  — display serif, already the brand's headline face
-     · Heebo      — sans, already the brand's UI face
-     · #cd1719    — brand red, sampled from the logo mark
-     · #1d1d1b    — logo ink (NOT pure black — the logo never uses #000)
-   What changes versus the live site: Bootstrap's grey scale and its
-   default blue/green/yellow chrome are gone. Red becomes an accent that
-   is *earned*, not a button colour. Ground moves from #fff to warm paper.
+   Derived from the brand's own live theme, not invented. Before redrawing
+   anything, the live WordPress theme's stylesheet was read: it sets
+   `"Cormorant", serif`, `"Heebo", sans-serif`, section labels in Bebas as
+   white type on a `#cd1719` block, all on white. That IS the identity, so this
+   file keeps all of it and spends its effort on the three things that were
+   actually making the rebuilt site read flat.
+
+   WHAT CHANGED FROM THE PREVIOUS SYSTEM, AND WHY.
+
+   1. SCALE. The old scale topped out around 3rem and let nothing breathe. A
+      magazine reads expensive because of the RATIO between its display type
+      and its captions, not because of any one size. `--t-cover` now runs to
+      5.6rem against a 10.5px letterspaced `--t-micro`, and that gap is most of
+      the effect.
+
+   2. STOCK. There was one ground — a warm cream — from the top of every page
+      to the bottom. A magazine changes paper between departments, so there are
+      now three: `--paper` for news, `--ivory` for a department that wants
+      weight, and `--ink` for the one band per page that goes dark. The cream
+      is gone: `#fbf9f5` with a high-contrast serif and a red accent is a
+      combination that has become a house default everywhere, and it was
+      flattening photography toward yellow.
+
+   3. COLOUR COMES FROM THE PHOTOGRAPHY. The chrome is white, ink and red, and
+      that is deliberately almost all of it. `--gold` exists for exactly one
+      element — the edition line under the masthead — and if it starts
+      appearing anywhere else, that is a bug rather than a style.
+
+   Red is reserved, as it always was: the mark, the Partner label (§11 requires
+   it to be visible wherever a placement appears), section labels, and the
+   primary action. It is never a decoration.
    ========================================================================= */
 
 :root {
-  /* ---- Ground & ink ------------------------------------------------ */
-  --paper: #fbf9f5;        /* warm cream — the broadsheet ground        */
-  --paper-deep: #f2ede3;   /* recessed panels, guide cards              */
-  --paper-pure: #ffffff;   /* image mats, cards that must lift          */
-  --ink: #1d1d1b;          /* logo ink — all display type               */
-  --ink-body: #2b2926;     /* body copy, a hair lighter than display    */
-  --ink-mute: #6c6760;     /* bylines, captions, meta                   */
-  --ink-faint: #a49d92;    /* disabled, counters, index numerals        */
-  --ink-invert: #faf7f2;   /* type on dark grounds                      */
+  /* ---- The three stocks --------------------------------------------
+     Named for what they are made of rather than where they are used, so a
+     band can change its mind without the token lying about itself.       */
+  --paper: #ffffff;        /* news, indexes, the default ground           */
+  --ivory: #f6f2ea;        /* a department given weight — Hotels, panels  */
+  --ink: #14130f;          /* the one dark band per page; the admin rail  */
 
-  /* ---- Accent ------------------------------------------------------ */
-  --red: #cd1719;          /* brand red — sampled from the logo         */
-  --red-deep: #a01013;     /* hover / pressed                           */
-  --red-wash: #fdf0ef;     /* tint for partner + live badges            */
+  /* ---- Ink ----------------------------------------------------------
+     Never #000. The logo's own black is #1d1d1b and everything keys off
+     it, so type on paper and the wordmark beside it agree.               */
+  --type: #1d1d1b;         /* display type, headlines                     */
+  --body: #33302b;         /* running prose — a touch warmer than display */
+  --mute: #7a746c;         /* standfirsts, meta, secondary UI             */
+  --faint: #b3aca2;        /* captions, counts, disabled                  */
+  --invert: #e9e4da;       /* type on --ink                               */
 
-  /* ---- Rules -------------------------------------------------------
-     A broadsheet is held together by rules, not boxes or shadows.
-     Three weights only. Never a fourth.                                */
-  --rule-hair: 1px solid #ded7ca;   /* the workhorse: between items     */
-  --rule-thin: 1px solid #1d1d1b;   /* section boundary                 */
-  --rule-heavy: 3px solid #1d1d1b;  /* masthead + top-of-section only   */
+  /* ---- Accent -------------------------------------------------------- */
+  --red: #cd1719;          /* the mark, Partner, section labels, actions  */
+  --red-deep: #a01013;     /* pressed                                     */
+  --gold: #b08d4f;         /* THE EDITION LINE ONLY. Nothing else.        */
 
-  /* ---- Type families ------------------------------------------------
-     Bound by next/font in layout.tsx; these vars are the only names
-     any component may reference.                                       */
+  /* ---- Semantic, and deliberately not the accent ---------------------
+     An admin needs "this is fine / this needs you" independent of brand
+     red, or every warning competes with every Partner badge.             */
+  --ok: #1d5546;
+  --warn: #8a6d1f;
+
+  /* ---- Rules ---------------------------------------------------------
+     Two weights now, not three. The old system had a 3px "heavy" rule for
+     mastheads; at the new display scale the type carries that weight on
+     its own and the heavy rule just made pages look ruled.               */
+  --hair: 1px solid #e4ded4;   /* between items, inside bands             */
+  --edge: 1px solid #1d1d1b;   /* a real boundary: nav, section opening   */
+
+  /* ---- Type families --------------------------------------------------
+     Three faces, each with one job. Bebas is new here and is not an
+     addition to the brand — the live site already sets every section
+     label in it; the rebuild had simply never carried it across.         */
   --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
   --font-sans: var(--font-heebo), -apple-system, 'Segoe UI', sans-serif;
+  --font-label: var(--font-bebas), var(--font-heebo), sans-serif;
 
-  /* ---- Type scale ---------------------------------------------------
-     Fluid, thirds-based. Display sizes are deliberately larger than a
-     normal site would dare — that gap is most of what reads as
-     "magazine" rather than "blog".                                     */
-  --t-banner: clamp(3.5rem, 1.5rem + 8.5vw, 8.5rem);   /* cover word    */
-  --t-display: clamp(2.6rem, 1.3rem + 5.4vw, 5.25rem); /* feature lead  */
-  --t-headline: clamp(1.9rem, 1.2rem + 2.6vw, 3rem);   /* article H1    */
-  --t-title: clamp(1.4rem, 1.1rem + 1.1vw, 1.85rem);   /* card headline */
-  --t-subtitle: clamp(1.15rem, 1rem + 0.5vw, 1.35rem); /* small card    */
-  --t-dek: clamp(1.05rem, 0.98rem + 0.35vw, 1.25rem);  /* standfirst    */
-  --t-body: 1.0625rem;                                  /* prose        */
+  /* ---- Type scale -----------------------------------------------------
+     Fluid. The top three are display sizes and are meant to feel almost
+     uncomfortably large on a laptop; that is the point of them.          */
+  --t-cover: clamp(3rem, 1.4rem + 4.4vw, 5.6rem);      /* cover headline  */
+  --t-display: clamp(2.4rem, 1.4rem + 3vw, 3.6rem);    /* band opener     */
+  --t-headline: clamp(1.9rem, 1.2rem + 2.2vw, 2.9rem); /* article h1      */
+  --t-title: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);   /* card headline   */
+  --t-lede: clamp(1.1rem, 1rem + 0.5vw, 1.25rem);      /* italic standfirst */
+  --t-body: 1.0625rem;
   --t-small: 0.9375rem;
-  --t-meta: 0.75rem;                                    /* kickers      */
-  --t-micro: 0.6875rem;
+  --t-meta: 0.75rem;
+  --t-micro: 0.65625rem;                                /* 10.5px capitals */
 
-  /* ---- Measure ------------------------------------------------------
-     Prose caps at 66ch. Non-negotiable — it is the single biggest
-     legibility lever on a long-read site.                              */
+  /* ---- Tracking -------------------------------------------------------
+     Display type tightens as it grows; capitals open up. Both are here as
+     tokens so a component never guesses.                                 */
+  --track-display: -0.025em;
+  --track-title: -0.01em;
+  --track-label: 0.2em;     /* Bebas section labels                       */
+  --track-micro: 0.16em;    /* Heebo capitals, captions                   */
+
+  /* ---- Measure --------------------------------------------------------
+     Unchanged, and still the single biggest legibility lever on a
+     long-read site.                                                      */
   --measure: 66ch;
   --measure-narrow: 54ch;
 
-  /* ---- Rhythm ------------------------------------------------------- */
+  /* ---- Rhythm ---------------------------------------------------------- */
   --space-3xs: 0.25rem;
   --space-2xs: 0.5rem;
   --space-xs: 0.75rem;
@@ -72,14 +115,18 @@
   --space-2xl: 5rem;
   --space-3xl: 7.5rem;
 
-  /* ---- Shell -------------------------------------------------------- */
+  /* Bands are the page's unit of rhythm, so their padding is a token and
+     not a decision each section makes for itself. */
+  --band-pad: clamp(2.25rem, 1.5rem + 2.4vw, 3.5rem);
+
+  /* ---- Shell ----------------------------------------------------------- */
   --shell-max: 1420px;
-  --shell-pad: clamp(1.25rem, 0.5rem + 3vw, 4rem);
+  --shell-pad: clamp(1.25rem, 0.5rem + 3vw, 2.875rem);
   --gutter: clamp(1.25rem, 0.6rem + 1.8vw, 2.5rem);
 
-  /* ---- Motion -------------------------------------------------------
+  /* ---- Motion ---------------------------------------------------------
      Editorial restraint: things fade and underline. Nothing slides,
-     bounces or scales.                                                 */
+     bounces or scales.                                                   */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --dur: 180ms;
 }

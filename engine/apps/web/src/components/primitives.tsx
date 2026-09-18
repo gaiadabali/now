@@ -4,25 +4,82 @@ import type { ReactNode } from 'react'
 import type { SiteConfig } from '@/lib/site'
 import { subscribe } from '@/lib/newsletter'
 
-/* ---------------------------------------------------------------- rules -- */
+/* ---------------------------------------------------------------- band --- */
 
-export function SectionRule({
-  label,
+/**
+ * The unit of the page (DESIGN-SYSTEM §2).
+ *
+ * Every section of every reader page is a band, and a band is exactly this
+ * shell: a `<section>` (so the page is a sequence of landmarks, not a wall of
+ * divs — §7 requires a heading per section, which `BandHead` supplies), a
+ * `.shell` to hold the content to the page measure, and a stock. `tone`
+ * chooses the stock a page is allowed three of: `paper` is the default and
+ * needs no class, `ivory` is spent on the one department given weight,
+ * `ink` on the one band per page that goes dark. Nothing enforces "only
+ * three" in code — that discipline belongs to whoever calls this — but the
+ * component only offers the three the system has.
+ *
+ * `hair` draws the band's own top rule for a `paper` band that follows
+ * another `paper` band, where the stock does not already supply the
+ * separation an `ivory` or `ink` band gets for free from its background.
+ */
+export function Band({
+  tone = 'paper',
+  hair = false,
+  className,
+  children,
+}: {
+  tone?: 'paper' | 'ivory' | 'ink'
+  hair?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  const cls = ['band', tone !== 'paper' ? `band--${tone}` : null, hair ? 'band--hair' : null, className]
+    .filter(Boolean)
+    .join(' ')
+  return <section className={cls}>{children}</section>
+}
+
+/**
+ * The band opener (DESIGN-SYSTEM §2) — formerly `SectionRule`, which drew a
+ * single rule with a label floating on it. The new markup is heavier because
+ * the job changed: the kicker is now load-bearing information (a count, a
+ * promise, a frequency — "453 stories", never decoration) sitting above a
+ * real `--t-display` headline, not a caption beside a line.
+ *
+ * `kicker` is optional on purpose. §2's instruction is explicit: "if there is
+ * nothing true to put there, leave it out" — an invented count is worse than
+ * no kicker, so this does not synthesise one from `title`.
+ */
+export function BandHead({
+  kicker,
+  title,
   note,
   moreHref,
   moreLabel = 'See all',
+  as: Heading = 'h2',
 }: {
-  label: string
+  kicker?: string
+  title: string
+  /** A small annotation under the title. Not part of §2's markup — the
+   *  reader-facing bands never pass it — but useful on `/design` for
+   *  captioning a specimen without inventing a second kicker. */
   note?: string
   moreHref?: string
   moreLabel?: string
+  /** `h1` for the one band per page whose title is the page's own — a
+   *  section index's own header uses this so the page keeps exactly one h1. */
+  as?: 'h1' | 'h2'
 }) {
   return (
-    <div className="section-rule">
-      <h2 className="section-rule__label">{label}</h2>
-      {note ? <span className="section-rule__note">{note}</span> : null}
+    <div className="bandhead">
+      <div className="bandhead__head">
+        {kicker ? <span className="bandhead__kicker">{kicker}</span> : null}
+        <Heading className="bandhead__title">{title}</Heading>
+        {note ? <span className="bandhead__note">{note}</span> : null}
+      </div>
       {moreHref ? (
-        <Link className="section-rule__more" href={moreHref}>
+        <Link className="bandhead__more" href={moreHref}>
           {moreLabel} →
         </Link>
       ) : null}
@@ -36,6 +93,13 @@ export function SectionRule({
  * Partner disclosure. ARCHITECTURE.md §11 requires paid placement to be
  * visible to the reader; this component is the only sanctioned way to say so,
  * so the wording can never drift between surfaces.
+ *
+ * Solid red, not a tint: the previous version leaned on a `--red-wash`
+ * background that has no token in the S6 system (§1 — "the chrome is white,
+ * ink and red, and that is nearly all of it"). Filling the badge with the
+ * accent itself, the way `Badge tone="live"` already does, reads as
+ * unmistakably as the wash did without inventing a colour that was never
+ * approved.
  */
 export function PartnerBadge() {
   return <span className="badge badge--partner">Partner</span>
@@ -67,21 +131,22 @@ export function Byline({ author, date, minutes }: { author: string; date: string
 
 /* ------------------------------------------------------------- newsletter */
 
+/**
+ * The subscribe foot (DESIGN-SYSTEM home spec) doubles as the sidebar
+ * newsletter unit on an article page — same form, same server action, two
+ * different bands around it. It stays its own component rather than two so
+ * the one thing that used to break silently (a POST to an endpoint that
+ * never existed) can only be fixed once.
+ */
 export function Signup({ site }: { site: SiteConfig }) {
   return (
-    <aside className="signup">
-      <p className="kicker kicker--red">The Weekly</p>
+    <div className="signup">
+      <p className="bandhead__kicker">The Weekly</p>
       <h2 className="signup__title">
         Everything worth your
         <br />
         attention, once a week.
       </h2>
-      {/*
-        Posts to the real server action, same as /subscribe. It used to POST
-        to `/api/subscribe`, a route that has never existed — so this
-        component, which appears on nearly every page, silently discarded
-        every address typed into it.
-      */}
       <form className="signup__form" action={subscribe}>
         <label className="visually-hidden" htmlFor="signup-email">
           Email address
@@ -99,10 +164,36 @@ export function Signup({ site }: { site: SiteConfig }) {
           Join
         </button>
       </form>
-      <p className="meta" style={{ marginTop: 'var(--space-xs)', fontSize: 'var(--t-micro)' }}>
+      <p className="meta meta--micro" style={{ marginTop: 'var(--space-xs)' }}>
         {site.name} · no more than one email a week.
       </p>
-    </aside>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- area index --- */
+
+/**
+ * Explore (DESIGN-SYSTEM §3) — area name in Cormorant, count in Heebo micro
+ * capitals, right-aligned and tabular. Shared between the homepage's flat
+ * top-areas band and anywhere else a plain area list earns its own row
+ * treatment, so the two can never drift on what a count means.
+ *
+ * The counts are stories published about that area, never venues — §3 is
+ * explicit that this must not be implied, hence the footnote rather than a
+ * bare number.
+ */
+export function AreaIndex({ areas }: { areas: Array<{ slug: string; label: string; count: number }> }) {
+  if (areas.length === 0) return null
+  return (
+    <div className="grid--areas">
+      {areas.map((a) => (
+        <Link className="area-row" key={a.slug} href={`/search?facets=location:${encodeURIComponent(a.slug)}`}>
+          <span className="area-row__name">{a.label}</span>
+          <span className="area-row__count">{a.count}</span>
+        </Link>
+      ))}
+    </div>
   )
 }
 

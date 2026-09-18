@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import type { AreaTerm } from '@/lib/payload'
 import { locationTree } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
@@ -75,8 +75,8 @@ export default async function AreasPage() {
 
       {tree.local.regions.length > 0 ? (
         <section className="band" style={{ paddingTop: 0 }}>
-          <SectionRule
-            label={tree.local.label}
+          <BandHead
+            title={tree.local.label}
             note={`${formatCount(tree.local.total)} stories close to home`}
           />
           {tree.local.own && tree.local.own.count > 0 ? (
@@ -103,14 +103,14 @@ export default async function AreasPage() {
 
       {tree.indonesia.length > 0 ? (
         <section className="band" style={{ paddingTop: 0 }}>
-          <SectionRule label="Elsewhere in Indonesia" />
+          <BandHead title="Elsewhere in Indonesia" />
           <Chips items={tree.indonesia} />
         </section>
       ) : null}
 
       {tree.international.length > 0 ? (
         <section className="band" style={{ paddingTop: 0 }}>
-          <SectionRule label="International" note="Where we have travelled" />
+          <BandHead title="International" note="Where we have travelled" />
           <Chips items={tree.international} />
         </section>
       ) : null}

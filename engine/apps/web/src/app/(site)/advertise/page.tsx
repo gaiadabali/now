@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { archiveStats } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
 import { formatCount } from '@/lib/format'
@@ -94,11 +94,11 @@ export default async function AdvertisePage() {
       ) : null}
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="What we offer" />
+        <BandHead title="What we offer" />
         <div className="grid grid--3 grid--ruled">
           {FORMATS.map((f) => (
             <article key={f.name}>
-              <h3 style={{ fontSize: 'var(--t-card)', marginBottom: 'var(--space-3xs)' }}>
+              <h3 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-3xs)' }}>
                 {f.name}
               </h3>
               <p className="dek">{f.body}</p>
@@ -108,7 +108,7 @@ export default async function AdvertisePage() {
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="How we label it" />
+        <BandHead title="How we label it" />
         <div className="prose" style={{ maxWidth: '62ch' }}>
           <p>
             Everything paid carries a <strong>Partner</strong> label on the page it appears. We do
@@ -123,7 +123,7 @@ export default async function AdvertisePage() {
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="Get a proposal" />
+        <BandHead title="Get a proposal" />
         <div className="prose" style={{ maxWidth: '62ch' }}>
           <p>
             Tell us the venue, the timing and roughly what you want to achieve, and we will come

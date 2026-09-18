@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { StoryCard } from '@/components/StoryCard'
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { getCulture } from '@/lib/content'
 import { getSiteConfig } from '@/lib/site'
 
@@ -82,7 +82,7 @@ export default async function CulturePage() {
           </div>
 
           <section className="band" style={{ paddingTop: 0 }}>
-            <SectionRule label="More in culture" />
+            <BandHead title="More in culture" />
             <div className="grid grid--3 grid--ruled">
               {rest.map((a) => (
                 <StoryCard

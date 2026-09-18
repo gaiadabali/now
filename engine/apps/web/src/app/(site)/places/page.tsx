@@ -68,7 +68,7 @@ export default async function PlacesPage() {
             {places.map((p) => (
               <article key={p.slug}>
                 <p className="kicker kicker--red">{p.subtype ?? p.type ?? 'Venue'}</p>
-                <h2 style={{ fontSize: 'var(--t-card)', marginTop: 'var(--space-3xs)' }}>
+                <h2 style={{ fontSize: 'var(--t-title)', marginTop: 'var(--space-3xs)' }}>
                   <Link href={`/places/${p.slug}`}>{p.name}</Link>
                 </h2>
                 <p className="meta">

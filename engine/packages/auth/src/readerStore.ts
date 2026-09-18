@@ -21,8 +21,12 @@ import type {
   ReaderStore,
 } from './reader.ts'
 
+// `created_at` is selected for one reason and it is a small one: the reader's
+// dashboard greets them with how long they have been a reader, and the
+// alternative to reading the column was inventing a date. The column has
+// existed since platform baseline 0001; only this SELECT was missing it.
 const COLUMNS = `id, email, email_norm, name, hash, salt,
-                 email_verified_at, login_attempts, lock_until, status`
+                 email_verified_at, login_attempts, lock_until, status, created_at`
 
 type Row = {
   id: string
@@ -35,6 +39,7 @@ type Row = {
   login_attempts: number
   lock_until: string | Date | null
   status: string
+  created_at: string | Date | null
 }
 
 function toDate(value: string | Date | null): Date | null {
@@ -54,6 +59,7 @@ function toReader(row: Row): ReaderRecord {
     loginAttempts: row.login_attempts,
     lockUntil: toDate(row.lock_until),
     status: row.status as ReaderStatus,
+    createdAt: toDate(row.created_at),
   }
 }
 

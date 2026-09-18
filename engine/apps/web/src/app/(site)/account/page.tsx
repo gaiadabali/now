@@ -2,11 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 
-import { AccountShell, StatusBanner, type StatusMessage } from '@/components/account'
-import { SectionRule } from '@/components/primitives'
+import { AccountShell, EmptyState, Panel, StatusBanner, type StatusMessage } from '@/components/account'
 import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signOut } from '@/lib/readerActions'
 import { describePrefs, hasChosen, loadPrefs, loadVocabulary } from '@/lib/preferences'
+import { getSiteConfig } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Your account',
@@ -33,15 +33,33 @@ const STATUS: Record<string, StatusMessage> = {
   },
 }
 
+/** "Good morning/afternoon/evening" — the site's own clock, not the reader's device. */
+function partOfDay(timezone: string): string {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(
+      new Date(),
+    ),
+  )
+  if (hour < 5) return 'evening' // late night reads as "evening" rather than "morning"
+  if (hour < 12) return 'morning'
+  if (hour < 17) return 'afternoon'
+  return 'evening'
+}
+
 /**
- * The signed-in landing page.
+ * The reader's own page inside the magazine (§4).
  *
- * The taste profile is the substantial part and is §17's own idea: show the
- * reader what we think they like, and let them fix it. *"Corrections are
- * high-quality training signal."*
+ * Kept inside `(site)` deliberately — masthead, nav and edition line all
+ * carry through, because this is a department of the magazine, not a
+ * separate console. The admin surfaces drop all three; this is the one
+ * reader-facing screen that is not one of them.
  *
- * The rest is named rather than faked. A dashboard of empty placeholder cards
- * reads as broken; a short honest one reads as early.
+ * Four of six panels have nothing to show yet, and that is not a bug to hide:
+ * §4 is explicit that a panel whose data does not exist still renders, with
+ * an invitation, because a reader cannot otherwise tell "not built" apart
+ * from "you have none". The alternative — four blank boxes, or hiding them
+ * outright — is the exact failure a new reader would land on, since a
+ * brand-new account is every one of these states at once.
  */
 export default async function AccountPage({
   searchParams,
@@ -59,79 +77,142 @@ export default async function AccountPage({
   const flag = typeof query.status === 'string' ? query.status : undefined
   const status = flag ? STATUS[flag] : undefined
 
-  const [vocabulary, prefs] = await Promise.all([loadVocabulary(), loadPrefs(reader.id)])
+  const [vocabulary, prefs, site] = await Promise.all([
+    loadVocabulary(),
+    loadPrefs(reader.id),
+    getSiteConfig(),
+  ])
   const likes = describePrefs(prefs, vocabulary)
   const chosen = hasChosen(prefs)
 
+  const part = partOfDay(site.timezone)
+  // Reader.name is optional at registration (Field's own hint says so), and a
+  // blank greeting reads better than a guessed one — "Good evening." rather
+  // than "Good evening, there."
+  const greeting = reader.name ? `Good ${part}, ${reader.name}.` : `Good ${part}.`
+
   return (
-    <AccountShell
-      kicker="Your account"
-      title={reader.name ? `Hello, ${reader.name}.` : 'Your account'}
-      status={status}
-    >
-      {!reader.emailVerified ? (
-        <StatusBanner
-          status={{
-            tone: 'info',
-            head: 'Your email is not confirmed yet.',
-            body: 'You can use the site as normal. Confirming it lets us send you the things you ask for.',
-          }}
-        />
+    <>
+      <section className="acct-greeting">
+        <div className="shell acct-greeting__row">
+          <h1 className="acct-greeting__hello">{greeting}</h1>
+          {/* No "Reader since {month}" clause: `ReaderRecord` (engine/packages/auth)
+              does not expose `identities.created_at`, and a join date is not
+              something to guess at. Flagged in the handback as a follow-up —
+              adding one column to the store's SELECT is a backend change, and
+              packages/auth is outside this task's file ownership. */}
+          {/* "Reader since March 2026 · <this city>'s edition". The join date
+              was left out of the first build because the reader store did not
+              select `identities.created_at` — the column has existed since
+              platform baseline 0001, so the fix was the SELECT rather than a
+              migration. Still conditional: a store is not obliged to supply
+              it, and a greeting is the last place to print a guessed date. */}
+          <p className="acct-greeting__meta">
+            {reader.joinedAt
+              ? `Reader since ${new Intl.DateTimeFormat(site.locale, {
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: site.timezone,
+                }).format(reader.joinedAt)} · ${site.name} edition`
+              : `${site.name} edition`}
+          </p>
+        </div>
+      </section>
+
+      {status || !reader.emailVerified ? (
+        <div className="shell acct-notices">
+          {status ? <StatusBanner status={status} /> : null}
+          {!reader.emailVerified ? (
+            <StatusBanner
+              status={{
+                tone: 'info',
+                head: 'Your email is not confirmed yet.',
+                body: 'You can use the site as normal. Confirming it lets us send you the things you ask for — resend the link from your account page.',
+              }}
+            />
+          ) : null}
+        </div>
       ) : null}
 
-      <SectionRule label={chosen ? 'We think you like' : 'Tell us what you like'} />
-      {chosen ? (
-        <>
-          <p className="dek" style={{ marginTop: 'var(--space-s)' }}>
-            {likes.join(' · ')}
-          </p>
-          <p className="meta" style={{ marginTop: 'var(--space-2xs)' }}>
-            Wrong about any of it? <Link href="/account/preferences">Change it</Link> — being told
-            we are wrong is more useful to us than a click.
-          </p>
-        </>
-      ) : (
-        <p className="dek" style={{ marginTop: 'var(--space-s)' }}>
-          Nothing yet. <Link href="/account/preferences">Pick a few things</Link> and the site
-          starts adjusting — it takes about twenty seconds.
-        </p>
-      )}
+      <div className="shell acct-layout">
+        <div className="acct-panels">
+          <Panel
+            title="We think you like"
+            action={chosen ? { href: '/account/preferences', label: 'Correct this →' } : undefined}
+          >
+            {chosen ? (
+              <div className="acct-chips">
+                {likes.map((label) => (
+                  <span className="acct-chip" key={label}>
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                lede="Nothing yet — we have not asked, and you have not said."
+                hint={
+                  <>
+                    Pick a few things on the <Link href="/account/preferences">preferences page</Link> and
+                    the site starts adjusting.
+                  </>
+                }
+              />
+            )}
+          </Panel>
 
-      <div style={{ marginTop: 'var(--space-l)' }}>
-        <SectionRule label="Coming next" />
-        <ul className="dek" style={{ paddingLeft: '1.1em', marginTop: 'var(--space-s)' }}>
-          <li>
-            <strong>Saved places and articles</strong> — the table is ready; the save button is not
-            (E8.6).
-          </li>
-          <li>
-            <strong>What you have been reading</strong> — needs the beacon deployed (E8.5). Until
-            then the profile above is everything we know, and all of it is what you told us.
-          </li>
-          <li>
-            <strong>Your itineraries</strong> — waiting on the itinerary API (E5.4).
-          </li>
-        </ul>
+          <Panel title="Continue reading">
+            <EmptyState
+              lede="Nothing picked up yet."
+              hint="Stories you read while signed in appear here."
+            />
+          </Panel>
+
+          <Panel title="Saved">
+            <EmptyState lede="Nothing kept yet." hint="The bookmark on any story keeps it here." />
+          </Panel>
+
+          <Panel title="Your itineraries">
+            <EmptyState
+              lede="No trips planned yet."
+              hint="Build one from any place page and it will keep here."
+            />
+          </Panel>
+        </div>
+
+        <aside className="acct-aside">
+          <Panel title="Membership">
+            <EmptyState lede="Membership is not open yet." hint="We will tell you here first." />
+          </Panel>
+
+          <Panel title="This month's edition">
+            <EmptyState
+              lede="The edition is not live yet."
+              hint="It will appear here the day it is."
+            />
+          </Panel>
+
+          <Panel title="Account">
+            <dl className="acct-dl">
+              <dt>Email</dt>
+              <dd>
+                {reader.email}
+                {reader.emailVerified ? null : (
+                  <>
+                    {' · '}
+                    <Link href="/account/verify">confirm it</Link>
+                  </>
+                )}
+              </dd>
+            </dl>
+            <form action={signOut} style={{ marginTop: 'var(--space-m)' }}>
+              <button className="acct-btn acct-btn--ghost" type="submit">
+                Sign out
+              </button>
+            </form>
+          </Panel>
+        </aside>
       </div>
-
-      <dl style={{ marginTop: 'var(--space-l)' }}>
-        <dt className="kicker">Email</dt>
-        <dd className="dek" style={{ margin: 0 }}>
-          {reader.email}
-          {reader.emailVerified ? null : (
-            <>
-              {' · '}
-              <Link href="/account/verify">confirm it</Link>
-            </>
-          )}
-        </dd>
-      </dl>
-
-      <form action={signOut} style={{ marginTop: 'var(--space-l)' }}>
-        <button className="signup__btn" type="submit">
-          Sign out
-        </button>
-      </form>
-    </AccountShell>
+    </>
   )
 }

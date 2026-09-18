@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
-import { Cormorant, Heebo } from 'next/font/google'
+import { Bebas_Neue, Cormorant, Heebo } from 'next/font/google'
 
 import { Beacon } from '@/components/Beacon'
 import { Masthead } from '@/components/Masthead'
 import { Footer } from '@/components/primitives'
+import { accountsEnabled, currentReader } from '@/lib/reader'
 import { getSiteConfig } from '@/lib/site'
 
 import '@/styles/tokens.css'
 import '@/styles/base.css'
 import '@/styles/magazine.css'
+import '@/styles/account.css'
 
 /* The two faces the brand already uses. Self-hosted by next/font — no
    render-blocking request to Google, and no layout shift. */
@@ -25,6 +27,17 @@ const heebo = Heebo({
   weight: ['400', '500', '700'],
   display: 'swap',
   variable: '--font-heebo',
+})
+
+/* The third face, and not a new one: the live theme already sets every
+   section label in Bebas (`bebas-font` on a `bg-red` block). The rebuild
+   had simply never carried it across, so labels were being set in Heebo
+   capitals and reading as UI rather than as the magazine's own device. */
+const bebas = Bebas_Neue({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'swap',
+  variable: '--font-bebas',
 })
 
 /**
@@ -76,14 +89,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     year: 'numeric',
     timeZone: site.timezone,
   }).format(new Date())
+  // Read once, here, and handed down — not a second `currentReader()` call
+  // inside Masthead itself. One session read per request keeps it obvious
+  // where the cookie is ever inspected on this layout's render path.
+  const reader = await currentReader()
 
   return (
-    <html lang={site.locale} className={`${cormorant.variable} ${heebo.variable}`}>
+    <html lang={site.locale} className={`${cormorant.variable} ${heebo.variable} ${bebas.variable}`}>
       <body>
         <a className="skip-link" href="#main">
           Skip to content
         </a>
-        <Masthead site={site} today={today} />
+        <Masthead site={site} today={today} reader={reader} accountsEnabled={accountsEnabled()} />
         <main id="main">{children}</main>
         <Footer site={site} />
         {/* One tag for the whole site. Pages that represent an entity emit

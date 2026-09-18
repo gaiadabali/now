@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { RailLink } from './RailLink'
 
 /**
  * The commerce console, in the sidebar where it can be found.
@@ -26,6 +26,17 @@ import Link from 'next/link'
  * This is presentation only. Every page behind these links calls
  * `requireCommerceAccess()` before it queries anything, because a nav that
  * hides a link is a rendering convenience and never an access control.
+ *
+ * DELIBERATELY NOT `'use client'`. This component receives `user` as a
+ * server prop (`@payloadcms/next/dist/elements/Nav/index.js` merges it into
+ * `afterNavLinks`'s `serverProps`, not its much smaller `clientProps`), so
+ * turning the whole component client-side would silently stop it receiving
+ * `user` at all — the role check above would read `undefined` and the
+ * entire Commerce group would vanish for every role, including admins. It
+ * renders `RailLink` (`'use client'`, for `usePathname()`) as an ordinary
+ * child instead, which is the normal shape for a server component that
+ * needs one client-only capability: push the boundary down to the smallest
+ * thing that needs it, not up to the thing that receives the data.
  */
 
 type NavUser = { commerceRole?: string } | null | undefined
@@ -49,9 +60,9 @@ export function NavConsole({ user }: { user?: NavUser }) {
             {/* `nav__link` deliberately: these should look and behave exactly
                 like the collection links above them. Borrowing Payload's
                 class keeps them in step if its nav styling moves. */}
-            <Link className="nav__link" href={link.href}>
+            <RailLink className="nav__link" href={link.href}>
               {link.label}
-            </Link>
+            </RailLink>
           </li>
         ))}
       </ul>

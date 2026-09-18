@@ -1,0 +1,468 @@
+/* ============================================================================
+   NOW! — reader account surface (S6 · §3, §4)
+   ----------------------------------------------------------------------------
+   Self-contained on purpose. `base.css` and `magazine.css` are mid-migration
+   to the S6 tokens as of this file's creation — they still reference
+   `--ink-mute`, `--rule-hair`, `--t-dek` and friends, none of which exist in
+   the current `tokens.css`, and are owned by other engineers working the
+   same tree concurrently. Building this surface's rules against the SAME
+   pre-S6 variables would inherit their breakage (e.g. `.signup__btn` sets
+   `color: var(--ink-invert)` on a `var(--ink)` background — white-on-black
+   text with an undefined custom property resolves to inherited/initial,
+   which is invisible text); reaching into `magazine.css` to fix them would
+   mean editing a file this task explicitly does not own. So every rule below
+   is written against `tokens.css` only, under an `acct-` prefix that cannot
+   collide with either file. `.shell` is the one exception — it depends only
+   on `--shell-max`/`--shell-pad`, both real tokens, and is the whole site's
+   width primitive.
+   ========================================================================= */
+
+/* ==========================================================================
+   MASTHEAD — the utility row, edition line and signed-in state.
+   `Masthead.tsx` was rebuilt for S6 (masthead__util, __actions, __signin,
+   __subscribe, __edition) but magazine.css still only defines the previous
+   row's classes (masthead__bar, __utils) — so these five rendered with
+   browser defaults until now. Kept narrowly scoped to what that component
+   actually emits, rather than re-styling the nav/brand rows magazine.css
+   already covers, to keep this file's footprint small against a component
+   another engineer is also mid-editing.
+   ========================================================================== */
+
+.masthead__util {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-m);
+  padding-block: var(--space-2xs);
+  font-family: var(--font-sans);
+}
+
+.masthead__dateline {
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.masthead__actions {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-m);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+
+/* THE THREE NAMED ACTIONS ARE SCOPED, AND THAT IS NOT DECORATION.
+   `.masthead__actions a` is (0,1,1) — one class and one element — while a bare
+   `.masthead__subscribe` is (0,1,0). The generic rule therefore WON, and the
+   Subscribe pill rendered `--mute` grey on red instead of white on red, on
+   every reader page. It is the kind of collision that looks like a colour
+   choice rather than a bug, so each named action is scoped under
+   `.masthead__actions` to (0,2,0) and the cascade resolves by structure rather
+   than by `!important`. */
+.masthead__actions a {
+  color: var(--mute);
+  transition: color var(--dur) var(--ease);
+}
+.masthead__actions a:hover {
+  color: var(--red);
+}
+
+/* Sign-in and the signed-in reader's name occupy the same slot and carry the
+   same weight — one is not a lesser version of the other, it is the state
+   before it. */
+.masthead__actions .masthead__signin,
+.masthead__actions .masthead__reader {
+  color: var(--type);
+  font-weight: 500;
+}
+.masthead__actions .masthead__reader:hover,
+.masthead__actions .masthead__signin:hover {
+  color: var(--red);
+}
+
+.masthead__actions .masthead__subscribe {
+  color: var(--paper);
+  background: var(--red);
+  padding: 0.35em 0.9em;
+  transition: background var(--dur) var(--ease);
+}
+.masthead__actions .masthead__subscribe:hover {
+  color: var(--paper);
+  background: var(--red-deep);
+}
+
+/* The edition line — the single sanctioned use of `--gold` (§1). Bebas,
+   because every other section label on the site already is one. */
+.masthead__edition {
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+}
+
+/* Masthead.tsx's own docstring already commits to this: "on small screens it
+   scrolls horizontally, which keeps every section one tap away instead of
+   two." magazine.css's `.masthead__nav-list` still sets `flex-wrap: wrap`
+   with nothing containing the row, so on a real 360px viewport the nav
+   neither wraps to a second line nor scrolls in its own box — it just runs
+   past the edge of the page and takes the whole document with it (§7: no
+   horizontal scroll at 360, on every reader page, including this one).
+   Scoped to the nav row only, and only overflow behaviour — colours, type
+   and spacing for `.masthead__nav-link` are left exactly as magazine.css
+   sets them. */
+@media (max-width: 61.9rem) {
+  .masthead__nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .masthead__nav-list {
+    flex-wrap: nowrap;
+    width: max-content;
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
+   AUTH PAGES — register, sign in, verify, forgot, reset.
+   One narrow column. These are the first thing a new reader meets, so the
+   type is the magazine's own display face, not a product's form face.
+   ========================================================================== */
+
+.acct-auth {
+  padding-block: var(--band-pad);
+  max-width: 34rem;
+}
+
+.acct-auth__kicker {
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--red);
+}
+
+.acct-auth__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--t-display);
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+  color: var(--type);
+  margin-top: var(--space-2xs);
+  text-wrap: balance;
+}
+
+.acct-auth__dek {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: var(--t-lede);
+  color: var(--mute);
+  max-width: var(--measure-narrow);
+  margin-top: var(--space-m);
+  text-wrap: pretty;
+}
+
+.acct-auth__body {
+  margin-top: var(--space-l);
+  padding-top: var(--space-l);
+  border-top: var(--edge);
+}
+
+.acct-auth__footer {
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--mute);
+  margin-top: var(--space-l);
+  max-width: var(--measure-narrow);
+}
+.acct-auth__footer a {
+  color: var(--red);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Status messages -----------------------------------------------------
+   `--red` for attention, `--ok`/`--warn` for the two outcomes that are not
+   "look at this" — a success and a caution read differently from a plain
+   prompt, and §1 reserves red for exactly that: the mark, Partner, labels and
+   the primary action, never a generic "something happened" flag. */
+.acct-status {
+  border-left: 3px solid var(--red);
+  background: var(--ivory);
+  padding: var(--space-s) var(--space-m);
+  margin-bottom: var(--space-l);
+}
+.acct-status--ok {
+  border-left-color: var(--ok);
+}
+.acct-status--bad {
+  border-left-color: var(--warn);
+}
+.acct-status__head {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--t-title);
+  color: var(--type);
+}
+.acct-status__body {
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--mute);
+  margin-top: var(--space-3xs);
+}
+
+/* ---- Fields ---------------------------------------------------------------
+   Real `<label>`s, visible focus, no placeholder-as-label — §7's floor
+   matters most here because a form is the only UI on these pages. */
+.acct-field {
+  margin-bottom: var(--space-m);
+}
+.acct-field__label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: var(--space-3xs);
+}
+.acct-field__input {
+  display: block;
+  width: 100%;
+  border: var(--hair);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--type);
+  padding: 0.65em 0.75em;
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  transition: border-color var(--dur) var(--ease);
+}
+.acct-field__input:focus {
+  border-color: var(--type);
+}
+.acct-field__hint {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  color: var(--mute);
+  margin-top: var(--space-3xs);
+}
+
+/* ---- Buttons ---------------------------------------------------------------
+   Red is the primary action, per §1 — never a decoration, and never used for
+   a secondary one (sign out gets the ghost variant instead). */
+.acct-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: var(--red);
+  color: var(--paper);
+  border: 0;
+  padding: 0.75em 1.2em;
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.acct-btn:hover {
+  background: var(--red-deep);
+}
+
+.acct-btn--ghost {
+  width: auto;
+  background: transparent;
+  color: var(--type);
+  border: var(--edge);
+}
+.acct-btn--ghost:hover {
+  background: var(--ivory);
+}
+
+/* ==========================================================================
+   DASHBOARD — /account (§4)
+   ========================================================================== */
+
+/* The one place `--ivory` is a whole band rather than a panel's ground. */
+.acct-greeting {
+  background: var(--ivory);
+  padding-block: var(--band-pad);
+}
+.acct-greeting__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+.acct-greeting__hello {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--t-display);
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+  color: var(--type);
+  text-wrap: balance;
+}
+.acct-greeting__meta {
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+.acct-notices {
+  padding-top: var(--space-l);
+}
+
+/* Two-up panels with a 320px aside. Single column below 62rem so the aside
+   never squeezes into a scrollbar-worthy sliver on a laptop, and single
+   column again inside `.acct-panels` below 40rem — the floor is 360px with
+   no horizontal scroll (§7), which a fixed 320px column cannot promise on
+   its own. */
+.acct-layout {
+  padding-block: var(--band-pad);
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 62rem) {
+  .acct-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+}
+
+.acct-panels {
+  display: grid;
+  gap: var(--space-2xl) var(--gutter);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 40rem) {
+  .acct-panels {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.acct-aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* A panel: a rule, a label, an optional action — never a card. No border
+   box, no shadow, no radius (§4 is explicit about this). */
+.acct-panel {
+  border-top: var(--edge);
+  padding-top: var(--space-s);
+}
+.acct-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+  flex-wrap: wrap;
+}
+.acct-panel__title {
+  font-family: var(--font-label);
+  font-size: var(--t-title);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--type);
+}
+.acct-panel__action {
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--red);
+  white-space: nowrap;
+}
+.acct-panel__action:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.acct-panel__body {
+  margin-top: var(--space-s);
+}
+
+/* "We think you like" — the one live panel. Chips are display-only here
+   (correcting them is a trip to /account/preferences, not an inline edit),
+   so they are their own small class rather than a reuse of the interactive
+   `.chip` input/label pair from `components/chips.tsx`. */
+.acct-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+.acct-chip {
+  font-family: var(--font-sans);
+  font-size: var(--t-meta);
+  color: var(--type);
+  border: var(--hair);
+  padding: 0.3em 0.75em;
+}
+
+/* ---- Empty states ----------------------------------------------------------
+   An invitation, not a blank. `border: var(--hair)` first, so the width and
+   colour are the real token; `border-style: dashed` only changes the pattern
+   on top of it — there is no separate "dashed hairline" token to invent. */
+.acct-empty {
+  border: var(--hair);
+  border-style: dashed;
+  padding: var(--space-l) var(--space-m);
+}
+.acct-empty__lede {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  font-size: var(--t-lede);
+  color: var(--mute);
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+.acct-empty__hint {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-top: var(--space-xs);
+}
+.acct-empty__hint a {
+  color: var(--red);
+}
+
+/* The "Account" panel's field list — email, verification state, sign out. */
+.acct-dl {
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--body);
+}
+.acct-dl dt {
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.acct-dl dd {
+  margin: 0;
+  margin-top: var(--space-3xs);
+}
+.acct-dl a {
+  color: var(--red);
+}

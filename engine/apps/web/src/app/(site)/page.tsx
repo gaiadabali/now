@@ -2,254 +2,228 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { StoryCard } from '@/components/StoryCard'
-import { PartnerBadge, SectionRule, Signup } from '@/components/primitives'
-import {
-  getGuides,
-  getLatest,
-  getLead,
-  getMostRead,
-  getUpcomingEvents,
-  sectionLabel,
-  sectionOf,
-} from '@/lib/content'
-import { formatDate, formatDay, readingTime } from '@/lib/format'
+import { Band, BandHead, AreaIndex, Signup } from '@/components/primitives'
+import { getLatest, getLead, getSectionPage, sectionLabel, sectionOf } from '@/lib/content'
+import { areasWithCounts } from '@/lib/payload'
+import { formatCount, formatDate } from '@/lib/format'
 import { getSiteConfig } from '@/lib/site'
 
 /**
- * Every rail below is rendered only if it has something real in it.
+ * The home page, rebuilt on the band system (DESIGN-SYSTEM §2/§3).
  *
- * Until S2 this page carried two fixture rails — four guides with
- * "illustrative" counts and four hardcoded events, both shown on both cities,
- * so Jakarta readers were offered a festival in Ubud. Deleting the fixtures
- * reveals what the archive actually supports: guides are a real rail (314
- * Jakarta, 230 Bali), upcoming events are not (every published event is
- * 2016–2020), and Most Read is not yet (63 interactions, mostly ours).
+ * Every band below is real content, fetched here, or it is not rendered —
+ * S2 already settled that an empty rail is hidden rather than shown empty
+ * (Most Read has no traffic yet, every event is 2016–2020), and nothing in
+ * this rebuild reopens that. What changed is the SHAPE of the page, not its
+ * honesty policy: the previous layout was a lead plus a two-column
+ * well-and-rail that put Most Read, "What's On" and the newsletter in one
+ * sidebar. §3's home spec does not carry a sidebar at all — cover, The Edit,
+ * one department, one franchise band, Latest, Explore, a subscribe foot —
+ * so Most Read and events have no slot to reappear in here even once they
+ * have data. That is a page-shape decision, not a re-litigation of S2; if a
+ * future band wants them, it is a new band, not a rail bolted onto this one.
  *
- * So this page is thinner than it was, and it is thinner because it stopped
- * pretending. That is the honest input to the redesign rather than an
- * embarrassment to hide: a layout designed around invented events is a layout
- * that fits invented events.
+ * The franchise band (§2's "oversized numeral + text + one portrait, on
+ * `--ink`") needed a real, ranked, image-bearing rail and the archive has
+ * exactly one that fits all three: the guides, newest first — the same
+ * ordering every other band on this page uses, so numbering them 1–5 claims
+ * nothing beyond "these are recent," not "these are best." A quality
+ * ranking is not a thing this archive can back today (§10's presentation
+ * bias warning is exactly the reason recency was never relabelled as rank).
  */
 export default async function HomePage() {
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
-  const [lead, latest, mostRead, guides, events] = await Promise.all([
-    getLead(),
-    getLatest(20),
-    getMostRead(5),
-    getGuides(4),
-    getUpcomingEvents(4),
-  ])
-  const edit = latest.slice(1, 4)
-  const rest = latest.slice(4, 12)
 
-  // A real database can be empty — a freshly provisioned city has no articles
-  // until the load runs. The fixture era could assume ARTICLES[0] existed;
-  // this cannot, and a masthead over a crash is worse than a masthead over an
-  // honest empty state.
+  const [lead, latest, hotels, guides, areas] = await Promise.all([
+    getLead(),
+    getLatest(21),
+    getSectionPage('stay', { limit: 4 }),
+    getSectionPage('guides', { limit: 5 }),
+    areasWithCounts(),
+  ])
+
+  // A real database can be empty — a freshly provisioned city has no
+  // articles until the load runs. A masthead over a crash is worse than a
+  // masthead over an honest empty state.
   if (!lead) {
     return (
-      <section className="shell band">
-        <p className="kicker kicker--red">Nothing published yet</p>
-        <h1 className="display display--light" style={{ fontSize: 'var(--t-display)', marginTop: 'var(--space-s)' }}>
-          {site.name} is being prepared.
-        </h1>
-        <p className="dek" style={{ marginTop: 'var(--space-m)' }}>
-          There are no published stories in this edition yet. Please check back shortly.
-        </p>
-      </section>
+      <Band>
+        <div className="shell">
+          <p className="kicker kicker--red">Nothing published yet</p>
+          <h1 className="bandhead__title" style={{ marginTop: 'var(--space-s)' }}>
+            {site.name} is being prepared.
+          </h1>
+          <p className="dek" style={{ marginTop: 'var(--space-m)' }}>
+            There are no published stories in this edition yet. Please check back shortly.
+          </p>
+        </div>
+      </Band>
     )
   }
 
+  // getLatest(21) includes the lead itself (newest-first, and the lead IS
+  // the newest article) — excluded here so The Edit and Latest never repeat
+  // the story the cover already told.
+  const rest = latest.filter((a) => a.id !== lead.id)
+  const edit = rest.slice(0, 4)
+  const index = rest.slice(4, 16)
+
+  const [hotel, ...hotelSide] = hotels.items
+
   return (
     <>
-      {/* ---------------------------------------------------- feature lead */}
-      <section className="shell">
-        <div className="lead">
-          <div className="lead__body">
-            <div className="lead__kicker">
-              <span className="kicker kicker--red">{sectionLabel(sectionOf(lead))}</span>
-              <span className="kicker">/ The Feature</span>
-            </div>
-            <h1 className="lead__headline display display--light">
-              {/* Tagged like a card because it behaves like one: the single
-                  most-clicked link on the site, and untagged it reaches the
-                  beacon as a bare URL with no id and no slot. A rail of one
-                  is still a rail. */}
+      {/* --------------------------------------------------------- cover -- */}
+      <div className="cover">
+        <Image
+          className="cover__img"
+          src={lead.image}
+          alt=""
+          fill
+          sizes="100vw"
+          priority
+        />
+        <div className="cover__body">
+          <div className="shell">
+            <p className="cover__kicker">{sectionLabel(sectionOf(lead))} / The Feature</p>
+            <h1 className="cover__headline">
               <Link
                 href={`/${lead.slug}`}
                 data-nowb-entity={String(lead.id)}
                 data-nowb-entity-type="article"
-                data-nowb-rail="lead"
+                data-nowb-rail="cover"
                 data-nowb-position="1"
               >
                 {lead.title}
               </Link>
             </h1>
-            <p className="dek lead__dek">{lead.dek}</p>
-            <div className="byline">
-              <span>
-                Words by <span className="byline__name">NOW! Editorial</span>
-              </span>
-              <span className="byline__sep">·</span>
-              <time dateTime={lead.date}>{formatDate(lead.date, locale, tz)}</time>
-              <span className="byline__sep">·</span>
-              <span>{readingTime(lead.paras)} min read</span>
-            </div>
+            <p className="cover__meta">{formatDate(lead.date, locale, tz)}</p>
           </div>
-          <figure className="lead__figure">
-            <Image
-              className="lead__img"
-              src={lead.image}
-              alt=""
-              width={1200}
-              height={1500}
-              sizes="(max-width: 62rem) 100vw, 46vw"
-              priority
-            />
-          </figure>
         </div>
-      </section>
+      </div>
 
-      {/* ------------------------------------------------------- the edit */}
-      <section className="shell band" style={{ paddingTop: 0 }}>
-        <SectionRule label="The Edit" note="Chosen this week" moreHref="/latest" />
-        <div className="grid grid--3 grid--ruled">
-          {edit.map((a, i) => (
-            <StoryCard
-              key={a.id}
-              article={a}
-              variant="portrait"
-              locale={locale}
-              timeZone={tz}
-              partner={i === 2}
-              rail="the-edit"
-              position={i + 1}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------- guides */}
-      {guides.length > 0 ? (
-        <section className="shell band" style={{ paddingTop: 0 }}>
-          <SectionRule label="The Guides" note="Kept current, not archived" moreHref="/guides" />
-          <div className="grid grid--4">
-            {guides.map((g, i) => (
-              // A guide is an article, so it links like one and reports like
-              // one. The fixture linked to `/guides/<name>` — a nested path
-              // `[slug]` cannot match, so all four cards 404'd.
-              <Link
-                className="guide"
-                key={g.id}
-                href={`/${g.slug}`}
-                data-nowb-entity={String(g.id)}
-                data-nowb-entity-type="article"
-                data-nowb-rail="guides"
-                data-nowb-position={i + 1}
-              >
-                {g.image ? (
-                  <Image className="guide__img" src={g.image} alt="" width={600} height={600} sizes="25vw" />
-                ) : null}
-                <span className="guide__title">{g.title}</span>
-              </Link>
+      {/* ------------------------------------------------------- the edit -- */}
+      <Band>
+        <div className="shell">
+          <BandHead kicker="Chosen this week" title="The Edit" moreHref="/latest" moreLabel="Latest" />
+          <div className="grid--edit">
+            {edit.map((a, i) => (
+              <StoryCard
+                key={a.id}
+                article={a}
+                variant="portrait"
+                locale={locale}
+                timeZone={tz}
+                rail="the-edit"
+                position={i + 1}
+              />
             ))}
           </div>
-        </section>
-      ) : null}
+        </div>
+      </Band>
 
-      {/* ------------------------------------------- main well + side rail */}
-      <section className="shell band" style={{ paddingTop: 0 }}>
-        <div className="split">
-          <div>
-            <SectionRule label="Latest" moreHref="/latest" />
-            <div className="rail__list">
-              {rest.map((a, i) => (
-                <div key={a.id} style={{ paddingBlock: 'var(--space-m)', borderBottom: 'var(--rule-hair)' }}>
+      {/* -------------------------------------------------- department: Hotels */}
+      {hotel ? (
+        <Band tone="ivory">
+          <div className="shell">
+            <BandHead
+              kicker={`${formatCount(hotels.total)} STORIES`}
+              title="Hotels"
+              moreHref="/stay"
+              moreLabel="Every stay"
+            />
+            <div className="grid--dept">
+              <StoryCard article={hotel} locale={locale} timeZone={tz} priority rail="hotels" position={1} />
+              <div className="grid--dept__side">
+                {hotelSide.map((a, i) => (
                   <StoryCard
+                    key={a.id}
                     article={a}
                     variant="horizontal"
+                    showDek={false}
                     locale={locale}
                     timeZone={tz}
-                    partner={i === 1}
-                    rail="latest"
-                    position={i + 1}
+                    rail="hotels"
+                    position={i + 2}
                   />
-                </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Band>
+      ) : null}
+
+      {/* ---------------------------------------------- franchise: The Guides */}
+      {guides.items.length > 0 ? (
+        <Band tone="ink">
+          <div className="shell">
+            <BandHead
+              kicker={`${formatCount(guides.total)} GUIDES`}
+              title="The Guides"
+              moreHref="/guides"
+              moreLabel="Every guide"
+            />
+            {guides.items.map((a, i) => (
+              <StoryCard
+                key={a.id}
+                article={a}
+                variant="rank"
+                index={i + 1}
+                locale={locale}
+                timeZone={tz}
+                rail="guides"
+                position={i + 1}
+              />
+            ))}
+          </div>
+        </Band>
+      ) : null}
+
+      {/* ------------------------------------------------------------ latest */}
+      {index.length > 0 ? (
+        <Band>
+          <div className="shell">
+            <BandHead kicker="Newest first" title="Latest" moreHref="/latest" moreLabel="Load more stories" />
+            <div className="grid--index">
+              {index.map((a, i) => (
+                <StoryCard
+                  key={a.id}
+                  article={a}
+                  variant="row"
+                  locale={locale}
+                  timeZone={tz}
+                  rail="latest"
+                  position={i + 1}
+                />
               ))}
             </div>
           </div>
+        </Band>
+      ) : null}
 
-          <aside className="rail">
-            {/* Absent until the beacon has collected enough to rank on — see
-                `getMostRead`. Recency under a "Most Read" heading is an
-                invented ordering, and §10's presentation-bias warning cuts
-                exactly there. */}
-            {mostRead.length > 0 ? (
-              <div>
-                <SectionRule label="Most Read" />
-                <ol className="rail__list">
-                  {mostRead.map((a, i) => (
-                    <li key={a.id}>
-                      <StoryCard
-                        article={a}
-                        variant="index"
-                        index={i + 1}
-                        showDek={false}
-                        locale={locale}
-                        timeZone={tz}
-                        rail="most-read"
-                        position={i + 1}
-                      />
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ) : null}
+      {/* ----------------------------------------------------------- explore
+          `--paper`, not `--ivory`: §1 spends ivory on "one department given
+          weight" — Hotels already is it — and files an index (which Explore
+          is) under `--paper` explicitly ("news and indexes"). Two ivory
+          bands on one page would spend the same restraint twice. */}
+      {areas.length > 0 ? (
+        <Band hair>
+          <div className="shell">
+            <BandHead kicker={`${formatCount(areas.length)} NEIGHBOURHOODS`} title="Explore" moreHref="/areas" moreLabel="Every area" />
+            <AreaIndex areas={areas.slice(0, 12)} />
+            <p className="meta meta--micro" style={{ marginTop: 'var(--space-m)' }}>
+              Counts are stories published about each area.
+            </p>
+          </div>
+        </Band>
+      ) : null}
 
-            {/* Absent while every published event is 2016–2020. The fixture
-                this replaced was four invented 2026 dates, which is why the
-                rail looked fine and was not. */}
-            {events.length > 0 ? (
-              <div>
-                <SectionRule label="What's On" moreHref="/events" />
-                <ul>
-                  {events.map((e) => {
-                    const d = formatDay(e.date, locale, tz)
-                    return (
-                      <li className="event" key={e.id}>
-                        <span className="event__date">
-                          <span className="event__day">{d.day}</span>
-                          <span className="event__mon">{d.month}</span>
-                        </span>
-                        <span>
-                          <span className="event__title">{e.title}</span>
-                          {e.where ? (
-                            <>
-                              <br />
-                              <span className="event__where">{e.where}</span>
-                            </>
-                          ) : null}
-                        </span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ) : null}
-
-            <Signup site={site} />
-
-            <div>
-              <SectionRule label="In Partnership" />
-              <p className="meta" style={{ fontSize: 'var(--t-micro)' }}>
-                Paid placements carry a <PartnerBadge /> mark wherever they appear — in rails, in
-                indexes and on the page itself. Partner tier is never a sort option.
-              </p>
-            </div>
-          </aside>
+      {/* -------------------------------------------------------- subscribe */}
+      <Band hair>
+        <div className="shell">
+          <Signup site={site} />
         </div>
-      </section>
+      </Band>
     </>
   )
 }

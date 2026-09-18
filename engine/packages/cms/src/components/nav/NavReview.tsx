@@ -1,7 +1,8 @@
 'use client'
 
 import { useAuth } from '@payloadcms/ui'
-import Link from 'next/link'
+
+import { RailLink } from './RailLink'
 
 /**
  * The review desk, in the sidebar — and only for the people who work it.
@@ -43,15 +44,17 @@ export function NavReview() {
       <ul className="now-nav-group__list">
         {LINKS.map((link) => (
           <li key={link.href}>
-            {/* `next/link`, not a plain `<a>`: since S3.1 these routes are a
-                Payload custom view reached through the SAME catch-all every
-                collection link uses, so a client-side transition finds a
-                match rather than a dead end. Before S3.1 these routes
-                shadowed the catch-all as their own literal Next pages, which
-                is exactly why a real navigation used to be the only option. */}
-            <Link className="nav__link" href={link.href}>
+            {/* `RailLink` wraps `next/link`, not a plain `<a>`: since S3.1
+                these routes are a Payload custom view reached through the
+                SAME catch-all every collection link uses, so a client-side
+                transition finds a match rather than a dead end. Before S3.1
+                these routes shadowed the catch-all as their own literal Next
+                pages, which is exactly why a real navigation used to be the
+                only option. It also carries the active-state edge every
+                other rail item gets (see `RailLink`'s own comment). */}
+            <RailLink className="nav__link" href={link.href}>
               {link.label}
-            </Link>
+            </RailLink>
           </li>
         ))}
       </ul>

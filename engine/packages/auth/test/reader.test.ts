@@ -50,6 +50,7 @@ class FakeStore implements ReaderStore {
       hash: input.credential.hash,
       salt: input.credential.salt,
       emailVerifiedAt: null,
+      createdAt: null,
       loginAttempts: 0,
       lockUntil: null,
       status: 'active',

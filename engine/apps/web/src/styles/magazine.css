@@ -1,79 +1,107 @@
 /* ============================================================================
-   NOW! — magazine components
+   NOW! — magazine components · S6 "The Edition"
    ----------------------------------------------------------------------------
    Every class here is a documented part of the design system. If a page needs
    something not in this file, it belongs in this file — pages carry no styles
    of their own.
+
+   Rewritten in full for the band system (DESIGN-SYSTEM §2), not patched: the
+   previous file's grid was one grid — `.grid--3` / `.grid--4` everywhere,
+   which is the "long page reads as a feed" failure §2 names directly. Every
+   band below has its OWN grid class, used nowhere else, which is what makes
+   "the grid changes between adjacent bands" true in the CSS rather than just
+   in the plan.
    ========================================================================= */
 
 /* ==========================================================================
    1. MASTHEAD
-   The three-rule masthead: heavy rule, name, hair rule, navigation, thin rule.
+   Markup lives in components/Masthead.tsx (not owned by this ticket); every
+   class it renders is styled here. Three rows: utility, brand, nav — §3.
    ========================================================================== */
 
-.masthead {
-  border-top: var(--rule-heavy);
-  background: var(--paper);
-}
+.masthead { background: var(--paper); border-bottom: var(--edge); }
 
-.masthead__bar {
+.masthead__util {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--space-m);
-  padding-block: var(--space-xs);
-  border-bottom: var(--rule-hair);
-}
-
-.masthead__dateline {
-  font-family: var(--font-sans);
-  font-size: var(--t-micro);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-mute);
-}
-
-.masthead__utils {
-  display: flex;
   align-items: center;
-  gap: var(--space-m);
-  font-size: var(--t-micro);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: var(--space-2xs) var(--space-m);
+  padding-block: var(--space-2xs);
+  border-bottom: var(--hair);
   font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
 }
 
-.masthead__utils a { color: var(--ink-mute); }
-.masthead__utils a:hover { color: var(--red); }
+.masthead__dateline { color: var(--mute); white-space: nowrap; }
+
+/* §7: at 360px the dateline plus four utility links do not fit on one
+   line without either an invisible horizontal scroll (forbidden) or
+   wrapping mid-word (illegible). Wrapping the ROW is fine; wrapping a
+   two-word link is not, so each stays on one line and the row grows
+   instead. */
+.masthead__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs) var(--space-m); }
+
+/* Sign in / Subscribe are excluded here, not styled `!important` there:
+   `styles/account.css` (another engineer's file, loaded after this one in
+   layout.tsx) styles both selectors on their own — `.masthead__subscribe`
+   as a solid red pill with paper text — but `.masthead__actions a` is MORE
+   specific than a bare `.masthead__subscribe` (tag+class beats class), so
+   without the `:not()` here this rule would win regardless of load order
+   and paint paper-on-red text as mute-on-red or red-on-red. Excluding them
+   leaves account.css as the one place either selector is styled; the plain
+   colour below is what a reader sees if that file is ever removed. */
+.masthead__actions a:not(.masthead__signin):not(.masthead__subscribe) {
+  color: var(--mute);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+.masthead__actions a:not(.masthead__signin):not(.masthead__subscribe):hover { color: var(--red); }
+
+/* Layout only — no colour property, so this cannot re-open the specificity
+   fight above no matter which stylesheet loads last. */
+.masthead__signin, .masthead__subscribe { white-space: nowrap; }
 
 .masthead__brand {
   display: flex;
-  justify-content: center;
-  padding-block: clamp(var(--space-m), 3vw, var(--space-xl));
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding-block: clamp(var(--space-m), 3.4vw, var(--space-xl));
 }
 
-.masthead__logo { height: clamp(48px, 6vw, 84px); width: auto; }
+.masthead__logo { height: clamp(40px, 6vw, 72px); width: auto; }
 
-.masthead__nav {
-  border-top: var(--rule-thin);
-  border-bottom: var(--rule-thin);
+/* §1: gold exists for exactly one element. If it appears anywhere else in
+   this file, that is the bug the token comment predicted. */
+.masthead__edition {
+  font-family: var(--font-label);
+  font-size: var(--t-meta);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--gold);
 }
+
+.masthead__nav { border-top: var(--edge); border-bottom: var(--hair); }
 
 .masthead__nav-list {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: clamp(var(--space-s), 2.2vw, var(--space-xl));
+  gap: clamp(var(--space-m), 2.6vw, var(--space-xl));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding-block: var(--space-xs);
 }
+.masthead__nav-list::-webkit-scrollbar { display: none; }
 
 .masthead__nav-link {
   font-family: var(--font-sans);
-  font-size: var(--t-meta);
+  font-size: var(--t-small);
   font-weight: 500;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--ink);
+  color: var(--type);
+  white-space: nowrap;
   padding-block: var(--space-3xs);
   border-bottom: 2px solid transparent;
   transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
@@ -86,116 +114,146 @@
 }
 
 /* ==========================================================================
-   2. SECTION RULE
-   The labelled divider that opens every band on the page. This single
-   component does more work than any other to make the page read as print.
+   2. BAND SYSTEM
+   `Band` (primitives.tsx) renders the `<section>` + stock; `BandHead`
+   renders the kicker / title / more-link opener every band uses.
    ========================================================================== */
 
-.section-rule {
+.band { padding-block: var(--band-pad); }
+.band--hair { border-top: var(--hair); }
+.band--ivory { background: var(--ivory); }
+.band--ink { background: var(--ink); color: var(--invert); }
+
+.bandhead {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-s);
-  border-top: var(--rule-thin);
-  padding-top: var(--space-2xs);
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-m);
+  border-top: var(--edge);
+  padding-top: var(--space-s);
   margin-bottom: var(--space-l);
 }
 
-.section-rule__label {
-  font-family: var(--font-sans);
+.bandhead__head { display: flex; flex-direction: column; gap: var(--space-3xs); }
+
+.bandhead__kicker {
+  font-family: var(--font-label);
   font-size: var(--t-meta);
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--ink);
-  white-space: nowrap;
+  color: var(--red);
 }
 
-.section-rule__note {
+.bandhead__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--t-display);
+  letter-spacing: var(--track-display);
+  line-height: 1;
+  color: var(--type);
+}
+
+.bandhead__note {
   font-family: var(--font-display);
   font-style: italic;
   font-size: var(--t-small);
-  color: var(--ink-mute);
+  color: var(--mute);
 }
 
-.section-rule__more {
-  margin-left: auto;
+.bandhead__more {
   font-family: var(--font-sans);
   font-size: var(--t-micro);
-  letter-spacing: 0.12em;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   color: var(--red);
   white-space: nowrap;
+  padding-bottom: var(--space-3xs);
+  transition: opacity var(--dur) var(--ease);
 }
-.section-rule__more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bandhead__more:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* On `--ink`, `--edge` (which IS `--ink`'s own colour) would be invisible,
+   and the title needs the inverted ink to read at all. */
+.band--ink .bandhead { border-top-color: var(--invert); }
+.band--ink .bandhead__title { color: var(--invert); }
+.band--ink .bandhead__more { color: var(--invert); }
 
 /* ==========================================================================
-   3. FEATURE LEAD
-   The above-the-fold story. Asymmetric by default: type left, image right,
-   with the headline allowed to run wider than its column.
+   3. COVER — the lead story, full-bleed, never viewport-sized (§3: "It is a
+   cover, not a hero — the bands below it must be visible on a laptop").
    ========================================================================== */
 
-.lead {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--gutter);
-  padding-block: clamp(var(--space-l), 4vw, var(--space-2xl));
-}
-
-@media (min-width: 62rem) {
-  .lead {
-    grid-template-columns: 1.05fr 1fr;
-    align-items: center;
-    gap: clamp(var(--space-l), 4vw, var(--space-2xl));
-  }
-}
-
-.lead__body { display: flex; flex-direction: column; gap: var(--space-m); }
-
-.lead__kicker { display: flex; align-items: center; gap: var(--space-2xs); }
-
-.lead__headline { font-size: var(--t-display); }
-
-.lead__dek { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem); max-width: 44ch; }
-
-.lead__figure { position: relative; }
-
-.lead__img {
+.cover {
+  position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  background: var(--paper-deep);
+  aspect-ratio: 21 / 9;
+  overflow: hidden;
+  background: var(--ink);
+  isolation: isolate;
 }
 
-@media (max-width: 62rem) {
-  .lead__img { aspect-ratio: 3 / 2; }
+.cover__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+
+/* Photographs vary in luminance; the scrim guarantees the headline reads at
+   AA contrast against ANY source image rather than the one used in dev. */
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(10, 9, 8, 0.92) 0%, rgba(10, 9, 8, 0.5) 40%, rgba(10, 9, 8, 0) 72%);
 }
 
-/* ==========================================================================
-   4. BYLINE
-   ========================================================================== */
+.cover__body {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding-bottom: clamp(var(--space-l), 4vw, var(--space-xl));
+}
 
-.byline {
+.cover__kicker {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2xs) var(--space-s);
-  font-family: var(--font-sans);
-  font-size: var(--t-small);
-  color: var(--ink-mute);
+  gap: var(--space-2xs);
+  font-family: var(--font-label);
+  font-size: var(--t-meta);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: var(--space-s);
 }
 
-.byline__name { color: var(--ink); font-weight: 500; }
-.byline__sep { color: var(--ink-faint); }
+.cover__headline {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--t-cover);
+  letter-spacing: var(--track-display);
+  line-height: 1.02;
+  color: var(--invert);
+  max-width: 19ch;
+  text-wrap: balance;
+}
+
+.cover__meta {
+  margin-top: var(--space-m);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--invert);
+  opacity: 0.85;
+}
 
 /* ==========================================================================
-   5. STORY CARD
-   Three variants, one component. No shadows, no borders, no rounded corners:
-   cards are separated by rules and whitespace only.
+   4. STORY CARD
+   Six variants (components/StoryCard.tsx), one component. No shadows, no
+   borders, no rounded corners: cards are separated by rules and whitespace.
    ========================================================================== */
 
 .card { display: flex; flex-direction: column; gap: var(--space-xs); }
 
-.card__figure { overflow: hidden; background: var(--paper-deep); }
+.card__figure { overflow: hidden; background: var(--ivory); }
 
 .card__img {
   width: 100%;
@@ -206,15 +264,13 @@
 
 .card:hover .card__img { transform: scale(1.02); }
 
-.card__headline { font-size: var(--t-title); }
-
+.card__headline { font-size: var(--t-title); letter-spacing: var(--track-title); }
 .card:hover .card__headline { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
 
 .card__dek {
   font-family: var(--font-sans);
   font-size: var(--t-small);
-  font-style: normal;
-  color: var(--ink-mute);
+  color: var(--mute);
   line-height: 1.5;
 }
 
@@ -224,57 +280,146 @@
   gap: var(--space-2xs);
   font-family: var(--font-sans);
   font-size: var(--t-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
-  color: var(--ink-mute);
+  color: var(--mute);
 }
 
-.card__foot .sep { color: var(--ink-faint); }
+.card__foot .sep { color: var(--faint); }
 .card__section { color: var(--red); font-weight: 500; }
 
-/* --- variant: portrait (tall image, used in the Edit strip) ------------- */
+/* --- variant: portrait — The Edit, 4:5 -------------------------------- */
 .card--portrait .card__img { aspect-ratio: 4 / 5; }
 
-/* --- variant: horizontal (image beside type, used in indexes) ----------- */
-.card--horizontal {
-  flex-direction: row;
-  gap: var(--space-m);
-  align-items: flex-start;
-}
-.card--horizontal .card__figure { flex: 0 0 clamp(96px, 22vw, 220px); }
+/* --- variant: horizontal — department side items ------------------------ */
+.card--horizontal { flex-direction: row; gap: var(--space-m); align-items: flex-start; }
+.card--horizontal .card__figure { flex: 0 0 clamp(88px, 20vw, 160px); }
 .card--horizontal .card__img { aspect-ratio: 1 / 1; }
-.card--horizontal .card__headline { font-size: var(--t-subtitle); }
 .card--horizontal .card__body { display: flex; flex-direction: column; gap: var(--space-2xs); }
 
-/* --- variant: text-only (the numbered index) ---------------------------- */
+/* --- variant: index — a numbered, image-less row (kept for a future ranked
+   sidebar; not used by any band shipped today, see the S2 rail note in
+   page.tsx). ------------------------------------------------------------- */
 .card--index { flex-direction: row; gap: var(--space-s); align-items: baseline; }
-.card--index .card__num {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-  min-width: 2ch;
+.card--index .card__num { font-size: 1.5rem; color: var(--faint); font-variant-numeric: tabular-nums; min-width: 2ch; }
+
+/* --- variant: row — Latest's dense index (§2/§3): no image, date pinned
+   right. Deliberately terse: a screen of these is meant to hold roughly
+   three times what a card grid does. ------------------------------------- */
+.card--row {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding-block: var(--space-xs);
+  border-bottom: var(--hair);
 }
-.card--index .card__headline { font-size: var(--t-subtitle); }
+.card--row .card__headline { font-size: var(--t-title); flex: 1; min-width: 0; }
+.card--row__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+}
+.card--row__date { color: var(--mute); white-space: nowrap; }
+
+/* --- variant: rank — the franchise band, set for --ink (§2): oversized
+   numeral, headline, one portrait. ---------------------------------------- */
+.card--rank {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-m);
+  padding-block: var(--space-m);
+  border-top: var(--hair);
+  border-top-color: var(--invert);
+  opacity: 0.9;
+}
+.card--rank:first-child { border-top: 0; }
+.card--rank__num {
+  font-size: clamp(2.2rem, 1.6rem + 2vw, 3.4rem);
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.card--rank__body { display: flex; flex-direction: column; gap: var(--space-2xs); min-width: 0; }
+.card--rank .card__headline { color: var(--invert); }
+.card--rank .card__headline a { color: var(--invert); }
+.card--rank__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--invert);
+  opacity: 0.65;
+}
+.card--rank .card__figure {
+  flex: 0 0 clamp(64px, 10vw, 92px);
+  aspect-ratio: 4 / 5;
+  width: clamp(64px, 10vw, 92px);
+}
+.card--rank .card__img { aspect-ratio: 4 / 5; }
 
 /* ==========================================================================
-   6. GRIDS
+   5. BAND GRIDS
+   One class per band in §2's table. None of these is reused by another band
+   — that repetition IS the "grid changes with the job" rule.
    ========================================================================== */
 
-.grid {
-  display: grid;
-  gap: var(--gutter) var(--gutter);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-}
+/* The Edit — 4-up portrait. */
+.grid--edit { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gutter); }
+@media (max-width: 62rem) { .grid--edit { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 36rem) { .grid--edit { grid-template-columns: 1fr; } }
 
+/* A department (Hotels) — 1 large + 3 stacked side items. */
+.grid--dept { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--gutter); }
+.grid--dept__side { display: flex; flex-direction: column; }
+.grid--dept__side > * + * { border-top: var(--hair); margin-top: var(--space-m); padding-top: var(--space-m); }
+@media (max-width: 62rem) { .grid--dept { grid-template-columns: 1fr; } }
+
+/* Latest — 3-column index, no thumbnails. A CSS multi-column rather than a
+   grid: a `row` card's height varies with its headline, and multi-column
+   lets the next row start immediately below the shortest one instead of
+   pinning every row in a column to the tallest row in its rank. */
+.grid--index { column-count: 3; column-gap: var(--gutter); }
+.grid--index > * { break-inside: avoid; }
+@media (max-width: 62rem) { .grid--index { column-count: 2; } }
+@media (max-width: 36rem) { .grid--index { column-count: 1; } }
+
+/* Explore — 4-column area index, same reasoning as Latest's. */
+.grid--areas { column-count: 4; column-gap: var(--gutter); }
+.area-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-s);
+  padding-block: var(--space-xs);
+  border-bottom: var(--hair);
+  break-inside: avoid;
+}
+.area-row__name { font-family: var(--font-display); font-weight: 300; font-size: var(--t-title); color: var(--type); }
+.area-row:hover .area-row__name { text-decoration: underline; text-underline-offset: 3px; }
+.area-row__count { font-family: var(--font-sans); font-size: var(--t-micro); color: var(--faint); font-variant-numeric: tabular-nums; }
+@media (max-width: 62rem) { .grid--areas { column-count: 2; } }
+@media (max-width: 36rem) { .grid--areas { column-count: 1; } }
+
+/* Plain grids kept for pages this ticket restyles rather than redesigns
+   (about / advertise / subscribe "what you get", culture, section-index
+   overflow) — not a band-system grid in the §2 sense, just three-across. */
+.grid { display: grid; gap: var(--gutter); grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
 .grid--3 { grid-template-columns: repeat(3, 1fr); }
 .grid--4 { grid-template-columns: repeat(4, 1fr); }
-
 @media (max-width: 62rem) { .grid--3, .grid--4 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 36rem) { .grid--3, .grid--4 { grid-template-columns: 1fr; } }
 
-/* Column rules between grid children — the print signature. */
 .grid--ruled > * + * { position: relative; }
 @media (min-width: 36rem) {
   .grid--ruled > * + *::before {
@@ -282,52 +427,50 @@
     position: absolute;
     inset-block: 0;
     left: calc(var(--gutter) / -2);
-    border-left: var(--rule-hair);
+    border-left: var(--hair);
   }
 }
 
-/* Two-column editorial split: main well + rail. */
+/* Two-column editorial split — article body + rail, or a facts/prose pair. */
 .split { display: grid; gap: var(--space-xl) var(--space-2xl); }
 @media (min-width: 62rem) { .split { grid-template-columns: minmax(0, 1fr) 20rem; } }
 
-.band { padding-block: clamp(var(--space-xl), 5vw, var(--space-2xl)); }
-
-/* ==========================================================================
-   7. RAIL (sidebar lists — Most Read, Events, Newsletter)
-   ========================================================================== */
-
+/* The article page's one remaining sidebar: the subscribe unit beside the
+   prose column. Not a §2 band rail — there is no "Most Read"/"What's On"
+   sidebar in this system — just the split's second column. */
 .rail { display: flex; flex-direction: column; gap: var(--space-xl); }
 
-.rail__list > li { padding-block: var(--space-s); border-bottom: var(--rule-hair); }
-.rail__list > li:first-child { padding-top: 0; }
+/* A section index or archive's own lead-plus-rest layout (kept for the
+   pages that still open on one big story before their index proper). */
+.lead { display: grid; grid-template-columns: 1fr; gap: var(--gutter); padding-block: clamp(var(--space-l), 4vw, var(--space-2xl)); }
+@media (min-width: 62rem) { .lead { grid-template-columns: 1.05fr 1fr; align-items: center; gap: clamp(var(--space-l), 4vw, var(--space-2xl)); } }
+.lead__body { display: flex; flex-direction: column; gap: var(--space-m); }
+.lead__kicker { display: flex; align-items: center; gap: var(--space-2xs); }
+.lead__headline { font-size: var(--t-display); }
+.lead__dek { font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem); max-width: 44ch; }
+.lead__figure { position: relative; }
+.lead__img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--ivory); }
+@media (max-width: 62rem) { .lead__img { aspect-ratio: 3 / 2; } }
 
 /* ==========================================================================
-   8. EVENT ROW
+   6. BYLINE
    ========================================================================== */
 
-.event {
-  display: grid;
-  grid-template-columns: 3.5rem 1fr;
-  gap: var(--space-s);
-  align-items: baseline;
-  padding-block: var(--space-s);
-  border-bottom: var(--rule-hair);
+.byline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-s);
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--mute);
 }
 
-.event__date { text-align: center; font-family: var(--font-sans); line-height: 1.1; }
-.event__day { display: block; font-family: var(--font-display); font-size: 1.75rem; color: var(--ink); }
-.event__mon {
-  display: block;
-  font-size: var(--t-micro);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--red);
-}
-.event__title { font-family: var(--font-display); font-size: 1.15rem; color: var(--ink); line-height: 1.25; }
-.event__where { font-size: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-mute); }
+.byline__name { color: var(--type); font-weight: 500; }
+.byline__sep { color: var(--faint); }
 
 /* ==========================================================================
-   9. BADGES
+   7. BADGES
    Partner disclosure is a *product* requirement (ARCHITECTURE.md §11), not
    decoration: sponsored content must be unmistakable at a glance.
    ========================================================================== */
@@ -338,32 +481,31 @@
   gap: var(--space-3xs);
   font-family: var(--font-sans);
   font-size: var(--t-micro);
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  font-weight: 600;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
   padding: 0.2em 0.5em;
-  border: 1px solid currentColor;
-  color: var(--ink-mute);
   line-height: 1.4;
 }
 
-.badge--partner { color: var(--red); background: var(--red-wash); border-color: currentColor; }
-.badge--live { color: var(--paper); background: var(--red); border-color: var(--red); }
-.badge--plain { border-color: var(--ink-faint); }
+/* Solid fills, not tints — §1 names exactly white, ink and red as the
+   chrome, and a tint is a colour this file was told not to invent. */
+.badge--partner { color: var(--paper); background: var(--red); }
+.badge--live { color: var(--paper); background: var(--red); }
+.badge--plain { color: var(--mute); border: 1px solid var(--faint); }
 
 /* ==========================================================================
-   10. PROSE — the article body
+   8. PROSE — the article body
    ========================================================================== */
 
 .prose {
   max-width: var(--measure);
   font-size: 1.1875rem;
   line-height: 1.72;
-  color: var(--ink-body);
+  color: var(--body);
 }
 
 .prose > * + * { margin-top: 1.4em; }
-
 .prose p { text-wrap: pretty; }
 
 /* Drop cap on the first paragraph only. Cormorant, three lines deep. */
@@ -375,92 +517,58 @@
   line-height: 0.82;
   padding-right: 0.08em;
   margin-top: 0.06em;
-  color: var(--ink);
+  color: var(--type);
 }
 
 .prose h2 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 400;
   font-size: 1.85rem;
   line-height: 1.15;
-  color: var(--ink);
+  color: var(--type);
   margin-top: 2em;
 }
 
 .prose h3 {
-  font-family: var(--font-sans);
+  font-family: var(--font-label);
   font-size: var(--t-meta);
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--ink);
+  color: var(--type);
   margin-top: 2.2em;
 }
 
-.prose a {
-  color: var(--ink);
-  border-bottom: 1px solid var(--red);
-  transition: background var(--dur) var(--ease);
-}
-.prose a:hover { background: var(--red-wash); }
+.prose a { color: var(--type); border-bottom: 1px solid var(--red); transition: opacity var(--dur) var(--ease); }
+.prose a:hover { opacity: 0.7; }
 
 .prose ul, .prose ol { padding-left: 1.4em; }
 .prose ul > li { list-style: none; position: relative; }
-.prose ul > li::before {
-  content: '—';
-  position: absolute;
-  left: -1.4em;
-  color: var(--red);
-}
+.prose ul > li::before { content: '—'; position: absolute; left: -1.4em; color: var(--red); }
 .prose ol { list-style: decimal; }
 .prose ol > li::marker { color: var(--red); font-family: var(--font-display); }
 .prose li + li { margin-top: 0.5em; }
 
 /* Pull quote — breaks the measure, which is the point. */
-.pullquote {
-  margin-block: 2.2em;
-  padding-block: var(--space-m);
-  border-top: var(--rule-thin);
-  border-bottom: var(--rule-thin);
-  max-width: none;
-}
-
+.pullquote { margin-block: 2.2em; padding-block: var(--space-m); border-top: var(--edge); border-bottom: var(--edge); max-width: none; }
 .pullquote__text {
   font-family: var(--font-display);
   font-weight: 300;
   font-style: italic;
   font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.35rem);
   line-height: 1.22;
-  color: var(--ink);
+  color: var(--type);
   text-wrap: balance;
 }
+.pullquote__attr { margin-top: var(--space-s); font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--mute); }
 
-.pullquote__attr {
-  margin-top: var(--space-s);
-  font-family: var(--font-sans);
-  font-size: var(--t-micro);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-mute);
-}
-
-/* Figures inside prose may exceed the measure. */
 .prose figure { max-width: none; }
-.figure__caption {
-  margin-top: var(--space-2xs);
-  font-family: var(--font-sans);
-  font-size: var(--t-micro);
-  line-height: 1.5;
-  color: var(--ink-mute);
-  max-width: var(--measure-narrow);
-}
-.figure__credit { color: var(--ink-faint); }
+.figure__caption { margin-top: var(--space-2xs); font-family: var(--font-sans); font-size: var(--t-micro); line-height: 1.5; color: var(--mute); max-width: var(--measure-narrow); }
+.figure__credit { color: var(--faint); }
 
-/* End mark. */
 .endmark { display: inline-block; width: 0.62em; height: 0.62em; background: var(--red); margin-left: 0.3em; vertical-align: baseline; }
 
 /* ==========================================================================
-   11. ARTICLE HEADER
+   9. ARTICLE HEADER — the new scale (DESIGN-SYSTEM "Article page")
    ========================================================================== */
 
 .article-head {
@@ -471,12 +579,12 @@
   padding-block: clamp(var(--space-l), 4vw, var(--space-2xl)) var(--space-l);
 }
 
-.article-head__title { font-size: var(--t-headline); }
+.article-head__title { font-size: var(--t-headline); letter-spacing: var(--track-display); }
 
-.article-hero__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--paper-deep); }
+.article-hero__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--ivory); }
 
 /* ==========================================================================
-   12. FACET BAR — the engine made visible
+   10. FACET BAR / PAGER — the engine made visible
    ========================================================================== */
 
 .facets {
@@ -485,8 +593,8 @@
   align-items: center;
   gap: var(--space-2xs) var(--space-s);
   padding-block: var(--space-s);
-  border-top: var(--rule-thin);
-  border-bottom: var(--rule-hair);
+  border-top: var(--edge);
+  border-bottom: var(--hair);
 }
 
 .facet {
@@ -496,136 +604,87 @@
   font-family: var(--font-sans);
   font-size: var(--t-meta);
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink);
+  letter-spacing: 0.05em;
+  color: var(--type);
   padding: 0.45em 0.85em;
-  border: var(--rule-hair);
-  background: var(--paper-pure);
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  border: var(--hair);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
-.facet:hover { border-color: var(--ink); }
-.facet[aria-pressed='true'] { background: var(--ink); color: var(--ink-invert); border-color: var(--ink); }
-.facet__count { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-.facet[aria-pressed='true'] .facet__count { color: var(--ink-invert); opacity: 0.6; }
+.facet:hover { border-color: var(--type); }
+.facet[aria-pressed='true'] { background: var(--ink); color: var(--invert); border-color: var(--ink); }
+.facet__count { color: var(--faint); font-variant-numeric: tabular-nums; }
+.facet[aria-pressed='true'] .facet__count { color: var(--invert); opacity: 0.6; }
 
 .facets__result {
   margin-left: auto;
   font-family: var(--font-sans);
   font-size: var(--t-micro);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--track-micro);
   text-transform: uppercase;
-  color: var(--ink-mute);
+  color: var(--mute);
 }
 
 /* ==========================================================================
-   13. GUIDE CARD — the recirculation unit
-   ========================================================================== */
-
-.guide {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 16rem;
-  padding: var(--space-m);
-  background: var(--ink);
-  color: var(--ink-invert);
-  overflow: hidden;
-  isolation: isolate;
-}
-
-.guide__img {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  opacity: 0.62;
-  z-index: -2;
-  transition: opacity var(--dur) var(--ease), transform 600ms var(--ease);
-}
-
-/* Scrim. Photographs vary wildly in luminance; without a guaranteed dark
-   floor under the type, white text on a bright hero drops below 4.5:1. */
-.guide::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(to top, rgba(12, 11, 10, 0.88) 0%, rgba(12, 11, 10, 0.45) 45%, rgba(12, 11, 10, 0.12) 100%);
-}
-
-.guide:hover .guide__img { opacity: 0.5; transform: scale(1.03); }
-
-/* Colour is set explicitly: .display carries --ink, which is invisible here. */
-.guide__count {
-  font-family: var(--font-display);
-  font-size: 3rem;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--ink-invert);
-}
-
-.guide__title {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 400;
-  line-height: 1.2;
-  margin-top: var(--space-2xs);
-}
-
-/* ==========================================================================
-   14. PLACE PROFILE
+   11. PLACE PROFILE
    ========================================================================== */
 
 .place-head { display: grid; gap: var(--gutter); padding-block: var(--space-xl); }
 @media (min-width: 62rem) { .place-head { grid-template-columns: 1.2fr 1fr; align-items: end; } }
-
 .place-head__title { font-size: var(--t-display); }
 
-.place-facts { border-top: var(--rule-thin); }
-.place-facts__row { display: grid; grid-template-columns: 8rem 1fr; gap: var(--space-s); padding-block: var(--space-xs); border-bottom: var(--rule-hair); }
-.place-facts__key { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-mute); }
-.place-facts__val { font-size: var(--t-small); color: var(--ink); }
-
-.price { font-family: var(--font-sans); font-weight: 500; letter-spacing: 0.05em; }
-.price__off { color: var(--ink-faint); }
+.place-facts { border-top: var(--edge); }
+.place-facts__row { display: grid; grid-template-columns: 8rem 1fr; gap: var(--space-s); padding-block: var(--space-xs); border-bottom: var(--hair); }
+.place-facts__key { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--mute); }
+.place-facts__val { font-size: var(--t-small); color: var(--type); }
 
 /* ==========================================================================
-   15. NEWSLETTER
+   12. NEWSLETTER / SUBSCRIBE FOOT
    ========================================================================== */
 
-.signup { border: var(--rule-thin); padding: var(--space-l); background: var(--paper-deep); }
-.signup__title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; color: var(--ink); line-height: 1.15; }
-.signup__form { display: flex; gap: var(--space-2xs); margin-top: var(--space-m); }
-.signup__input { flex: 1; min-width: 0; border: 1px solid var(--ink); background: var(--paper-pure); padding: 0.7em 0.8em; font-size: var(--t-small); }
-.signup__input::placeholder { color: var(--ink-faint); }
-.signup__btn { background: var(--ink); color: var(--ink-invert); padding: 0.7em 1.1em; font-family: var(--font-sans); font-size: var(--t-meta); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; transition: background var(--dur) var(--ease); }
+.signup { border-top: var(--edge); padding-top: var(--space-l); }
+.signup__title { font-family: var(--font-display); font-weight: 300; font-size: var(--t-headline); color: var(--type); line-height: 1.1; margin-top: var(--space-2xs); }
+.signup__form { display: flex; gap: var(--space-2xs); margin-top: var(--space-m); max-width: 30rem; }
+.signup__input { flex: 1; min-width: 0; border: var(--edge); background: var(--paper); padding: 0.7em 0.8em; font-size: var(--t-small); }
+.signup__input::placeholder { color: var(--faint); }
+.signup__btn { background: var(--ink); color: var(--invert); padding: 0.7em 1.1em; font-family: var(--font-sans); font-size: var(--t-meta); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; transition: background var(--dur) var(--ease); }
 .signup__btn:hover { background: var(--red); }
 
+/* On `--ink` (the article-page rail is `--paper`, but a future ink use of
+   this component should not need its own override). */
+.band--ink .signup { border-top-color: var(--invert); }
+.band--ink .signup__title { color: var(--invert); }
+
 /* ==========================================================================
-   16. FOOTER
+   13. FOOTER
    ========================================================================== */
 
-.footer { border-top: var(--rule-heavy); margin-top: var(--space-2xl); padding-block: var(--space-xl) var(--space-l); }
+.footer { border-top: var(--edge); margin-top: var(--space-2xl); padding-block: var(--space-xl) var(--space-l); }
 .footer__cols { display: grid; gap: var(--space-l) var(--gutter); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
-.footer__head { font-family: var(--font-sans); font-size: var(--t-micro); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); margin-bottom: var(--space-s); }
+.footer__head { font-family: var(--font-label); font-size: var(--t-meta); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--type); margin-bottom: var(--space-s); }
 .footer__list li + li { margin-top: var(--space-2xs); }
-.footer__list a { font-size: var(--t-small); color: var(--ink-mute); }
+.footer__list a { font-size: var(--t-small); color: var(--mute); }
 .footer__list a:hover { color: var(--red); }
-.footer__base { display: flex; flex-wrap: wrap; gap: var(--space-s) var(--space-m); justify-content: space-between; margin-top: var(--space-xl); padding-top: var(--space-s); border-top: var(--rule-hair); font-size: var(--t-micro); color: var(--ink-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.footer__base { display: flex; flex-wrap: wrap; gap: var(--space-s) var(--space-m); justify-content: space-between; margin-top: var(--space-xl); padding-top: var(--space-s); border-top: var(--hair); font-size: var(--t-micro); color: var(--faint); letter-spacing: var(--track-micro); text-transform: uppercase; }
 
 /* ==========================================================================
-   17. SPECIMEN (design-system page only)
+   14. SPECIMEN + STATE PILL (design-system reference page only)
    ========================================================================== */
 
-.specimen { border-top: var(--rule-hair); padding-block: var(--space-m); }
-.specimen__label { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: var(--space-xs); }
+.specimen { border-top: var(--hair); padding-block: var(--space-m); }
+.specimen__label { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: var(--track-micro); text-transform: uppercase; color: var(--red); margin-bottom: var(--space-xs); }
 .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--space-s); }
-.swatch__chip { height: 4.5rem; border: var(--rule-hair); }
-.swatch__name { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; margin-top: var(--space-2xs); color: var(--ink); }
-.swatch__hex { font-family: var(--font-sans); font-size: var(--t-micro); color: var(--ink-faint); }
+.swatch__chip { height: 4.5rem; border: var(--hair); }
+.swatch__name { font-family: var(--font-sans); font-size: var(--t-micro); letter-spacing: 0.04em; text-transform: uppercase; margin-top: var(--space-2xs); color: var(--type); }
+.swatch__hex { font-family: var(--font-sans); font-size: var(--t-micro); color: var(--faint); }
+
+/* Status as form (DESIGN-SYSTEM §5) — shown on /design for the shared
+   vocabulary's sake even though the admin console (out of scope here) is
+   what actually renders these day to day. */
+.pill { display: inline-flex; align-items: center; padding: 0.3em 0.7em; font-family: var(--font-sans); font-size: var(--t-micro); font-weight: 600; letter-spacing: var(--track-micro); text-transform: uppercase; }
+.pill--ok { background: var(--ok); color: var(--paper); }
+.pill--draft { background: var(--hair); color: var(--body); border: var(--hair); }
+.pill--scheduled { background: var(--gold); color: var(--paper); }
 
 /* --- Preference chips (E8.4) ---------------------------------------------
    Real checkboxes and radios, styled. The input stays in the accessibility
@@ -635,52 +694,22 @@
 .chip { display: inline-flex; cursor: pointer; }
 .chip__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .chip__label {
-  display: inline-block; border: var(--rule-hair); padding: 0.5em 0.9em;
-  font-family: var(--font-sans); font-size: var(--t-meta); color: var(--ink);
+  display: inline-block; border: var(--hair); padding: 0.5em 0.9em;
+  font-family: var(--font-sans); font-size: var(--t-meta); color: var(--type);
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.chip:hover .chip__label { border-color: var(--ink); }
-.chip__input:checked + .chip__label { background: var(--ink); color: var(--ink-invert); border-color: var(--ink); }
+.chip:hover .chip__label { border-color: var(--type); }
+.chip__input:checked + .chip__label { background: var(--ink); color: var(--invert); border-color: var(--ink); }
 /* Focus lands on the visually hidden input, so the ring has to be drawn on
    the label or keyboard users cannot see where they are. */
 .chip__input:focus-visible + .chip__label { outline: 2px solid var(--red); outline-offset: 2px; }
 
 /* ---------------------------------------------------------------- preview
    The bar an editor sees on a story that is not the published one (S4).
-
    Deliberately the loudest thing on the site: brand red, reversed out, above
-   everything. Every other use of red here is "earned, not a button colour" —
-   this is the one place that rule gives way, because the failure it prevents
-   is an editor mistaking a draft for the live page. Sticky rather than fixed
-   so it cannot cover the headline it sits above. */
-.preview-bar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: var(--red);
-  color: var(--ink-invert);
-  font-family: var(--font-sans);
-  font-size: var(--t-small);
-  padding-block: var(--space-2xs);
-}
-
-.preview-bar__inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-2xs) var(--space-s);
-}
-
-.preview-bar strong {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: var(--t-meta);
-}
-
-.preview-bar__exit {
-  margin-left: auto;
-  color: var(--ink-invert);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  white-space: nowrap;
-}
+   everything. Sticky rather than fixed so it cannot cover the headline it
+   sits above. */
+.preview-bar { position: sticky; top: 0; z-index: 50; background: var(--red); color: var(--paper); font-family: var(--font-sans); font-size: var(--t-small); padding-block: var(--space-2xs); }
+.preview-bar__inner { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-s); }
+.preview-bar strong { text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--t-meta); }
+.preview-bar__exit { margin-left: auto; color: var(--paper); text-decoration: underline; text-underline-offset: 0.2em; white-space: nowrap; }

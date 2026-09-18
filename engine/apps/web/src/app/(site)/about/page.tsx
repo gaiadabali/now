@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { archiveStats } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
 import { formatCount } from '@/lib/format'
@@ -76,7 +76,7 @@ export default async function AboutPage() {
       ) : null}
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="What we do" />
+        <BandHead title="What we do" />
         <div className="prose" style={{ maxWidth: '62ch' }}>
           <p>
             We cover where to eat, drink, stay and spend time — written by people who live here,
@@ -96,7 +96,7 @@ export default async function AboutPage() {
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="How we handle commercial work" />
+        <BandHead title="How we handle commercial work" />
         <div className="prose" style={{ maxWidth: '62ch' }}>
           <p>
             Some of what we publish is paid for. When it is, it carries a{' '}
@@ -116,7 +116,7 @@ export default async function AboutPage() {
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="Corrections" />
+        <BandHead title="Corrections" />
         <div className="prose" style={{ maxWidth: '62ch' }}>
           <p>
             If something here is wrong — a price, an address, an opening time, a name — tell us and

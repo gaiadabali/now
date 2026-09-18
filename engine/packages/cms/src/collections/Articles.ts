@@ -185,7 +185,21 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
                 name: 'title',
                 type: 'text',
                 required: true,
-                admin: { description: 'The headline, as a reader sees it.' },
+                admin: {
+                  description: 'The headline, as a reader sees it.',
+                  // "The one idea worth protecting" (docs/DESIGN-SYSTEM.md
+                  // §5): set in Cormorant 300 at `--t-display`, the same face
+                  // and size a reader meets it in, on a `--hair` rule with no
+                  // box — see `.now-field--headline` in styles/admin.css.
+                  // A `className`, not a custom `Field` component: Payload
+                  // merges `admin.className` onto the field's own wrapper for
+                  // every field type (confirmed against
+                  // `@payloadcms/ui/dist/fields/Text/Input.js`), so this reads
+                  // the stock text field and its autosave/validation exactly
+                  // as before — no new entry in the generated import map, no
+                  // F143 exposure, for a change that is purely visual.
+                  className: 'now-field--headline',
+                },
               },
               // Directly under the headline, because that is where it comes
               // from and where every other editor puts it. `legacyPermalink`
@@ -203,6 +217,9 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
                   description:
                     'The sentence under the headline that makes someone read on. Around 1,800 ' +
                     'imported articles have none — worth writing one while you are in here.',
+                  // Italic Cormorant `--t-lede`, in a bordered field (§5) —
+                  // the standfirst voice §1 reserves italics for.
+                  className: 'now-field--standfirst',
                 },
               },
               {
