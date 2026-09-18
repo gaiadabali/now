@@ -347,17 +347,55 @@ That is the shape to fear. An immediate break is at least self-announcing.
 This one waits for an unrelated change to expose it, and surfaces in front of
 whoever is least equipped to recognise it.
 
-**So, before any rollout: does this range of commits add an Alembic
-revision?**
+**So, before any rollout: does this range of commits add a migration?**
+
+There are **two** migration systems and this check has to cover both.
+ARCHITECTURE.md §2 splits them deliberately — Alembic owns `engine`, Payload
+owns `public` — and until 2026-09-18 the command below looked only for
+Alembic. A Payload migration lives in `engine/packages/cms/src/migrations/`
+and matches neither `migrations/versions/` nor anything else that grep was
+looking for, so the check would have reported "no migrations" on a change
+that adds a column the new code reads on every article page.
 
 ```bash
+# Alembic — engine schema, both city DBs and the platform DB
 git diff --name-only <deployed-sha>..<new-sha> -- '*/migrations/versions/*'
+
+# Payload — public schema, per city. NOT covered by the line above.
+git diff --name-only <deployed-sha>..<new-sha> -- 'engine/packages/cms/src/migrations/*'
 ```
 
-If it prints anything, the migration is applied deliberately, by hand, before
-the images that need it go out — and `--rollback` does not undo it, which is
-its own reason to apply it as a separate, considered act rather than as part
-of a rollout.
+If either prints anything, the migration is applied deliberately, by hand,
+before the images that need it go out — and `--rollback` does not undo it,
+which is its own reason to apply it as a separate, considered act rather than
+as part of a rollout.
+
+**Payload migrations cannot be applied by the deployed image.** The runner
+stage is a standalone build with no `tsconfig.json` and no payload module, so
+each one ships a SQL twin beside it for `psql` to take. For
+`20260918_090000_articles_slug`:
+
+```bash
+# per city, BEFORE the image that reads articles.slug rolls
+docker cp articles-slug.sql now-postgres:/tmp/
+docker exec now-postgres psql -U now -d now_jakarta -v ON_ERROR_STOP=1 -f /tmp/articles-slug.sql
+docker exec now-postgres psql -U now -d now_bali    -v ON_ERROR_STOP=1 -f /tmp/articles-slug.sql
+```
+
+It is additive and transactional, and the currently deployed build does not
+know the column exists — so applying it ahead of the rollout is invisible to
+readers. The reverse order is an outage that `/healthz` will not show: the new
+code reads `articles.slug`, and against a database without it every article
+page returns 500 while the health probe stays green.
+
+Take a dump first regardless. The only ones on the box were from the initial
+seed on 2026-09-15, which is not a safety net for editorial work done since:
+
+```bash
+mkdir -p /root/.now-deploy/pre-<change>
+docker exec now-postgres pg_dump -U now -Fc now_jakarta > /root/.now-deploy/pre-<change>/now_jakarta.dump
+docker exec now-postgres pg_dump -U now -Fc now_bali    > /root/.now-deploy/pre-<change>/now_bali.dump
+```
 
 ### Verify the environment inside the container, never in `.env`
 

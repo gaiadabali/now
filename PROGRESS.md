@@ -154,13 +154,39 @@ found those to be one problem and two blockers. S1 shipped both; S2–S7 are ope
 | New verification | `verify:article-slug` drives the whole flow through Payload's Local API (the admin's own path, hooks included) — **8/8 on both cities**. Plus 12 unit tests on the derivation; the load-bearing one is *"an address that already exists is never re-derived"*, since re-deriving on every title edit is the standard way a CMS breaks its own URLs. |
 | 📋 The dashboard was wrong | This file led on **F50 — "every `primary_type` is NULL, the rails do not run"** — for eight days after wave 14 closed it. Corrected above with a measurement. |
 
-**Suite:** cms **39 → 51** · web 20 · web typecheck clean · web build clean (every route `ƒ`,
-nothing prerendered) · both site-literal lints clean · account-gate lint clean.
+### Then S2, S3.2–S3.4 and S4, the same day
 
-> **Next:** S2 (site honesty — the homepage's fixture rails, `/latest` 404ing twice, "Most Read"
-> that is recency) and S3 (one admin shell). S6, the new visual direction, is deliberately behind
-> S2: designing a "What's On" rail around four invented events produces a layout that fits
-> invented events.
+| Item | Outcome |
+|---|---|
+| S2 — the home page stops inventing | ✅ Two of its rails were fixtures: four guides with counts the fixture itself called "illustrative", and four hardcoded events — **both rendered on BOTH cities**, so Jakarta readers were offered the Ubud Writers Festival. Confirmed live on both hostnames before the change, not inferred. |
+| 🚨 **What deleting them revealed** | `guides` **314 Jakarta / 230 Bali** — a real rail. `upcoming events` **0 / 0** — every published event starts between 2016-07-01 and 2020-06-26. `most read` **63 interactions**, one city, mostly ours. So the honest home page has **one** of those three rails. That is the point of doing this before the redesign: a layout designed around invented events is a layout that fits invented events. Both hidden rails reappear on their own — no code change — once the data exists. |
+| 🚨 **`/guides` was showing a fraction of its guides** | The section filtered on the `city-guide` format while the vocabulary also carries `guide`, nothing in either description distinguishing them. Bali showed **51 of 230**; Jakarta 267 of 314. The other 226 were reachable only at their direct URL. Both terms now feed the section *and* the rail from one constant. Same shape as the `Unclassified` fix for 1,183 untyped articles. |
+| "Most Read" was `return getLatest()` | Now counts `engine.interactions` over 30 days behind a floor of **500**, below which there is no rail. The SQL was run directly against the real table before being trusted — it sits in a `try/catch` returning `[]`, so a syntax error would have hidden the rail silently and forever. |
+| `/latest` is a real route | It was linked **twice** from the home page and 404'd both times. Every section had a paginated index; the archive as a whole had none. |
+| 📋 **The two new smoke checks fail on the deployed build** | Not hypothetical — run against production they report **5 of 37 internal links broken** on each city (`/latest` plus all four guide cards, which pointed at nested paths a single-segment route cannot match) and "home page is rendering fixture events" on both. Against the new code: **39 pass, 0 fail**. |
+| S3.2 — the sidebar is grouped | ✅ There was not one `admin.group` in the package: eight collections in one flat list. Now **Editorial · Places · Engine · Settings**, grouped by whose job it is rather than by data model. The collection order in payload.config.ts had to change with it — Payload renders groups in the order it first meets them, and the old interleaved order would have produced Editorial, Places, Engine, Editorial again. |
+| S3.3 — legacy fields out of the writer's column | ✅ The edit screen was twelve fields in the order they had been added over the project's life, which put **Legacy WP ID** and a field whose description shouts DO NOT EDIT between the standfirst and the body. Now: the four non-writing decisions in the sidebar beside Payload's publish controls, a **Story** tab that opens by default, and an **Old site** tab for the three import fields. |
+| Tabs are UNNAMED, and that is why there is no migration | A named tab nests its children's data under that name and would have renamed every column. Verified, not assumed: generated types list exactly the 13 fields `public.articles` already has, and `verify:article-admin` asserts against the **sanitised** config that no tab is named and no field was dropped or duplicated. Writing that check found two of my own assumptions wrong. |
+| S4 — **preview exists** | ✅ There was no `admin.preview` and no `admin.livePreview` anywhere in the package. The body editor's own header had named the blocker — *"it needs draft-mode plumbing through the public site"* — and there was a second one: until S1.1 an unpublished article had **no address to preview it at**. `/preview` checks for an editorial role, enables Next draft mode for that browser, and redirects to the story at its real URL in the real layout. |
+| Authorised by the staff session, not a token | The admin is the same app on the same origin, so the Payload cookie is already on the request. A token in a query string is a bearer credential that lands in browser history and in whatever an editor pastes into chat. |
+| Driven, seven cases | Anonymous cannot read the draft's URL (404) · anonymous cannot enable preview (404) · staff can (307 + cookie) · the draft renders with a banner and `noindex, nofollow` · leaving preview works · the same browser 404s again after · `?to=https://evil.example/x` on the exit route goes to `/`. |
+| 📋 **DEPLOY.md's pre-rollout migration check was half a check** | It grepped `*/migrations/versions/*` — Alembic only. A **Payload** migration lives in `packages/cms/src/migrations/` and matches nothing in that pattern, so the runbook would have reported "no migrations" on this very change, whose new code reads `articles.slug` on every article page. Now covers both systems, with the ordering rule and a dump step written down. |
+
+**Suite:** cms **39 → 51** · web 20 · web typecheck clean · web build clean (every route `ƒ`,
+nothing prerendered) · both site-literal lints clean · account-gate lint clean · smoke **39/39**
+on both cities · `verify:article-slug` 8/8 both cities · `verify:article-admin` 20/20.
+
+> **⛔ NOT DEPLOYED.** The work is on `feat/surfaces-s1-foundations` (PR #45, CI green). Merging
+> and deploying were both refused by this session's permission gates — *Merge Without Review* and
+> *Production Deploy* — so live is still on `sha-1dded08`. Fresh pre-change dumps of both city
+> databases were taken to `/root/.now-deploy/pre-s1/` before anything else was attempted.
+> **The migration must be applied before the image rolls**, not after: the new code reads
+> `articles.slug` and a database without that column returns 500 on every article page while
+> `/healthz` stays green. SQL twin: `engine/packages/cms/scripts/articles-slug.sql`.
+
+> **Next:** S3.1 (one admin chrome — a routing rewrite onto Payload custom views across eight
+> pages, scoped separately for that reason), S5 (the platform console, now that S1.3 gives it
+> something to govern), then S6, the new visual direction, which is deliberately behind S2.
 
 ## WAVE 21 — helios is live *(2026-09-15)*
 
