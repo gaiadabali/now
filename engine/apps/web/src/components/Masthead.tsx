@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import type { SignedInReader } from '@/lib/reader'
 import type { SiteConfig } from '@/lib/site'
 
 /**
@@ -13,8 +14,9 @@ import type { SiteConfig } from '@/lib/site'
  * verify, sign in, reset, preferences, the dashboard — shipped complete and
  * tested, and there was not one link to any of it anywhere on the site, in
  * the masthead or the footer. A reader could only reach it by typing the URL.
- * `Sign in` and `Subscribe` now sit in the utility row, which is the whole
- * fix.
+ * `Sign in` and `Subscribe` now sit in the utility row, and a signed-in
+ * reader sees their own name there instead, linking to `/account` — the two
+ * are the same slot in two states, not two different features.
  *
  * **It never said this was a magazine.** The edition line under the wordmark
  * is one span of Bebas in the only use of `--gold` on the site, and it is
@@ -38,12 +40,37 @@ export function Masthead({
   site,
   today,
   edition,
+  reader,
+  accountsEnabled = false,
 }: {
   site: SiteConfig
   today: string
   /** e.g. "The September Edition · No. 214". Omitted until the editions
    *  surface exists, rather than printed with an invented number. */
   edition?: string
+  /**
+   * Fetched by the layout with `currentReader()` (lib/reader.ts), not here —
+   * Masthead stays a plain render of whatever it is handed, matching every
+   * other prop on this component, rather than becoming the one piece of
+   * chrome that also owns a database read.
+   */
+  reader?: SignedInReader | null
+  /**
+   * Whether `/account/*` will serve at all — `accountsEnabled()` in
+   * lib/reader.ts, which is false whenever no mail transport is configured.
+   *
+   * It has to be a prop rather than a call here because the account slot is
+   * the one piece of chrome that can point at a route which legitimately does
+   * not exist. Accounts FAIL CLOSED without SMTP (F141: `/account/*` once
+   * shipped to production with no mail and registration succeeded *wrongly*),
+   * so on a deployment without a transport every `/account/**` route 404s —
+   * and a masthead that links to sign-in anyway puts a broken link on every
+   * page of the site. Caught by `scripts/smoke.sh`'s link crawl against the
+   * production artifact, which reported "1 of 58 internal links are broken",
+   * and not by any typecheck, because a `<Link>` to a missing route is only
+   * wrong at click time.
+   */
+  accountsEnabled?: boolean
 }) {
   return (
     <header className="masthead">
@@ -53,12 +80,22 @@ export function Masthead({
           <nav className="masthead__actions" aria-label="Utility">
             <Link href="/search">Search</Link>
             <Link href="/subscribe">Newsletter</Link>
-            {/* Both of these are new, and the first one is the one that
-                matters: it is the only entrance to an account system that has
-                been complete and unreachable. */}
-            <Link className="masthead__signin" href="/account/login">
-              Sign in
-            </Link>
+            {/* The entrance to an account system that has been complete and
+                unreachable. Signed in, the slot shows the reader's own name
+                rather than "Sign in" a second time — the name IS the proof
+                they are in, and a reader who is already signed in has no use
+                for a link that would just sign them in again. */}
+            {accountsEnabled ? (
+              reader ? (
+                <Link className="masthead__reader" href="/account">
+                  {reader.name ?? 'Account'}
+                </Link>
+              ) : (
+                <Link className="masthead__signin" href="/account/login">
+                  Sign in
+                </Link>
+              )
+            ) : null}
             <Link className="masthead__subscribe" href="/subscribe">
               Subscribe
             </Link>

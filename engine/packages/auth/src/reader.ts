@@ -31,6 +31,12 @@ export type ReaderRecord = {
   loginAttempts: number
   lockUntil: Date | null
   status: ReaderStatus
+  /**
+   * When they joined. Nullable because a store is not obliged to supply it —
+   * the in-memory test store does not — and because nothing here should fail
+   * for want of a date that is only ever used to greet someone.
+   */
+  createdAt: Date | null
 }
 
 export type EmailTokenKind = 'verify_email' | 'reset_password'

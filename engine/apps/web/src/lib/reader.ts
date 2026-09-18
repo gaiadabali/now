@@ -145,6 +145,8 @@ export type SignedInReader = {
   email: string
   name: string | null
   emailVerified: boolean
+  /** When they joined. Null when the store does not supply it. */
+  joinedAt: Date | null
 }
 
 /**
@@ -179,6 +181,7 @@ export async function currentReader(): Promise<SignedInReader | null> {
     email: record.email,
     name: record.name,
     emailVerified: record.emailVerifiedAt !== null,
+    joinedAt: record.createdAt,
   }
 }
 
