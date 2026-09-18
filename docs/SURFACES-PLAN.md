@@ -1,9 +1,11 @@
 # The three surfaces — consolidation and plan
 
 **Status:** plan agreed 2026-09-18. Shipped the same day: **S1** (foundations),
-**S2** (site honesty), **S3.2–S3.4** (admin grouping, article tabs, wording) and
-**S4.1–S4.2** (preview). Open: **S3.1** (one admin chrome), **S4.3**,
-**S5** (platform console), **S6** (visual direction), **S7** (engine wiring).
+**S2** (site honesty), **S3** in full (one admin chrome, grouping, article tabs,
+wording), **S4.1–S4.2** (preview) and **S5.1** (the sites registry console).
+Open: **S4.3**, **S5.2–S5.5**, **S6** (visual direction), **S7** (engine wiring).
+
+Nothing is deployed. See §7.
 **Companion to:** [ARCHITECTURE.md](../ARCHITECTURE.md) (decisions),
 [PROGRESS.md](../PROGRESS.md) (execution state),
 [ADMIN-CONSOLIDATION.md](ADMIN-CONSOLIDATION.md) (how six hostnames became two).
@@ -381,7 +383,7 @@ Against this branch: **39 pass, 0 fail**, both cities.
 | S3.2 | `admin.group` on every collection: **Editorial** (Articles, Events, Media, Authors) · **Places** · **Engine** (Classification reviews, Place mentions) · **Settings** (Users). | The sidebar is grouped; a writer's four collections are together and first. | ✅ |
 | S3.3 | `articles` into tabs — **Story** · **Old site** — with the date, type, format and kind in the sidebar. | A writer's default screen contains no legacy or engine field. Nothing removed, only moved. | ✅ |
 | S3.4 | Editorial wording pass on the collections a writer opens. | Plain language on every label a writer sees. | ✅ |
-| S3.1 | One chrome for all of `/team-editor` — classification, commerce, staff and the platform area become sections **inside** Payload's nav rather than mastheads that replace it; `report.css` + `console.css` + `staff.css` fold into one sheet. | Every admin screen has the same sidebar and the same way home. | ⬜ |
+| S3.1 | One chrome for all of `/team-editor` — classification, commerce, staff and the platform area become sections **inside** Payload's nav rather than mastheads that replace it; `report.css` + `console.css` + `staff.css` (+ `platform.css`) fold into one sheet. | Every admin screen has the same sidebar and the same way home. | ✅ |
 
 **S3.3, stated as the defect it fixed.** The editing screen was one flat
 column of twelve fields in the order they had been added over the project's
@@ -399,17 +401,40 @@ duplicated. Writing that check found two of my own assumptions wrong, which is
 the argument for running it against the real config rather than a hand-built
 one.
 
-**Why S3.1 is separately scoped and not simply deferred.** Doing it properly
-means registering the three bespoke route trees as Payload **custom views**
-(`admin.components.views`), which is the supported mechanism and the only one
-that gets Payload's real sidebar rather than a copy of it: Payload's catch-all
-builds `initPageResult` — req, user, permissions, i18n, `visibleEntities` —
-and renders the view inside `DefaultTemplate`. Confirmed available in 3.88, and
-views receive `params` and `searchParams`, so the conversion is feasible. But
-it is a routing rewrite across eight pages with nested dynamic segments and
-server actions, and this plan's own risk note applies: *"the change most likely
-to break a screen nobody opens often."* It deserves its own change and its own
-driving, not a corner of a larger one.
+**S3.1, and the thing nobody had written down.** The three bespoke chromes
+were not a styling accident. classification, commerce and staff were literal
+Next routes under `(payload)/team-editor/**`, and Next resolves a literal route
+before a catch-all at the same level — so each of them **shadowed Payload's own
+router**. That is why they needed their own mastheads, why the three
+stylesheets existed at all, and why the only way between them was an `editor`
+badge in a corner. They are now Payload custom views, so Payload's catch-all is
+the admin's one and only router, and the route table collapses from nine
+literal routes to a single `/team-editor/[[...segments]]`.
+
+Two findings worth keeping, because both cost real time to discover:
+
+- **A custom view gets no sidebar unless it renders one itself.** This document
+  previously said the mechanism was "confirmed available in 3.88" and stopped
+  there, which was true and incomplete. `AdminViewConfig` has no template
+  field, and Payload only assigns `templateType` for its own **built-in** view
+  names; anything reaching a view through the generic fallback — which is all
+  four of ours — renders as bare content. It was found by driving the
+  acceptance criterion rather than trusting a 200: curl returned the right
+  heading, the right data, and a `template-default` string that turned out to
+  be RSC flight data, while the DOM had no `<aside class="nav">` at all.
+  Deleting the mastheads had replaced them with nothing.
+  `AdminViewFrame.tsx` wraps each view in Payload's own `DefaultTemplate`.
+- **Component paths are `@/…` bare specifiers.** A path starting with neither
+  `.` nor `/` is written verbatim into the generated import map — and that file
+  lives in the *app*, so it resolves through the app's own `@/*` alias. That is
+  what lets `payload.config.ts` hold only a string while the app keeps owning
+  the components and their `@/lib/auth` imports, so `packages/cms` still never
+  imports app code and the city-DB/platform-DB boundary stays intact.
+
+One registration per area, not one per screen: `admin.components.views` matches
+by pattern and takes the **first** match in object order, with no "literal
+beats dynamic" rule of the sort Next's file router has. Four registrations
+would have baked an ordering hazard into a config file permanently.
 
 ### S4 — preview — ✅ **SHIPPED 2026-09-18** *(S4.1 and S4.2; one follow-up)*
 
@@ -441,11 +466,11 @@ path `npm ci` takes in the image build. Autosave at 1.5s already refreshes the
 iframe within a second or two, so the gap is small and the risk was not worth
 taking inside a larger change.
 
-### S5 — the platform console *(depends on S1.3)*
+### S5 — the platform console — **S5.1 shipped 2026-09-18 · S5.2–S5.5 open**
 
-| # | Ticket | Acceptance |
-|---|---|---|
-| S5.1 | **Sites registry editing** at `/team-editor/platform/sites` — nav, brand tokens, home rails, ranking weights. | Changing a nav item in the console changes the reader masthead. This is the connectability the owner asked for, and it is first because it is the screen that proves the spine. |
+| # | Ticket | Acceptance | |
+|---|---|---|---|
+| S5.1 | **Sites registry editing** at `/team-editor/platform/sites` — nav, brand tokens, home rails, ranking weights. | Changing a nav item in the console changes the reader masthead. This is the connectability the owner asked for, and it is first because it is the screen that proves the spine. | ✅ |
 | S5.2 | **Partnership write path** (§11's one screen) — org, tier, status, contract dates, linked mention count. `partnership_audit` records the actor. | A partnership is created and edited in the UI; the audit row names who did it; `now_link_resolver` picks it up on the request path. |
 | S5.3 | **Blast radius before commit** — "this affects 40 articles across 3 venues". | Shown on save, computed, and dismissible only by confirming. |
 | S5.4 | **Cross-city** — one article's distribution across both cities via `engine.syndications`; a move that bridges through `now_platform` and never city-to-city. | A Jakarta article appears in Bali by an approved bridge, with the origin still authoritative. |
@@ -575,3 +600,65 @@ is read-only, so a bug in `requireCommerceAccess()` leaks partner terms. The
 moment S5.2 writes, the same bug edits them, from a city admin session, on a
 public hostname. The tests are the deliverable there, as they were in
 ADMIN-CONSOLIDATION Phase 1.
+
+---
+
+## 7. Nothing here is deployed, and what it takes to change that
+
+Every ticket above is on `feat/surfaces-s1-foundations` (PR #45, CI green).
+**Live is still `sha-1dded08`** — the commit before any of this. Two steps
+were refused by the working session's own permission gates and neither was
+worked around:
+
+| Step | Gate |
+|---|---|
+| `gh pr merge 45` | *Merge Without Review* |
+| Applying the Payload migration to production | *Production Deploy* |
+
+Delegating to subagents does not move this: they run under the same
+permissions.
+
+**The order is not negotiable, and only one direction is safe.** The new code
+reads `articles.slug`. Against a database without that column every article
+page returns 500 while `/healthz` stays green — the exact shape of failure
+[DEPLOY.md](DEPLOY.md) spends forty lines warning about. The migration is
+additive and the deployed build does not know the column exists, so applying
+it *ahead* of the rollout is invisible to readers.
+
+```bash
+gh pr merge 45 --squash --delete-branch          # then wait for publish-images
+
+# on helios, BEFORE the image rolls
+docker cp articles-slug.sql now-postgres:/tmp/
+docker exec now-postgres psql -U now -d now_jakarta -v ON_ERROR_STOP=1 -f /tmp/articles-slug.sql
+docker exec now-postgres psql -U now -d now_bali    -v ON_ERROR_STOP=1 -f /tmp/articles-slug.sql
+
+deploy/deploy.sh <new-sha> && scripts/smoke.sh   # expect 39/39
+```
+
+Pre-change dumps of both city databases are already on the box at
+`/root/.now-deploy/pre-s1/`. They were taken because the only other dumps
+there were from the initial seed on 2026-09-15, which is not a safety net for
+editorial work done since. The SQL twin is
+`engine/packages/cms/scripts/articles-slug.sql`.
+
+### Also found while verifying, and not fixed
+
+- **`npm start` cannot run this app.** `output: 'standalone'` makes
+  `next start` refuse — it prints *"does not work with output: standalone"*
+  and then serves 500s on every route that touches the database, which looks
+  exactly like a broken build. The real artifact runs with
+  `node apps/web/server.js` from `.next/standalone`, and needs `sharp` and
+  `@img` copied in beside it the way the Dockerfile does. The `start` script
+  in `apps/web/package.json` is therefore misleading and cost a false alarm
+  during this wave; worth either fixing or deleting.
+- **The sites registry has no audit trail.** Every write logs the actor's
+  email to stdout and nothing more, so "who changed the nav, and when" is a
+  grep. `partnership_audit` is the precedent for what it should look like;
+  adding one needs an Alembic revision, which is single-threaded and was
+  deliberately out of scope here.
+- **`ranking_weights` is displayed but not editable.** It already holds real
+  content on every site from an earlier wave, so "governed" does not mean
+  "set by this console". No write form, because nothing in `SiteConfig` reads
+  that column yet and a form editing a value nothing consumes is a screen
+  that lies about having an effect.
