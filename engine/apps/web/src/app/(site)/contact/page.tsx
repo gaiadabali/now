@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { getSiteConfig } from '@/lib/site'
 
 /**
@@ -44,7 +44,7 @@ export default async function ContactPage() {
       <section className="band" style={{ paddingTop: 0 }}>
         <div className="split">
           <div>
-            <SectionRule label="The office" />
+            <BandHead title="The office" />
             <div className="place-facts">
               {c.address?.length ? (
                 <div className="place-facts__row">
@@ -106,7 +106,7 @@ export default async function ContactPage() {
           </div>
 
           <div>
-            <SectionRule label="What to send where" />
+            <BandHead title="What to send where" />
             <div className="prose">
               <p>
                 <strong>A correction.</strong> Tell us what is wrong and where you saw it. Prices,

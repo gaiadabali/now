@@ -120,7 +120,7 @@ export default async function SearchPage({
                 const slug = (hit.legacy_permalink ?? '').replace(/^\/+|\/+$/g, '')
                 return (
                   <article key={hit.entity_id}>
-                    <h2 style={{ fontSize: 'var(--t-h3)', marginBottom: 'var(--space-2xs)' }}>
+                    <h2 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-2xs)' }}>
                       {/*
                         Decoded here as well as in the Payload mapper: these
                         hits come from engine-api, not the Local API, so they

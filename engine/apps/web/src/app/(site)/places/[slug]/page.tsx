@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { EntityBeacon } from '@/components/Beacon'
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { activePlaceBySlug } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
 
@@ -70,7 +70,7 @@ export default async function PlacePage({ params }: Params) {
       </div>
 
       <section className="band">
-        <SectionRule label="Our Coverage" note={`Everything ${site.name} has written about ${place.name}`} />
+        <BandHead title="Our Coverage" note={`Everything ${site.name} has written about ${place.name}`} />
         <p className="meta">
           Coverage links appear here once article&nbsp;→&nbsp;venue linking is applied to this
           record.

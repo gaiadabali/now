@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 
 import { EntityBeacon } from '@/components/Beacon'
 import { StoryCard } from '@/components/StoryCard'
-import { SectionRule, Signup } from '@/components/primitives'
+import { Band, BandHead, Signup } from '@/components/primitives'
 import {
   getBySlug,
   getSectionPage,
@@ -202,25 +202,27 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
       </div>
 
       {related.length ? (
-        <section className="shell band" style={{ paddingTop: 0 }}>
-          <SectionRule label="Read Next" note="Chosen by the engine" moreHref={`/${section}`} />
-          <div className="grid grid--3 grid--ruled">
-            {/* The one rail the engine ranks rather than the desk ordering
-                it, so it is the one whose position bias §10 has to correct
-                for — which needs the slot recorded on both the impression
-                and the click, not just the click. */}
-            {related.map((a, i) => (
-              <StoryCard
-                key={a.id}
-                article={a}
-                locale={locale}
-                timeZone={tz}
-                rail="read-next"
-                position={i + 1}
-              />
-            ))}
+        <Band>
+          <div className="shell">
+            <BandHead kicker="Chosen by the engine" title="Read Next" moreHref={`/${section}`} moreLabel="More" />
+            <div className="grid grid--3 grid--ruled">
+              {/* The one rail the engine ranks rather than the desk ordering
+                  it, so it is the one whose position bias §10 has to correct
+                  for — which needs the slot recorded on both the impression
+                  and the click, not just the click. */}
+              {related.map((a, i) => (
+                <StoryCard
+                  key={a.id}
+                  article={a}
+                  locale={locale}
+                  timeZone={tz}
+                  rail="read-next"
+                  position={i + 1}
+                />
+              ))}
+            </div>
           </div>
-        </section>
+        </Band>
       ) : null}
     </article>
   )
@@ -232,6 +234,15 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
 
 const PER_PAGE = 24
 
+/**
+ * The index treatment (DESIGN-SYSTEM §3: "an index, not a feed"), not cards.
+ *
+ * The previous version led with one enlarged card and filled the rest of the
+ * page with `grid--3 grid--ruled` — a card grid, the exact thing §2 singles
+ * out for not being able to hold an archive at any density. A section can
+ * run to 39 pages (dining); the index rows below are what makes that
+ * scrollable rather than a slideshow.
+ */
 async function SectionIndex({
   slug,
   format,
@@ -248,10 +259,6 @@ async function SectionIndex({
   // A page number past the end is a bad URL, not an empty section. Without
   // this, ?page=9999 renders a section that looks like it has no articles.
   if (articles.length === 0 && page > 1) notFound()
-  // The lead treatment only makes sense on the first page; on page 3 the
-  // newest article of that slice is not "leading" anything.
-  const isFirstPage = result.page <= 1
-  const [lead, ...rest] = isFirstPage ? articles : []
 
   // Real counts, faceted on `format`, computed from the database.
   //
@@ -270,8 +277,7 @@ async function SectionIndex({
           {sectionLabel(slug)}
         </h1>
         <p className="dek" style={{ marginTop: 'var(--space-s)' }}>
-          Everything we are watching in {sectionLabel(slug).toLowerCase()} — reviewed, ranked and kept
-          current.
+          Everything we are watching in {sectionLabel(slug).toLowerCase()} — reviewed and kept current.
         </p>
       </header>
 
@@ -296,46 +302,13 @@ async function SectionIndex({
         </span>
       </div>
 
-      {isFirstPage && lead ? (
-        <div className="lead">
-          <div className="lead__body">
-            <span className="kicker kicker--red">Leading</span>
-            <h2 className="lead__headline display display--light" style={{ fontSize: 'var(--t-headline)' }}>
-              <Link href={`/${lead.slug}`}>{lead.title}</Link>
-            </h2>
-            <p className="dek">{lead.dek}</p>
-          </div>
-          <figure className="lead__figure">
-            <Image
-              className="lead__img"
-              src={lead.image}
-              alt=""
-              width={1200}
-              height={900}
-              sizes="(max-width: 62rem) 100vw, 46vw"
-              priority
-              style={{ aspectRatio: '3 / 2' }}
-            />
-          </figure>
-        </div>
-      ) : null}
-
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="More in this section" />
-        <div className="grid grid--3 grid--ruled">
-          {(isFirstPage ? rest : articles).map((a, i) => (
-            <StoryCard
-              key={a.id}
-              article={a}
-              locale={locale}
-              timeZone={tz}
-              partner={isFirstPage && i === 0}
-            />
+        <div className="grid--index">
+          {articles.map((a, i) => (
+            <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={slug} position={i + 1} />
           ))}
         </div>
-        {articles.length === 0 ? (
-          <p className="meta">Nothing in this section yet.</p>
-        ) : null}
+        {articles.length === 0 ? <p className="meta">Nothing in this section yet.</p> : null}
         <Pager slug={slug} format={format} page={result.page} totalPages={result.totalPages} />
       </section>
     </div>

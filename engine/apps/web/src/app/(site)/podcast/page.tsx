@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { getSiteConfig } from '@/lib/site'
 
 /**
@@ -70,7 +70,7 @@ export default async function PodcastPage() {
           </section>
 
           <section className="band" style={{ paddingTop: 0 }}>
-            <SectionRule label="Also worth your time" />
+            <BandHead title="Also worth your time" />
             <p className="dek" style={{ maxWidth: '52ch' }}>
               If you would rather read than listen, the same reporting is in{' '}
               <Link href="/guides" style={{ borderBottom: '1px solid var(--red)' }}>

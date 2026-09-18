@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { subscribe } from '@/lib/newsletter'
 import { archiveStats } from '@/lib/payload'
 import { getSiteConfig } from '@/lib/site'
@@ -82,7 +82,7 @@ export default async function SubscribePage({
             }}
             role="status"
           >
-            <p className="pullquote__text" style={{ fontSize: 'var(--t-card)' }}>
+            <p className="pullquote__text" style={{ fontSize: 'var(--t-title)' }}>
               {status.head}
             </p>
             <p className="meta" style={{ marginTop: 'var(--space-2xs)' }}>
@@ -116,10 +116,10 @@ export default async function SubscribePage({
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="What you get" />
+        <BandHead title="What you get" />
         <div className="grid grid--3 grid--ruled">
           <article>
-            <h3 style={{ fontSize: 'var(--t-card)', marginBottom: 'var(--space-3xs)' }}>
+            <h3 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-3xs)' }}>
               The short list
             </h3>
             <p className="dek">
@@ -128,7 +128,7 @@ export default async function SubscribePage({
             </p>
           </article>
           <article>
-            <h3 style={{ fontSize: 'var(--t-card)', marginBottom: 'var(--space-3xs)' }}>
+            <h3 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-3xs)' }}>
               Openings and closings
             </h3>
             <p className="dek">
@@ -137,7 +137,7 @@ export default async function SubscribePage({
             </p>
           </article>
           <article>
-            <h3 style={{ fontSize: 'var(--t-card)', marginBottom: 'var(--space-3xs)' }}>
+            <h3 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-3xs)' }}>
               From the archive
             </h3>
             <p className="dek">
@@ -150,7 +150,7 @@ export default async function SubscribePage({
       </section>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label="While you wait" />
+        <BandHead title="While you wait" />
         <p className="dek" style={{ maxWidth: '52ch' }}>
           Start with{' '}
           <Link href="/guides" style={{ borderBottom: '1px solid var(--red)' }}>

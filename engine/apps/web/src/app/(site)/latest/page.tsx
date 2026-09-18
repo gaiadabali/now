@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { StoryCard } from '@/components/StoryCard'
-import { SectionRule } from '@/components/primitives'
+import { BandHead } from '@/components/primitives'
 import { getArchivePage } from '@/lib/content'
 import { formatCount } from '@/lib/format'
 import { getSiteConfig } from '@/lib/site'
@@ -66,10 +66,18 @@ export default async function LatestPage({
       </div>
 
       <section className="band" style={{ paddingTop: 0 }}>
-        <SectionRule label={site.name} note="The full archive" />
-        <div className="grid grid--3 grid--ruled">
-          {result.items.map((a) => (
-            <StoryCard key={a.id} article={a} locale={site.locale} timeZone={site.timezone} />
+        <BandHead title="The full archive" />
+        <div className="grid--index">
+          {result.items.map((a, i) => (
+            <StoryCard
+              key={a.id}
+              article={a}
+              variant="row"
+              locale={site.locale}
+              timeZone={site.timezone}
+              rail="archive"
+              position={i + 1}
+            />
           ))}
         </div>
         {result.items.length === 0 ? <p className="meta">Nothing published yet.</p> : null}
