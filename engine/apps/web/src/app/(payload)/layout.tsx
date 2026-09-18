@@ -3,7 +3,7 @@ import type { ServerFunctionClient } from 'payload'
 
 import '@payloadcms/next/css'
 import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
-import { Cormorant, Heebo } from 'next/font/google'
+import { Bebas_Neue, Cormorant, Heebo } from 'next/font/google'
 import React from 'react'
 
 import config from '@payload-config'
@@ -34,6 +34,17 @@ const heebo = Heebo({
   weight: ['400', '500', '700'],
   display: 'swap',
   variable: '--font-heebo',
+})
+
+/* The third face, and not a new one: the live theme already sets every
+   section label in Bebas (`bebas-font` on a `bg-red` block). The rebuild
+   had simply never carried it across, so labels were being set in Heebo
+   capitals and reading as UI rather than as the magazine's own device. */
+const bebas = Bebas_Neue({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'swap',
+  variable: '--font-bebas',
 })
 
 type Args = {
@@ -98,7 +109,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const Layout = ({ children }: Args) => (
   <RootLayout
     config={config}
-    htmlProps={{ className: `${cormorant.variable} ${heebo.variable}` }}
+    htmlProps={{ className: `${cormorant.variable} ${heebo.variable} ${bebas.variable}` }}
     importMap={importMap}
     serverFunction={serverFunction}
   >

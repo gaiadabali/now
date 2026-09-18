@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Cormorant, Heebo } from 'next/font/google'
+import { Bebas_Neue, Cormorant, Heebo } from 'next/font/google'
 
 import { Beacon } from '@/components/Beacon'
 import { Masthead } from '@/components/Masthead'
@@ -25,6 +25,17 @@ const heebo = Heebo({
   weight: ['400', '500', '700'],
   display: 'swap',
   variable: '--font-heebo',
+})
+
+/* The third face, and not a new one: the live theme already sets every
+   section label in Bebas (`bebas-font` on a `bg-red` block). The rebuild
+   had simply never carried it across, so labels were being set in Heebo
+   capitals and reading as UI rather than as the magazine's own device. */
+const bebas = Bebas_Neue({
+  subsets: ['latin'],
+  weight: ['400'],
+  display: 'swap',
+  variable: '--font-bebas',
 })
 
 /**
@@ -78,7 +89,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }).format(new Date())
 
   return (
-    <html lang={site.locale} className={`${cormorant.variable} ${heebo.variable}`}>
+    <html lang={site.locale} className={`${cormorant.variable} ${heebo.variable} ${bebas.variable}`}>
       <body>
         <a className="skip-link" href="#main">
           Skip to content
