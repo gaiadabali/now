@@ -1,16 +1,32 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { getOrg, listPartnerships } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
 import { consoleHref } from '../../paths'
 
-export const dynamic = 'force-dynamic'
-
-export default async function Org({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * FORMERLY `commerce/orgs/[id]/page.tsx` — a literal Next dynamic route, with
+ * its own `commerce/not-found.tsx` for an id that does not resolve. S3.1
+ * folded it into `CommerceView`'s dispatch (`../../CommerceView.tsx`), so `id`
+ * now arrives as a plain string the dispatcher has already read out of
+ * Payload's raw path segments, and the "not found" case is rendered inline
+ * rather than thrown: `commerce/not-found.tsx` was scoped to this one route
+ * and would otherwise be dead code once nothing under `commerce/` is a route
+ * of its own, and its message ("that record does not exist in the platform
+ * database") is specific enough to this case that Payload's generic
+ * catch-all 404 would be a worse answer, not just a differently-styled one.
+ */
+export async function OrgDetailView({ id }: { id: string }) {
   await requireCommerceAccess()
-  const { id } = await params
   const org = await getOrg(id)
-  if (!org) notFound()
+  if (!org) {
+    return (
+      <>
+        <p className="console__sub"><Link href={consoleHref('/orgs')}>← Partners</Link></p>
+        <h1>Not found</h1>
+        <p className="console__sub">That record does not exist in the platform database.</p>
+      </>
+    )
+  }
   const partnerships = await listPartnerships(id)
 
   return (

@@ -6,8 +6,6 @@ import { CONFIDENCE_GATE, getClassificationQueue, getQueueTotals } from '@/lib/c
 import { classifyHref } from './paths'
 import { ConfidenceMeter } from './ConfidenceMeter'
 
-export const dynamic = 'force-dynamic'
-
 /**
  * How many rows one screenful is. No pagination control, deliberately: there
  * are 4,253 articles with something under the gate and nobody works a queue by
@@ -32,14 +30,20 @@ const pct = (n: number): string => `${Math.round(n * 100)}%`
  * mean. A mean lets nine confident `location` tags bury one 0.40 `type` guess,
  * and it is the `type` guess that §8.A's competitor exclusion will treat as
  * fact. The worst thing on the article is what decides its place in the queue.
+ *
+ * FORMERLY `classification/page.tsx`, a literal Next route. S3.1 moved it
+ * behind `ClassificationView`'s dispatch (`./ClassificationView.tsx`), which
+ * is the Payload custom view Payload's catch-all actually renders — see that
+ * file for why. Nothing else about this component changed: it still calls its
+ * own guard before any query, per lib/auth.ts.
  */
-export default async function ClassificationQueue({
+export async function ClassificationListView({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; all?: string }>
+  searchParams: { q?: string; all?: string }
 }) {
   await requireReviewerAccess()
-  const { q, all } = await searchParams
+  const { q, all } = searchParams
   const belowGateOnly = all !== '1'
   const [totals, rows] = await Promise.all([
     getQueueTotals(),

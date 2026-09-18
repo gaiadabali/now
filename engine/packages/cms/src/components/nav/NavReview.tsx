@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@payloadcms/ui'
+import Link from 'next/link'
 
 /**
  * The review desk, in the sidebar — and only for the people who work it.
@@ -10,8 +11,9 @@ import { useAuth } from '@payloadcms/ui'
  * editing rows: the decisions that matter are made against a whole *pattern*
  * ("every article whose WordPress category was News was classified
  * `type = stay` at 41% confidence"), and Payload's list view has no way to
- * express that. These pages are plain Next routes under `(payload)` reading
- * `engine.entity_terms` over SQL, so Payload's nav would never list them.
+ * express that. These are a Payload custom view (`admin.components.views` in
+ * payload.config.ts, S3.1) reading `engine.entity_terms` over SQL rather than
+ * a collection, so Payload's nav would never list them on its own.
  *
  * **Why it is separate from Collections at all.** Hansel's rule: review is
  * not add-and-modify. A writer opening the sidebar should see the things they
@@ -20,7 +22,7 @@ import { useAuth } from '@payloadcms/ui'
  * same kind of work.
  *
  * The role test here is cosmetic, exactly as in `StaffLink` — it hides a link
- * that would redirect anyway. `requireReviewerAccess()` in every page and
+ * that would redirect anyway. `requireReviewerAccess()` in every view and
  * `requireReviewerActor()` in every action are the access control, and
  * `classification-reviews`' own `access` is what finally decides the write.
  */
@@ -41,13 +43,15 @@ export function NavReview() {
       <ul className="now-nav-group__list">
         {LINKS.map((link) => (
           <li key={link.href}>
-            {/* Plain `<a>`, not next/link: these routes fall outside Payload's
-                admin catch-all, so a client-side transition would try to
-                render them inside Payload's shell and find no match. A real
-                navigation is the correct behaviour here, not a fallback. */}
-            <a className="nav__link" href={link.href}>
+            {/* `next/link`, not a plain `<a>`: since S3.1 these routes are a
+                Payload custom view reached through the SAME catch-all every
+                collection link uses, so a client-side transition finds a
+                match rather than a dead end. Before S3.1 these routes
+                shadowed the catch-all as their own literal Next pages, which
+                is exactly why a real navigation used to be the only option. */}
+            <Link className="nav__link" href={link.href}>
               {link.label}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

@@ -3,9 +3,11 @@ import { countOrgs, listCampaigns, listSites } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
 import { consoleHref } from './paths'
 
-export const dynamic = 'force-dynamic'
-
-export default async function Overview() {
+/**
+ * FORMERLY `commerce/page.tsx`. S3.1 folded it into `CommerceView`'s dispatch
+ * — see `./CommerceView.tsx`.
+ */
+export async function CommerceOverviewView() {
   // Before any query: a redirect must happen before the platform database
   // is touched, not after.
   await requireCommerceAccess()

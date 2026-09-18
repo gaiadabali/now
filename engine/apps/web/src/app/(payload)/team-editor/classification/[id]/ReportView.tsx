@@ -17,8 +17,6 @@ import { ConfidenceMeter } from '../ConfidenceMeter'
 import { articleEditHref, classifyHref, reviewEditHref } from '../paths'
 import { DecisionForm, type ReviewOption } from './DecisionForm'
 
-export const dynamic = 'force-dynamic'
-
 /**
  * One `classification-reviews` row, as this page uses it.
  *
@@ -52,16 +50,12 @@ type ReviewDoc = {
 /**
  * The classification report for one article.
  *
- * WHY THIS IS A PAGE AND NOT A PAYLOAD CUSTOM VIEW ON THE EDIT FORM.
- * A custom view was the other candidate and it loses on three counts, in
- * increasing order of how much they matter:
+ * WHY THIS IS A PAYLOAD CUSTOM VIEW AND NOT A TAB ON THE EDIT FORM.
+ * A custom view *on the document* was the other candidate and it loses on
+ * three counts, in increasing order of how much they matter:
  *   - It renders inside the document edit shell, one tab from the raw
  *     `body_blocks` JSON editor that is most of the reason this surface
  *     exists. The complaint was not "the edit form is missing a tab".
- *   - It is registered through `team-editor/importMap.js`, a generated file,
- *     and `payload generate:importmap` rewrites it. Everything under
- *     `(payload)/team-editor/<folder>` is ordinary Next routing that no
- *     generator owns.
  *   - The data this page exists to show is in two databases neither of which
  *     Payload's document context can reach: `engine.entity_terms` is in the
  *     city DB but the `engine` schema, which Payload is forbidden to read
@@ -70,20 +64,25 @@ type ReviewDoc = {
  *     bound to a Payload document cannot, and would have needed a custom
  *     endpoint behind it anyway — at which point the view is just a second
  *     way to reach the same server code.
- * So it follows the precedent already set for exactly this shape of problem:
- * the commerce console, `(payload)/team-editor/commerce`, plain server
- * components under Payload's root layout with their own masthead and their
- * own prefixed stylesheet. `articleEditHref` links back to the edit form for
- * the fields this report deliberately does not duplicate.
+ *   - It is one of four screens this report shares a chrome and a stylesheet
+ *     with (S3.1) — the queue, the review desk, the cluster workbench — and
+ *     none of the other three hang off a document.
+ * So it is `admin.components.views` at the ROOT of the admin instead
+ * (`ClassificationView.tsx`, one level up), which is the mechanism that gets
+ * Payload's real sidebar rather than a document tab or a copy of the sidebar.
+ * `articleEditHref` links back to the edit form for the fields this report
+ * deliberately does not duplicate.
+ *
+ * FORMERLY `classification/[id]/page.tsx` — a literal Next dynamic route.
+ * S3.1 folded it into `ClassificationView`'s dispatch, which is why `id`
+ * arrives as a plain string rather than a Next.js `params` promise: the
+ * dispatcher has already pulled it out of Payload's raw `segments` array
+ * (there is no per-segment param name once the whole tree renders behind one
+ * catch-all route — see `ClassificationView.tsx`).
  */
-export default async function ClassificationReport({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export async function ClassificationReportView({ id }: { id: string }) {
   await requireReviewerAccess()
 
-  const { id } = await params
   const articleId = Number(id)
   if (!Number.isInteger(articleId)) notFound()
 

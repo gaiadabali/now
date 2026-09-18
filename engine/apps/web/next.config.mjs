@@ -20,6 +20,12 @@ const nextConfig = {
   // Unset everywhere that matters: CI, the Dockerfile and every normal local
   // run get `.next`, which is the only value `output: 'standalone'` and the
   // image's COPY paths know about. `.next-*` is gitignored alongside it.
+  //
+  // One local side effect to know about: Next REWRITES `tsconfig.json` when it
+  // meets a distDir absent from `include`, adding `.next-<yours>/types/**` and
+  // reformatting the file on the way past. Do not commit that — the entry is
+  // per-person, and a stale one makes `tsc` report errors about route files
+  // that were deleted in someone else's build directory.
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // This app is an npm workspace member, so its dependencies live in
   // engine/node_modules rather than beside it. Without an explicit tracing

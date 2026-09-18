@@ -5,8 +5,6 @@ import { getQueueShape, getReviewClusters } from '@/lib/review'
 
 import { clusterHref, REVIEW_ROOT } from '../paths'
 
-export const dynamic = 'force-dynamic'
-
 /**
  * The review desk — the whole queue, grouped by the mistake behind it.
  *
@@ -28,17 +26,16 @@ export const dynamic = 'force-dynamic'
  * differently enough to want separating (`subtype` writes nothing onto an
  * article at all), but a reviewer who wants all of them should not have to
  * visit three pages to get there.
+ *
+ * FORMERLY `classification/review/page.tsx`. S3.1 folded it into
+ * `ClassificationView`'s dispatch — see `../ClassificationView.tsx`.
  */
 
 const pct = (n: number | null): string => (n === null ? '—' : `${Math.round(n * 100)}%`)
 
-export default async function ReviewDesk({
-  searchParams,
-}: {
-  searchParams: Promise<{ facet?: string }>
-}) {
+export async function ReviewDeskView({ searchParams }: { searchParams: { facet?: string } }) {
   await requireReviewerAccess()
-  const { facet } = await searchParams
+  const { facet } = searchParams
   const [shape, all] = await Promise.all([getQueueShape(), getReviewClusters()])
 
   const facets = [...new Set(all.map((c) => c.facetKey))].sort()

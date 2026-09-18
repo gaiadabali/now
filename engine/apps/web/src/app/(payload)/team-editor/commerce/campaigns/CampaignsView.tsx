@@ -1,9 +1,11 @@
 import { listCampaigns } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
 
-export const dynamic = 'force-dynamic'
-
-export default async function Campaigns() {
+/**
+ * FORMERLY `commerce/campaigns/page.tsx`. S3.1 folded it into
+ * `CommerceView`'s dispatch — see `../CommerceView.tsx`.
+ */
+export async function CampaignsView() {
   await requireCommerceAccess()
   const campaigns = await listCampaigns()
 

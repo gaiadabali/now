@@ -40,6 +40,83 @@ export type PartnershipRow = {
   is_live: boolean
 }
 
+/**
+ * `engine.sites`, exactly as the row holds it — the four jsonb columns
+ * un-shape-checked. `lib/site.ts`'s validators decide what any of this
+ * *means* to a reader; this is the platform console's raw material for S5.1,
+ * kept in this file rather than in `site.ts` because `site.ts` is the reader
+ * app's typed contract (`SiteConfig`) and a console listing is not that — it
+ * needs to show a malformed or `{}` value as itself, not merged with a
+ * fallback.
+ */
+export type RegistrySite = {
+  id: string
+  slug: string
+  name: string
+  hostname: string
+  status: string
+  nav: unknown
+  brand_tokens: unknown
+  home_rails: unknown
+  ranking_weights: unknown
+  updated_at: string
+}
+
+export async function listRegistrySites(): Promise<RegistrySite[]> {
+  return query<RegistrySite>(
+    `SELECT id::text, slug, name, hostname, status, nav, brand_tokens, home_rails, ranking_weights,
+            updated_at::text
+       FROM engine.sites
+      ORDER BY slug`,
+  )
+}
+
+export async function getRegistrySite(slug: string): Promise<RegistrySite | null> {
+  const rows = await query<RegistrySite>(
+    `SELECT id::text, slug, name, hostname, status, nav, brand_tokens, home_rails, ranking_weights,
+            updated_at::text
+       FROM engine.sites
+      WHERE slug = $1`,
+    [slug],
+  )
+  return rows[0] ?? null
+}
+
+/**
+ * The three writes S5.1 exposes. Each takes the already-validated value —
+ * `team-editor/platform/sites/[slug]/actions.ts` runs it through `lib/site.ts`'s
+ * `navFrom` / `brandTokensFrom` / `railsFrom` first, so by the time SQL sees
+ * it, it is exactly what a reader would accept. `ranking_weights` has no write
+ * here: nothing in this app reads that column yet (`lib/site.ts`'s `SiteConfig`
+ * has no field for it), and a form that edits a value nothing observes is a
+ * console screen that lies about having an effect.
+ *
+ * Each writes the WHOLE column: this is "replace the governed nav with this
+ * one", not a merge, matching how `getSiteConfig()` reads it — a partial nav
+ * would leave old items behind with no way to see them again from this
+ * screen.
+ */
+export async function updateSiteNav(slug: string, nav: unknown): Promise<void> {
+  await query(`UPDATE engine.sites SET nav = $1::jsonb, updated_at = now() WHERE slug = $2`, [
+    JSON.stringify(nav),
+    slug,
+  ])
+}
+
+export async function updateSiteBrandTokens(slug: string, brandTokens: unknown): Promise<void> {
+  await query(`UPDATE engine.sites SET brand_tokens = $1::jsonb, updated_at = now() WHERE slug = $2`, [
+    JSON.stringify(brandTokens),
+    slug,
+  ])
+}
+
+export async function updateSiteHomeRails(slug: string, homeRails: unknown): Promise<void> {
+  await query(`UPDATE engine.sites SET home_rails = $1::jsonb, updated_at = now() WHERE slug = $2`, [
+    JSON.stringify(homeRails),
+    slug,
+  ])
+}
+
 export type CampaignRow = {
   id: string
   objective: string | null
