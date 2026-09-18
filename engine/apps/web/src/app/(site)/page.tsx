@@ -3,14 +3,43 @@ import Link from 'next/link'
 
 import { StoryCard } from '@/components/StoryCard'
 import { PartnerBadge, SectionRule, Signup } from '@/components/primitives'
-import { EVENTS, GUIDES, getLatest, getLead, getMostRead, sectionLabel, sectionOf } from '@/lib/content'
+import {
+  getGuides,
+  getLatest,
+  getLead,
+  getMostRead,
+  getUpcomingEvents,
+  sectionLabel,
+  sectionOf,
+} from '@/lib/content'
 import { formatDate, formatDay, readingTime } from '@/lib/format'
 import { getSiteConfig } from '@/lib/site'
 
+/**
+ * Every rail below is rendered only if it has something real in it.
+ *
+ * Until S2 this page carried two fixture rails — four guides with
+ * "illustrative" counts and four hardcoded events, both shown on both cities,
+ * so Jakarta readers were offered a festival in Ubud. Deleting the fixtures
+ * reveals what the archive actually supports: guides are a real rail (314
+ * Jakarta, 230 Bali), upcoming events are not (every published event is
+ * 2016–2020), and Most Read is not yet (63 interactions, mostly ours).
+ *
+ * So this page is thinner than it was, and it is thinner because it stopped
+ * pretending. That is the honest input to the redesign rather than an
+ * embarrassment to hide: a layout designed around invented events is a layout
+ * that fits invented events.
+ */
 export default async function HomePage() {
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
-  const [lead, latest, mostRead] = await Promise.all([getLead(), getLatest(20), getMostRead(5)])
+  const [lead, latest, mostRead, guides, events] = await Promise.all([
+    getLead(),
+    getLatest(20),
+    getMostRead(5),
+    getGuides(4),
+    getUpcomingEvents(4),
+  ])
   const edit = latest.slice(1, 4)
   const rest = latest.slice(4, 12)
 
@@ -102,20 +131,32 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------------------------------------------------- guides */}
-      <section className="shell band" style={{ paddingTop: 0 }}>
-        <SectionRule label="The Guides" note="Kept current, not archived" moreHref="/guides" />
-        <div className="grid grid--4">
-          {GUIDES.map((g) => (
-            <Link className="guide" key={g.href} href={g.href}>
-              {g.image ? (
-                <Image className="guide__img" src={g.image} alt="" width={600} height={600} sizes="25vw" />
-              ) : null}
-              <span className="guide__count display">{g.count}</span>
-              <span className="guide__title">{g.title}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {guides.length > 0 ? (
+        <section className="shell band" style={{ paddingTop: 0 }}>
+          <SectionRule label="The Guides" note="Kept current, not archived" moreHref="/guides" />
+          <div className="grid grid--4">
+            {guides.map((g, i) => (
+              // A guide is an article, so it links like one and reports like
+              // one. The fixture linked to `/guides/<name>` — a nested path
+              // `[slug]` cannot match, so all four cards 404'd.
+              <Link
+                className="guide"
+                key={g.id}
+                href={`/${g.slug}`}
+                data-nowb-entity={String(g.id)}
+                data-nowb-entity-type="article"
+                data-nowb-rail="guides"
+                data-nowb-position={i + 1}
+              >
+                {g.image ? (
+                  <Image className="guide__img" src={g.image} alt="" width={600} height={600} sizes="25vw" />
+                ) : null}
+                <span className="guide__title">{g.title}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* ------------------------------------------- main well + side rail */}
       <section className="shell band" style={{ paddingTop: 0 }}>
@@ -140,47 +181,62 @@ export default async function HomePage() {
           </div>
 
           <aside className="rail">
-            <div>
-              <SectionRule label="Most Read" />
-              <ol className="rail__list">
-                {mostRead.map((a, i) => (
-                  <li key={a.id}>
-                    <StoryCard
-                      article={a}
-                      variant="index"
-                      index={i + 1}
-                      showDek={false}
-                      locale={locale}
-                      timeZone={tz}
-                      rail="most-read"
-                      position={i + 1}
-                    />
-                  </li>
-                ))}
-              </ol>
-            </div>
-
-            <div>
-              <SectionRule label="What's On" moreHref="/events" />
-              <ul>
-                {EVENTS.map((e) => {
-                  const d = formatDay(e.date, locale, tz)
-                  return (
-                    <li className="event" key={e.title}>
-                      <span className="event__date">
-                        <span className="event__day">{d.day}</span>
-                        <span className="event__mon">{d.month}</span>
-                      </span>
-                      <span>
-                        <span className="event__title">{e.title}</span>
-                        <br />
-                        <span className="event__where">{e.where}</span>
-                      </span>
+            {/* Absent until the beacon has collected enough to rank on — see
+                `getMostRead`. Recency under a "Most Read" heading is an
+                invented ordering, and §10's presentation-bias warning cuts
+                exactly there. */}
+            {mostRead.length > 0 ? (
+              <div>
+                <SectionRule label="Most Read" />
+                <ol className="rail__list">
+                  {mostRead.map((a, i) => (
+                    <li key={a.id}>
+                      <StoryCard
+                        article={a}
+                        variant="index"
+                        index={i + 1}
+                        showDek={false}
+                        locale={locale}
+                        timeZone={tz}
+                        rail="most-read"
+                        position={i + 1}
+                      />
                     </li>
-                  )
-                })}
-              </ul>
-            </div>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+
+            {/* Absent while every published event is 2016–2020. The fixture
+                this replaced was four invented 2026 dates, which is why the
+                rail looked fine and was not. */}
+            {events.length > 0 ? (
+              <div>
+                <SectionRule label="What's On" moreHref="/events" />
+                <ul>
+                  {events.map((e) => {
+                    const d = formatDay(e.date, locale, tz)
+                    return (
+                      <li className="event" key={e.id}>
+                        <span className="event__date">
+                          <span className="event__day">{d.day}</span>
+                          <span className="event__mon">{d.month}</span>
+                        </span>
+                        <span>
+                          <span className="event__title">{e.title}</span>
+                          {e.where ? (
+                            <>
+                              <br />
+                              <span className="event__where">{e.where}</span>
+                            </>
+                          ) : null}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            ) : null}
 
             <Signup site={site} />
 

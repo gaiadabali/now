@@ -14,6 +14,7 @@
 import {
   SECTION_TO_TYPES,
   articleIdsForTermSlugs,
+  cityPool,
   heroMediaId,
   legacyMediaUrls,
   payloadClient,
@@ -21,6 +22,7 @@ import {
   toArticle,
 } from '@/lib/payload'
 import { slugify } from '@/lib/format'
+import { decodeEntities } from '@/lib/html'
 
 export type Article = {
   id: number
@@ -81,6 +83,25 @@ export const UNCLASSIFIED = 'unclassified'
 export const NO_FORMAT = '__none'
 
 /**
+ * Both format terms that mean "guide".
+ *
+ * The vocabulary carries `city-guide` ("City guide") and `guide` ("Guide") as
+ * separate format terms, with no description distinguishing them. The Guides
+ * section filtered on `city-guide` alone, and that split cost Bali most of its
+ * guides: the section showed **51 of 230**, and the other 179 were reachable
+ * only at their direct URL. Jakarta showed 267 of 314.
+ *
+ * Two sibling terms that both mean guide belong in the section called Guides.
+ * The same reasoning produced the `Unclassified` section for the 1,183
+ * untyped articles that were invisible to anyone browsing — an archive you
+ * cannot reach is not an archive. If the taxonomy review later draws a real
+ * distinction between the two terms, this constant is the one line that
+ * changes, and it is the single source for both the section and the homepage
+ * rail.
+ */
+const GUIDE_FORMATS = ['city-guide', 'guide']
+
+/**
  * Sections backed by a `format` rather than a `primaryType`.
  *
  * Guides are not a subject, they are a shape — a city guide about food is
@@ -88,7 +109,7 @@ export const NO_FORMAT = '__none'
  * `format` and the rest filter on type.
  */
 const FORMAT_SECTIONS: Record<string, string[]> = {
-  guides: ['city-guide'],
+  guides: GUIDE_FORMATS,
 }
 
 export function sectionOf(article: Article): string {
@@ -185,6 +206,37 @@ function sectionWhere(slug: string): Record<string, unknown> | null {
   const types = SECTION_TO_TYPES[slug]
   if (types) return { primaryType: { in: types } }
   return null
+}
+
+/**
+ * One page of the whole archive, newest first.
+ *
+ * `/latest` was linked twice from the homepage and 404'd both times: it is not
+ * in `SECTION_MAP`, so `isSectionSlug` was false and `[slug]` looked it up as
+ * an article, found nothing, and called `notFound()`. A broken `<Link>` is
+ * only wrong at click time, which is why it survived.
+ *
+ * Given the choice between deleting the links and making them work, this is
+ * the archive: 4,772 and 4,429 articles with no cross-section index at all.
+ * Every section has one; the union of them did not.
+ */
+export async function getArchivePage(opts: { page?: number; limit?: number } = {}): Promise<Page<Article>> {
+  const { page = 1, limit = 24 } = opts
+  const payload = await payloadClient()
+  const result = await payload.find({
+    collection: 'articles',
+    where: PUBLISHED,
+    sort: '-publishedAt',
+    page: Math.max(1, page),
+    limit,
+    depth: 1,
+  })
+  return {
+    items: await toArticles(result.docs),
+    page: result.page ?? 1,
+    totalPages: result.totalPages ?? 1,
+    total: result.totalDocs ?? 0,
+  }
 }
 
 /**
@@ -403,20 +455,6 @@ export async function getBySlug(slug: string): Promise<Article | undefined> {
 }
 
 /**
- * Most read.
- *
- * Returns recency for now, NOT imported view counts. §6: WordPress's
- * `wpb_post_views_count` is bot-contaminated, so carrying it across would
- * put a number on the page that nobody can defend. The real implementation
- * recomputes from beacon interactions — which do not exist yet, because the
- * beacon has not been deployed (blocker B2). Recency is the honest stand-in;
- * inventing a ranking would not be.
- */
-export async function getMostRead(limit = 5): Promise<Article[]> {
-  return getLatest(limit)
-}
-
-/**
  * Related content.
  *
  * Same-section recency, not the engine's rails. `GET /v1/{site}/articles/{id}/rails`
@@ -524,9 +562,167 @@ export async function getRelated(article: Article, limit = 3): Promise<Article[]
 }
 
 
-/*
- * Comp-phase stand-ins for content the engine will supply. They live under
- * `src/fixtures/` so the site-literal guard treats them as sample data, not
- * as code that knows which city it serves.
+/* ========================================================================== */
+/*  WHAT THE HOMEPAGE'S REMAINING RAILS ACTUALLY HAVE (S2)                    */
+/* ========================================================================== */
+
+/**
+ * The comp-phase fixtures are gone, and so is what they were hiding.
+ *
+ * `src/fixtures/editorial.ts` supplied `GUIDES` (four guides with counts its
+ * own comment called "illustrative") and `EVENTS` (four events, all of them in
+ * one city, hardcoded to 2026 dates). Both rendered on both cities, so Jakarta
+ * readers were shown a festival in Ubud. That is the kind of thing that is
+ * invisible in a code review and obvious on the page.
+ *
+ * The three functions below replace them with the archive. Two of them can
+ * return nothing, and the homepage renders no rail when they do — which is
+ * the point of doing this before any redesign. Measured 2026-09-18:
+ *
+ *   guides            314 Jakarta · 230 Bali        a real rail
+ *   upcoming events     0 Jakarta ·   0 Bali        every event is 2016–2020
+ *   most read          63 interactions, one city    not a ranking yet
+ *
+ * So the honest homepage today has one of those three rails, not three. The
+ * precedent for hiding rather than showing an empty one is `areasWithCounts`,
+ * which drops terms with no articles because "an index of empty links is worse
+ * than a shorter index — it was a footer full of those that made the site feel
+ * broken in the first place".
  */
-export { GUIDES, EVENTS, PLACE } from '@/fixtures/editorial'
+
+/**
+ * The guides rail — the same `GUIDE_FORMATS` the `/guides` section uses, so
+ * the rail and the page it links to can never disagree about what a guide is.
+ */
+export async function getGuides(limit = 4): Promise<Article[]> {
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'articles',
+    where: { ...PUBLISHED, format: { in: GUIDE_FORMATS } },
+    sort: '-publishedAt',
+    limit,
+    depth: 1,
+  })
+  return toArticles(docs)
+}
+
+export type EventItem = {
+  id: number
+  title: string
+  date: string
+  where: string | null
+  ticketUrl: string | null
+}
+
+/**
+ * What is actually on, which today is nothing.
+ *
+ * Every published event in both cities starts between 2016-07-01 and
+ * 2020-06-26 — they came across in the WordPress import and none has been
+ * superseded. `starts_at >= now()` therefore returns zero rows, and the rail
+ * disappears until an editor publishes a real one. That is the correct
+ * behaviour and it is also the finding: the fixture existed because there is
+ * no upcoming-event data, and deleting the fixture is what makes that visible
+ * instead of papering over it.
+ *
+ * `rrule` is deliberately ignored. A recurring event whose series began in
+ * 2018 may well have an occurrence next Tuesday, but expanding a recurrence
+ * rule is real work with real edge cases, and guessing at it would put dates
+ * on the page that nobody has checked — which is the fixture's failure mode
+ * with extra steps. Tracked for the events surface rather than done here.
+ */
+export async function getUpcomingEvents(limit = 4): Promise<EventItem[]> {
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'events',
+    where: { ...PUBLISHED, startsAt: { greater_than_equal: new Date().toISOString() } },
+    sort: 'startsAt',
+    limit,
+    depth: 1, // resolves `place` so the rail can say where
+  })
+
+  return docs.map((doc) => {
+    const place = doc.place as { name?: unknown; areaTerm?: unknown } | number | null | undefined
+    const name = place && typeof place === 'object' && typeof place.name === 'string' ? place.name : null
+    const area = place && typeof place === 'object' && typeof place.areaTerm === 'string' ? place.areaTerm : null
+    return {
+      id: Number(doc.id),
+      title: decodeEntities(String(doc.title ?? '')),
+      date: String(doc.startsAt ?? ''),
+      where: [name, area].filter(Boolean).join(', ') || null,
+      ticketUrl: typeof doc.ticketUrl === 'string' ? doc.ticketUrl : null,
+    }
+  })
+}
+
+/**
+ * How much behavioural signal a "Most Read" rail needs before it is one.
+ *
+ * The beacon went live on 2026-09-16 and has collected 63 interactions on one
+ * city. Ranking five articles out of 63 events — most of them from the people
+ * who built the thing — would put a number on the page that nobody can defend,
+ * which is the exact objection §6 raises to importing WordPress's
+ * bot-contaminated `wpb_post_views_count`.
+ *
+ * So the rail has a floor, and below it there is no rail. The numbers are
+ * modest on purpose: this is a threshold for "is this signal or is this us",
+ * not a statistical claim. It will pass on its own once the site has readers,
+ * with no code change, which is the property that matters.
+ */
+const MOST_READ_MIN_INTERACTIONS = 500
+const MOST_READ_WINDOW_DAYS = 30
+
+/**
+ * Most read, from revealed behaviour — or nothing at all.
+ *
+ * This used to be `return getLatest(limit)` under a rail labelled "Most Read".
+ * The comment was honest about it and the page was not, which is the worse
+ * half: a reader cannot see the comment. Recency presented as popularity is an
+ * invented ranking, and §10's presentation-bias warning cuts exactly here —
+ * a surface that claims an ordering it did not compute trains the eventual
+ * ranker on a lie.
+ *
+ * Reads `engine.interactions` directly rather than through the API because
+ * that table is in this city's own database and the query is a count, not a
+ * ranking the engine owns. It is partitioned by day, so the window bound is
+ * also the partition pruner.
+ */
+export async function getMostRead(limit = 5): Promise<Article[]> {
+  let ids: number[] = []
+  try {
+    const { rows } = await cityPool().query(
+      `WITH windowed AS (
+         SELECT entity_id, count(*)::int AS n
+           FROM engine.interactions
+          WHERE entity_type = 'article'
+            AND ts >= now() - ($1 || ' days')::interval
+          GROUP BY entity_id
+       )
+       SELECT entity_id, n, sum(n) OVER ()::int AS total
+         FROM windowed
+        ORDER BY n DESC
+        LIMIT $2`,
+      [MOST_READ_WINDOW_DAYS, limit],
+    )
+    if (rows.length === 0 || Number(rows[0].total) < MOST_READ_MIN_INTERACTIONS) return []
+    ids = rows.map((r) => Number(r.entity_id)).filter(Number.isFinite)
+  } catch {
+    // The rail is a nicety; the homepage is not. A partition that does not
+    // exist yet, or a column type this query guessed wrong, must not 500 the
+    // front page.
+    return []
+  }
+  if (ids.length === 0) return []
+
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'articles',
+    where: { ...PUBLISHED, id: { in: ids } },
+    limit,
+    depth: 1,
+  })
+  const articles = await toArticles(docs)
+  // Payload returns them in its own order; the ranking is the point.
+  const rank = new Map(ids.map((id, i) => [id, i]))
+  return articles.sort((a, b) => (rank.get(a.id) ?? 99) - (rank.get(b.id) ?? 99))
+}
