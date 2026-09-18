@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { GROUPS } from './groups'
 
 /**
  * `authors` — public byline/profile, deliberately separate from `users`
@@ -11,7 +12,11 @@ import { isAuthorOrAbove, isEditorOrAbove } from '../access'
  */
 export const Authors: CollectionConfig = {
   slug: 'authors',
-  admin: { useAsTitle: 'name' },
+  admin: {
+    group: GROUPS.editorial,
+    useAsTitle: 'name',
+    description: 'Bylines. One row per person who writes; each gets their own page on the site.',
+  },
   access: {
     read: () => true,
     create: isAuthorOrAbove,

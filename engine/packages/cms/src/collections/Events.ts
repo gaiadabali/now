@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove } from '../access'
 import { bodyBlocksField } from '../fields/bodyBlocks'
+import { GROUPS } from './groups'
 
 /**
  * `events` — ARCHITECTURE.md §5. Tied to a place; supports one-off and
@@ -40,8 +41,17 @@ import { bodyBlocksField } from '../fields/bodyBlocks'
 export const Events: CollectionConfig = {
   slug: 'events',
   admin: {
+    group: GROUPS.editorial,
     useAsTitle: 'title',
     defaultColumns: ['title', 'place', 'startsAt', 'endsAt', '_status'],
+    // Worth saying on the list screen rather than leaving someone to notice:
+    // every event in here came across from WordPress and the most recent one
+    // starts in June 2020. The reader site's "What's On" rail asks for events
+    // starting from today, finds none, and renders nothing at all. It will
+    // reappear on its own the moment a real one is published.
+    description:
+      'What is on, and when. The imported events all finished in 2020, so the reader site '
+      + 'shows no What’s On rail until a future-dated one is published here.',
   },
   access: {
     read: () => true,

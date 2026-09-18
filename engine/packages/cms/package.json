@@ -15,6 +15,8 @@
     "verify:places-geo": "payload run scripts/verify-places-geo.mjs",
     "verify:vocabulary": "payload run scripts/verify-vocabulary.mjs",
     "verify:events-content": "payload run scripts/verify-events-content.mjs",
+    "verify:article-slug": "payload run scripts/verify-article-slug.mjs",
+    "verify:article-admin": "payload run scripts/verify-article-admin.mjs",
     "verify:rbac-publish-gate": "payload run scripts/verify-rbac-publish-gate.mjs",
     "backfill:article-versions": "payload run scripts/backfill-article-versions.mjs",
     "seed:review-queue": "payload run scripts/seed-review-queue.mjs",

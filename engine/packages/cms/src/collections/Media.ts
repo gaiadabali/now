@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove } from '../access'
+import { GROUPS } from './groups'
 
 /**
  * `media` — ARCHITECTURE.md §5 / §14.
@@ -15,7 +16,13 @@ import { isAuthorOrAbove, isEditorOrAbove } from '../access'
  */
 export const Media: CollectionConfig = {
   slug: 'media',
-  admin: { useAsTitle: 'alt' },
+  admin: {
+    group: GROUPS.editorial,
+    useAsTitle: 'alt',
+    description:
+      'Pictures. These are still served from the old WordPress site, so uploading a new one '
+      + 'does not work yet — existing pictures are fine to use (docs/DEPLOY.md §6).',
+  },
   access: {
     read: () => true,
     create: isAuthorOrAbove,

@@ -3,15 +3,13 @@ import { listOrgs } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
 import { consoleHref } from '../paths'
 
-export const dynamic = 'force-dynamic'
-
-export default async function Orgs({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>
-}) {
+/**
+ * FORMERLY `commerce/orgs/page.tsx`. S3.1 folded it into `CommerceView`'s
+ * dispatch — see `../CommerceView.tsx`.
+ */
+export async function OrgsListView({ searchParams }: { searchParams: { q?: string } }) {
   await requireCommerceAccess()
-  const { q } = await searchParams
+  const { q } = searchParams
   const orgs = await listOrgs(q)
 
   return (

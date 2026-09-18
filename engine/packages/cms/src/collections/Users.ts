@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { platformStrategy } from '../auth/platformStrategy'
+import { GROUPS } from './groups'
 
 /**
  * `users` — shadow projections of the platform identity store.
@@ -33,6 +34,7 @@ export const Users: CollectionConfig = {
     strategies: [{ name: 'platform-identity', authenticate: platformStrategy }],
   },
   admin: {
+    group: GROUPS.settings,
     useAsTitle: 'email',
     defaultColumns: ['email', 'role'],
     description:

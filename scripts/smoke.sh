@@ -120,6 +120,57 @@ smoke_city() {
     [ "$icode" = "200" ] && ok "favicon $icon loads" || bad "favicon $icon -> HTTP $icode"
   fi
 
+  # EVERY INTERNAL LINK ON THE HOME PAGE RESOLVES.
+  #
+  # The check that was missing, and the reason S2 existed. `/latest` was linked
+  # twice from the home page and 404'd both times — it is not a section, so
+  # `[slug]` looked it up as an article and found none. The four "The Guides"
+  # cards pointed at `/guides/<name>`, a nested path the single-segment
+  # dynamic route cannot match, so all four 404'd too. Six broken links on the
+  # most-visited page of the site, and nothing failed: a <Link> to a missing
+  # route is only wrong when somebody clicks it.
+  #
+  # So this clicks them. Nav, footer, rails, section rules, guide cards —
+  # every distinct same-origin href on the home page, plus the ones on an
+  # article page. Query strings are kept because `?format=` and `?page=` are
+  # how the facets and pagers address themselves, and those are exactly the
+  # links most likely to break on a refactor.
+  local all_links broken_links broken_n checked_n
+  all_links="$(
+    { grep -oE 'href="/[^"#]*"' <<<"$home"; grep -oE 'href="/[^"#]*"' <<<"$art"; } \
+      | sed 's/^href="//;s/"$//' \
+      | grep -vE '^/(_next|api|v1)/' \
+      | sort -u
+  )"
+  broken_links=""; broken_n=0; checked_n=0
+  while IFS= read -r link; do
+    [ -n "$link" ] || continue
+    checked_n=$((checked_n+1))
+    local lcode; lcode="$(head_ "$base$link")"
+    case "$lcode" in
+      200|301|302|304) ;;
+      *) broken_links="$broken_links
+       $link -> HTTP $lcode"; broken_n=$((broken_n+1)) ;;
+    esac
+  done <<<"$all_links"
+  if [ "$broken_n" -eq 0 ]; then
+    ok "all $checked_n internal links on the home page and one article resolve"
+  else
+    bad "$broken_n of $checked_n internal links are broken:$broken_links"
+  fi
+
+  # NO INVENTED CONTENT. Two home-page rails were fixtures until S2 — four
+  # guides with "illustrative" counts and four hardcoded events, both rendered
+  # on BOTH cities, so Jakarta readers were offered a festival in another
+  # province. A rail is allowed to be absent (there are no upcoming events in
+  # either archive, so "What's On" does not render); it is not allowed to be
+  # made up. These four titles were the fixture's, verbatim.
+  if grep -qE 'Ubud Writers|Sanur Village Festival|Bali Arts Alliance|Nusa Dua Light Festival' <<<"$home"; then
+    bad "$name home page is rendering fixture events"
+  else
+    ok "no fixture content on the home page"
+  fi
+
   # /culture is a taxonomy-backed section, not a primaryType filter — an empty
   # one would mean the term lookup silently returned nothing.
   local cul cul_n

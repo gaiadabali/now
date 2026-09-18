@@ -7,6 +7,7 @@ import * as migration_20260910_020207_add_classification_reviews from './2026091
 import * as migration_20260910_032226_vocabulary_delta_140_terms from './20260910_032226_vocabulary_delta_140_terms';
 import * as migration_20260910_060000_classification_reviews_no_clobber_trigger from './20260910_060000_classification_reviews_no_clobber_trigger';
 import * as migration_20260910_095611_add_places_legacy_wp_id from './20260910_095611_add_places_legacy_wp_id';
+import * as migration_20260918_090000_articles_slug from './20260918_090000_articles_slug';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260910_095611_add_places_legacy_wp_id.up,
     down: migration_20260910_095611_add_places_legacy_wp_id.down,
     name: '20260910_095611_add_places_legacy_wp_id'
+  },
+  {
+    up: migration_20260918_090000_articles_slug.up,
+    down: migration_20260918_090000_articles_slug.down,
+    name: '20260918_090000_articles_slug'
   },
 ];

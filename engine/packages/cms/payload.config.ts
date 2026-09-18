@@ -90,24 +90,130 @@ export default buildConfig({
       // nav enumerates COLLECTIONS, and neither of these is one: the commerce
       // console and the staff admin are plain Next pages reading
       // `now_platform` over SQL, which this Payload instance cannot reach.
-      // Without a link here they are typed-URL-only — survivable for the
-      // console, self-defeating for the one surface an admin needs in order
-      // to onboard anybody.
+      // `NavPlatform` is the same shape for the same reason — `engine.sites`
+      // lives in the platform database too.
       //
-      // Order is deliberate: Commerce sits above Staff because far more
-      // people have a commerce role than an editorial admin one. Each
-      // component decides for itself whether to render, against the role
-      // dimension it actually cares about.
+      // Order is deliberate: Curation and Commerce sit above Staff and
+      // Platform because far more people review or sell than administer
+      // accounts or the site registry. Each component decides for itself
+      // whether to render, against the role dimension it actually cares
+      // about.
       afterNavLinks: [
         '/components/nav/NavReview#NavReview',
         '/components/nav/NavConsole#NavConsole',
         '/components/nav/StaffLink#StaffLink',
+        '/components/nav/NavPlatform#NavPlatform',
       ],
       // The account menu Payload does not have. Its avatar is a plain link
       // to the profile page, so there was nowhere to put "sign out" except
       // an unlabelled arrow at the foot of the nav. `actions` renders into
       // the app header beside the avatar, which is where people look.
       actions: ['/components/nav/AccountMenu#AccountMenu'],
+      // S3.1 — one chrome for all of `/team-editor`.
+      //
+      // Classification, commerce and staff used to be literal Next routes
+      // under `(payload)/team-editor/**`, OUTSIDE Payload's own catch-all
+      // (`team-editor/[[...segments]]/page.tsx`). Next resolves a literal
+      // route before a catch-all at the same level, so those routes silently
+      // shadowed Payload's router for every URL under them — which is why
+      // they never had Payload's sidebar: each brought its own masthead, and
+      // the only way from one to another (or back to Payload's own
+      // dashboard) was a small `editor` badge in a corner.
+      //
+      // Registering them here instead makes Payload's catch-all the one and
+      // only router for the whole admin. `getCustomViewByRoute`
+      // (@payloadcms/next) matches `path` against the URL with
+      // `path-to-regexp` and renders the `Component` inside the SAME
+      // `DefaultTemplate` every collection screen uses — sidebar included —
+      // so removing the bespoke route files (done) is what actually fixes
+      // the complaint; this config change is what makes removing them safe.
+      //
+      // ONE VIEW PER AREA, NOT ONE PER SCREEN. `path` is matched with
+      // `exact` unset, i.e. as a PREFIX — `/classification` also matches
+      // `/classification/123` and `/classification/review/cluster` — and
+      // each `Component` below does its own routing over the leftover
+      // segments, the same decision a Next.js folder tree used to make for
+      // free. Two reasons this is one registration and not four or five:
+      //
+      //   1. Payload picks the FIRST entry in this object whose `path`
+      //      matches, and matching is by pattern, not by specificity —
+      //      unlike Next's file router, there is no "the literal segment
+      //      wins over the dynamic one" rule. `/classification/review` and a
+      //      hypothetical `/classification/:id` are both two segments, so a
+      //      dynamic entry registered first would swallow `review` as an id
+      //      with nothing to stop it. Doing the routing inside one component
+      //      turns that into an ordinary `if`-chain, checked once, next to
+      //      the code it dispatches to — see `ClassificationView.tsx`.
+      //   2. `meta` is per registered path, and every screen inside an area
+      //      already shared one browser-tab title (the masthead layouts this
+      //      ticket removes each set exactly one `metadata.title` for their
+      //      whole subtree). One view, one `meta.title`, is what the reader
+      //      already saw — not a regression, just no longer implemented with
+      //      a Next.js layout.
+      //
+      // THE PATHS BELOW ARE NOT IMPORTED FROM `paths.ts` IN THOSE FOLDERS.
+      // They could not be: `paths.ts` lives in `apps/web`, and this package
+      // must never import app code (§1 — it is what keeps the city-DB and
+      // platform-DB boundary a compile-time fact rather than a convention).
+      // So `/classification`, `/commerce` and `/staff` are hand-written here
+      // and have to agree with `CLASSIFY_ROOT`, `CONSOLE_ROOT` and
+      // `STAFF_ROOT` (minus the `/team-editor` prefix, which is `routes.admin`
+      // below) by inspection — the same two-places-must-agree shape
+      // `consoleHref`'s own comment already names.
+      //
+      // THE COMPONENT PATHS ARE APP-LOCAL, DELIBERATELY NOT UNDER THIS
+      // PACKAGE'S `src`. A `@/…` specifier does not start with `.` or `/`, so
+      // Payload's import-map generator treats it as a bare package/alias
+      // import (`addPayloadComponentToImportMap.js`: "Tsconfig alias or
+      // package import") and writes it into the generated map VERBATIM,
+      // rather than resolving it against `admin.importMap.baseDir` (this
+      // package's `src`) the way `/components/...` above is. The generated
+      // map is a file INSIDE `apps/web`
+      // (`app/(payload)/team-editor/importMap.js`), so that verbatim `@/…`
+      // specifier is resolved by the APP's own tsconfig (`@/*` → `apps/web/
+      // src/*`) when the app's bundler builds it — never by this package's.
+      // That is what lets a Payload view live in this shared CMS package
+      // while its Component is the app's own code, reading `@/lib/auth` and
+      // `@/lib/queries` the way every other admin page in `apps/web` does,
+      // without this package importing a single line of the app or the
+      // app's business logic moving into this package. Confirmed against
+      // `node_modules/payload/dist/bin/generateImportMap/utilities/
+      // addPayloadComponentToImportMap.js` before relying on it — this was
+      // the open question S3.1 was scoped to answer before committing to
+      // this approach over a hand-built shared masthead.
+      views: {
+        classification: {
+          Component: '@/app/(payload)/team-editor/classification/ClassificationView#ClassificationView',
+          path: '/classification',
+          meta: {
+            title: 'Classification',
+            description: 'What the engine decided about an article, and how sure it was',
+          },
+        },
+        commerce: {
+          Component: '@/app/(payload)/team-editor/commerce/CommerceView#CommerceView',
+          path: '/commerce',
+          meta: { title: 'Console', description: 'Partner and campaign management' },
+        },
+        // No sub-routes, so `exact: true` — nothing under `/staff/*` should
+        // ever match this, and there is nothing there to dispatch to.
+        staff: {
+          Component: '@/app/(payload)/team-editor/staff/StaffView#StaffView',
+          path: '/staff',
+          exact: true,
+          meta: { title: 'Staff', description: 'Staff accounts and roles' },
+        },
+        // The platform console (S5.1). Registered here for the same reason
+        // as the three above and found the same way: it shipped as literal
+        // `page.tsx` routes, which shadow Payload's catch-all, so it was the
+        // one screen with a sidebar link and no sidebar. See
+        // `app/(payload)/team-editor/platform/PlatformView.tsx`.
+        platform: {
+          Component: '@/app/(payload)/team-editor/platform/PlatformView#PlatformView',
+          path: '/platform',
+          meta: { title: 'Platform', description: 'The sites registry and what readers see' },
+        },
+      },
     },
     // Payload's default account avatar is a GRAVATAR: it hashes the signed-in
     // email and fetches an image from gravatar.com on every admin page. For
@@ -148,15 +254,26 @@ export default buildConfig({
     },
   },
   editor: lexicalEditor(),
+  // ORDER IS THE SIDEBAR ORDER, and now also the group order (S3.2).
+  //
+  // Payload renders sidebar groups in the order it first encounters them, so
+  // this list decides both. Editorial comes first because it is the daily
+  // work; Settings last because it is a read-only mirror nobody edits here.
+  // Within Editorial, Articles is first for the same reason.
+  //
+  // The previous order interleaved them — Articles, Places, Classification
+  // reviews, Events, Place mentions, Media, Authors, Users — which with
+  // grouping switched on would have produced Editorial, Places, Engine,
+  // Editorial again. Groups are not re-entrant.
   collections: [
-    buildArticlesCollection(vocabulary),
-    buildPlacesCollection(vocabulary),
-    buildClassificationReviewsCollection(vocabulary),
+    buildArticlesCollection(vocabulary), // ── Editorial
     Events,
-    PlaceMentions,
     Media,
     Authors,
-    Users,
+    buildPlacesCollection(vocabulary), // ── Places
+    buildClassificationReviewsCollection(vocabulary), // ── Engine
+    PlaceMentions,
+    Users, // ── Settings
   ],
   // db binds to exactly one database, per instance — this is the ONLY
   // per-city knob (ARCHITECTURE.md §3.5 point 4). `push` is disabled in

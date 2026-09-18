@@ -23,6 +23,10 @@
 **/.venv
 **/node_modules
 **/.next
+# And the alternate build dirs NEXT_DIST_DIR can produce during parallel
+# work. `**/.next` does not match `.next-a`, so without this a local
+# `docker build` sends someone's in-progress build output as context.
+**/.next-*
 
 # Secrets: never in a build context. A COPY . would bake these into a layer
 # that survives in the image even if a later step deletes them.

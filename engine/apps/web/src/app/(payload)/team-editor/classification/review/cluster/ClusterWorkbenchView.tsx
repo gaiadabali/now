@@ -8,8 +8,6 @@ import { articleEditHref, classifyHref, REVIEW_ROOT } from '../../paths'
 import { ConfidenceMeter } from '../../ConfidenceMeter'
 import { BulkDecision, MemberDecision } from './Decisions'
 
-export const dynamic = 'force-dynamic'
-
 /**
  * One cluster's workbench — the screen where the actual judgement happens.
  *
@@ -42,17 +40,29 @@ export const dynamic = 'force-dynamic'
  * page and the least reversible — `autoPopulateOnDecision` has no path back
  * to `pending`, deliberately. Putting it under the evidence is not decoration;
  * it is the only ordering where pressing it means the evidence was read.
+ *
+ * FORMERLY `classification/review/cluster/page.tsx`. S3.1 folded it into
+ * `ClassificationView`'s dispatch — see `../../ClassificationView.tsx`. The
+ * cluster key travels as query parameters (see `clusterHref` in `../../
+ * paths.ts`), so — unlike the article report — this view needs nothing out of
+ * Payload's raw path segments at all.
  */
 
 const pct = (n: number | null): string => (n === null ? '—' : `${Math.round(n * 100)}%`)
 
-export default async function ClusterWorkbench({
+export async function ClusterWorkbenchView({
   searchParams,
 }: {
-  searchParams: Promise<{ facet?: string; legacy?: string; value?: string }>
+  searchParams: { facet?: string; legacy?: string; value?: string }
 }) {
   await requireReviewerAccess()
-  const { facet, legacy, value } = await searchParams
+  const { facet, legacy, value } = searchParams
+  // `notFound()` bubbles to `team-editor/[[...segments]]/not-found.tsx` —
+  // Payload's own not-found view, which is a correct place to land now that
+  // this component renders inside Payload's catch-all rather than owning its
+  // own route (S3.1). It was not always: before this ticket, this file WAS
+  // that route, so the nearest boundary was the app's generic 404, not an
+  // admin-chromed one.
   if (!facet || !value) notFound()
 
   const cluster = await getCluster({

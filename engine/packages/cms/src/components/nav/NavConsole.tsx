@@ -12,7 +12,10 @@ import Link from 'next/link'
  * Renders in `admin.components.afterNavLinks`, so it sits under Payload's
  * collection list as a second group rather than pretending to be a
  * collection. It is not one: these pages read `now_platform.engine.*` over
- * direct SQL, not through Payload.
+ * direct SQL, not through Payload. Since S3.1 they are a Payload custom view
+ * (`admin.components.views` in payload.config.ts) rather than a route that
+ * shadows Payload's own catch-all, which is what lets `next/link` below
+ * resolve as a client-side transition instead of a full reload.
  *
  * ROLE-GATED, and gated on the right dimension. Editorial standing and
  * commercial standing are independent (ADMIN-CONSOLIDATION.md): being an

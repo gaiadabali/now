@@ -25,12 +25,28 @@ declare global {
   var __nowConsolePool: Pool | undefined
 }
 
+/**
+ * Both spellings, because both are deployed.
+ *
+ * `deploy/docker-compose.yml` sets `PLATFORM_DATABASE_URI` *and*
+ * `PLATFORM_DATABASE_URL` on every web service to the same value, and says
+ * why: the shared Payload config reads the `_URI` one to load the taxonomy at
+ * boot, while these pages' read-only pool was written against `_URL`. Local
+ * environments set only one or the other — `packages/cms/.env.example` has
+ * just `_URI`. `lib/payload.ts` already accepted either; this did not, so a
+ * correctly configured dev machine could reach the vocabulary and not the
+ * registry. One resolution, used by every platform reader in this app.
+ */
+export function platformConnectionString(): string | null {
+  return process.env.PLATFORM_DATABASE_URL ?? process.env.PLATFORM_DATABASE_URI ?? null
+}
+
 function connectionString(): string {
-  const url = process.env.PLATFORM_DATABASE_URL
+  const url = platformConnectionString()
   if (!url) {
     throw new Error(
-      'PLATFORM_DATABASE_URL is not set. The console reads the platform ' +
-        'database directly; see deploy/.env.example.',
+      'Neither PLATFORM_DATABASE_URL nor PLATFORM_DATABASE_URI is set. The ' +
+        'console reads the platform database directly; see deploy/.env.example.',
     )
   }
   return url

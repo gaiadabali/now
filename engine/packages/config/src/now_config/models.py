@@ -53,8 +53,22 @@ class SiteConfig(BaseModel):
     timezone: str
     currency: str
     brand_tokens: dict[str, Any] = Field(default_factory=dict)
-    nav: dict[str, Any] = Field(default_factory=dict)
-    home_rails: dict[str, Any] = Field(default_factory=dict)
+    # `nav` and `home_rails` are ORDERED LISTS when populated, and `{}` when
+    # they are not.
+    #
+    # Every jsonb column on `sites` is `NOT NULL DEFAULT '{}'::jsonb`, so an
+    # ungoverned row holds an empty object — which is why the annotation has
+    # to admit both shapes rather than just the right one. Typing these as
+    # `dict` only was safe for as long as nothing wrote them; S1.3 made the
+    # reader app read `nav`, and a nav is an ordered sequence of items, not a
+    # mapping. A row seeded by `seed-site-registry.mjs` therefore fails
+    # validation here unless `list` is allowed, and it fails at *load* time,
+    # which is every request the API serves for that city.
+    #
+    # Nothing in Python reads either field yet; both are carried so the
+    # contract stays one contract. When something does, `{}` means absent.
+    nav: dict[str, Any] | list[Any] = Field(default_factory=dict)
+    home_rails: dict[str, Any] | list[Any] = Field(default_factory=dict)
     ranking_weights: dict[str, Any] = Field(default_factory=dict)
     db_ref: str
     enabled_modules: list[str] = Field(default_factory=list)

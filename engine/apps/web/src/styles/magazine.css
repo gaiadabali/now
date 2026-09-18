@@ -644,3 +644,43 @@
 /* Focus lands on the visually hidden input, so the ring has to be drawn on
    the label or keyboard users cannot see where they are. */
 .chip__input:focus-visible + .chip__label { outline: 2px solid var(--red); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- preview
+   The bar an editor sees on a story that is not the published one (S4).
+
+   Deliberately the loudest thing on the site: brand red, reversed out, above
+   everything. Every other use of red here is "earned, not a button colour" —
+   this is the one place that rule gives way, because the failure it prevents
+   is an editor mistaking a draft for the live page. Sticky rather than fixed
+   so it cannot cover the headline it sits above. */
+.preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--red);
+  color: var(--ink-invert);
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  padding-block: var(--space-2xs);
+}
+
+.preview-bar__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs) var(--space-s);
+}
+
+.preview-bar strong {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--t-meta);
+}
+
+.preview-bar__exit {
+  margin-left: auto;
+  color: var(--ink-invert);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}

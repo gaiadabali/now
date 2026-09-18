@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { draftMode } from 'next/headers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -39,12 +40,18 @@ type Params = {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   if (isSectionSlug(slug)) return { title: sectionLabel(slug) }
-  const article = await getBySlug(slug)
+  // Draft mode here too, or previewing an unpublished story shows the tab
+  // title of whatever was published at that address before — or nothing.
+  // `robots` is the part that matters: an unpublished draft must not be
+  // indexable even in the window where a crawler somehow holds the cookie.
+  const draft = (await draftMode()).isEnabled
+  const article = await getBySlug(slug, { draft })
   if (!article) return {}
   return {
     title: article.title,
     description: article.dek,
     openGraph: { title: article.title, description: article.dek, images: [article.image], type: 'article' },
+    ...(draft ? { robots: { index: false, follow: false } } : {}),
   }
 }
 
@@ -56,19 +63,24 @@ export default async function SlugPage({ params, searchParams }: Params) {
   if (isSectionSlug(slug)) {
     return <SectionIndex slug={slug} format={format} page={Number.isFinite(page) ? page : 1} />
   }
-  const article = await getBySlug(slug)
+  // Preview (S4). The cookie is set only by `/preview`, which checks for an
+  // editorial role first, so this is a staff browser asking for the newest
+  // version rather than the published one. Everyone else takes the `false`
+  // branch and cannot reach a draft from any URL.
+  const draft = (await draftMode()).isEnabled
+  const article = await getBySlug(slug, { draft })
   if (!article) notFound()
-  return <ArticlePage slug={slug} />
+  return <ArticlePage slug={slug} draft={draft} />
 }
 
 /* ========================================================================== */
 /*  ARTICLE                                                                   */
 /* ========================================================================== */
 
-async function ArticlePage({ slug }: { slug: string }) {
+async function ArticlePage({ slug, draft = false }: { slug: string; draft?: boolean }) {
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
-  const article = (await getBySlug(slug))!
+  const article = (await getBySlug(slug, { draft }))!
   const related = await getRelated(article)
   // Tells the layout's single beacon tag which article this page is (E8.5).
   const beacon = <EntityBeacon entity={String(article.id)} entityType="article" surface="article" />
@@ -85,6 +97,23 @@ async function ArticlePage({ slug }: { slug: string }) {
   return (
     <article>
       {beacon}
+      {/* Says, on the page, that this page is not the published one.
+          Draft mode is a cookie that outlives the story being previewed, so
+          without this an editor goes on seeing unpublished versions of
+          everything they open with no indication of it — and eventually
+          reports a bug against a page only they can see. The way out is a
+          plain link, not a hidden keystroke. */}
+      {draft ? (
+        <div className="preview-bar">
+          <span className="shell preview-bar__inner">
+            <strong>Preview</strong> — showing the latest saved version, which may be unpublished.
+            Nobody else can see this.
+            <a className="preview-bar__exit" href={`/preview/exit?to=/${slug}`}>
+              Leave preview
+            </a>
+          </span>
+        </div>
+      ) : null}
       <div className="shell">
         <header className="article-head">
           <p className="lead__kicker">

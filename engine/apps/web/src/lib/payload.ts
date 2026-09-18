@@ -200,7 +200,14 @@ export function toArticle(doc: PayloadDoc): Article {
     // Decoded, not escaped-through. 81 Bali titles store entities — "Catch
     // &amp; Grill" — and a plain-text field renders them literally.
     title: decodeEntities(String(doc.title ?? '')),
-    slug: slugFromPermalink(doc.legacyPermalink as string | null),
+    // The article's own slug is authoritative; the legacy permalink is the
+    // fallback and, for the 9,201 imported articles, is what the slug was
+    // backfilled *from* — so the two agree until someone edits one. Before
+    // S1.1 this line read the permalink only, which meant a newly written
+    // article mapped to `slug: ''` and every card linking to it pointed at
+    // the homepage. Both addresses still resolve (`getBySlug`), so a legacy
+    // URL survives an edit to this field.
+    slug: (typeof doc.slug === 'string' && doc.slug !== '' ? doc.slug : null) ?? slugFromPermalink(doc.legacyPermalink as string | null),
     date: String(doc.publishedAt ?? doc.createdAt ?? ''),
     // The view model's `section` is the human-facing label the fixture era
     // stored; `sectionOf()` maps it to a slug. Feeding it the slug directly
