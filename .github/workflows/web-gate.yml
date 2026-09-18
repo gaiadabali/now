@@ -1,0 +1,211 @@
+# Web gate — the checks the reader site, the admin and the reader identity
+# system had none of.
+#
+# WHY THIS EXISTS. Until this file, there was exactly one workflow in the repo
+# that installed Node (`engine-api-openapi-client.yml`, and only to generate a
+# TypeScript client from the API's OpenAPI document). Nothing ran the web app's
+# typecheck, its lints, its tests, or the CMS and auth suites. Every other gate
+# here is Python: engine-api tests, worker tests, the eval harness, the schema
+# and entity-typing gates.
+#
+# The consequence was visible rather than theoretical. PR #46 — a rewrite of
+# four surfaces across 41 files — merged to main with **no checks reported at
+# all**, because every workflow's `paths:` filter names Python or engine
+# directories and nothing matched `engine/apps/web/**`. The branch was green
+# because nothing had run.
+#
+# In the same session, three defects reached a pull request and were caught
+# only because someone ran these commands by hand:
+#
+#   - a `Sign in` link in the masthead pointing at a route that 404s in
+#     production (accounts fail closed without SMTP; dev has a console
+#     transport, so it worked locally and only locally)
+#   - `partner={i === 2}` hardcoded onto arbitrary real articles, fabricating
+#     a commercial disclosure with zero partnership rows behind it
+#   - sidebar group labels rendering in Payload's default gold rather than the
+#     intended grey, wrong since the day grouping shipped
+#
+# Only the first is the kind of thing a workflow can catch — and `smoke.sh`,
+# which does catch it, needs a running deployment and so is not here. What this
+# gate does is make sure the checks that DO run headless run every time, rather
+# than whenever someone remembers.
+#
+# NO DATABASE, DELIBERATELY. Every job below runs against placeholder
+# connection strings, exactly as `apps/web/Dockerfile` does at build time
+# (`ARG DATABASE_URI=...build_placeholder`). `loadVocabulary()` falls back to an
+# empty vocabulary when the platform DB is unreachable, and `verify-site-config`
+# skips its file/registry matrix rather than failing. That keeps this gate fast
+# and keeps it about code, not data. The checks that genuinely need real rows —
+# `verify:article-slug` against 9,201 articles, and `smoke.sh` against a
+# deployment — stay out of it and are named in docs/DEPLOY.md instead.
+
+name: web gate
+
+on:
+  pull_request:
+    paths:
+      - "engine/apps/web/**"
+      - "engine/packages/cms/**"
+      - "engine/packages/auth/**"
+      - "engine/packages/mailer/**"
+      - "engine/packages/beacon/**"
+      - "engine/package.json"
+      - "engine/package-lock.json"
+      - ".github/workflows/web-gate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/apps/web/**"
+      - "engine/packages/cms/**"
+      - "engine/packages/auth/**"
+      - "engine/packages/mailer/**"
+      - "engine/packages/beacon/**"
+      - "engine/package.json"
+      - "engine/package-lock.json"
+      - ".github/workflows/web-gate.yml"
+
+# A second push to the same branch makes the first run's answer worthless.
+concurrency:
+  group: web-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The same placeholders the image build uses. Present so nothing has to guess
+  # whether an unset variable means "local dev" or "misconfigured".
+  DATABASE_URI: postgresql://build:build@127.0.0.1:1/build_placeholder
+  PLATFORM_DATABASE_URI: postgresql://build:build@127.0.0.1:1/build_placeholder
+  # SITE_SLUG has no default anywhere by design — an unset one is a deployment
+  # error, not something to guess at (ARCHITECTURE.md §3.5) — so CI picks one
+  # explicitly. Which city is irrelevant here: §3.5's whole point is that the
+  # code is city-agnostic and `lint:site-literals` below is what enforces it.
+  SITE_SLUG: bali
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  checks:
+    name: typecheck · lints · tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches `FROM node:22.11-alpine` in apps/web/Dockerfile. The
+          # artifact CI tests should be built the way the artifact is.
+          node-version: "22.11"
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Install workspace
+        working-directory: engine
+        run: npm ci
+
+      - name: Typecheck (web)
+        working-directory: engine/apps/web
+        run: npx --no-install tsc --noEmit
+
+      # §3.5: ONE image serves every city, differentiated only by SITE_SLUG at
+      # runtime. Both packages carry their own copy of this lint because both
+      # have shipped a violation — including, twice this week, in a comment
+      # rather than in code.
+      - name: Lint — no site-name literals (web)
+        working-directory: engine/apps/web
+        run: node scripts/lint-site-literals.mjs
+
+      - name: Lint — no site-name literals (cms)
+        working-directory: engine/packages/cms
+        run: node scripts/lint-site-literals.mjs
+
+      # F141: `/account/*` once shipped to production with no mail configured,
+      # and registration did not fail — it succeeded WRONGLY, creating rows and
+      # telling people to check an inbox nothing was sent to. This lint covers
+      # the routes that do not exist yet, which is the half a test cannot.
+      - name: Lint — every account route is gated
+        working-directory: engine/apps/web
+        run: node scripts/lint-account-gate.mjs
+
+      - name: Test (web)
+        working-directory: engine/apps/web
+        run: npm test
+
+      - name: Test (cms)
+        working-directory: engine/packages/cms
+        run: npm test
+
+      - name: Test (auth)
+        working-directory: engine/packages/auth
+        run: npm test
+
+      - name: Test (mailer)
+        working-directory: engine/packages/mailer
+        run: npm test
+
+      # Asserts the SANITISED Payload config: article tabs unnamed (a named tab
+      # would move every column and need a migration), no field dropped or
+      # duplicated, preview wired to a relative URL. Runs headless because it
+      # reads the config rather than the data.
+      - name: Verify — the writing screen's shape
+        working-directory: engine/packages/cms
+        run: npx --no-install payload run scripts/verify-article-admin.mjs
+
+      # The console must validate a write with the exact predicates the reader
+      # validates a read with, or an editor sees "saved" and an unchanged
+      # masthead. Skips its file/registry matrix without a database, by design.
+      - name: Verify — site config validators
+        working-directory: engine/apps/web
+        run: npm run verify:site-config
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.11"
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Install workspace
+        working-directory: engine
+        run: npm ci
+
+      # The beacon FIRST, exactly as apps/web/Dockerfile does it. The web app's
+      # `prebuild` runs `scripts/sync-beacon.mjs`, which copies
+      # `packages/beacon/dist/beacon.min.js` into `public/` and exits 1 rather
+      # than skipping when it is missing — deliberately, because a site that
+      # silently stops collecting behaviour cannot be backfilled.
+      #
+      # That `dist/` is gitignored, so it exists on a developer's machine and
+      # in no clone. This gate's own first run failed here, which is the
+      # cleanest possible demonstration of why it exists: the step had been
+      # invisible to everyone whose checkout already had the file.
+      - name: Build the beacon
+        working-directory: engine
+        run: npm run build --workspace=@now-engine/beacon
+
+      - name: Build
+        working-directory: engine/apps/web
+        run: npm run build
+
+      # ARCHITECTURE.md §3.5, and the one that has actually bitten: a
+      # prerendered page resolves `getSiteConfig()` at BUILD time and bakes one
+      # city's masthead, nav and metadataBase into an image meant to serve
+      # both — plus freezes `new Date()` into the dateline forever. It shipped
+      # once, masked by a gitignored `.env.local` carrying a SITE_SLUG, so
+      # local builds "passed" while CI was the only thing telling the truth.
+      # `prerender-manifest.json` is where the truth lives; the route table's
+      # "static" column means "no dynamic segment", which is a different claim.
+      - name: Assert nothing was prerendered
+        working-directory: engine/apps/web
+        run: |
+          count=$(node -e "const m=require('./.next/prerender-manifest.json');console.log(Object.keys(m.routes||{}).length)")
+          echo "prerendered routes: $count"
+          if [ "$count" != "0" ]; then
+            echo "::error::$count route(s) were prerendered. One image serves every city (ARCHITECTURE.md §3.5) — a prerendered page bakes one city's config into it."
+            node -e "const m=require('./.next/prerender-manifest.json');console.log(Object.keys(m.routes||{}).join('\n'))"
+            exit 1
+          fi
