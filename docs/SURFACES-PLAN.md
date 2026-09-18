@@ -1,6 +1,9 @@
 # The three surfaces — consolidation and plan
 
-**Status:** plan agreed 2026-09-18. **S1 shipped the same day**; S2–S7 open.
+**Status:** plan agreed 2026-09-18. Shipped the same day: **S1** (foundations),
+**S2** (site honesty), **S3.2–S3.4** (admin grouping, article tabs, wording) and
+**S4.1–S4.2** (preview). Open: **S3.1** (one admin chrome), **S4.3**,
+**S5** (platform console), **S6** (visual direction), **S7** (engine wiring).
 **Companion to:** [ARCHITECTURE.md](../ARCHITECTURE.md) (decisions),
 [PROGRESS.md](../PROGRESS.md) (execution state),
 [ADMIN-CONSOLIDATION.md](ADMIN-CONSOLIDATION.md) (how six hostnames became two).
@@ -315,29 +318,128 @@ Migration ownership, for the record: Payload owns `public` through its own
 migration runner and Alembic must never touch it, which is why S1.1 is a
 Payload migration. The `sites` seed is data, not DDL.
 
-### S2 — site honesty *(about a day; the homepage stops inventing)*
+### S2 — site honesty — ✅ **SHIPPED 2026-09-18**
 
-| # | Ticket | Acceptance |
-|---|---|---|
-| S2.1 | Retire `fixtures/editorial.ts`. "What's On" reads the `events` collection (837 Jakarta / 285 Bali). "The Guides" reads real guides or the rail is not rendered. | No fixture import remains under `src/app` or `src/components`. Jakarta never shows a Bali event. |
-| S2.2 | "Most Read" becomes real from `engine.interactions`, or is renamed to what it is. | The label and the query agree. |
-| S2.3 | Every internal link resolves. `/latest` gets a route or the links go; guide hrefs stop being nested. | A link-crawl of the rendered homepage and one article page returns zero 404s, in CI. |
+| # | Ticket | Acceptance | |
+|---|---|---|---|
+| S2.1 | Retire `fixtures/editorial.ts`. Each rail renders only if it has real content. | No fixture import remains anywhere under `src/`. Jakarta never shows a Bali event. | ✅ |
+| S2.2 | "Most Read" becomes real from `engine.interactions`, behind a signal floor. | The label and the query agree. | ✅ |
+| S2.3 | Every internal link resolves; `/latest` becomes a real archive index. | A link crawl of the homepage and an article page returns zero 404s. | ✅ |
 
-### S3 — one admin shell *(the CMS layout complaint)*
+**What deleting the fixtures revealed, which is the reason to do it before any
+redesign rather than after.** Measured on both cities:
 
-| # | Ticket | Acceptance |
-|---|---|---|
-| S3.1 | One chrome for all of `/team-editor`. Classification, commerce, staff and the new platform area become sections **inside** Payload's nav instead of mastheads that replace it. `report.css` + `console.css` + `staff.css` fold into one admin sheet over `tokens.css`. | Every admin screen has the same sidebar and the same way home. No screen is reachable only by a corner badge. |
-| S3.2 | `admin.group` on every collection: **Editorial** (Articles, Events, Media, Authors) · **Places** · **Engine** (Classification reviews, Place mentions) · **Settings** (Users). | The sidebar is grouped; a writer's four collections are together and first. |
-| S3.3 | `articles` into tabs — **Story** (title, dek, hero, author, body) · **Classification** (primary type, format, subtype) · **Legacy** (WP id, permalink, series key) — with status, `publishedAt` and publish controls in the sidebar. | A writer's default screen contains no legacy or engine field. Nothing is removed, only moved. |
-| S3.4 | Editorial wording pass across every label and description. | No screen a writer sees says "primary type", "legacy", "facet" or "unclassified" without plain-language framing. |
+```
+guides             314 Jakarta · 230 Bali     a real rail
+upcoming events      0 Jakarta ·   0 Bali     every published event is 2016–2020
+most read           63 interactions           not a ranking yet
+```
 
-### S4 — preview *(depends on S1.1 and S3)*
+So the homepage renders **one** of those three rails and the other two are
+absent rather than fabricated. The precedent for hiding an empty rail is
+`areasWithCounts`, which drops terms with no articles because *"an index of
+empty links is worse than a shorter index"*. Both reappear on their own — the
+events rail the moment a future-dated event is published, Most Read once the
+beacon passes its floor — with no code change.
 
-| # | Ticket | Acceptance |
-|---|---|---|
-| S4.1 | Draft mode through `(site)`: a signed preview route that renders an unpublished article at its real URL with the real layout. | An editor previews a draft nobody else can see; an unauthenticated request to the same URL gets a 404, not the draft. |
-| S4.2 | `admin.livePreview` on Articles, Places and Events, sized for the real breakpoints. | Editing a headline updates the preview without a save. |
+**`/guides` was showing a fraction of the guides it had.** The section
+filtered on the `city-guide` format alone while the vocabulary also carries
+`guide`, with nothing in either term's description distinguishing them. Bali's
+Guides section showed **51 of 230**; Jakarta's 267 of 314. The other 226 were
+reachable only at their direct URL. Both terms now feed the section and the
+homepage rail from one constant. This is a surface decision, not a taxonomy
+change — if the taxonomy review draws a real distinction, `GUIDE_FORMATS` is
+the one line that changes.
+
+**Most Read has a floor of 500 interactions over 30 days, and no rail below
+it.** Ranking five articles out of 63 events, most of them ours, is the same
+objection ARCHITECTURE §6 raises to importing WordPress's bot-contaminated
+view counts. The SQL was run directly against the real table before being
+trusted, because it sits in a `try/catch` that returns `[]` — a syntax error
+would otherwise have hidden the rail silently and forever.
+
+**The two new smoke checks are not hypothetical.** Run against the *currently
+deployed* build they fail on both cities with exactly the predicted defects:
+
+```
+FAIL  5 of 37 internal links are broken:
+        /guides/bars      -> HTTP 404
+        /guides/dining    -> HTTP 404
+        /guides/ubud-stays -> HTTP 404
+        /guides/weekend   -> HTTP 404
+        /latest           -> HTTP 404
+FAIL  jakarta home page is rendering fixture events
+FAIL  bali home page is rendering fixture events
+```
+
+Against this branch: **39 pass, 0 fail**, both cities.
+
+### S3 — the CMS layout — **S3.2/S3.3/S3.4 shipped 2026-09-18 · S3.1 open**
+
+| # | Ticket | Acceptance | |
+|---|---|---|---|
+| S3.2 | `admin.group` on every collection: **Editorial** (Articles, Events, Media, Authors) · **Places** · **Engine** (Classification reviews, Place mentions) · **Settings** (Users). | The sidebar is grouped; a writer's four collections are together and first. | ✅ |
+| S3.3 | `articles` into tabs — **Story** · **Old site** — with the date, type, format and kind in the sidebar. | A writer's default screen contains no legacy or engine field. Nothing removed, only moved. | ✅ |
+| S3.4 | Editorial wording pass on the collections a writer opens. | Plain language on every label a writer sees. | ✅ |
+| S3.1 | One chrome for all of `/team-editor` — classification, commerce, staff and the platform area become sections **inside** Payload's nav rather than mastheads that replace it; `report.css` + `console.css` + `staff.css` fold into one sheet. | Every admin screen has the same sidebar and the same way home. | ⬜ |
+
+**S3.3, stated as the defect it fixed.** The editing screen was one flat
+column of twelve fields in the order they had been added over the project's
+life: kind, title, dek, body, hero, author, type, format, date, **legacy WP
+id, legacy permalink**, series key. A writer scrolled past *"The old WordPress
+post number. Nothing to change here."* and a field whose description shouts DO
+NOT EDIT on the way to the bottom of their own article.
+
+The tabs are **unnamed**, which is why this needed no migration — a named tab
+nests its children's data under that name and would have renamed every column.
+Verified rather than assumed: the generated types list exactly the 13 fields
+`public.articles` already has, and `verify:article-admin` asserts against the
+**sanitised** config that no tab is named and no field was dropped or
+duplicated. Writing that check found two of my own assumptions wrong, which is
+the argument for running it against the real config rather than a hand-built
+one.
+
+**Why S3.1 is separately scoped and not simply deferred.** Doing it properly
+means registering the three bespoke route trees as Payload **custom views**
+(`admin.components.views`), which is the supported mechanism and the only one
+that gets Payload's real sidebar rather than a copy of it: Payload's catch-all
+builds `initPageResult` — req, user, permissions, i18n, `visibleEntities` —
+and renders the view inside `DefaultTemplate`. Confirmed available in 3.88, and
+views receive `params` and `searchParams`, so the conversion is feasible. But
+it is a routing rewrite across eight pages with nested dynamic segments and
+server actions, and this plan's own risk note applies: *"the change most likely
+to break a screen nobody opens often."* It deserves its own change and its own
+driving, not a corner of a larger one.
+
+### S4 — preview — ✅ **SHIPPED 2026-09-18** *(S4.1 and S4.2; one follow-up)*
+
+| # | Ticket | Acceptance | |
+|---|---|---|---|
+| S4.1 | Draft mode through `(site)`: a preview route that renders an unpublished article at its real URL with the real layout. | An editor previews a draft nobody else can see; an unauthenticated request to the same URL gets a 404. | ✅ |
+| S4.2 | `admin.preview` and `admin.livePreview` on Articles, sized for the real breakpoints. | The Preview button and the side-by-side view both open the real page. | ✅ |
+| S4.3 | `@payloadcms/live-preview-react` + `RefreshRouteOnSave`, for keystroke-level updating. | The iframe tracks typing without waiting for autosave. | ⬜ |
+
+The body editor's own header named this as the missing piece —
+*"it needs draft-mode plumbing through the public site"* — and it was blocked
+on something else first: until S1.1 an unpublished article had no address to
+preview it at. That is the whole reason S1 came before S4.
+
+**Authorised by the staff session, not a signed token.** The admin is this
+same app on this same origin, so the Payload cookie is already on the request
+and `payload.auth()` is the same check every `/team-editor` page makes. A
+token in a query string is a bearer credential that lands in browser history
+and in whatever an editor pastes into chat. There was nothing for one to buy.
+
+**Driven end to end, seven cases:** anonymous cannot read the draft's URL
+(404) · anonymous cannot enable preview (404) · staff can (307 + cookie) · the
+draft renders at its real address with a banner and `noindex, nofollow` ·
+leaving preview works · the same browser 404s again afterwards ·
+`?to=https://evil.example/x` on the exit route redirects to `/`.
+
+S4.3 is open because it is a new npm dependency and a lockfile change on the
+path `npm ci` takes in the image build. Autosave at 1.5s already refreshes the
+iframe within a second or two, so the gap is small and the risk was not worth
+taking inside a larger change.
 
 ### S5 — the platform console *(depends on S1.3)*
 
