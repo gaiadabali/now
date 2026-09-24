@@ -6,12 +6,12 @@ import { getSiteConfig } from '@/lib/site'
 export const metadata = { title: 'Design system', robots: { index: false } }
 
 /**
- * The reference for S6 ("The Edition") — rebuilt in full rather than
- * patched, because the previous version specimened a system this one
- * replaces: `--paper-deep`, `--ink-body`, `--t-banner` and a "three rule
- * weights" section none of which exist in `tokens.css` any more. A stale
- * reference page is worse than none, because it is the thing people check
- * against (DESIGN-SYSTEM.md, opening line).
+ * The reference for Edition 2 — updated in place rather than rebuilt,
+ * because S6's structure (stocks, scale, band head, story card) is still
+ * the system; what changed is weight contrast, chrome and motion, and this
+ * page now specimens those alongside what it already had. A stale reference
+ * page is worse than none, because it is the thing people check against
+ * (DESIGN-SYSTEM.md, opening line).
  *
  * Internal, noindexed, not linked from the masthead. Every value shown here
  * is read from a token or from real content — nothing on this page is typed
@@ -199,6 +199,68 @@ export default async function DesignPage() {
         </div>
         <div style={{ background: 'var(--ink)', padding: 'var(--space-m)' }}>
           <StoryCard article={articles[5]} variant="rank" index={1} locale={site.locale} timeZone={site.timezone} />
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------- weight contrast
+          Edition 2's answer to "every headline is Cormorant 300... at card
+          and index sizes it reads faint and monotone." Cover/display sizes
+          keep the light weight; a card or index headline no longer does. */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Weight contrast" note="display--medium · display--strong" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          Cormorant 300 stays the voice at cover and display sizes. A card headline (with a
+          photograph beside it) takes 500; an index row with no photograph — Latest's own
+          complaint — takes 600, because the type alone has to carry the hierarchy a picture
+          usually would.
+        </p>
+        <div className="specimen">
+          <div className="specimen__label">300 · display--light · cover/display sizes only</div>
+          <div className="display display--light" style={{ fontSize: 'var(--t-display)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+        <div className="specimen">
+          <div className="specimen__label">500 · display--medium · a card headline</div>
+          <div className="display display--medium" style={{ fontSize: 'var(--t-title)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+        <div className="specimen">
+          <div className="specimen__label">600 · display--strong · Latest's row, no photograph</div>
+          <div className="display display--strong" style={{ fontSize: 'var(--t-title)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------- chrome --- */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Chrome" note="sticky, condensing, and a real mobile menu" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          The masthead (top of this page) is sticky and condenses a few pixels into a scroll —
+          try it. Below 62rem its section list is a native <code>&lt;details&gt;</code> drawer
+          rather than the sideways-scrolling row it used to be; nothing here is client-rendered
+          except the two classes <code>HeaderScroll</code> toggles on <code>&lt;body&gt;</code>
+          (<code>hdr-condensed</code>, <code>hdr-hidden</code>) — see{' '}
+          <code>components/HeaderScroll.tsx</code>.
+        </p>
+      </section>
+
+      {/* --------------------------------------------------------- motion --- */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Motion" note="purposeful, fast, and off under reduced motion" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          No animation library. Everything below is CSS — reveal-on-scroll is
+          `animation-timeline: view()` behind `@supports`, the reading progress bar (article
+          pages) is `animation-timeline: scroll(root)`, and both stay fully visible with no
+          animation at all wherever a browser or a reader's OS does not support or does not
+          want it (`prefers-reduced-motion`). Hover a card below for the image-zoom and
+          underline draw.
+        </p>
+        <div className="grid grid--3">
+          <StoryCard article={articles[0]} locale={site.locale} timeZone={site.timezone} />
+          <StoryCard article={articles[1]} locale={site.locale} timeZone={site.timezone} />
         </div>
       </section>
     </div>
