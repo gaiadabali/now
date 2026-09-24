@@ -3367,3 +3367,580 @@ html[data-theme='dark'] .graphic-icon {
   text-align: right;
   color: var(--theme-elevation-600);
 }
+
+/* ============================================================================
+   ==== WS3 desk ====
+   ----------------------------------------------------------------------------
+   Edition 2 (docs/EDITION-2-PLAN.md). Three surfaces: the desk home
+   (`.desk__*`), the front-page editor (`.fp__*`), and the writing screen's
+   "Ready to publish" sidebar panel (`.now-checklist__*`). Same conventions
+   as the rest of this file — `--theme-elevation-*` for the ramp,
+   `--now-accent` for the one accent, Cormorant (`--font-serif`) for a figure
+   that wants weight, Heebo (`--font-body`) for everything working. Docs/
+   DESIGN-SYSTEM.md §5's rule for the admin holds here too: state is form and
+   colour, never a sentence alone — every "needs you" row pairs a number with
+   a link, not a line of prose asking someone to remember it.
+
+   OWNED BY WS3. Do not reformat anything above this marker; add to this
+   block, do not open a second one.
+   ========================================================================= */
+
+/* --- desk home ------------------------------------------------------------ */
+
+.desk {
+  max-width: 860px;
+}
+
+.desk__hero {
+  margin-bottom: calc(var(--base) * 1.2);
+  padding-bottom: calc(var(--base) * 0.6);
+  border-bottom: var(--edge, 1px solid var(--theme-elevation-1000));
+}
+
+.desk__greeting {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem);
+  color: var(--theme-elevation-1000);
+}
+
+.desk__section {
+  margin-bottom: calc(var(--base) * 1.6);
+}
+
+.desk__section-title,
+.desk__subsection-title {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-body);
+  font-size: var(--t-micro, 0.65625rem);
+  font-weight: 600;
+  letter-spacing: var(--track-micro, 0.16em);
+  text-transform: uppercase;
+  color: var(--theme-elevation-600);
+}
+
+.desk__subsection-title {
+  margin-top: calc(var(--base) * 1.1);
+}
+
+.desk__stats {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.desk__stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
+}
+
+.desk__stat-label {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--theme-elevation-800);
+}
+
+.desk__stat-value {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--now-accent);
+}
+
+/* A count of zero is good news, not an alert — this is the one place a
+   number is deliberately NOT `--now-accent`, matching §5's "a figure that is
+   bad turns red" (the corollary: a figure that is fine does not). */
+.desk__stat--zero .desk__stat-note {
+  color: var(--theme-elevation-500);
+  font-size: 0.875rem;
+}
+
+.desk__stat-link {
+  text-decoration: none;
+}
+
+.desk__stat-link:hover .desk__stat-value,
+.desk__stat-link:focus-visible .desk__stat-value {
+  text-decoration: underline;
+}
+
+.desk__stat--muted .desk__stat-value--muted {
+  color: var(--theme-elevation-400);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+}
+
+.desk__empty {
+  padding: 1.5rem;
+  border: 1px dashed var(--theme-elevation-200);
+  color: var(--theme-elevation-500);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.desk__recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.desk__recent-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
+}
+
+.desk__recent-title {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+}
+
+.desk__recent-date {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.desk__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.desk__action {
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--theme-elevation-250);
+  border-radius: var(--style-radius-s, 3px);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--theme-elevation-800);
+  text-decoration: none;
+}
+
+.desk__action:hover,
+.desk__action:focus-visible {
+  border-color: var(--now-accent);
+  color: var(--now-accent);
+}
+
+.desk__action--primary {
+  border-color: var(--now-accent);
+  background: var(--now-accent);
+  color: #fff;
+}
+
+.desk__action--primary:hover,
+.desk__action--primary:focus-visible {
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* --- front-page editor ------------------------------------------------------ */
+
+.fp__main {
+  max-width: 960px;
+}
+
+.fp__sub {
+  color: var(--theme-elevation-600);
+  font-size: 0.9375rem;
+  max-width: 70ch;
+}
+
+.fp__ttl {
+  color: var(--theme-elevation-600);
+  font-size: 0.8125rem;
+  margin-bottom: calc(var(--base) * 1.1);
+}
+
+.fp__notice {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--theme-elevation-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fp__notice--ok {
+  border-color: var(--theme-success-500, var(--theme-elevation-150));
+}
+
+.fp__notice--bad {
+  border-color: var(--theme-error-500);
+}
+
+.fp__bands {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  counter-reset: none;
+}
+
+.fp__band {
+  padding: 1rem 0;
+  border-top: 1px solid var(--theme-elevation-1000);
+}
+
+.fp__band:last-child {
+  border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
+}
+
+.fp__band-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.fp__band-index {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--theme-elevation-400);
+  flex: none;
+  width: 1.5rem;
+}
+
+.fp__band-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.fp__band-fields input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s, 3px);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.fp__band-label {
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-500);
+  white-space: nowrap;
+}
+
+.fp__band-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  padding-left: 2.25rem;
+}
+
+@media (max-width: 52rem) {
+  .fp__band-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fp__note {
+  padding-left: 2.25rem;
+  color: var(--theme-elevation-500);
+  font-size: 0.875rem;
+}
+
+.fp__pins-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--track-micro, 0.1em);
+  text-transform: uppercase;
+  color: var(--theme-elevation-600);
+}
+
+.fp__pin-list,
+.fp__autofill-list {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+}
+
+.fp__pin,
+.fp__autofill-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
+  font-size: 0.875rem;
+}
+
+.fp__pin-title {
+  flex: 1;
+}
+
+.fp__pin-status {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500);
+  letter-spacing: 0.06em;
+}
+
+.fp__search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.fp__search input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s, 3px);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.fp__search-results {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0.5rem;
+  border: var(--hair, 1px solid var(--theme-elevation-150));
+  background: var(--theme-elevation-50);
+}
+
+.fp__search-results li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+}
+
+.fp__search-results li span:first-child {
+  flex: 1;
+}
+
+.fp__empty {
+  color: var(--theme-elevation-500);
+  font-size: 0.875rem;
+}
+
+.fp__muted {
+  color: var(--theme-elevation-500);
+  font-size: 0.75rem;
+}
+
+.fp__row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.fp__row-actions--main {
+  margin: 1rem 0 2rem;
+}
+
+.fp__btn {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--theme-elevation-250);
+  border-radius: var(--style-radius-s, 3px);
+  background: var(--theme-input-bg);
+  color: var(--theme-elevation-800);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.fp__btn:hover:not(:disabled) {
+  border-color: var(--now-accent);
+  color: var(--now-accent);
+}
+
+.fp__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fp__btn--primary {
+  border-color: var(--now-accent);
+  background: var(--now-accent);
+  color: #fff;
+}
+
+.fp__btn--primary:hover:not(:disabled) {
+  color: #fff;
+  opacity: 0.9;
+}
+
+.fp__btn--danger:hover:not(:disabled) {
+  border-color: var(--theme-error-500);
+  color: var(--theme-error-500);
+}
+
+.fp__preview {
+  margin-top: 1.5rem;
+}
+
+.fp__preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.fp__preview-frame {
+  width: 100%;
+  height: 720px;
+  border: var(--edge, 1px solid var(--theme-elevation-1000));
+  background: var(--theme-elevation-0);
+}
+
+/* --- the writing screen's "Ready to publish" panel ------------------------- */
+
+.now-checklist {
+  padding-top: 0.5rem;
+}
+
+.now-checklist__title {
+  margin: 1.1rem 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: var(--track-micro, 0.1em);
+  text-transform: uppercase;
+  color: var(--theme-elevation-600);
+}
+
+.now-checklist__title:first-child {
+  margin-top: 0;
+}
+
+.now-checklist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.now-checklist__item {
+  display: grid;
+  grid-template-columns: 1.1rem auto;
+  gap: 0.15rem 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
+  font-size: 0.8125rem;
+}
+
+.now-checklist__mark {
+  grid-row: span 2;
+  text-align: center;
+  font-weight: 700;
+}
+
+.now-checklist__item--ok .now-checklist__mark {
+  color: var(--theme-success-500, #1d5546);
+}
+
+.now-checklist__item--warn .now-checklist__mark {
+  color: var(--now-accent);
+}
+
+.now-checklist__item--unknown .now-checklist__mark {
+  color: var(--theme-elevation-400);
+}
+
+.now-checklist__label {
+  font-weight: 600;
+  color: var(--theme-elevation-800);
+}
+
+.now-checklist__note {
+  grid-column: 2;
+  color: var(--theme-elevation-500);
+}
+
+.now-checklist__meta {
+  display: flex;
+  gap: 1rem;
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+  font-variant-numeric: tabular-nums;
+}
+
+.now-checklist__serp {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--theme-elevation-150);
+  background: var(--theme-elevation-0);
+}
+
+.now-checklist__serp-url {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  color: #1a0dab;
+  word-break: break-all;
+}
+
+.now-checklist__serp-title {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  color: #1a0dab;
+  line-height: 1.3;
+}
+
+.now-checklist__serp-dek {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+  line-height: 1.4;
+}
+
+.now-checklist__card {
+  border: 1px solid var(--theme-elevation-150);
+  overflow: hidden;
+  background: var(--theme-elevation-0);
+}
+
+.now-checklist__card-image {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+
+.now-checklist__card-image--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-elevation-400);
+  font-size: 0.75rem;
+  background: var(--theme-elevation-50);
+}
+
+.now-checklist__card-body {
+  padding: 0.6rem 0.7rem;
+}
+
+.now-checklist__card-title {
+  margin: 0 0 0.2rem;
+  font-size: 0.875rem;
+  color: var(--theme-elevation-800);
+  line-height: 1.3;
+}
+
+.now-checklist__card-domain {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-elevation-500);
+}
