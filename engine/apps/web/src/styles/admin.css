@@ -4055,3 +4055,155 @@ html[data-theme='dark'] .graphic-icon {
   letter-spacing: 0.04em;
   color: var(--theme-elevation-500);
 }
+
+/* ============================================================================
+   ==== WS4 platform ====
+   S5.2 (partnership write path) · S5.3 (blast radius) — commerce/orgs/[id]/
+   partnerships/**. Everything below is new with this ticket; nothing above
+   this marker in the file was touched. Reuses `.platform__*` and
+   `.console__*` primitives from S5.1 rather than redrawing them — a form
+   field, a button and a notice are the same object here as on the sites
+   registry screen, and giving them a fourth spelling would be exactly the
+   inconsistency docs/DESIGN-SYSTEM.md §5 exists to close.
+   ========================================================================= */
+
+/* The blast-radius confirmation panel (S5.3). Deliberately NOT a modal
+   overlay: docs/DESIGN-SYSTEM.md §5 wants "state as form and colour", and an
+   overlay dialog is a heavier metaphor than this needs — the form is simply
+   replaced by the figure and two buttons, in place, so there is nowhere else
+   for attention to go. `--red` only when the count itself is bad information
+   (unavailable), matching `.platform__kpi-n--bad`'s existing rule rather than
+   inventing a second one. */
+.ws4-blast {
+  border-top: 3px solid var(--ok);
+  background: var(--theme-elevation-50);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: calc(var(--base) * 1.4);
+}
+
+.ws4-blast h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--theme-elevation-800);
+}
+
+.ws4-blast__figure {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-elevation-1000);
+  margin: 0 0 0.25rem;
+}
+
+.ws4-checkboxes {
+  gap: 1.5rem;
+}
+
+.ws4-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-700);
+}
+
+/* Tier pills, alongside `.console__pill--live`/`--expired` (S5.1's own
+   live/expired verdict) — a *third* independent fact about the same row, so
+   a distinct set of modifiers rather than overloading the existing ones.
+   `paid` gets `--red`: §11 is explicit that a paid placement is the one tier
+   whose rendering behaviour (an external link, `rel="sponsored"`, a badge)
+   is genuinely different from the other two, and that is worth the same
+   colour weight the coverage bars give a real finding. */
+.ws4-pill--tier-paid {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.ws4-audit {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.ws4-audit__row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.ws4-audit__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+}
+
+.ws4-audit__actor {
+  font-weight: 600;
+  color: var(--theme-elevation-800);
+}
+
+.ws4-audit__ts {
+  font-variant-numeric: tabular-nums;
+}
+
+.ws4-audit__diff {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-700);
+}
+
+/* ----------------------------------------------------------------------
+   Second pass (coordinator review) — the primary-action button, a wider
+   form column, and per-field hints.
+   ------------------------------------------------------------------------
+   `.platform__btn--primary` (S5.1) leans on `--theme-elevation-800` /
+   `--theme-elevation-0`, which read as near-invisible in this custom
+   view's context — a real, reported contrast bug, not a taste call. Rather
+   than touch `.platform__btn--primary` itself (shared with the S5.1 nav/
+   brand/rails forms, above this marker), the primary action on the
+   screens THIS ticket owns gets its own class, using `--red` — the exact
+   colour docs/DESIGN-SYSTEM.md §1 already names for this job: "Red is
+   reserved: the mark, the Partner label, section labels, and the primary
+   action." A hex literal in tokens.css, not a Payload theme variable, so
+   it cannot go missing the same way. */
+.ws4-btn--primary {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.ws4-btn--primary:hover:not(:disabled) {
+  background: var(--red-deep);
+  border-color: var(--red-deep);
+}
+
+.ws4-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The narrow-field complaint: `.platform__field` (S5.1) has no width rule
+   of its own, so every input sizes to the browser default — fine for a
+   handful of short nav rows, cramped for a form with ten fields. Scoped to
+   this form only, so S5.1's own screens are untouched. */
+.ws4-partnership-form .platform__field {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
+.ws4-partnership-form input[type='text'],
+.ws4-partnership-form input[type='search'],
+.ws4-partnership-form input[type='date'] {
+  width: 100%;
+}
+
+.ws4-hint {
+  font-size: 0.78rem;
+  color: var(--theme-elevation-500);
+  line-height: 1.35;
+}

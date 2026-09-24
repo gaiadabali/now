@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { getOrg, listPartnerships } from '@/lib/queries'
+import { getOrg, listOrgVenues, listPartnerships } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
-import { consoleHref } from '../../paths'
+import { consoleHref, newPartnershipHref, partnershipHref } from '../../paths'
+import { VenuesPanel } from './VenuesPanel'
 
 /**
  * FORMERLY `commerce/orgs/[id]/page.tsx` — a literal Next dynamic route, with
@@ -27,7 +28,7 @@ export async function OrgDetailView({ id }: { id: string }) {
       </>
     )
   }
-  const partnerships = await listPartnerships(id)
+  const [partnerships, venues] = await Promise.all([listPartnerships(id), listOrgVenues(id)])
 
   return (
     <>
@@ -50,13 +51,15 @@ export async function OrgDetailView({ id }: { id: string }) {
       ) : (
         <table>
           <thead>
-            <tr><th>Site</th><th>Tier</th><th>Status</th><th>Starts</th><th>Ends</th><th>Place</th></tr>
+            <tr><th>Site</th><th>Tier</th><th>Status</th><th>Starts</th><th>Ends</th><th>Place</th><th></th></tr>
           </thead>
           <tbody>
             {partnerships.map((p) => (
               <tr key={p.id}>
                 <td>{p.site_slug ? <code>{p.site_slug}</code> : '—'}</td>
-                <td>{p.tier ?? '—'}</td>
+                <td>
+                  <span className={p.tier === 'paid' ? 'ws4-pill--tier-paid' : undefined}>{p.tier ?? '—'}</span>
+                </td>
                 <td>
                   <span className={`console__pill console__pill--${p.is_live ? 'live' : 'expired'}`}>
                     {p.is_live ? 'live' : (p.status ?? 'inactive')}
@@ -65,11 +68,20 @@ export async function OrgDetailView({ id }: { id: string }) {
                 <td>{p.starts_at?.slice(0, 10) ?? '—'}</td>
                 <td>{p.ends_at?.slice(0, 10) ?? 'open'}</td>
                 <td>{p.place_id ? <code>{p.place_id}</code> : '—'}</td>
+                <td><Link href={partnershipHref(org.id, p.id)}>Edit →</Link></td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      <p className="console__sub" style={{ marginTop: '1rem' }}>
+        <Link className="platform__btn ws4-btn--primary" href={newPartnershipHref(org.id)}>
+          + New partnership
+        </Link>
+      </p>
+
+      <VenuesPanel initialVenues={venues} orgId={org.id} orgName={org.name} />
     </>
   )
 }

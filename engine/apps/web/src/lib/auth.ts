@@ -4,6 +4,12 @@ import { headers as nextHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { payloadClient } from '@/lib/payload'
+import { canManagePartners, canWritePartnershipForSite, commerceCurrentSiteSlug } from '@/lib/commerceAccess'
+
+// Re-exported so every existing and future caller keeps importing these
+// three from `@/lib/auth` — see `lib/commerceAccess.ts`'s module comment for
+// why the actual implementations live in a Next-free file instead.
+export { canManagePartners, canWritePartnershipForSite, commerceCurrentSiteSlug }
 
 /**
  * Who is signed in, and what they may see.
@@ -52,9 +58,54 @@ export function canReadCommerce(user: StaffUser): boolean {
   return Boolean(user.commerceRole) && user.commerceRole !== 'none'
 }
 
-/** May this user change partnership state? Reserved for the E4.4 write surface. */
-export function canManagePartners(user: StaffUser): boolean {
-  return user.commerceRole === 'admin' || user.commerceRole === 'partner_manager'
+/**
+ * The gate every partnership-writing server action calls FIRST, before it
+ * looks at what the request is asking to change.
+ *
+ * Deliberately narrow — `canManagePartners` only, nothing site-specific —
+ * and deliberately a hard redirect: this is for someone with no business on
+ * this surface at all (an editorial `author`, an unauthenticated request, a
+ * `viewer`). Same reasoning as `requireStaffAdmin`: a server action is its
+ * own POST endpoint, reachable by anyone who has ever loaded the page that
+ * renders its form, so the page's `requireCommerceAccess()` protects the
+ * *reading* and does nothing for the *writing*.
+ *
+ * **Site-scoping is deliberately NOT done here.** A `partner_manager` who
+ * picks the wrong site in a form is not an intruder — they are a legitimate
+ * writer who made a choice this process cannot honour, and that is a
+ * message the action can return normally (`canWritePartnershipForSite`,
+ * called by the action once it knows which site the request names), not a
+ * reason to redirect them off the screen and discard whatever else they had
+ * typed. Splitting the two means "you may not write here at all" and "you
+ * may not write THIS site" fail differently, which is also what makes both
+ * independently testable — see `test/partnershipAccess.test.ts`.
+ */
+export async function requireCommerceWriter(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canManagePartners(user)) redirect('/team-editor/commerce')
+  return user
+}
+
+/**
+ * The same gate, returning the real Payload user document rather than this
+ * file's trimmed `StaffUser` view of it — for the one commerce write that
+ * goes through Payload's Local API instead of raw SQL (linking a venue to
+ * an organisation, `commerce/orgs/[id]/venuesActions.ts`, on the `places`
+ * collection). Same reasoning as `requireReviewerActor`: `payload.update()`
+ * hands whatever `user` it is given to hooks and version history as
+ * `req.user`, and the trimmed shape could disagree with what one of those
+ * expects. Places' own `update` access (`isAuthorOrAbove`) is the
+ * EDITORIAL dimension and is deliberately not what gates this — a
+ * commerce writer is judged on `canManagePartners`, the same as every
+ * other write in this area, so the call site passes `overrideAccess: true`
+ * and this function is the only authority that matters.
+ */
+export async function requireCommerceWriterActor() {
+  const payload = await payloadClient()
+  const { user } = await payload.auth({ headers: await nextHeaders() })
+  if (!user) redirect('/team-editor/login')
+  if (!canManagePartners(user as StaffUser)) redirect('/team-editor/commerce')
+  return user
 }
 
 /** May this user see editorial content at all? */
