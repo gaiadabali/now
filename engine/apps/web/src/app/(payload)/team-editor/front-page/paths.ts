@@ -1,3 +1,5 @@
+import { DEFAULT_HOME_RAILS } from '@/lib/homeBands'
+
 /**
  * Where the front-page editor lives. Same reasoning as every other
  * `paths.ts` beside it (`platform/paths.ts`, `staff/paths.ts`).
@@ -18,20 +20,12 @@ export const EDITOR_ROOT = '/team-editor'
  */
 export const DEPARTMENT_SECTIONS = ['dining', 'stay', 'wellness', 'things-to-do', 'events', 'editorial'] as const
 
-/** A sensible starting order for a site whose `home_rails` has never been
- * saved — not a claim about what the home page currently renders, which
- * WS2 owns, only a scaffold so an editor has bands to arrange rather than a
- * blank screen and seven key names to remember. */
+/** Where an editor starts when `home_rails` has never been saved: exactly
+ * the order the home page renders in that state (`lib/homeBands.ts`), so the
+ * first Save changes only what the editor changed. The other departments are
+ * one "Add a band" away (`addableBandTypes`), not pre-stacked. */
 export function defaultBandOrder(): string[] {
-  return [
-    'lead',
-    'edit',
-    'for-you',
-    ...DEPARTMENT_SECTIONS.map((s) => `department:${s}`),
-    'guides',
-    'latest',
-    'explore',
-  ]
+  return DEFAULT_HOME_RAILS.map((rail) => rail.key)
 }
 
 /**

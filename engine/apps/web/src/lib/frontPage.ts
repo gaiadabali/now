@@ -9,6 +9,7 @@ import {
 import { departmentVariant, type DepartmentVariant } from '@/lib/bandVariant'
 import { areasWithCounts } from '@/lib/payload'
 import { getForYou, type ArticleRail, type ReaderContext } from '@/lib/recommend'
+import { DEFAULT_HOME_RAILS } from '@/lib/homeBands'
 import { getSiteConfig, type HomeRail, type SiteConfig } from '@/lib/site'
 
 /**
@@ -60,26 +61,9 @@ export type FrontPage = {
   bands: FrontBand[]
 }
 
-/**
- * No `sites.home_rails` row: the shape this page has always had, in order.
- * `for-you` sits right after `edit` so the day WS1's engine starts returning
- * a real personalised rail, it appears with no further change here — the
- * contract already says a null `getForYou` renders nothing.
- *
- * Exported so the desk's front-page editor can start an editor session from
- * exactly the order the home page renders when `homeRails` is unset, rather
- * than a second copy of this list living in `packages/cms` that could drift
- * from what actually ships.
- */
-export const DEFAULT_HOME_RAILS: HomeRail[] = [
-  { key: 'lead' },
-  { key: 'edit' },
-  { key: 'for-you' },
-  { key: 'department:stay' },
-  { key: 'guides' },
-  { key: 'latest' },
-  { key: 'explore' },
-]
+/** Re-exported from `lib/homeBands.ts`, which both this page and the desk's
+ * front-page editor read, so the two can never start from different orders. */
+export { DEFAULT_HOME_RAILS }
 
 const KNOWN_KEYS = new Set(['lead', 'edit', 'for-you', 'guides', 'latest', 'explore'])
 function isKnownKey(key: string): boolean {
