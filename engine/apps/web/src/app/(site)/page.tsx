@@ -5,7 +5,7 @@ import { StoryCard } from '@/components/StoryCard'
 import { Band, BandHead, AreaIndex, Signup } from '@/components/primitives'
 import { getFrontPage } from '@/lib/frontPage'
 import { sectionLabel, sectionOf } from '@/lib/content'
-import { currentReader } from '@/lib/reader'
+import { readerContextFromRequest } from '@/lib/recommend'
 import { formatDate } from '@/lib/format'
 
 /**
@@ -28,8 +28,17 @@ import { formatDate } from '@/lib/format'
  * `home_rails` pins and ordering are honoured when set.
  */
 export default async function HomePage() {
-  const reader = await currentReader()
-  const { site, bands } = await getFrontPage({ identityId: reader?.id })
+  // `readerContextFromRequest()` (lib/recommend.ts) is the ONE place that
+  // knows both the beacon's anonymous id AND a signed-in reader's identity.
+  // The previous version called `currentReader()` directly and handed
+  // `getFrontPage` only `{ identityId }` — an anonymous first visit (no
+  // `identityId`, the common case) reached `getForYou` with an EMPTY
+  // `ReaderContext`, so "For you" could never fire before sign-up, however
+  // much beacon history that visitor had. `getForYou` (lib/recommend.ts)
+  // already reads `anonId` when there is no `identityId`; it was this call
+  // site dropping it before it ever arrived.
+  const reader = await readerContextFromRequest()
+  const { site, bands } = await getFrontPage(reader)
   const { locale, timezone: tz } = site
 
   if (bands.length === 0) {

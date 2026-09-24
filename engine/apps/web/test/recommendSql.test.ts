@@ -11,6 +11,8 @@ import {
   diversify,
   groupComplementCandidatesBySection,
   MAX_PLAN_AROUND_RAILS,
+  meetsReadersAlsoReadFloor,
+  MIN_READERS_ALSO_READ,
   type CandidateRow,
   type ComplementCandidateRow,
 } from '../src/lib/recommendSql.ts'
@@ -153,4 +155,20 @@ test('groupComplementCandidatesBySection never puts one article in two sections'
   const grouped = groupComplementCandidatesBySection(rows, sections, 6, new Set())
   const totalPlacements = Array.from(grouped.values()).reduce((sum, r) => sum + r.length, 0)
   assert.equal(totalPlacements, 1)
+})
+
+// ---------------------------------------------------------------------------
+// meetsReadersAlsoReadFloor — S2 honesty rule applied to a rail's existence
+// (WS1, fourth pass, item 4): fewer than MIN_READERS_ALSO_READ qualifying
+// items and the rail must not render at all, never padded to a round number.
+// ---------------------------------------------------------------------------
+
+test(`meetsReadersAlsoReadFloor is false below ${MIN_READERS_ALSO_READ} qualifying items`, () => {
+  assert.equal(meetsReadersAlsoReadFloor(0), false)
+  assert.equal(meetsReadersAlsoReadFloor(MIN_READERS_ALSO_READ - 1), false)
+})
+
+test(`meetsReadersAlsoReadFloor is true at exactly ${MIN_READERS_ALSO_READ} and above`, () => {
+  assert.equal(meetsReadersAlsoReadFloor(MIN_READERS_ALSO_READ), true)
+  assert.equal(meetsReadersAlsoReadFloor(MIN_READERS_ALSO_READ + 5), true)
 })

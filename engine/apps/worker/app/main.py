@@ -136,7 +136,12 @@ async def heartbeat_or_fail(ctx: dict) -> dict:
 class WorkerSettings:
     """Consumed by `arq app.main.WorkerSettings`."""
 
-    functions = [jobs.ensure_partitions, jobs.drop_old_partitions, jobs.recompute_hidden_rival_flags_job]
+    functions = [
+        jobs.ensure_partitions,
+        jobs.drop_old_partitions,
+        jobs.recompute_hidden_rival_flags_job,
+        jobs.recompute_covisitation_job,
+    ]
     cron_jobs = [
         # 03:10 UTC — well before Jakarta/Bali morning traffic (UTC+7/+8),
         # and 14 days of runway means a missed night is not an incident.
@@ -150,6 +155,13 @@ class WorkerSettings:
         # keeps things fresh, and this is a nightly correctness check, not
         # the primary mechanism.
         cron(jobs.recompute_hidden_rival_flags_job, hour=3, minute=55),
+        # 04:15 UTC — after both partition and rival-flag passes, its own
+        # slot rather than piggybacking on either (WS1 fourth pass, item 4:
+        # "Ensure the worker's covisitation job runs on a schedule"). Not
+        # run_at_startup: a full scan of engine.interactions on every
+        # container restart is wasted work the nightly cadence already
+        # covers.
+        cron(jobs.recompute_covisitation_job, hour=4, minute=15),
         # Every minute, with a 180s TTL: two consecutive misses expire the
         # key, so a single slow tick is not treated as death.
         cron(heartbeat_or_fail, minute=set(range(60)), run_at_startup=True),

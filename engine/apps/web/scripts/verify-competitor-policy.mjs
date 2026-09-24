@@ -42,6 +42,8 @@ const {
   complementSectionsFor,
   resolveComplementCandidates,
   resolveReadNextCandidates,
+  resolveCovisitedCandidates,
+  meetsReadersAlsoReadFloor,
   groupComplementCandidatesBySection,
   dedupeBySeries,
   diversify,
@@ -94,6 +96,7 @@ async function resolveAllRails(articleId, subjectType, relations) {
   for (const rows of grouped.values()) for (const r of rows) usedIds.add(r.id)
 
   const readNextRows = diversify(dedupeBySeries(readNextRowsRaw), RAIL_LIMIT, usedIds)
+  for (const r of readNextRows) usedIds.add(r.id)
 
   const rails = []
   for (const { section } of sections) {
@@ -101,6 +104,20 @@ async function resolveAllRails(articleId, subjectType, relations) {
     if (rows.length > 0) rails.push({ key: `plan-${section}`, rows })
   }
   if (readNextRows.length > 0) rails.push({ key: 'read-next', rows: readNextRows })
+
+  // "Readers also read" (WS1, fourth pass, item 4) — the SAME competitor
+  // guard as every other rail (`resolveCovisitedCandidates` reuses the
+  // exact `excludedTypes` + hidden-rival-flags predicates COMPLEMENT_SQL and
+  // READ_NEXT_SQL use), plus the honesty floor: fewer than
+  // MIN_READERS_ALSO_READ qualifying items and the rail does not exist.
+  const covisitedRows = dedupeBySeries(
+    await resolveCovisitedCandidates(pool, articleId, [...excludedTypesFor(relations, subjectType)], Math.max(RAIL_LIMIT * 3, 12)),
+  ).filter((r) => !usedIds.has(r.id))
+  const covisitedFinal = diversify(covisitedRows, RAIL_LIMIT)
+  if (meetsReadersAlsoReadFloor(covisitedFinal.length)) {
+    rails.push({ key: 'readers-also-read', rows: covisitedFinal })
+  }
+
   return rails
 }
 

@@ -301,3 +301,98 @@ keys off (own type, featured venue, and headline for non-venue types).
    `articles.created_by`; without the column every article query 500s while
    `/healthz` stays green — the S1.1 trap again.
 4. Roll the web and worker images. Smoke, then `verify:competitor-policy` per city.
+
+## 9. WS1 fourth pass (2026-09-24) — stated preferences, session intent, covisitation, A/B
+
+The owner's ticket: "use the preferences readers choose at sign-up," plus
+building out the rest of the §10 roadmap now that the sign-up picker
+(`lib/preferences.ts`, `engine.identities.stated_prefs`) has been live long
+enough to have real picks in it. Six pieces, all on `apps/web/src/lib/
+recommend.ts` (+ two new sibling modules) and `engine/apps/worker`:
+
+1. **Stated preferences drive "For you" from the first visit.** §10's
+   `α = n_meaningful/(n_meaningful+20)`, `taste = α·revealed +
+   (1−α)·stated_seed` — a reader with zero clicks gets `taste =
+   stated_seed` outright, not a null rail until 20 interactions accumulate.
+   `stated_seed` (new: `loadStatedSeed` in `recommend.ts`) is the mean of
+   the picked terms' own embeddings (`engine.embeddings` entity_type='term'
+   in the PLATFORM db), blended with the article centroid where
+   `entity_terms` coverage exists for that facet — today `type` (75–82%)
+   and `location` (full); `topic`/`audience`/`price_band` are 0% pending a
+   parallel WS5 tagging effort, so a picked topic still contributes its own
+   term embedding, just no article centroid yet. A soft re-rank bonus
+   (never a hard filter, §8.C) nudges matching `type`/`location` picks.
+   Label is honest about which side won: "Because you like {terms}" vs
+   "Because of what you read" (`labelFor`, `lib/taste.ts`).
+2. **Anonymous readers.** `app/(site)/page.tsx` called `currentReader()`
+   and handed `getFrontPage` only `{ identityId }`, dropping the beacon's
+   `anonId` — "For you" could never fire before sign-up however much
+   history existed. Now calls `readerContextFromRequest()`
+   (`lib/recommend.ts`, already existed, was simply not used here).
+3. **Session intent.** §5's `taste_vec_short`: the current session's reads
+   (last 30 minutes, by `anon_id`/`user_id`) blended at `β=0.6` (3+
+   qualifying reads this session) or `β=0.2` (fewer). Blended into "For
+   you" unconditionally; blended into Read Next's ORDER ONLY (pool and
+   exclusions unchanged) behind the `read-next` A/B experiment (item 5),
+   so its effect is measured, not assumed.
+4. **Covisitation.** `engine.covisitation` was real, read-wired
+   (`now_blender.covisitation`), and had 0 rows in every city — nothing
+   ever wrote to it. New: `now_filters.covisitation_recompute
+   .recompute_covisitation`, a full nightly recompute (worker cron, 04:15
+   UTC) from `engine.interactions`, diff-aware like the hidden-rival job.
+   Blended into Read Next's order unconditionally when rows exist for a
+   subject; a new "Readers also read" rail appears on the article page
+   ONLY when ≥3 competitor-clean covisited items clear the score floor
+   (`MIN_READERS_ALSO_READ`, `meetsReadersAlsoReadFloor`) — hidden, never
+   padded, below it (S2 honesty rule applied to a rail's existence). The
+   verify script checks this rail with the same type/untyped/hidden-rival
+   guard as every other rail.
+5. **A/B testing.** `lib/experiments.ts`: deterministic `anon_id`-hash
+   bucketing, variants as data (`ACTIVE_EXPERIMENTS`). One experiment
+   wired: `read-next` (`control` vs `session-intent`). The beacon contract
+   is frozen, so the variant rides inside the existing `rail` value —
+   `<rail>~<variant>`, only while active for that reader; no suffix means
+   no experiment. WS4's dashboard reads this convention directly.
+6. **Proof.**
+   - Unit tests: `test/taste.test.ts` (α at 0/20/past-20, the three-way
+     blend branch, the honest label, incl. the exact-0.5 boundary),
+     `test/experiments.test.ts` (deterministic bucketing, spread across
+     variants, the suffix rule), `test/recommendSql.test.ts`
+     (`meetsReadersAlsoReadFloor` at/below the line).
+   - `engine/packages/filters/tests/test_covisitation_recompute_db.py`:
+     directional scoring, `min_support` floor, unqualified dwell/scroll
+     excluded, idempotent re-run, stale-pair removal — DB-integration,
+     synthetic tables, skips cleanly without a DB.
+   - `engine/apps/worker/tests/test_worker.py`: the new cron job's
+     per-site reporting, failure isolation, and that it is actually
+     registered on `WorkerSettings` (not just defined — see this repo's
+     own `run_forever`-vs-`run` postmortem for why that check exists).
+   - Gates re-run after this pass: web typecheck clean, web tests
+     **83/83** (was 62), `lint:site-literals`/`lint:account-gate` clean,
+     `now_filters` **128/128** (was 123), `engine-worker` **64/64** (was
+     61). `verify:competitor-policy`: Bali 2,047 articles, **0
+     violations**, 14.6ms/article warm; Jakarta 1,632 articles, **0
+     violations**, 40.8ms/article warm (some individual queries hit the
+     script's own 10s statement timeout under this session's concurrent
+     multi-agent DB load — not reproduced in isolation, flagged rather
+     than hidden).
+   - Synthetic-reader demonstration:
+     `engine/apps/web/scripts/demo-stated-prefs.mjs` — creates a throwaway
+     `engine.identities` row with `stated_prefs = {interests:['wellness'],
+     areas:['ubud']}` on the platform DB, calls `getForYou` for it, reports
+     the share of returned items matching the picked type/area against the
+     base (unpersonalized-population) rate, then deletes the row. Run
+     manually (writes to the platform DB; not part of the CI gate).
+
+### Follow-ups flagged, not solved
+
+- `n_meaningful` is computed on read (count of qualifying 180-day
+  interactions) rather than a persisted `user_profiles.n_meaningful`
+  counter — no writer for that column exists yet.
+- The Read Next re-rank's "how good was the subject-similarity order"
+  input is a rank-based proxy, not the raw cosine distance (that SQL never
+  needed one before this pass) — fine for a small pool, worth revisiting if
+  the blend weights ever need tuning against real click data.
+- `read-next`'s A/B variants are not yet analysed anywhere — WS4's
+  dashboard reads the beacon convention this pass establishes, but nobody
+  has looked at the numbers yet.
