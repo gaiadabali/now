@@ -189,3 +189,38 @@ export async function requireStaffAdmin(): Promise<StaffUser> {
   if (!canManageStaff(user)) redirect('/team-editor')
   return user
 }
+
+/**
+ * May this user pin, unpin and reorder stories on the front page?
+ *
+ * Editor or admin — the same test as `isReviewer`/`isEditorOrAbove` in
+ * `packages/cms/src/access`, and for the same reason those are separate
+ * exports rather than one shared "is this person senior" predicate that
+ * happens to agree today: this is a distinct decision (who may change what
+ * every reader sees on arrival) that only currently has the same answer as
+ * "who may publish". `requireStaffAdmin` (editorial `admin` only) is too
+ * narrow here — SURFACES-PLAN's editor role exists specifically to publish
+ * and curate, and the front page is curation, not account administration.
+ */
+export function canEditFrontPage(user: StaffUser): boolean {
+  return user.role === 'admin' || user.role === 'editor'
+}
+
+/**
+ * The gate the front-page editor's own writes call first — in every action,
+ * not once on the page. Same reasoning as `requireStaffAdmin`: a server
+ * action is its own endpoint, reachable by anyone who has ever loaded the
+ * page that renders its form.
+ *
+ * There is no `requireFrontPageAccess()` redirect-on-read counterpart: the
+ * page itself decides (see `front-page/FrontPageView.tsx`) to render a
+ * read-only summary for an author rather than redirect away, because the
+ * front page's current layout is not confidential the way partner terms or
+ * classification internals are — an author benefits from seeing what is
+ * live without being able to change it.
+ */
+export async function requireFrontPageEditor(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canEditFrontPage(user)) redirect('/team-editor')
+  return user
+}
