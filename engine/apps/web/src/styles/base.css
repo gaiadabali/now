@@ -79,6 +79,14 @@ input, select, textarea { font: inherit; color: inherit; }
 
 .display--light { font-weight: 300; }
 .display--medium { font-weight: 500; }
+/* Edition 2: the weight a card or index headline reads at when there is no
+   photograph next to it carrying visual weight of its own — Latest's row
+   index and the numbered `index` variant. 300 at these sizes was the
+   complaint "the Latest index is the worst": the lightest weight in the
+   system, at the smallest size in the system, is illegible as a hierarchy
+   signal. Nothing above --t-title ever takes this — cover and display sizes
+   stay light, per the scale rule this file's header still states. */
+.display--strong { font-weight: 600; }
 .display--italic { font-style: italic; }
 
 /* ---- Kicker ---------------------------------------------------------
@@ -172,3 +180,49 @@ input, select, textarea { font: inherit; color: inherit; }
    own padding is a clamp() already; this is the backstop for anything a
    band forgets to constrain (a wide table, a long unbroken token string). */
 body { overflow-x: hidden; }
+
+/* ---- Reveal-on-scroll (Edition 2) ----------------------------------------
+   "Progressive enhancement is mandatory: content is visible without JS.
+   Never ship CSS that hides content unless a class set by JS says so."
+   This is why the UNANNOTATED state of `[data-reveal]` below is fully
+   visible — that is the whole page with no CSS feature support and no
+   JavaScript at all, which is also correct, just unanimated.
+
+   The animation itself is `@supports`-gated CSS, not a class a script sets:
+   `animation-timeline: view()` ties the animation's progress to the
+   element's own position in the scrollport, so there is no IntersectionObserver,
+   no scroll listener, and nothing to hydrate. Where the browser does not
+   support it, the `@supports` block simply never applies and the element
+   sits in its default (visible) state — which is the same "off" outcome
+   `prefers-reduced-motion` asks for below, arrived at for a different
+   reason. Two ways to end up at "just show it", never a way to end up at
+   "just hide it". */
+[data-reveal],
+[data-reveal] > .shell > * { opacity: 1; }
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The reveal targets the band's own direct sections (typically the
+       `BandHead` and the grid beneath it) rather than the band itself, so
+       the head and the body settle a beat apart — the "light stagger" —
+       instead of the whole band arriving as one flat sheet. Each still has
+       its OWN view-timeline (it is tied to that element's position in the
+       scrollport), so this needs no JavaScript and no shared clock. */
+    [data-reveal] > .shell > * {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      /* Enters as the band is a quarter into the viewport and finishes
+         well before a reader has reached the line below it — a reveal
+         still running once someone is already reading it looks like lag,
+         not motion. */
+      animation-range: entry 0% cover 30%;
+    }
+    [data-reveal] > .shell > *:nth-child(2) { animation-delay: -8%; }
+    [data-reveal] > .shell > *:nth-child(3) { animation-delay: -16%; }
+  }
+
+  @keyframes reveal-in {
+    from { opacity: 0; transform: translateY(var(--reveal-y)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
