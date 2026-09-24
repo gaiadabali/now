@@ -177,6 +177,57 @@ Four items, all closed:
    competitor violations**, 18.2ms/article. **Jakarta** 1,632 checked, 0
    empty, 5,939 rails, mean 5.77/rail, 0/0/**0**, 23.4ms/article.
 
+## 6b. WS1 third pass (coordinator review, 2026-09-24) — freshness
+
+The second pass made `engine.hidden_rival_flags` fast; it did not keep it
+fresh. A story published after the last recompute silently carried no
+guard at all. Closed with three mechanisms:
+
+1. **Per-article recompute on the domain-event path.**
+   `now_filters.hidden_rival_recompute.recompute_flags_for_article`/
+   `remove_flags_for_article` (both diff-aware and idempotent — see below)
+   are called from `engine/apps/worker/app/consumer.py`'s
+   `DomainEventWorker`, the SAME class and stream the re-embed worker
+   already consumes (`article.published`/`.republished` recompute;
+   `article.unpublished` deletes). Neither replaces the base class's own
+   re-embed handling — both run. `now-filters` added as a dependency of
+   `engine-worker`.
+2. **Place-mentions-only changes have no event to hook.** Searched:
+   `now_place_extraction` (the pipeline that writes `public.place_mentions`)
+   is an offline CLI batch job (`now-place-extract run --city <city>`), not
+   triggered by any CMS hook or domain event. Stated plainly rather than
+   assumed away — this gap is covered by (3), up to one night's staleness,
+   not by (1).
+3. **Nightly full recompute as a safety net.**
+   `app/jobs.py#recompute_hidden_rival_flags_job`, registered at 03:55 UTC
+   (`app/main.py`), fans out over every active site
+   (`app/sites.py#for_each_site`, the same pattern `ensure_partitions`
+   already uses). `recompute_hidden_rival_flags` is now DIFF-AWARE (was a
+   blind TRUNCATE + re-INSERT in the second pass) — it reports
+   added/removed/unchanged per site and logs a WARNING when added/removed
+   is non-zero, which is the "the event path missed something" signal the
+   coordinator asked for.
+
+**Freshness guarantee, stated in `recommend.ts`'s own header now:** a
+newly published or republished story is excluded from rails within the
+same at-least-once domain-event delivery that already re-embeds it — not
+a fixed "N seconds," since it rides real event delivery rather than a
+poll, but in practice within seconds of the save. A place-mentions-only
+change with no article-level event is fresh within one night (the 03:55
+UTC recompute). An unpublished article's flags are removed on the same
+event.
+
+**Tests.** `now_filters`: 2 new full-recompute + 4 new per-article
+DB-integration tests (`test_hidden_rival_recompute_db.py`, synthetic
+tables throughout — same skip-cleanly-without-`now_jakarta` convention as
+every other DB-integration test in this package; genuinely exercises the
+diff logic when run against a real DB). `engine-worker`: 7 new dispatch
+tests for the consumer's hidden-rival handler (`test_hidden_rival_consumer
+.py`, faked engine, no DB) + 2 new tests for the nightly job's per-site
+diff reporting and failure isolation (`test_worker.py`); one pre-existing
+test (`test_other_events_still_reach_the_re_embed_handler`) updated for
+the new (additive) return-value shape.
+
 ## 7. Open for the owner/architect
 
 - **Where rails compute.** Left as documented (coordinator: "I'll take it

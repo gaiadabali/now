@@ -136,13 +136,20 @@ async def heartbeat_or_fail(ctx: dict) -> dict:
 class WorkerSettings:
     """Consumed by `arq app.main.WorkerSettings`."""
 
-    functions = [jobs.ensure_partitions, jobs.drop_old_partitions]
+    functions = [jobs.ensure_partitions, jobs.drop_old_partitions, jobs.recompute_hidden_rival_flags_job]
     cron_jobs = [
         # 03:10 UTC — well before Jakarta/Bali morning traffic (UTC+7/+8),
         # and 14 days of runway means a missed night is not an incident.
         cron(jobs.ensure_partitions, hour=3, minute=10, run_at_startup=True),
         # 03:40, after the create pass, and a no-op unless retention is set.
         cron(jobs.drop_old_partitions, hour=3, minute=40),
+        # 03:55 UTC — the safety net under app/consumer.py's per-article
+        # recompute (WS1 third pass). Not run_at_startup: a container
+        # restart is not a reason to scan every published article's
+        # place_mentions/title immediately; the per-article path already
+        # keeps things fresh, and this is a nightly correctness check, not
+        # the primary mechanism.
+        cron(jobs.recompute_hidden_rival_flags_job, hour=3, minute=55),
         # Every minute, with a 180s TTL: two consecutive misses expire the
         # key, so a single slow tick is not treated as death.
         cron(heartbeat_or_fail, minute=set(range(60)), run_at_startup=True),

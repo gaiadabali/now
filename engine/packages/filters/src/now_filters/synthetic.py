@@ -88,6 +88,13 @@ class SyntheticArticle:
     series_key: str | None = None
     published_at: datetime = field(default_factory=lambda: datetime(2025, 1, 1, tzinfo=timezone.utc))
     status: str = "published"
+    # Added for the hidden-rival guard's TITLE signal
+    # (`now_filters.hidden_rival_recompute`), which matches an article's
+    # own title against the taxonomy subtype lexicon -- every earlier
+    # caller left `title` unset and gets the harmless default below, so
+    # this is additive, not a breaking change to the synthetic-articles
+    # contract.
+    title: str = "Synthetic Article"
 
 
 def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], *, table: str = SYNTH_PLACES_TABLE) -> str:
@@ -185,15 +192,15 @@ def create_synthetic_articles_table(conn: Connection, rows: list[SyntheticArticl
         text(
             f"CREATE TEMP TABLE {table} ("
             "id int PRIMARY KEY, primary_type text, format text, series_key text, "
-            "published_at timestamptz, _status text NOT NULL"
+            "published_at timestamptz, _status text NOT NULL, title text NOT NULL DEFAULT 'Synthetic Article'"
             ")"
         )
     )
     for r in rows:
         conn.execute(
             text(
-                f"INSERT INTO {table} (id, primary_type, format, series_key, published_at, _status) "
-                "VALUES (:id, :primary_type, :format, :series_key, :published_at, :status)"
+                f"INSERT INTO {table} (id, primary_type, format, series_key, published_at, _status, title) "
+                "VALUES (:id, :primary_type, :format, :series_key, :published_at, :status, :title)"
             ),
             {
                 "id": r.id,
@@ -202,6 +209,7 @@ def create_synthetic_articles_table(conn: Connection, rows: list[SyntheticArticl
                 "series_key": r.series_key,
                 "published_at": r.published_at,
                 "status": r.status,
+                "title": r.title,
             },
         )
     return table

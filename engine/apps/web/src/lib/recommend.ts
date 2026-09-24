@@ -83,6 +83,40 @@ import {
  * resolved first (they are the more specific recommendation), and any id
  * they used is excluded when Read Next's own pool is diversified down to
  * its final `limit`.
+ *
+ * ## Freshness guarantee for `engine.hidden_rival_flags` (third pass)
+ *
+ * The precomputed table this file's competitor guard reads
+ * (`recommendSql.ts`'s `NOT EXISTS (SELECT 1 FROM engine.hidden_rival_flags
+ * ...)`) is kept fresh by THREE mechanisms, in decreasing order of how
+ * fast they react:
+ *
+ *   1. Per-article recompute, hooked into the SAME domain-event stream the
+ *      re-embed worker already consumes (`engine/apps/worker/app/
+ *      consumer.py`): `article.published`/`.republished` recompute that
+ *      one article's flags, `article.unpublished` removes them. This runs
+ *      within the stream's own at-least-once delivery — in practice,
+ *      seconds after a save, not a scheduled interval. There is no fixed
+ *      "N seconds" SLA to quote: it is bounded by domain-event delivery
+ *      latency (normally sub-second) plus one recompute query (~single-
+ *      digit ms, see `now_filters.hidden_rival_recompute`), not a polling
+ *      period.
+ *   2. **No event exists for "place_mentions changed independent of the
+ *      article being republished"** — `now_place_extraction` is an
+ *      offline batch CLI, not triggered by any per-article domain event.
+ *      A place-extraction run that changes an article's mentions without
+ *      also emitting `article.published`/`.republished` is caught by (3)
+ *      only, up to a night later.
+ *   3. A nightly full recompute (`app/jobs.py`'s
+ *      `recompute_hidden_rival_flags_job`, 03:55 UTC) as the safety net —
+ *      diffs the full table against a fresh computation and logs a
+ *      non-zero added/removed count as "the event path may have missed
+ *      something," rather than assuming (1)/(2) are airtight.
+ *
+ * Stated plainly: a newly published story naming a competing venue is
+ * excluded from rails within the same publish event's delivery, not
+ * "eventually" — except for a place-mentions-only change with no event of
+ * its own, which is fresh within one night.
  */
 
 export type RailArticle = Article & {

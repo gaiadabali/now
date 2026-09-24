@@ -397,7 +397,13 @@ rail_cache(article_id, segment_id, rail, candidates jsonb, rung, computed_at)
 quality_scores(entity_type, entity_id, score, components jsonb)
 -- Edition 2, WS1 second pass, migration 0009. Precomputed (never
 -- authored) — offline home of `now_filters.hidden_rival`'s two signals,
--- see §8.A/§8.G. Refreshed by `now_filters.hidden_rival_recompute`.
+-- see §8.A/§8.G. Refreshed by `now_filters.hidden_rival_recompute`:
+-- per-article on `article.published`/`.republished`/`.unpublished`
+-- (`engine-worker`'s domain-event consumer, third pass), plus a nightly
+-- full recompute (`app/jobs.py`, 03:55 UTC) as the safety net for the one
+-- gap the event path cannot see -- place_mentions changing with no
+-- article-level event of its own (no such event exists; stated, not
+-- assumed).
 hidden_rival_flags(article_id, matched_type, signal, computed_at)
   -- signal ∈ featured_mention|title  ·  PRIMARY KEY (article_id, matched_type, signal)
 ```

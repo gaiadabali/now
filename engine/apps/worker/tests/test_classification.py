@@ -329,7 +329,15 @@ def worker(**attrs) -> DomainEventWorker:
 
 def test_other_events_still_reach_the_re_embed_handler(monkeypatch):
     """The classification handler is additive. Breaking `article.published`
-    to deliver it would trade one silent gap for another."""
+    to deliver it would trade one silent gap for another.
+
+    `article.published` also reaches the hidden-rival recompute handler
+    now (WS1 third pass, `app/consumer.py`'s own `HIDDEN_RIVAL_RECOMPUTE_EVENTS`)
+    -- this bare event has no `entity_type`/`entity_id`, so that handler's
+    own dispatch tests (`test_hidden_rival_consumer.py`) cover the real
+    behaviour; this test only needs to keep proving re-embed still runs
+    alongside it, hence the `+hidden_rival:...` suffix rather than the
+    exact re-embed handler's own return value."""
 
     from now_embeddings.worker import ReembedWorker
 
@@ -337,7 +345,7 @@ def test_other_events_still_reach_the_re_embed_handler(monkeypatch):
     monkeypatch.setattr(
         ReembedWorker, "handle_payload", lambda self, event: seen.append(event) or "reembedded"
     )
-    assert worker().handle_payload({"event": "article.published"}) == "reembedded"
+    assert worker().handle_payload({"event": "article.published"}) == "reembedded+hidden_rival:ignored:entity_type=None"
     assert len(seen) == 1
 
 
