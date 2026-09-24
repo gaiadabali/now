@@ -126,8 +126,11 @@ palette, learned personalization (E7, data-gated), the itinerary UI (E5.4).
   competitor/hidden-rival predicates over every published venue article
   (stay/eat/drink/wellness/shop) in a city and asserts zero violations —
   `npm run verify:competitor-policy`, once per city
-  (`--env-file=.env.local` / `.env.jakarta.local`). Results: see the WS1
-  ticket report for the exact counts from this run.
+  (`--env-file=.env.local` / `.env.jakarta.local`). Full-archive results,
+  2026-09-24: **Bali** 2,047 articles checked, 0 with no rail items, 9,408
+  rails produced, mean 9.92 candidates/rail, **0 violations**. **Jakarta**
+  1,632 checked, 0 empty, 7,633 rails, mean 9.85/rail, **0 violations**.
+  3,679 venue articles total, zero competitor leaks either city.
 
 ## 7. Open for the owner/architect
 
