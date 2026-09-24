@@ -260,6 +260,50 @@ async def test_drop_old_partitions_is_a_noop_without_retention():
     assert "skipped" in result
 
 
+async def test_recompute_hidden_rival_flags_job_reports_per_site_diffs(monkeypatch):
+    """WS1 third pass: the nightly safety net under `app/consumer.py`'s
+    per-article recompute. A non-zero added/removed count for a site is
+    the signal the docstring promises ("the event path missed
+    something") — this proves the job actually surfaces that, per site,
+    rather than collapsing it into a single boolean."""
+    from app import jobs
+    from now_filters.hidden_rival_recompute import RecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("beta")])
+
+    def fake_recompute(s: Site) -> RecomputeReport:
+        if s.slug == "alpha":
+            return RecomputeReport(featured_mention_rows=5, title_rows=1, total_rows=6, added=2, removed=0, unchanged=4)
+        return RecomputeReport(featured_mention_rows=3, title_rows=0, total_rows=3, added=0, removed=0, unchanged=3)
+
+    monkeypatch.setattr(jobs, "_recompute_hidden_rival_flags_for", fake_recompute)
+
+    ctx = {"settings": Settings()}
+    result = await jobs.recompute_hidden_rival_flags_job(ctx)
+
+    assert result["sites"]["alpha"] == {"added": 2, "removed": 0, "unchanged": 4}
+    assert result["sites"]["beta"] == {"added": 0, "removed": 0, "unchanged": 3}
+    assert result["failed"] == {}
+
+
+async def test_recompute_hidden_rival_flags_job_isolates_a_failing_site(monkeypatch):
+    from app import jobs
+    from now_filters.hidden_rival_recompute import RecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("broken")])
+
+    def fake_recompute(s: Site) -> RecomputeReport:
+        if s.slug == "broken":
+            raise RuntimeError("database is not accepting connections")
+        return RecomputeReport(featured_mention_rows=0, title_rows=0, total_rows=0, added=0, removed=0, unchanged=0)
+
+    monkeypatch.setattr(jobs, "_recompute_hidden_rival_flags_for", fake_recompute)
+
+    result = await jobs.recompute_hidden_rival_flags_job({"settings": Settings()})
+    assert "alpha" in result["sites"]
+    assert "broken" in result["failed"]
+
+
 # ---------------------------------------------------------------------------
 # The consumer entry point
 # ---------------------------------------------------------------------------

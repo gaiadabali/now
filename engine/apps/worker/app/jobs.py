@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 
 from now_db.partitions import drop_partitions_older_than, ensure_daily_partitions
+from now_filters.hidden_rival_recompute import RecomputeReport, recompute_hidden_rival_flags
 from sqlalchemy import create_engine
 
 from app.sites import Site, SiteRunReport, for_each_site, load_sites
@@ -56,6 +57,15 @@ def _ensure_partitions_for(site: Site, *, days_ahead: int) -> list[str]:
     if created:
         logger.info("site=%s created partitions: %s", site.slug, ", ".join(created))
     return created
+
+
+def _recompute_hidden_rival_flags_for(site: Site) -> RecomputeReport:
+    engine = create_engine(site.dsn)
+    try:
+        with engine.begin() as conn:
+            return recompute_hidden_rival_flags(conn)
+    finally:
+        engine.dispose()
 
 
 def _drop_old_partitions_for(site: Site, *, retention_days: int) -> list[str]:
@@ -110,6 +120,46 @@ async def drop_old_partitions(ctx: dict) -> dict:
     )
     logger.info("drop_old_partitions: %s", report.summary())
     return {"dropped": report.succeeded, "failed": report.failed}
+
+
+async def recompute_hidden_rival_flags_job(ctx: dict) -> dict:
+    """The nightly safety net under `app/consumer.py`'s per-article
+    recompute (WS1 third pass). That handler reacts within one delivery of
+    `article.published`/`.republished`/`.unpublished`; this is what catches
+    everything it structurally cannot: a place-mentions-only change with no
+    domain event of its own (`now_filters.hidden_rival_recompute`'s module
+    docstring, item 2), a missed/duplicated delivery the consumer group
+    somehow didn't reconcile, or a manual DB edit.
+
+    `added`/`removed` are logged per site because a NON-ZERO count on a
+    quiet night — nothing published, nothing unpublished — is exactly the
+    signal the docstring promises: the event path missed something, worth
+    looking at, not an incident on its own (which is why this returns
+    normally rather than raising on a non-zero diff)."""
+
+    sites = load_sites(ctx["settings"].platform_database_url)
+    report: SiteRunReport = for_each_site(
+        sites, _recompute_hidden_rival_flags_for, job="recompute_hidden_rival_flags"
+    )
+    changed_sites = {
+        slug: r for slug, r in report.succeeded.items() if isinstance(r, RecomputeReport) and r.changed
+    }
+    if changed_sites:
+        logger.warning(
+            "recompute_hidden_rival_flags: %d site(s) had a non-zero diff (event path may have missed something): %s",
+            len(changed_sites),
+            {slug: {"added": r.added, "removed": r.removed} for slug, r in changed_sites.items()},
+        )
+    else:
+        logger.info("recompute_hidden_rival_flags: %s (no drift from the event path)", report.summary())
+    return {
+        "sites": {
+            slug: {"added": r.added, "removed": r.removed, "unchanged": r.unchanged}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, RecomputeReport)
+        },
+        "failed": report.failed,
+    }
 
 
 async def heartbeat(ctx: dict) -> dict:
