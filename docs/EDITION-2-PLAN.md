@@ -253,3 +253,51 @@ the new (additive) return-value shape.
   specific driving article — a weighted-centroid taste vector does not
   preserve per-item provenance the way a top-1-nearest-neighbour approach
   would.
+
+## 8. Integrated state, 2026-09-24 — what was proven, and how to ship it
+
+All four workstreams are merged on `feat/edition-2`. Measured on the merged
+branch, production build (`output: standalone`), both cities, local DBs:
+
+| Check | Result |
+|---|---|
+| Web typecheck · tests · site-literal lint · account-gate lint | clean · **62/62** · clean · clean |
+| CMS tests · CMS site-literal lint | **51/51** · clean |
+| Python, against the real DB (filters · worker · link-resolver · rails) | **123 · 61 · 31 · 18**, 0 skipped |
+| `scripts/smoke.sh`, both cities | **39/39** |
+| `verify:competitor-policy` (shared SQL module), every venue story | Bali 2,047 · Jakarta 1,632 — **0 violations**, 0 empty, 5.88 / 5.60 items per rail |
+| Rendered-page crawl, every venue story, rail items read from the HTML | Bali 2,047 pages · Jakarta 1,632 — **0 competitor items** in 81,375 |
+| Desk pin → home page | a registry pin led the live home page within the 30 s TTL, once, in the saved band order |
+
+`apps/api` tests need the dedicated test Postgres on :55510 (`now-api-test`,
+torn down under F4); `apps/api` is unchanged on this branch.
+
+**Found by the integration pass, not by any workstream's own checks**, and fixed:
+
+- The plan-around rails checked `hidden_rival_flags` against the rail's own
+  types instead of the subject's exclusions, so it never fired: 2,895 rival
+  items on rendered Bali pages while the SQL-level proof passed. The proof
+  now checks type, untyped-fails-closed and rival flags on every rail.
+- Three legacy addresses with non-ASCII characters 404ed (percent-encoded
+  in the DB, decoded by Next).
+- The front-page editor seeded a never-saved site with twelve bands; the
+  first Save would have replaced the home page with six department bands in
+  a row. It now starts from `lib/homeBands.ts`, the home page's own default.
+
+**Owner decisions, 2026-09-24.** F&B (eat + drink) is one competitive class.
+A restaurant or spa inside another hotel is fine on a hotel story as long as
+that hotel is not the story's main topic — which is what the rule already
+keys off (own type, featured venue, and headline for non-venue types).
+
+**Deploy order — migrations before the image, every one additive:**
+
+1. now-db Alembic `0008` (`type_relations.competes_with` + eat/drink data),
+   `0009` (`engine.hidden_rival_flags`), `0010` (complements reordered as
+   display priority) — on every city DB, via `site:migrate`.
+2. Populate the flags once: `now_filters.hidden_rival_recompute` per city
+   (the worker keeps them fresh from then on; nightly job at 03:55 UTC).
+3. Payload `20260924_111729_articles_created_by` on every city DB (SQL twin:
+   `packages/cms/scripts/articles-created-by.sql`). The new image selects
+   `articles.created_by`; without the column every article query 500s while
+   `/healthz` stays green — the S1.1 trap again.
+4. Roll the web and worker images. Smoke, then `verify:competitor-policy` per city.
