@@ -36,6 +36,7 @@ from now_filters.type_relations import TypeRelation, excluded_types_for
 DEFAULT_PLACES_TABLE = "public.places"
 DEFAULT_ARTICLES_TABLE = "public.articles"
 DEFAULT_EVENTS_TABLE = "public.events"
+DEFAULT_PLACE_MENTIONS_TABLE = "public.place_mentions"
 
 # Sec.8.A "Quality floor": one source of truth, borrowed from now-quality
 # (E2.6's own reference constant) rather than a second hardcoded 0.35 --
@@ -178,6 +179,9 @@ def build_articles_hard_filter_sql(
     quality_floor: float = QUALITY_FLOOR,
     series_dedup: bool = True,
     articles_table: str = DEFAULT_ARTICLES_TABLE,
+    hidden_rival_pattern: str | None = None,
+    place_mentions_table: str = DEFAULT_PLACE_MENTIONS_TABLE,
+    places_table: str = DEFAULT_PLACES_TABLE,
 ) -> ArticlesHardFilterQuery:
     """Sec.8.A hard filters over `articles`: status (published only --
     `_status = 'published'`, Payload's draft/publish lifecycle; embargo
@@ -194,6 +198,20 @@ def build_articles_hard_filter_sql(
     version of a re-published "New Restaurants in Jakarta 2024/2025"
     cluster rather than an arbitrary one. Rows with `series_key IS NULL`
     are each their own group (never deduped against each other).
+
+    `hidden_rival_pattern` (Edition 2, `now_filters.hidden_rival`) is the
+    SECOND, independent competitor check: a candidate whose DECLARED
+    `primary_type` already survived the `excluded_types_for` predicate
+    above may still be centrally about a competing venue that the
+    classifier filed under a different type entirely (the Westin/Kimpton
+    case -- a hotel's wellness event, typed `event`). When given a
+    pattern (built by that module from the subject's own excluded-type
+    set), this excludes any candidate with a `role='featured'`
+    `place_mentions` row whose place NAME matches it -- pushed into SQL as
+    a `NOT EXISTS` correlated subquery, same Sec.8.G ordering rule as
+    every other predicate here. `None` (the default) adds nothing, so a
+    caller that never computed a pattern (or whose subject excludes
+    nothing) gets byte-identical SQL to before this parameter existed.
     """
     where: list[str] = [
         "_status = 'published'",
@@ -228,6 +246,18 @@ def build_articles_hard_filter_sql(
             "WHERE entity_type = 'article' AND score < :quality_floor)"
         )
         params["quality_floor"] = quality_floor
+
+    if hidden_rival_pattern is not None:
+        # See `now_filters.hidden_rival` module docstring: `role='featured'`
+        # only, matched against the place's own name -- a data-driven
+        # taxonomy-label lexicon, never a hardcoded brand list.
+        where.append(
+            f"NOT EXISTS (SELECT 1 FROM {place_mentions_table} hr_pm "
+            f"JOIN {places_table} hr_pl ON hr_pl.id = hr_pm.place_id "
+            f"WHERE hr_pm.article_id = {articles_table}.id "
+            "AND hr_pm.role = 'featured' AND hr_pl.name ~* :hidden_rival_pattern)"
+        )
+        params["hidden_rival_pattern"] = hidden_rival_pattern
 
     base_where = " AND ".join(where)
     select_cols = (

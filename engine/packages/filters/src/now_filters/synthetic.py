@@ -36,6 +36,7 @@ from sqlalchemy.engine import Connection
 SYNTH_PLACES_TABLE = "now_filters_synth_places"
 SYNTH_ARTICLES_TABLE = "now_filters_synth_articles"
 SYNTH_EVENTS_TABLE = "now_filters_synth_events"
+SYNTH_PLACE_MENTIONS_TABLE = "now_filters_synth_place_mentions"
 
 # The 6 venue L1 types (excludes `event`/`editorial`, which are the two
 # `exclude_same=false` rows in engine.type_relations -- see ARCHITECTURE.md
@@ -55,6 +56,20 @@ class SyntheticPlace:
     price_band: str | None = "moderate"
     lat: float | None = None
     lng: float | None = None
+    # Added for the hidden-rival guard (`now_filters.hidden_rival`), which
+    # matches a FEATURED place_mentions row's place NAME against the
+    # taxonomy subtype lexicon -- every earlier caller of this dataclass
+    # left `name` unset and gets the harmless default below, so this is
+    # additive, not a breaking change to the synthetic-places contract.
+    name: str = "Synthetic Place"
+
+
+@dataclass(frozen=True)
+class SyntheticPlaceMention:
+    article_id: int
+    place_id: int
+    role: str  # 'featured' | 'reviewed' | 'mentioned' -- enum_place_mentions_role
+    surface_text: str = "synthetic mention"
 
 
 @dataclass(frozen=True)
@@ -74,7 +89,7 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
             f"CREATE TEMP TABLE {table} ("
             "id int PRIMARY KEY, type text NOT NULL, subtype text, status text NOT NULL, "
             "area_term text, org_id text, price_band text, lat double precision, lng double precision, "
-            "geo geography(Point,4326)"
+            "geo geography(Point,4326), name text NOT NULL DEFAULT 'Synthetic Place'"
             ")"
         )
     )
@@ -83,9 +98,9 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
         geo_expr = "ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography" if has_geo else "NULL"
         conn.execute(
             text(
-                f"INSERT INTO {table} (id, type, subtype, status, area_term, org_id, price_band, lat, lng, geo) "
+                f"INSERT INTO {table} (id, type, subtype, status, area_term, org_id, price_band, lat, lng, geo, name) "
                 "VALUES (:id, :type, :subtype, :status, :area_term, :org_id, :price_band, :lat, :lng, "
-                f"{geo_expr})"
+                f"{geo_expr}, :name)"
             ),
             {
                 "id": r.id,
@@ -97,6 +112,35 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
                 "price_band": r.price_band,
                 "lat": r.lat,
                 "lng": r.lng,
+                "name": r.name,
+            },
+        )
+    return table
+
+
+def create_synthetic_place_mentions_table(
+    conn: Connection, rows: list[SyntheticPlaceMention], *, table: str = SYNTH_PLACE_MENTIONS_TABLE
+) -> str:
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "id serial PRIMARY KEY, article_id int NOT NULL, place_id int NOT NULL, "
+            "role text NOT NULL, surface_text text"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(
+                f"INSERT INTO {table} (article_id, place_id, role, surface_text) "
+                "VALUES (:article_id, :place_id, :role, :surface_text)"
+            ),
+            {
+                "article_id": r.article_id,
+                "place_id": r.place_id,
+                "role": r.role,
+                "surface_text": r.surface_text,
             },
         )
     return table
