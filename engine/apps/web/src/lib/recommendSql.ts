@@ -291,9 +291,16 @@ const COMPLEMENT_SQL = `
      AND a._status = 'published'
      AND a.published_at IS NOT NULL AND a.published_at <= now()
      AND a.primary_type::text = ANY($2::text[])
+     -- The rival check keys off what the SUBJECT excludes ($5), not the
+     -- complement types this rail wants ($2). Keyed off $2 it could never
+     -- fire — a hotel page's dining rail asks for eat, and an eat story
+     -- flagged eat is not a rival of a hotel — so a spa inside a rival
+     -- resort reached "Where to Unwind" on a hotel story, and a bar's event
+     -- reached "What's On" on a restaurant story. Found by crawling the
+     -- rendered pages, not by the SQL-level proof, which shared the blind spot.
      AND NOT EXISTS (
        SELECT 1 FROM engine.hidden_rival_flags hrf
-        WHERE hrf.article_id = a.id::text AND hrf.matched_type = ANY($2::text[])
+        WHERE hrf.article_id = a.id::text AND hrf.matched_type = ANY($5::text[])
      )
      AND a.id NOT IN (
        SELECT entity_id::int FROM engine.quality_scores
@@ -312,11 +319,20 @@ export async function resolveComplementCandidates(
   articleId: number,
   sections: { section: string; types: string[] }[],
   poolSize: number,
+  /** The SUBJECT's excluded types (`excludedTypesFor`) — the same set Read
+   * Next filters on, so one story's two kinds of rail cannot disagree. */
+  excludedTypes: readonly string[],
 ): Promise<ComplementCandidateRow[]> {
   const allTypes = Array.from(new Set(sections.flatMap((s) => s.types)))
   if (allTypes.length === 0) return []
   try {
-    const result = await pool.query<ComplementCandidateRow>(COMPLEMENT_SQL, [articleId, allTypes, QUALITY_FLOOR, poolSize])
+    const result = await pool.query<ComplementCandidateRow>(COMPLEMENT_SQL, [
+      articleId,
+      allTypes,
+      QUALITY_FLOOR,
+      poolSize,
+      [...excludedTypes],
+    ])
     return result.rows
   } catch (error) {
     console.error('[recommendSql] complement query failed:', error instanceof Error ? error.message : error)

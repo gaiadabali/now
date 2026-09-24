@@ -83,7 +83,9 @@ async function resolveAllRails(articleId, subjectType, relations) {
   const sections = complementSectionsFor(subjectType, relations)
 
   const [complementRows, readNextRowsRaw] = await Promise.all([
-    sections.length > 0 ? resolveComplementCandidates(pool, articleId, sections, COMPLEMENT_POOL_SIZE) : Promise.resolve([]),
+    sections.length > 0
+      ? resolveComplementCandidates(pool, articleId, sections, COMPLEMENT_POOL_SIZE, [...excludedTypesFor(relations, subjectType)])
+      : Promise.resolve([]),
     resolveReadNextCandidates(pool, articleId, subjectType, relations, Math.max(RAIL_LIMIT * 4, 20)),
   ])
 
@@ -123,6 +125,12 @@ async function main() {
   const articles = await loadVenueArticles()
   console.log(`[verify-competitor-policy] ${articles.length} published venue articles (stay/eat/drink/wellness/shop) found`)
 
+  const rivalFlags = new Map()
+  for (const flag of (await pool.query('SELECT article_id, matched_type FROM engine.hidden_rival_flags')).rows) {
+    if (!rivalFlags.has(flag.article_id)) rivalFlags.set(flag.article_id, new Set())
+    rivalFlags.get(flag.article_id).add(flag.matched_type)
+  }
+
   const t0 = Date.now()
   let checked = 0
   let emptyRails = 0
@@ -156,16 +164,28 @@ async function main() {
       }
     }
 
+    // Three ways a candidate breaks the rule, all checked on every rail. The
+    // first version checked only the candidate's own type, which a plan-
+    // around rail satisfies by construction (it only ever asks for
+    // complement types) — so it could not see a rival hidden under one of
+    // them, and passed while the rendered pages carried 2,895 of them.
     const excluded = excludedTypesFor(relations, row.primary_type)
     for (const rail of rails) {
       for (const candidate of rail.rows) {
-        if (excluded.has(candidate.primary_type ?? '')) {
+        const why = []
+        if (excluded.has(candidate.primary_type ?? '')) why.push(`type ${candidate.primary_type}`)
+        if (excluded.size > 0 && !candidate.primary_type) why.push('untyped candidate (fails closed)')
+        for (const flagged of rivalFlags.get(String(candidate.id)) ?? []) {
+          if (excluded.has(flagged)) why.push(`hidden rival ${flagged}`)
+        }
+        if (why.length > 0) {
           violations.push({
             articleId: row.id,
             subjectType: row.primary_type,
             rail: rail.key,
             candidateId: candidate.id,
             candidateType: candidate.primary_type,
+            why,
           })
         }
       }

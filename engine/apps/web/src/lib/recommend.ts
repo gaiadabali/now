@@ -2,7 +2,7 @@ import 'server-only'
 
 import { toArticles, type Article } from '@/lib/content'
 import { cityPool, payloadClient } from '@/lib/payload'
-import type { TypeRelations } from '@/lib/competitorPolicy'
+import { excludedTypesFor, type TypeRelations } from '@/lib/competitorPolicy'
 import {
   complementSectionsFor,
   dedupeBySeries,
@@ -238,7 +238,9 @@ export async function getArticleRails(article: Article, _reader: ReaderContext =
   const sections = complementSectionsFor(article.primaryType, relations)
 
   const [complementRows, readNextRowsRaw] = await Promise.all([
-    sections.length > 0 ? resolveComplementCandidates(pool, article.id, sections, COMPLEMENT_POOL_SIZE) : Promise.resolve([]),
+    sections.length > 0
+      ? resolveComplementCandidates(pool, article.id, sections, COMPLEMENT_POOL_SIZE, [...excludedTypesFor(relations, article.primaryType)])
+      : Promise.resolve([]),
     resolveReadNextCandidates(pool, article.id, article.primaryType, relations, Math.max(limit * 4, 20)),
   ])
 
