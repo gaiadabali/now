@@ -71,7 +71,8 @@ export type CandidateRow = {
   series_key: string | null
 }
 
-export const EMBEDDING_MODEL = 'BAAI/bge-small-en-v1.5'
+import { EMBEDDING_MODEL } from './embeddingModel.ts' // the one config point, shared with the engine (NOW_EMBEDDING_MODEL)
+export { EMBEDDING_MODEL }
 // ARCHITECTURE.md §8.A "Quality floor" / now_quality.scoring.QUALITY_FLOOR —
 // kept as the same literal the Python engine uses (see that module's
 // docstring for the derivation); duplicated here because this is a

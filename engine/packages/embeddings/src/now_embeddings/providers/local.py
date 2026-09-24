@@ -39,31 +39,81 @@ for a context window this pipeline doesn't need to fill.
 
 from __future__ import annotations
 
-MODEL_NAME = "BAAI/bge-small-en-v1.5"
-DIM = 384
+from now_embeddings.models import ModelSpec, active_spec, get_spec
+
+# The live model, resolved once at import from `now_embeddings.models`
+# (NOW_EMBEDDING_MODEL, else DEFAULT_MODEL). Kept as module constants
+# because `now_search.query_embedder` and the CLI import them by these
+# names; they are no longer literals, so they cannot drift from the config.
+_ACTIVE = active_spec()
+MODEL_NAME = _ACTIVE.name
+DIM = _ACTIVE.dim
+
+_registered_custom: set[str] = set()
+
+
+def load_text_embedding(spec: ModelSpec, *, threads: int):
+    """A `fastembed.TextEmbedding` for `spec`, registering it first if
+    fastembed does not ship it (e5-small, bge-m3 -- see `models.REGISTRY`).
+    Shared by this provider and `now_search.query_embedder`-style callers
+    so a custom model is registered in exactly one way."""
+    from fastembed import TextEmbedding
+
+    if spec.custom is not None and spec.name not in _registered_custom:
+        from fastembed.common.model_description import ModelSource, PoolingType
+
+        known = {m["model"].lower() for m in TextEmbedding.list_supported_models()}
+        if spec.name.lower() not in known:
+            TextEmbedding.add_custom_model(
+                model=spec.name,
+                pooling=PoolingType[spec.custom.pooling],
+                normalization=True,
+                sources=ModelSource(hf=spec.custom.hf_repo),
+                dim=spec.dim,
+                model_file=spec.custom.model_file,
+                additional_files=list(spec.custom.additional_files),
+            )
+        _registered_custom.add(spec.name)
+    return TextEmbedding(model_name=spec.name, threads=threads)
 
 
 class LocalProvider:
     """Lazy-loads the ONNX model on first construction (not at import time)
     so importing `now_embeddings` never pays the ~25s HuggingFace Hub /
     model-load cost, and so the offline provider + CLI help text stay fast
-    even when this module is never actually used."""
+    even when this module is never actually used.
 
-    name = MODEL_NAME
-    dim = DIM
+    `model=None` means the configured model (`now_embeddings.models`); an
+    explicit name is for the WS6 comparison and the rollout backfill, which
+    embed under a model that is not (yet) the live one."""
 
-    def __init__(self) -> None:
-        from fastembed import TextEmbedding
-
-        self._model = TextEmbedding(model_name=MODEL_NAME, threads=16)
+    def __init__(self, model: str | None = None, *, threads: int = 16) -> None:
+        self.spec = get_spec(model) if model else _ACTIVE
+        self.name = self.spec.name
+        self.dim = self.spec.dim
+        self._model = load_text_embedding(self.spec, threads=threads)
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        # fastembed's model is already trained/served to emit L2-normalized
-        # vectors (verified: norm == 1.0 on sample output) -- cosine
-        # similarity and dot product coincide, matching
-        # `vector_cosine_ops` on the HNSW index. No renormalization here;
-        # if that ever changes upstream, the HNSW query still uses
-        # `<=>` (cosine distance), which is correct regardless.
-        return [vec.tolist() for vec in self._model.embed(texts, batch_size=32)]
+        # The passage prefix is applied here, not in `textbuild`, so
+        # `text_hash` stays a hash of the article's own text: switching model
+        # must not by itself make every row look "changed" to the other
+        # model's idempotency check.
+        prefix = self.spec.passage_prefix
+        inputs = [prefix + t for t in texts] if prefix else texts
+        # fastembed returns L2-normalized vectors for every registered model
+        # (built-in models by training, custom ones via `normalization=True`)
+        # -- cosine similarity and dot product coincide, matching
+        # `vector_cosine_ops` on the HNSW index. The HNSW query uses `<=>`
+        # (cosine distance), which is correct regardless.
+        return [vec.tolist() for vec in self._model.embed(inputs, batch_size=32)]
+
+    def embed_queries(self, queries: list[str]) -> list[list[float]]:
+        """Query-side counterpart (asymmetric models want a different
+        marker on queries than on passages)."""
+        if not queries:
+            return []
+        prefix = self.spec.query_prefix
+        inputs = [prefix + q for q in queries] if prefix else queries
+        return [vec.tolist() for vec in self._model.embed(inputs, batch_size=32)]

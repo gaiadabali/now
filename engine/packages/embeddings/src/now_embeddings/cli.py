@@ -17,30 +17,50 @@ from sqlalchemy import text
 from now_embeddings.connections import city_engine, platform_engine
 from now_embeddings.pipeline import backfill_entity_type
 from now_embeddings.providers.base import EmbeddingProvider
-from now_embeddings.providers.local import MODEL_NAME as LOCAL_MODEL_NAME
+from now_embeddings.models import REGISTRY, active_model_name, get_spec
 from now_embeddings.providers.offline import OfflineProvider
 from now_embeddings.store import fetch_articles, fetch_places, fetch_terms, knn
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 
 
-def _provider(name: str) -> EmbeddingProvider:
+def _provider(name: str, model: str | None = None) -> EmbeddingProvider:
+    """`model=None` is the configured model (`now_embeddings.models`:
+    NOW_EMBEDDING_MODEL, else DEFAULT_MODEL) -- what the worker and a plain
+    `backfill` use. An explicit `--model` is for the rollout backfill of a
+    model that is not live yet."""
     if name == "offline":
         return OfflineProvider()
     if name == "local":
         from now_embeddings.providers.local import LocalProvider
 
-        return LocalProvider()
+        spec = get_spec(model or active_model_name())
+        if not spec.storable:
+            raise click.UsageError(
+                f"{spec.name} is {spec.dim}-d; engine.embeddings.vec holds 384-d vectors only "
+                "(migration 0004). Storing it needs a migration first -- see the README, 'Changing model'."
+            )
+        return LocalProvider(spec.name)
     raise click.UsageError(f"unknown provider {name!r}")
 
 
-def _model_name_for(provider: str) -> str:
-    """Resolves `--provider` to the `model` value stored in
+def _model_name_for(provider: str, model: str | None = None) -> str:
+    """Resolves `--provider`/`--model` to the `model` value stored in
     `engine.embeddings` -- used by the read-only commands (`knn`,
     `sanity-check`) that look up an *existing* row and must never construct
     a full provider (and pay `LocalProvider`'s model-load cost) just to ask
     it its own name."""
-    return OfflineProvider.name if provider == "offline" else LOCAL_MODEL_NAME
+    if provider == "offline":
+        return OfflineProvider.name
+    return get_spec(model or active_model_name()).name
+
+
+_model_option = click.option(
+    "--model",
+    type=click.Choice(sorted(REGISTRY)),
+    default=None,
+    help="Registered model to use (default: NOW_EMBEDDING_MODEL, else now_embeddings.models.DEFAULT_MODEL). local provider only.",
+)
 
 
 @click.group()
@@ -61,12 +81,13 @@ def cli() -> None:
 @click.option("--provider", type=click.Choice(["local", "offline"]), default="local", show_default=True)
 @click.option("--batch-size", default=32, show_default=True)
 @click.option("--no-prune", is_flag=True, help="Skip deleting embeddings for entities no longer in the source table.")
-def backfill(city: str, entity_types: tuple[str, ...], provider: str, batch_size: int, no_prune: bool) -> None:
+@_model_option
+def backfill(city: str, entity_types: tuple[str, ...], provider: str, batch_size: int, no_prune: bool, model: str | None) -> None:
     """Embed every article/place/term in CITY that is new or has changed
     text since its last embedding. Idempotent: a rerun with nothing changed
     embeds nothing (every row is skipped on the text_hash check) and exits
     fast."""
-    prov = _provider(provider)
+    prov = _provider(provider, model)
     click.echo(f"[now-embeddings] provider={prov.name} dim={prov.dim}")
     engine = city_engine(city)
 
@@ -107,11 +128,12 @@ def backfill(city: str, entity_types: tuple[str, ...], provider: str, batch_size
 @click.option("--k", default=6, show_default=True)
 @click.option("--provider", type=click.Choice(["local", "offline"]), default="local", show_default=True)
 @click.option("--runs", default=5, show_default=True, help="Repeat the query this many times and report min/median latency.")
-def knn_cmd(city: str, entity_type: str, entity_id: str, k: int, provider: str, runs: int) -> None:
+@_model_option
+def knn_cmd(city: str, entity_type: str, entity_id: str, k: int, provider: str, runs: int, model: str | None) -> None:
     """kNN against an existing embedded entity, with real measured latency
     (per ARCHITECTURE.md §7's <20ms target and the E2.4 acceptance
     criterion)."""
-    prov_name = _model_name_for(provider)
+    prov_name = _model_name_for(provider, model)
     engine = city_engine(city)
     with engine.connect() as conn:
         qvec_row = conn.execute(
@@ -145,11 +167,12 @@ def knn_cmd(city: str, entity_type: str, entity_id: str, k: int, provider: str, 
 @click.option("--provider", type=click.Choice(["local", "offline"]), default="local", show_default=True)
 @click.option("--k", default=5, show_default=True)
 @click.option("--article-id", "article_ids", multiple=True, help="Repeatable. Default: 5 evenly spread real articles.")
-def sanity_check(city: str, provider: str, k: int, article_ids: tuple[str, ...]) -> None:
+@_model_option
+def sanity_check(city: str, provider: str, k: int, article_ids: tuple[str, ...], model: str | None) -> None:
     """Human-readable nearest-neighbour report: title in, titles out. This
     is the honesty check the task requires -- cosine numbers alone prove
     nothing; read the titles."""
-    prov_name = _model_name_for(provider)
+    prov_name = _model_name_for(provider, model)
     engine = city_engine(city)
     with engine.connect() as conn:
         if not article_ids:
