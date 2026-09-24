@@ -118,14 +118,25 @@ eq(
 )
 eq(
   names(tabs[1]?.fields ?? []),
-  ['legacyPermalink', 'legacyWpId', 'seriesKey'],
-  'the three import fields are on the Old site tab',
+  ['legacyPermalink', 'legacyWpId', 'seriesKey', 'createdBy'],
+  'the three import fields, plus createdBy, are on the Old site tab',
 )
 
 // The regression that prompted all of this.
 const story = names(tabs[0]?.fields ?? [])
 const leaked = ['legacyWpId', 'legacyPermalink', 'seriesKey'].filter((n) => story.includes(n))
 check(leaked.length === 0, 'no import field is left in the writer default view', leaked.join(', '))
+
+// Approved as a desk-home follow-up: read-only, so a writer cannot reassign
+// who started a piece by editing the form.
+const createdByField = tabs[1]?.fields?.find((f) => f.name === 'createdBy')
+check(
+  createdByField?.type === 'relationship' &&
+    createdByField?.relationTo === 'users' &&
+    createdByField?.admin?.readOnly === true,
+  'createdBy is a read-only relationship to users',
+  JSON.stringify({ type: createdByField?.type, relationTo: createdByField?.relationTo, readOnly: createdByField?.admin?.readOnly }),
+)
 
 /* ------------------------------------------------- nothing was dropped */
 
@@ -146,6 +157,7 @@ eq(
     'author',
     'bodyBlocks',
     'createdAt',
+    'createdBy',
     'dek',
     'format',
     'heroMedia',
