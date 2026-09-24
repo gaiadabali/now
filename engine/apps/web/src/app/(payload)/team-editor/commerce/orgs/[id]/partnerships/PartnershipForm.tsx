@@ -22,22 +22,53 @@ import { partnershipHref } from '../../../paths'
  * confirming" (docs/SURFACES-PLAN.md S5.3) is a property of which function
  * the button is wired to, not a rule enforced by hiding a button.
  *
- * The one client component in this area not styled from scratch: every
- * class name below already exists in `styles/admin.css` from S5.1
- * (`platform__form`, `platform__field`, `platform__btn`, `platform__notice`)
- * except the handful under the `WS4 platform` block this ticket adds for
- * the confirm panel and the tier/status pills.
+ * Every label and hint here is written for the person filling it in, not for
+ * whoever reads the schema — no table name, no package name, no HTTP header
+ * value. What each tier and status DOES on the site is ARCHITECTURE.md §11's
+ * own tier ladder, restated in plain words rather than cited.
  */
 
-export type SiteOption = { id: string; slug: string; name: string }
+export type SiteOption = { id: string; slug: string; name: string; locale: string }
 
 const TIERS: PartnershipTier[] = ['free', 'listed', 'paid']
 const STATUSES: PartnershipStatus[] = ['active', 'paused', 'ended']
+
+const TIER_HINTS: Record<PartnershipTier, string> = {
+  free: 'Shown as plain text. No link, no badge, nothing for a reader to click.',
+  listed: "Mentions link to the venue's own page on this site. No paid styling, no badge.",
+  paid: 'Mentions link out to the URL below, marked as a paid placement and eligible for boosted placement in suggestions.',
+}
+
+const STATUS_HINTS: Record<PartnershipStatus, string> = {
+  active: 'Live now, within the contract dates below.',
+  paused: 'Off for now. The site treats every mention as if there were no partnership at all.',
+  ended: 'Contract over. Same effect as paused — nothing links or shows a badge.',
+}
 
 function toDateInput(value: string | null): string {
   if (!value) return ''
   // `<input type="date">` wants YYYY-MM-DD; the server gives an ISO timestamp.
   return value.slice(0, 10)
+}
+
+/**
+ * `<input type="date">`'s own placeholder/format is the BROWSER's locale,
+ * not this page's `lang` attribute — verified empirically, not assumed: the
+ * `lang` attribute below is set correctly and the widget still shows
+ * `mm/dd/yyyy` regardless, because that is a browser (OS) setting a page
+ * cannot reach. So the site's actual locale format is shown here instead, in
+ * a plain line under the field, computed from the value the user just
+ * picked — the one thing that IS reliably under this page's control.
+ */
+function formatDateForLocale(isoDate: string, locale: string | undefined): string {
+  if (!isoDate) return 'No date set'
+  const parsed = new Date(`${isoDate}T00:00:00Z`)
+  if (Number.isNaN(parsed.getTime())) return ''
+  try {
+    return new Intl.DateTimeFormat(locale || 'en', { dateStyle: 'long', timeZone: 'UTC' }).format(parsed)
+  } catch {
+    return isoDate
+  }
 }
 
 function initialValues(orgId: string, sites: SiteOption[], existing: PartnershipDetail | null): PartnershipFormValues {
@@ -51,7 +82,6 @@ function initialValues(orgId: string, sites: SiteOption[], existing: Partnership
       status: existing.status,
       startsAt: toDateInput(existing.startsAt),
       endsAt: toDateInput(existing.endsAt),
-      linkPolicyJson: Object.keys(existing.linkPolicy ?? {}).length ? JSON.stringify(existing.linkPolicy) : '',
       customUrl: existing.customUrl ?? '',
       utmTemplate: existing.utmTemplate ?? '',
       showBadge: existing.showBadge,
@@ -70,7 +100,6 @@ function initialValues(orgId: string, sites: SiteOption[], existing: Partnership
     status: 'active',
     startsAt: '',
     endsAt: '',
-    linkPolicyJson: '',
     customUrl: '',
     utmTemplate: '',
     showBadge: false,
@@ -81,6 +110,17 @@ function initialValues(orgId: string, sites: SiteOption[], existing: Partnership
 }
 
 type Phase = { kind: 'editing' } | { kind: 'confirming'; blastRadius: import('@/lib/queries').BlastRadius }
+
+function plural(n: number, one: string, many: string): string {
+  return `${n.toLocaleString()} ${n === 1 ? one : many}`
+}
+
+/** The headline figure on the confirm screen — always grammatical, whatever the count. */
+function blastHeadline(b: import('@/lib/queries').BlastRadius): string {
+  if (!b.computable) return 'Cannot check from here'
+  if (b.linkedVenueCount === 0) return 'No venue linked yet'
+  return `${plural(b.articleCount, 'article', 'articles')} across ${plural(b.venueCount, 'venue', 'venues')}`
+}
 
 export function PartnershipForm({
   orgId,
@@ -100,6 +140,7 @@ export function PartnershipForm({
   const [pending, startTransition] = useTransition()
 
   const isEdit = Boolean(existing)
+  const selectedSite = sites.find((s) => s.slug === values.siteSlug) ?? sites[0]
 
   function set<K extends keyof PartnershipFormValues>(key: K, value: PartnershipFormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -158,23 +199,30 @@ export function PartnershipForm({
       {phase.kind === 'confirming' ? (
         <div className="ws4-blast" role="alertdialog" aria-label="Confirm this change">
           <h3>Before this saves</h3>
-          <p className="ws4-blast__figure">
-            {phase.blastRadius.computable
-              ? `${phase.blastRadius.articleCount.toLocaleString()} article(s) across ${phase.blastRadius.venueCount.toLocaleString()} venue(s)`
-              : 'Blast radius unavailable from this admin session'}
-          </p>
+          <p className="ws4-blast__figure">{blastHeadline(phase.blastRadius)}</p>
           <p className="platform__sub">{phase.blastRadius.note}</p>
+          {phase.blastRadius.linkedVenueCount === 0 ? (
+            <p className="platform__sub">
+              <a href="#venues">Link a venue to this organisation ↓</a>
+            </p>
+          ) : null}
+          {phase.blastRadius.orgArticleLinkCount ? (
+            <p className="platform__sub">
+              Separately: {plural(phase.blastRadius.orgArticleLinkCount, 'article already links', 'articles already link')} to this
+              organisation&rsquo;s own website — real exposure today, whether or not a venue is linked here.
+            </p>
+          ) : null}
           <div className="platform__row-actions">
             <button className="platform__btn" onClick={onCancelConfirm} type="button">
               Cancel — keep editing
             </button>
-            <button className="platform__btn platform__btn--primary" disabled={pending} onClick={onConfirm} type="button">
+            <button className="platform__btn ws4-btn--primary" disabled={pending} onClick={onConfirm} type="button">
               {pending ? 'Saving…' : 'Confirm and save'}
             </button>
           </div>
         </div>
       ) : (
-        <form className="platform__form" onSubmit={onReview}>
+        <form className="platform__form ws4-partnership-form" onSubmit={onReview}>
           <div className="platform__fields">
             <label className="platform__field">
               <span className="platform__field-label">Organisation</span>
@@ -205,6 +253,7 @@ export function PartnershipForm({
                   </option>
                 ))}
               </select>
+              <span className="ws4-hint">{TIER_HINTS[values.tier]}</span>
             </label>
 
             <label className="platform__field">
@@ -216,16 +265,29 @@ export function PartnershipForm({
                   </option>
                 ))}
               </select>
+              <span className="ws4-hint">{STATUS_HINTS[values.status]}</span>
             </label>
 
             <label className="platform__field">
               <span className="platform__field-label">Contract starts</span>
-              <input onChange={(e) => set('startsAt', e.target.value)} type="date" value={values.startsAt} />
+              <input
+                lang={selectedSite?.locale}
+                onChange={(e) => set('startsAt', e.target.value)}
+                type="date"
+                value={values.startsAt}
+              />
+              <span className="ws4-hint">{formatDateForLocale(values.startsAt, selectedSite?.locale)}</span>
             </label>
 
             <label className="platform__field">
               <span className="platform__field-label">Contract ends</span>
-              <input onChange={(e) => set('endsAt', e.target.value)} type="date" value={values.endsAt} />
+              <input
+                lang={selectedSite?.locale}
+                onChange={(e) => set('endsAt', e.target.value)}
+                type="date"
+                value={values.endsAt}
+              />
+              <span className="ws4-hint">{formatDateForLocale(values.endsAt, selectedSite?.locale)}</span>
             </label>
 
             <label className="platform__field">
@@ -236,11 +298,13 @@ export function PartnershipForm({
                 type="text"
                 value={values.customUrl}
               />
+              <span className="ws4-hint">Where a paid link sends a reader. Only used for the paid tier.</span>
             </label>
 
             <label className="platform__field">
               <span className="platform__field-label">UTM template</span>
               <input onChange={(e) => set('utmTemplate', e.target.value)} type="text" value={values.utmTemplate} />
+              <span className="ws4-hint">Optional tracking tag added to that link, for this partner&rsquo;s own reporting.</span>
             </label>
 
             <label className="platform__field">
@@ -252,11 +316,15 @@ export function PartnershipForm({
                 type="text"
                 value={values.badgeLabel}
               />
+              <span className="ws4-hint">The word shown on the badge next to a paid mention, e.g. &ldquo;Partner&rdquo;.</span>
             </label>
 
             <label className="platform__field">
-              <span className="platform__field-label">Boost cap (0–1)</span>
-              <input onChange={(e) => set('boostCap', e.target.value)} placeholder="0.20" type="text" value={values.boostCap} />
+              <span className="platform__field-label">Most this partner can be lifted in suggestions</span>
+              <input onChange={(e) => set('boostCap', e.target.value)} placeholder="0.2" type="text" value={values.boostCap} />
+              <span className="ws4-hint">
+                0 to 1 — 0.2 means up to a 20% boost in ranked lists. Leave blank for no boost at all.
+              </span>
             </label>
           </div>
 
@@ -271,26 +339,12 @@ export function PartnershipForm({
                 onChange={(e) => set('itineraryEligible', e.target.checked)}
                 type="checkbox"
               />
-              Eligible for guaranteed itinerary slots
+              Eligible for guaranteed slots in trip itineraries
             </label>
           </div>
 
-          <label className="platform__field">
-            <span className="platform__field-label">Link policy (JSON, optional)</span>
-            <textarea
-              onChange={(e) => set('linkPolicyJson', e.target.value)}
-              placeholder="{}"
-              rows={2}
-              value={values.linkPolicyJson}
-            />
-          </label>
-          <p className="platform__sub">
-            Captured for the record; <code>now_link_resolver</code> does not read this field yet — it decides{' '}
-            <code>rel=&quot;sponsored&quot;</code> and the badge from tier and the fields above.
-          </p>
-
           <div className="platform__row-actions">
-            <button className="platform__btn platform__btn--primary" disabled={pending} type="submit">
+            <button className="platform__btn ws4-btn--primary" disabled={pending} type="submit">
               {pending ? 'Checking…' : 'Save'}
             </button>
           </div>

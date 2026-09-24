@@ -15,7 +15,7 @@ import { cityPool } from './payload'
  * from a URL reaches a query.
  */
 
-export type Site = { id: string; slug: string; name: string; hostname: string | null }
+export type Site = { id: string; slug: string; name: string; hostname: string | null; locale: string }
 
 export type OrgRow = {
   id: string
@@ -27,6 +27,19 @@ export type OrgRow = {
   confidence: string | null
   partnership_count: number
   active_partnerships: number
+  /**
+   * From the one-time outbound-link scan (E1.5, `packages/partner-roster`)
+   * that seeded this org in the first place — how many archive articles
+   * link to one of `domains` and how many links that adds up to. Real,
+   * stored figures, not computed on this query: `article_count` is a
+   * snapshot from whenever the roster last ran, not a live count, and is
+   * `null` for an org this console created rather than the roster (it was
+   * never part of that scan). Shown on the blast-radius screen as the one
+   * piece of REAL commercial exposure a brand-new partnership already has,
+   * even before any venue is linked to it — see `computeBlastRadius`.
+   */
+  article_count: number | null
+  link_count: number | null
 }
 
 export type PartnershipRow = {
@@ -131,7 +144,7 @@ export type CampaignRow = {
 
 export async function listSites(): Promise<Site[]> {
   return query<Site>(
-    `SELECT id::text, slug, name, hostname FROM engine.sites ORDER BY slug`,
+    `SELECT id::text, slug, name, hostname, locale FROM engine.sites ORDER BY slug`,
   )
 }
 
@@ -184,7 +197,7 @@ export async function listOrgs(search?: string, limit = 100): Promise<OrgRow[]> 
 export async function getOrg(id: string): Promise<OrgRow | null> {
   const rows = await query<OrgRow>(
     `SELECT o.id::text, o.name, o.slug, o.website, o.type, o.type_guess,
-            o.confidence::text,
+            o.confidence::text, o.article_count, o.link_count,
             0 AS partnership_count, 0 AS active_partnerships
        FROM engine.orgs o WHERE o.id = $1::uuid`,
     [id],
@@ -261,12 +274,21 @@ export async function listCampaigns(): Promise<CampaignRow[]> {
 export type PartnershipTier = 'free' | 'listed' | 'paid'
 export type PartnershipStatus = 'active' | 'paused' | 'ended'
 
+/**
+ * Deliberately no `linkPolicy` field here. The column (`engine.partnerships
+ * .link_policy`, `jsonb not null default '{}'`) stays exactly as it is —
+ * this console never sets it, on create or on edit — because
+ * `now_link_resolver` (the code that decides what a reader actually sees)
+ * does not read it: tier alone decides the sponsored link and the badge.
+ * A form editing a value nothing consumes is a screen that lies about
+ * having an effect (docs/SURFACES-PLAN.md §7's own rule), so it is not a
+ * field here at all rather than a field that quietly does nothing.
+ */
 export type PartnershipWritable = {
   tier: PartnershipTier
   status: PartnershipStatus
   startsAt: string | null
   endsAt: string | null
-  linkPolicy: Record<string, unknown>
   customUrl: string | null
   utmTemplate: string | null
   showBadge: boolean
@@ -344,7 +366,6 @@ function rawFields(row: PartnershipRawRow) {
     status: row.status,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
-    linkPolicy: row.link_policy ?? {},
     customUrl: row.custom_url,
     utmTemplate: row.utm_template,
     showBadge: row.show_badge,
@@ -427,12 +448,15 @@ export async function createPartnership(input: NewPartnershipInput, actor: Actor
   const client = await db().connect()
   try {
     await client.query('BEGIN')
+    // No `link_policy` column here — it keeps its `'{}'::jsonb` default.
+    // See `PartnershipWritable`'s own comment for why this console never
+    // sets it.
     const inserted = await client.query<PartnershipRawRow>(
       `INSERT INTO engine.partnerships
-         (org_id, place_id, site_id, tier, status, starts_at, ends_at, link_policy,
+         (org_id, place_id, site_id, tier, status, starts_at, ends_at,
           custom_url, utm_template, show_badge, badge_label, itinerary_eligible, boost_cap)
-       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6::timestamptz, $7::timestamptz, $8::jsonb,
-               $9, $10, $11, $12, $13, $14::numeric)
+       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6::timestamptz, $7::timestamptz,
+               $8, $9, $10, $11, $12, $13::numeric)
        RETURNING ${PARTNERSHIP_RETURNING}`,
       [
         input.orgId,
@@ -442,7 +466,6 @@ export async function createPartnership(input: NewPartnershipInput, actor: Actor
         input.status,
         input.startsAt,
         input.endsAt,
-        JSON.stringify(input.linkPolicy ?? {}),
         input.customUrl,
         input.utmTemplate,
         input.showBadge,
@@ -516,11 +539,14 @@ export async function updatePartnership(
       return { ok: false, reason: 'not_found_or_out_of_scope' }
     }
 
+    // No `link_policy` in the SET list — this console never wrote it (see
+    // `PartnershipWritable`'s comment), so an edit leaves the column exactly
+    // as it was, rather than re-writing it back to itself for no reason.
     const updateRes = await client.query<PartnershipRawRow>(
       `UPDATE engine.partnerships p
           SET tier = $3, status = $4, starts_at = $5::timestamptz, ends_at = $6::timestamptz,
-              link_policy = $7::jsonb, custom_url = $8, utm_template = $9, show_badge = $10,
-              badge_label = $11, itinerary_eligible = $12, boost_cap = $13::numeric, updated_at = now()
+              custom_url = $7, utm_template = $8, show_badge = $9,
+              badge_label = $10, itinerary_eligible = $11, boost_cap = $12::numeric, updated_at = now()
          FROM engine.sites s
         WHERE p.id = $1::uuid AND p.site_id = s.id AND ($2 = 'any' OR s.slug = $2)
         RETURNING ${PARTNERSHIP_RETURNING_QUALIFIED}`,
@@ -531,7 +557,6 @@ export async function updatePartnership(
         patch.status,
         patch.startsAt,
         patch.endsAt,
-        JSON.stringify(patch.linkPolicy ?? {}),
         patch.customUrl,
         patch.utmTemplate,
         patch.showBadge,
@@ -583,13 +608,37 @@ export async function updatePartnership(
  * and say plainly why there is none for any other.
  * ---------------------------------------------------------------------- */
 
+function plural(n: number, one: string, many: string): string {
+  return `${n.toLocaleString()} ${n === 1 ? one : many}`
+}
+
 export type BlastRadius = {
   /** Whether this process's own city database could answer the question. */
   computable: boolean
   citySlug: string
   targetSiteSlug: string
+  /** Articles that mention one of this organisation's LINKED venues. */
   articleCount: number
+  /** How many of those linked venues are actually mentioned. */
   venueCount: number
+  /**
+   * How many venues in this city are linked to this organisation at all,
+   * mentioned or not — the real reason `articleCount` is so often zero.
+   * `places.org_id` is NULL on every single row in both cities today (5,918
+   * in Bali, 6,589 in Jakarta) even though both cities together carry over
+   * 21,000 real `place_mentions` rows — the mentions exist, nothing has ever
+   * pointed a venue at an organisation. That is what "Venues belonging to
+   * this organisation" on the org screen exists to fix.
+   */
+  linkedVenueCount: number
+  /**
+   * `engine.orgs.article_count` — real exposure this organisation already
+   * has, independent of any venue link: how many archive articles once
+   * linked out to its own website. A one-time figure from when the roster
+   * was built, not computed on this request — `null` for an org the roster
+   * never saw (one created directly in this console, for instance).
+   */
+  orgArticleLinkCount: number | null
   note: string
 }
 
@@ -597,8 +646,11 @@ export async function computeBlastRadius(params: {
   orgId: string | null
   placeId: string | null
   targetSiteSlug: string
+  /** From `getOrg()` — passed in rather than re-queried here. */
+  orgArticleLinkCount?: number | null
 }): Promise<BlastRadius> {
   const citySlug = process.env.SITE_SLUG ?? ''
+  const orgArticleLinkCount = params.orgArticleLinkCount ?? null
 
   if (params.targetSiteSlug !== citySlug) {
     return {
@@ -607,36 +659,40 @@ export async function computeBlastRadius(params: {
       targetSiteSlug: params.targetSiteSlug,
       articleCount: 0,
       venueCount: 0,
+      linkedVenueCount: 0,
+      orgArticleLinkCount,
       note:
-        `This partnership targets ${params.targetSiteSlug}. This admin session serves ` +
-        `${citySlug || 'an unset city'}'s own database, so it cannot count ${params.targetSiteSlug}'s ` +
-        `articles — sign in to ${params.targetSiteSlug}'s own admin to see its blast radius. ` +
-        `Cross-city aggregation is S5.4's cross-city bridge, which does not exist yet.`,
+        `This partnership is for ${params.targetSiteSlug}, and this screen is signed in to ` +
+        `${citySlug || 'a different site'}. Sign in to ${params.targetSiteSlug}'s own admin to see what it affects there.`,
     }
   }
 
   if (params.orgId) {
-    const { rows } = await cityPool().query<{ articles: string; venues: string }>(
-      `SELECT count(DISTINCT pm.article_id) AS articles, count(DISTINCT pl.id) AS venues
+    const { rows } = await cityPool().query<{ linked: string; mentioned_venues: string; articles: string }>(
+      `SELECT count(pl.id) AS linked,
+              count(DISTINCT pm.place_id) AS mentioned_venues,
+              count(DISTINCT pm.article_id) AS articles
          FROM public.places pl
-         JOIN public.place_mentions pm ON pm.place_id = pl.id
+         LEFT JOIN public.place_mentions pm ON pm.place_id = pl.id
         WHERE pl.org_id = $1`,
       [params.orgId],
     )
+    const linkedVenueCount = Number(rows[0]?.linked ?? 0)
+    const venueCount = Number(rows[0]?.mentioned_venues ?? 0)
     const articleCount = Number(rows[0]?.articles ?? 0)
-    const venueCount = Number(rows[0]?.venues ?? 0)
-    return {
-      computable: true,
-      citySlug,
-      targetSiteSlug: params.targetSiteSlug,
-      articleCount,
-      venueCount,
-      note:
-        articleCount === 0
-          ? `No article in ${citySlug} currently mentions a place belonging to this organisation. ` +
-            `Real count, not a placeholder — \`place_mentions\` is empty archive-wide until E2.3 ships (PROGRESS.md).`
-          : `This organisation's venues are mentioned in ${articleCount} article(s) across ${venueCount} venue(s) in ${citySlug}.`,
+
+    let note: string
+    if (linkedVenueCount === 0) {
+      note =
+        'No venue is linked to this organisation yet, so this partnership changes nothing on the ' +
+        'site until one is. Link a venue below, under "Venues belonging to this organisation."'
+    } else if (articleCount === 0) {
+      note = `${plural(linkedVenueCount, 'venue is', 'venues are')} linked to this organisation, but no article currently mentions ${linkedVenueCount === 1 ? 'it' : 'any of them'}.`
+    } else {
+      note = `${plural(articleCount, 'article mentions', 'articles mention')} ${plural(venueCount, 'venue', 'venues')} belonging to this organisation, in ${citySlug}.`
     }
+
+    return { computable: true, citySlug, targetSiteSlug: params.targetSiteSlug, articleCount, venueCount, linkedVenueCount, orgArticleLinkCount, note }
   }
 
   if (params.placeId) {
@@ -654,10 +710,12 @@ export async function computeBlastRadius(params: {
       targetSiteSlug: params.targetSiteSlug,
       articleCount,
       venueCount: articleCount > 0 ? 1 : 0,
+      linkedVenueCount: 1,
+      orgArticleLinkCount: null,
       note:
         articleCount === 0
           ? `No article in ${citySlug} currently mentions this place.`
-          : `This place is mentioned in ${articleCount} article(s) in ${citySlug}.`,
+          : `${plural(articleCount, 'article mentions', 'articles mention')} this place in ${citySlug}.`,
     }
   }
 
@@ -667,6 +725,52 @@ export async function computeBlastRadius(params: {
     targetSiteSlug: params.targetSiteSlug,
     articleCount: 0,
     venueCount: 0,
+    linkedVenueCount: 0,
+    orgArticleLinkCount,
     note: 'Neither an organisation nor a place is set yet.',
   }
+}
+
+/* ------------------------------------------------------------------------
+ * Venues linked to an organisation — what makes a partnership do anything.
+ *
+ * `places.org_id` is empty on every one of both cities' real rows today
+ * (5,918 in Bali, 6,589 in Jakarta) — not because venues aren't mentioned
+ * in articles (over 21,000 real `place_mentions` rows across both cities
+ * say otherwise) but because nothing has ever written to this column.
+ * These are READS only — plain SQL against `cityPool()`, matching every
+ * other read in this file. The WRITE (setting `places.org_id`) goes
+ * through Payload's Local API instead, in
+ * `commerce/orgs/[id]/venuesActions.ts` — a city collection with its own
+ * hooks and version history should be written the way its own admin
+ * writes it, not by a second, parallel SQL path that skips both.
+ * ---------------------------------------------------------------------- */
+
+export type CityPlace = { id: string; name: string; slug: string; type: string | null; orgId: string | null }
+
+function toCityPlace(row: { id: string; name: string; slug: string; type: string | null; org_id: string | null }): CityPlace {
+  return { id: row.id, name: row.name, slug: row.slug, type: row.type, orgId: row.org_id }
+}
+
+export async function listOrgVenues(orgId: string): Promise<CityPlace[]> {
+  const { rows } = await cityPool().query<{ id: string; name: string; slug: string; type: string | null; org_id: string | null }>(
+    `SELECT id::text, name, slug, type::text, org_id FROM public.places WHERE org_id = $1 ORDER BY name`,
+    [orgId],
+  )
+  return rows.map(toCityPlace)
+}
+
+/** Search this city's places by name — the picker for "attach a venue". */
+export async function searchCityPlaces(term: string, limit = 20): Promise<CityPlace[]> {
+  const trimmed = term.trim()
+  if (!trimmed) return []
+  const { rows } = await cityPool().query<{ id: string; name: string; slug: string; type: string | null; org_id: string | null }>(
+    `SELECT id::text, name, slug, type::text, org_id
+       FROM public.places
+      WHERE name ILIKE $1
+      ORDER BY name
+      LIMIT $2`,
+    [`%${trimmed}%`, limit],
+  )
+  return rows.map(toCityPlace)
 }

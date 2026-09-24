@@ -45,11 +45,8 @@ export async function EditPartnershipView({ orgId, partnershipId }: { orgId: str
 
       <PartnershipForm existing={partnership} orgId={orgId} orgName={org.name} sites={sites} />
 
-      <h2 className="console__subhead">Audit history</h2>
-      <p className="console__sub">
-        Every write to this row, named by actor and time — <code>engine.partnership_audit</code>,
-        written in the same transaction as the change it records.
-      </p>
+      <h2 className="console__subhead">Who changed this, and when</h2>
+      <p className="console__sub">Every change to this partnership is kept, alongside the person who made it.</p>
       {audit.length === 0 ? (
         <div className="console__empty">No writes recorded yet.</div>
       ) : (

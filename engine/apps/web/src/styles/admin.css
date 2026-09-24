@@ -3468,3 +3468,54 @@ html[data-theme='dark'] .graphic-icon {
   font-size: 0.85rem;
   color: var(--theme-elevation-700);
 }
+
+/* ----------------------------------------------------------------------
+   Second pass (coordinator review) — the primary-action button, a wider
+   form column, and per-field hints.
+   ------------------------------------------------------------------------
+   `.platform__btn--primary` (S5.1) leans on `--theme-elevation-800` /
+   `--theme-elevation-0`, which read as near-invisible in this custom
+   view's context — a real, reported contrast bug, not a taste call. Rather
+   than touch `.platform__btn--primary` itself (shared with the S5.1 nav/
+   brand/rails forms, above this marker), the primary action on the
+   screens THIS ticket owns gets its own class, using `--red` — the exact
+   colour docs/DESIGN-SYSTEM.md §1 already names for this job: "Red is
+   reserved: the mark, the Partner label, section labels, and the primary
+   action." A hex literal in tokens.css, not a Payload theme variable, so
+   it cannot go missing the same way. */
+.ws4-btn--primary {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.ws4-btn--primary:hover:not(:disabled) {
+  background: var(--red-deep);
+  border-color: var(--red-deep);
+}
+
+.ws4-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The narrow-field complaint: `.platform__field` (S5.1) has no width rule
+   of its own, so every input sizes to the browser default — fine for a
+   handful of short nav rows, cramped for a form with ten fields. Scoped to
+   this form only, so S5.1's own screens are untouched. */
+.ws4-partnership-form .platform__field {
+  flex: 1 1 240px;
+  min-width: 220px;
+}
+
+.ws4-partnership-form input[type='text'],
+.ws4-partnership-form input[type='search'],
+.ws4-partnership-form input[type='date'] {
+  width: 100%;
+}
+
+.ws4-hint {
+  font-size: 0.78rem;
+  color: var(--theme-elevation-500);
+  line-height: 1.35;
+}

@@ -6,6 +6,7 @@ import { canWritePartnershipForSite, commerceCurrentSiteSlug, requireCommerceWri
 import {
   computeBlastRadius,
   createPartnership,
+  getOrg,
   getPartnership,
   updatePartnership,
   type BlastRadius,
@@ -48,7 +49,6 @@ export type PartnershipFormValues = {
   status: PartnershipStatus
   startsAt: string
   endsAt: string
-  linkPolicyJson: string
   customUrl: string
   utmTemplate: string
   showBadge: boolean
@@ -65,26 +65,12 @@ export type PreviewResult =
   | { ok: true; blastRadius: BlastRadius }
   | { ok: false; message: string }
 
-function parseLinkPolicy(raw: string): { value: Record<string, unknown> } | { error: string } {
-  const trimmed = raw.trim()
-  if (trimmed === '') return { value: {} }
-  try {
-    const parsed = JSON.parse(trimmed)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return { error: 'Link policy must be a JSON object, e.g. {} or {"noindex": true}.' }
-    }
-    return { value: parsed as Record<string, unknown> }
-  } catch {
-    return { error: 'Link policy is not valid JSON. Leave it blank for the default, {}.' }
-  }
-}
-
 function parseBoostCap(raw: string): { value: number | null } | { error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { value: null }
   const n = Number(trimmed)
   if (!Number.isFinite(n) || n < 0 || n > 1) {
-    return { error: 'Boost cap must be a number between 0 and 1 (a share of a rail, not a percent), or left blank.' }
+    return { error: 'That has to be a number between 0 and 1 (0.2 for a 20% lift), or left blank for no boost.' }
   }
   return { value: n }
 }
@@ -121,10 +107,12 @@ export async function previewPartnershipSave(values: PartnershipFormValues): Pro
   const problem = describeFieldProblem(values)
   if (problem) return { ok: false, message: problem }
 
+  const org = values.orgId ? await getOrg(values.orgId) : null
   const blastRadius = await computeBlastRadius({
     orgId: values.orgId,
     placeId: values.placeId,
     targetSiteSlug: values.siteSlug,
+    orgArticleLinkCount: org?.article_count ?? null,
   })
   return { ok: true, blastRadius }
 }
@@ -140,8 +128,6 @@ export async function createPartnershipAction(values: PartnershipFormValues): Pr
   const problem = describeFieldProblem(values)
   if (problem) return { ok: false, message: problem }
 
-  const linkPolicy = parseLinkPolicy(values.linkPolicyJson)
-  if ('error' in linkPolicy) return { ok: false, message: linkPolicy.error }
   const boostCap = parseBoostCap(values.boostCap)
   if ('error' in boostCap) return { ok: false, message: boostCap.error }
 
@@ -153,7 +139,6 @@ export async function createPartnershipAction(values: PartnershipFormValues): Pr
     status: values.status,
     startsAt: values.startsAt || null,
     endsAt: values.endsAt || null,
-    linkPolicy: linkPolicy.value,
     customUrl: values.customUrl.trim() || null,
     utmTemplate: values.utmTemplate.trim() || null,
     showBadge: values.showBadge,
@@ -197,8 +182,6 @@ export async function updatePartnershipAction(
   const problem = describeFieldProblem({ ...values, siteSlug: existing.siteSlug })
   if (problem) return { ok: false, message: problem }
 
-  const linkPolicy = parseLinkPolicy(values.linkPolicyJson)
-  if ('error' in linkPolicy) return { ok: false, message: linkPolicy.error }
   const boostCap = parseBoostCap(values.boostCap)
   if ('error' in boostCap) return { ok: false, message: boostCap.error }
 
@@ -210,7 +193,6 @@ export async function updatePartnershipAction(
       status: values.status,
       startsAt: values.startsAt || null,
       endsAt: values.endsAt || null,
-      linkPolicy: linkPolicy.value,
       customUrl: values.customUrl.trim() || null,
       utmTemplate: values.utmTemplate.trim() || null,
       showBadge: values.showBadge,

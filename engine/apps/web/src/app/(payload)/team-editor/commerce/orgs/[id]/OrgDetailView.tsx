@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { getOrg, listPartnerships } from '@/lib/queries'
+import { getOrg, listOrgVenues, listPartnerships } from '@/lib/queries'
 import { requireCommerceAccess } from '@/lib/auth'
 import { consoleHref, newPartnershipHref, partnershipHref } from '../../paths'
+import { VenuesPanel } from './VenuesPanel'
 
 /**
  * FORMERLY `commerce/orgs/[id]/page.tsx` — a literal Next dynamic route, with
@@ -27,7 +28,7 @@ export async function OrgDetailView({ id }: { id: string }) {
       </>
     )
   }
-  const partnerships = await listPartnerships(id)
+  const [partnerships, venues] = await Promise.all([listPartnerships(id), listOrgVenues(id)])
 
   return (
     <>
@@ -75,10 +76,12 @@ export async function OrgDetailView({ id }: { id: string }) {
       )}
 
       <p className="console__sub" style={{ marginTop: '1rem' }}>
-        <Link className="platform__btn platform__btn--primary" href={newPartnershipHref(org.id)}>
+        <Link className="platform__btn ws4-btn--primary" href={newPartnershipHref(org.id)}>
           + New partnership
         </Link>
       </p>
+
+      <VenuesPanel initialVenues={venues} orgId={org.id} orgName={org.name} />
     </>
   )
 }
