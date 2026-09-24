@@ -4207,3 +4207,154 @@ html[data-theme='dark'] .graphic-icon {
   color: var(--theme-elevation-500);
   line-height: 1.35;
 }
+
+/* ----------------------------------------------------------------------
+   Third pass — "How suggestions are doing" (rail click analytics + A/B).
+   ------------------------------------------------------------------------
+   Every bar chart below follows the `dataviz` skill's mark spec: thin
+   marks, a 4px rounded end at the data value, 2px surface gaps between
+   adjacent bars, a single hue per single-series chart (magnitude is
+   carried by LENGTH, not by a second colour) — exactly the convention
+   `.platform__coverage-fill`/`--zero` already set for facet coverage, reused
+   rather than re-invented. Nothing here is a chart LIBRARY: every bar is a
+   plain `<div>` sized by inline `style`, per "CSS/SVG, no new dependency".
+   ------------------------------------------------------------------------ */
+
+.ws4-rail-card {
+  border-top: 1px solid var(--theme-elevation-1000);
+  padding: calc(var(--base) * 0.8) 0 calc(var(--base) * 1.1);
+}
+
+.ws4-rail-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.ws4-rail-card__head h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.05rem;
+}
+
+.ws4-rail-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--base) * 1.2);
+  margin: 0.5rem 0 0.7rem;
+}
+
+.ws4-rail-card__label {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--theme-elevation-500);
+}
+
+.ws4-rail-card__value {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--theme-elevation-900);
+}
+
+/* Clicks-by-position — six thin columns, baseline-anchored, a rounded data
+   end, single hue (`--type`), 2px gaps. Position 1..6 is IDENTITY (which
+   slot), height is MAGNITUDE (how many clicks) — one series, no legend
+   needed per the skill's own rule. */
+.ws4-position-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 64px;
+  max-width: 220px;
+}
+
+.ws4-position-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.ws4-position-bar__track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 44px;
+  background: var(--theme-elevation-50);
+}
+
+.ws4-position-bar__fill {
+  width: 100%;
+  background: var(--type);
+  border-radius: 3px 3px 0 0;
+  min-height: 4px;
+}
+
+.ws4-position-bar__fill--zero {
+  background: var(--theme-elevation-150);
+}
+
+.ws4-position-bar__n {
+  font-size: 0.68rem;
+  color: var(--theme-elevation-600);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws4-position-bar__label {
+  font-size: 0.68rem;
+  color: var(--theme-elevation-400);
+}
+
+/* The A/B verdict line — status colour, never decoration: `--ok` for a
+   called result, `--gold` for "not enough data yet" (a real, named state,
+   not a failure), matching docs/DESIGN-SYSTEM.md's "status is form and
+   colour, never a sentence alone" — the colour is on a stripe, not the
+   whole sentence, so the text itself stays legible ink either way. */
+.ws4-experiment-verdict {
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--ok);
+  font-size: 0.9rem;
+}
+
+.ws4-experiment-verdict--pending {
+  border-left-color: var(--gold);
+  color: var(--theme-elevation-600);
+}
+
+/* Events-per-day — 30 thin columns, same construction as the position
+   chart, one hue, zero days shown as a faint hairline rather than nothing
+   at all (an absent bar and a zero-height bar must not look identical —
+   this IS the finding "Tracking health" exists to surface). */
+.ws4-day-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+  max-width: 480px;
+}
+
+.ws4-day-bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  background: var(--theme-elevation-50);
+}
+
+.ws4-day-bar__fill {
+  width: 100%;
+  background: var(--type);
+  border-radius: 2px 2px 0 0;
+  min-height: 3px;
+}
+
+.ws4-day-bar__fill--zero {
+  background: var(--red);
+  opacity: 0.35;
+}

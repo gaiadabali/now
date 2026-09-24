@@ -5,7 +5,7 @@ import { listRegistrySites } from '@/lib/queries'
 
 import { getFacetCoverage } from './facetCoverage'
 import { brandReport, jsonColumnGoverned, navReport, railsReport } from './registry'
-import { siteHref } from './paths'
+import { railsAnalyticsHref, siteHref } from './paths'
 
 /**
  * `/team-editor/platform` — the sites registry.
@@ -53,6 +53,11 @@ export async function RegistryIndexView() {
         right now. A field reading <strong>falling back to file</strong> is not broken — it is the
         normal state for a row the console has never touched, and the reader still renders
         correctly from the baked config. Open a site to change what wins.
+      </p>
+
+      <p className="platform__sub">
+        <Link href={railsAnalyticsHref()}>How suggestions are doing →</Link> — clicks per rail, A/B
+        experiment results, and whether the beacon is still sending anything.
       </p>
 
       <div className="platform__kpis">
