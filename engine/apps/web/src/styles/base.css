@@ -196,29 +196,31 @@ body { overflow-x: hidden; }
    sits in its default (visible) state — which is the same "off" outcome
    `prefers-reduced-motion` asks for below, arrived at for a different
    reason. Two ways to end up at "just show it", never a way to end up at
-   "just hide it". */
-[data-reveal],
-[data-reveal] > .shell > * { opacity: 1; }
+   "just hide it".
+
+   Self-targeting — `[data-reveal]` animates ITSELF, not a `.shell > *`
+   descendant path. The first version reached into a band's children for a
+   head/body stagger, which only worked for the one markup shape (`Band` +
+   a single `.shell` div) it was built against; opting the section index,
+   `/latest`, `/search` and `/areas` pages in (none of which nest their
+   content in a per-band `.shell`) needed a selector that does not care what
+   is inside the tagged element. The small stagger between adjacent bands is
+   still there — each `[data-reveal]` has its own view-timeline, tied to its
+   OWN position in the scrollport, so consecutive bands still settle one
+   after another as a reader scrolls past them. */
+[data-reveal] { opacity: 1; }
 
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    /* The reveal targets the band's own direct sections (typically the
-       `BandHead` and the grid beneath it) rather than the band itself, so
-       the head and the body settle a beat apart — the "light stagger" —
-       instead of the whole band arriving as one flat sheet. Each still has
-       its OWN view-timeline (it is tied to that element's position in the
-       scrollport), so this needs no JavaScript and no shared clock. */
-    [data-reveal] > .shell > * {
+    [data-reveal] {
       animation: reveal-in linear both;
       animation-timeline: view();
-      /* Enters as the band is a quarter into the viewport and finishes
+      /* Enters as the element is a quarter into the viewport and finishes
          well before a reader has reached the line below it — a reveal
          still running once someone is already reading it looks like lag,
          not motion. */
       animation-range: entry 0% cover 30%;
     }
-    [data-reveal] > .shell > *:nth-child(2) { animation-delay: -8%; }
-    [data-reveal] > .shell > *:nth-child(3) { animation-delay: -16%; }
   }
 
   @keyframes reveal-in {

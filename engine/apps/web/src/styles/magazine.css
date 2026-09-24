@@ -122,16 +122,36 @@ body.hdr-condensed .masthead__edition { display: none; }
 
 .masthead__nav { border-top: var(--edge); border-bottom: var(--hair); }
 
-/* ---- The nav drawer (Edition 2) ------------------------------------------
-   `<details class="navdrawer">` in Masthead.tsx. Below 62rem it is a real
-   disclosure: closed by default (a phone should not spend a third of its
-   first screen on a nav bar), opened by a real `<summary>` — focusable,
-   `Enter`/`Space` native, arrow-navigable by every screen reader without a
-   line of ARIA. At 62rem and above the summary is hidden and the panel is
-   forced open regardless of the `[open]` attribute, which is what lets one
-   markup tree serve the old horizontal list AND the new drawer: nothing
-   here reads `matchMedia` or renders twice. */
-.navdrawer { border: 0; }
+/* ---- Section nav: two copies, exactly one shown (Edition 2, corrected) --
+   `Masthead.tsx` renders `site.nav` twice — `.navlist` (a plain `<nav>` row)
+   and `.navdrawer` (a native `<details>` disclosure) — and this is the ONLY
+   thing that decides which one exists for a reader: `display: none` on
+   whichever is not for this width, which also removes it from the
+   accessibility tree, so nothing is ever announced or tabbable twice.
+
+   The first pass tried to serve both from ONE `<details>`, forced open
+   above 62rem with `.navdrawer__panel { display: block !important }`. That
+   is not what "open" means to a modern browser: Chromium (and now other
+   engines) render a CLOSED `<details>`'s content through the
+   `::details-content` pseudo-element, which applies `content-visibility:
+   hidden` directly to it — a UA style stronger than anything this
+   stylesheet can override on the child, `!important` included, because it
+   is not the child's `display` that is hiding it. The bug was invisible at
+   360px (where the drawer is meant to be closed anyway) and total at
+   1440px: no section row at all, just the two rules under the logo. Two
+   plain, unconditional trees are the fix — nothing here bets on a pseudo-
+   element still short of wide support. */
+.navlist { display: block; }
+.navdrawer { display: block; border: 0; }
+
+@media (min-width: 62rem) {
+  .navlist { display: block; }
+  .navdrawer { display: none; }
+}
+@media (max-width: 61.9375rem) {
+  .navlist { display: none; }
+}
+
 .navdrawer summary { list-style: none; cursor: pointer; }
 .navdrawer summary::-webkit-details-marker,
 .navdrawer summary::marker { display: none; content: ''; }
@@ -170,59 +190,51 @@ body.hdr-condensed .masthead__edition { display: none; }
 
 .navdrawer__panel { padding-bottom: var(--space-s); }
 
-.masthead__nav-list {
+/* Drawer copy: a stacked, full-width list of tap targets. */
+.navdrawer__panel .masthead__nav-list { display: flex; flex-direction: column; gap: 0; }
+
+.navdrawer__panel .masthead__nav-link {
+  display: block;
+  padding-block: var(--space-xs);
+  border-bottom: var(--hair);
+}
+.navdrawer__panel .masthead__nav-list li:first-child .masthead__nav-link { border-top: var(--hair); }
+
+/* Row copy: horizontal, with the underline-draw hover (DESIGN-SYSTEM
+   motion) — the rule grows from the left on hover/focus rather than
+   snapping on, using a background strip rather than `border-bottom` so its
+   width can transition; a border cannot animate from 0 the way a
+   background-size can. */
+.navlist .masthead__nav-list {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  flex-direction: row;
+  gap: clamp(var(--space-m), 2.6vw, var(--space-xl));
+  padding-block: var(--space-xs);
 }
 
+.navlist .masthead__nav-link {
+  padding-block: var(--space-3xs);
+  white-space: nowrap;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.navlist .masthead__nav-link:hover,
+.navlist .masthead__nav-link:focus-visible,
+.navlist .masthead__nav-link[aria-current='page'] { background-size: 100% 2px; }
+
 .masthead__nav-link {
-  display: block;
   font-family: var(--font-sans);
   font-size: var(--t-body);
   font-weight: 500;
   color: var(--type);
-  padding-block: var(--space-xs);
-  border-bottom: var(--hair);
 }
-.masthead__nav-list li:first-child .masthead__nav-link { border-top: var(--hair); }
+.navlist .masthead__nav-link { font-size: var(--t-small); }
 
 .masthead__nav-link:hover,
 .masthead__nav-link[aria-current='page'] { color: var(--red); }
-
-@media (min-width: 62rem) {
-  .navdrawer__summary { display: none; }
-  /* Forced open: the `<details>` element itself still has no `[open]`
-     attribute on desktop (nothing set it), so this overrides its own
-     default `display: none` on the content rather than relying on the
-     attribute at all. */
-  .navdrawer__panel { display: block !important; padding-bottom: 0; }
-
-  .masthead__nav-list {
-    flex-direction: row;
-    gap: clamp(var(--space-m), 2.6vw, var(--space-xl));
-    padding-block: var(--space-xs);
-  }
-
-  .masthead__nav-link {
-    padding-block: var(--space-3xs);
-    border: 0;
-    border-bottom: 2px solid transparent;
-    white-space: nowrap;
-    /* The "draw" underline (DESIGN-SYSTEM motion): the rule grows from the
-       left on hover/focus rather than snapping on, using a background
-       strip rather than `border-bottom` so its width can transition — a
-       border cannot animate from 0 the way a background-size can. */
-    background-image: linear-gradient(currentColor, currentColor);
-    background-repeat: no-repeat;
-    background-position: 0 100%;
-    background-size: 0% 2px;
-    transition: background-size var(--dur) var(--ease), color var(--dur) var(--ease);
-  }
-  .masthead__nav-link:hover,
-  .masthead__nav-link:focus-visible,
-  .masthead__nav-link[aria-current='page'] { background-size: 100% 2px; }
-}
 
 /* ==========================================================================
    2. BAND SYSTEM
@@ -315,14 +327,12 @@ body.hdr-condensed .masthead__edition { display: none; }
   grid-template-columns: 1fr;
 }
 @media (min-width: 62rem) {
-  /* `align-items: start`, not grid's own default `stretch` — the
-     secondaries column is a list of 3-4 items and is very often taller
-     than the hero's own fixed-height media box. `stretch` was found
-     stretching `.frontlead__hero` (the grid item) to match the TALLER
-     column, which pulled `.frontlead__body`'s `bottom: 0` down with it —
-     the headline rendered in the empty gap below the photograph instead of
-     overlaid on it. Each column keeps its own natural height instead. */
-  .frontlead { grid-template-columns: 1.6fr 1fr; align-items: start; }
+  /* `align-items: stretch` — grid's own default, restored after review
+     found it broke a DIFFERENT way the first time (below), and equalising
+     the two columns' heights via the grid itself is what actually closes a
+     dead-space gap rather than a fixed clamp() that has to guess at the
+     secondaries column's real height. */
+  .frontlead { grid-template-columns: 1.6fr 1fr; align-items: stretch; }
 }
 
 .frontlead__hero { position: relative; display: block; }
@@ -333,24 +343,28 @@ body.hdr-condensed .masthead__edition { display: none; }
   overflow: hidden;
   background: var(--ink);
   isolation: isolate;
-  /* A fixed band of heights rather than an aspect-ratio: the hero shares a
-     row with the secondaries column, and an aspect-ratio tall enough to
-     read as "large" at 1.6fr width would answer to the WIDTH, which is
-     exactly what made the old full-bleed cover eat the whole first screen
-     on its own. Capping the height directly is what leaves room for the
-     secondaries and the strip beneath at a 1440×900 laptop. */
-  height: clamp(300px, 32vw, 400px);
+  /* Mobile default: in normal flow, its own aspect-ratio. */
+  height: auto;
+  aspect-ratio: 4 / 3;
 }
-/* Phone: headline moves below the image rather than over it — "never
-   clipped" (the brief's own words for what the old cover did at 390px). An
-   overlay headline is a desktop-only bet on how much scrim a photograph
-   needs; below it, there is no bet to get wrong. `.frontlead__body` is a
-   SIBLING of `.frontlead__media` (not a child), precisely so this
-   media/body split can flip from "overlaid" to "stacked" by changing only
-   position and height here, with nothing fighting `next/image`'s own inline
-   styles on the `fill` image inside. */
-@media (max-width: 61.9375rem) {
-  .frontlead__media { height: auto; aspect-ratio: 4 / 3; }
+@media (min-width: 62rem) {
+  /* Absolutely fills `.frontlead__hero` — which, under the grid's
+     `align-items: stretch` above, is exactly as tall as the secondaries
+     column beside it. `object-fit: cover` (below) crops the photograph to
+     that height.
+
+     This replaces a fixed `clamp()` height that could not know the
+     secondaries column's real height, which is what caused two different
+     bugs in review: first, `align-items: stretch` stretched `.frontlead__hero`
+     to match the taller column while `.frontlead__media` kept its own fixed
+     height, leaving empty space between the (short) image and the
+     (stretched-down) headline overlaid beneath it. Second, the fixed height
+     was then tuned to a guessed value instead, which left the OTHER
+     column short — a dead white block under the lead when the secondaries
+     column ran taller than the guess. Stretching the image itself removes
+     the guess entirely: the two columns are the same height by
+     construction, always. */
+  .frontlead__media { position: absolute; inset: 0; height: 100%; aspect-ratio: auto; }
 }
 
 .frontlead__hero-img { object-fit: cover; transition: transform 600ms var(--ease); }
@@ -388,15 +402,25 @@ body.hdr-condensed .masthead__edition { display: none; }
   .frontlead__body { position: static; background: var(--ink); padding: var(--space-m); }
 }
 
+/* A solid chip, not red text directly on the photograph. Review at 1440
+   found "STAY / THE FEATURE" illegible over a busy image — red-on-photo has
+   no guaranteed contrast the way red-on-scrim-then-white does, and a busy
+   or light patch of ANY real photograph can put red text under AA. A solid
+   fill is the same move `.badge--partner`/`.badge--live` already make for
+   exactly this reason (§1: "the chrome is white, ink and red... a tint is a
+   colour this file was told not to invent"). */
 .cover__kicker {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2xs);
+  width: fit-content;
+  background: var(--red);
+  color: var(--paper);
+  padding: 0.3em 0.6em;
   font-family: var(--font-label);
   font-size: var(--t-meta);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-  color: var(--red);
   margin-bottom: var(--space-s);
 }
 
@@ -625,6 +649,26 @@ body.hdr-condensed .masthead__edition { display: none; }
 .grid--dept__side > * + * { border-top: var(--hair); margin-top: var(--space-m); padding-top: var(--space-m); }
 @media (max-width: 62rem) { .grid--dept { grid-template-columns: 1fr; } }
 
+/* Plan around it (article page, Edition 2) — a column per `plan-<section>`
+   rail, 1 to 3 of them (`ArticleRails.tsx`). `auto-fit` with a `minmax`
+   floor is what makes "degrades cleanly to 1, 2 or 3 columns" true without
+   a breakpoint per count: as many 15rem-or-wider columns fit as the
+   viewport allows, and a phone — unable to fit two — collapses to one
+   automatically. */
+.grid--plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--gutter); }
+.plan-col__head {
+  font-family: var(--font-label);
+  font-size: var(--t-meta);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--type);
+  padding-bottom: var(--space-2xs);
+  margin-bottom: var(--space-s);
+  border-bottom: var(--edge);
+}
+.plan-col__items { display: flex; flex-direction: column; }
+.plan-col__items > .card + .card { border-top: var(--hair); margin-top: var(--space-s); padding-top: var(--space-s); }
+
 /* Latest — 3-column index, no thumbnails. A CSS multi-column rather than a
    grid: a `row` card's height varies with its headline, and multi-column
    lets the next row start immediately below the shortest one instead of
@@ -815,19 +859,40 @@ body.hdr-condensed .masthead__edition { display: none; }
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
-  max-width: 46rem;
+  /* Wider than a body-copy measure on purpose — review at 1440 found the
+     header reading as a headline stranded in the left ~45% of the shell
+     with nothing composing against it on the right. `min(100%, 56rem)`
+     gives the headline real width to be large at (the point of
+     `--t-headline`) while still stopping well short of the full 1420px
+     shell — an edge-to-edge headline would hurt its own line length as
+     much as the narrow column was hurting the page's composition. */
+  max-width: min(100%, 56rem);
   padding-block: clamp(var(--space-l), 4vw, var(--space-2xl)) var(--space-l);
 }
 
 .article-head__title { font-size: var(--t-headline); letter-spacing: var(--track-display); }
 
-/* Standfirst hierarchy: the article's own dek reads at full body ink
-   rather than `--mute` (used everywhere a dek is a secondary caption beside
-   a photograph) and a touch wider, because on the article page itself the
-   standfirst has no competing photograph yet — it IS the second thing a
-   reader reads, not a caption. Was flat grey italic at card size; the
-   owner's own complaint. */
-.article-head .dek { color: var(--body); max-width: 46ch; }
+/* Standfirst hierarchy: the article's own dek reads at full `--type` ink —
+   darker than even the `--body` this carried after the first pass — and
+   larger than the card/index `--t-lede` it shares a token with everywhere
+   else. "Still small, grey-ish italic" was the second-round finding: colour
+   alone was not the fix once the measure widened, because a wider column
+   at the same size reads thinner, not stronger. It is still italic
+   Cormorant — the one standfirst voice DESIGN-SYSTEM §1 allows — just at
+   its own scale instead of the shared card-dek one. */
+.article-head .dek {
+  color: var(--type);
+  font-size: clamp(1.3rem, 1.05rem + 1vw, 1.6rem);
+  line-height: 1.45;
+  max-width: 54ch;
+}
+
+/* The byline gets a rule of its own — "a deliberate composition" instead of
+   running straight on from the standfirst with only a gap between them,
+   which is what made the whole header read as one undifferentiated block
+   next to a blank right side rather than three distinct lines of
+   information (headline, standfirst, byline). */
+.article-head .byline { border-top: var(--hair); padding-top: var(--space-s); margin-top: var(--space-3xs); }
 
 .article-hero__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--ivory); }
 
@@ -912,6 +977,17 @@ body.hdr-condensed .aside-sticky { top: calc(var(--space-s) + 3px); }
   text-transform: uppercase;
   color: var(--mute);
 }
+
+/* ==========================================================================
+   10.5. SEARCH RESULTS (Edition 2)
+   A dense ruled list — the same "index, not a feed" reasoning §2 gives
+   Latest, applied to `/search`: engine-api's hits carry no image, so a
+   card grid would just be empty figures, and a bare `gap`-separated stack
+   read as unfinished rather than considered.
+   ========================================================================== */
+
+.search-results { display: flex; flex-direction: column; }
+.search-results > article + article { border-top: var(--hair); margin-top: var(--space-l); padding-top: var(--space-l); }
 
 /* ==========================================================================
    11. PLACE PROFILE
