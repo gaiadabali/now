@@ -55,7 +55,19 @@ export type FooterColumn = { head: string; links: NavItem[] }
  * and a typed empty seam is what lets S6.3 be a homepage change rather than a
  * homepage change plus a contract negotiation.
  */
-export type HomeRail = { key: string; label?: string; note?: string; limit?: number }
+/**
+ * One band of the home page, from `engine.sites.home_rails`.
+ *
+ * `pins` is the desk's hand on the front page: article ids (this city's) that
+ * lead the band in the order given, with the band's own automatic fill after
+ * them. An id that no longer resolves to a published article is skipped, not
+ * rendered as a hole — an unpublish must never break the home page.
+ *
+ * Band keys the home page understands (EDITION-2-PLAN.md §3): `lead`, `edit`,
+ * `for-you`, `department:<section>`, `guides`, `latest`, `explore`. An unknown
+ * key is ignored rather than rendered.
+ */
+export type HomeRail = { key: string; label?: string; note?: string; limit?: number; pins?: number[] }
 
 export type SiteConfig = {
   slug: string
@@ -255,7 +267,13 @@ export function railsFrom(value: unknown): HomeRail[] | null {
   if (!Array.isArray(value) || value.length === 0) return null
   const rails = value.filter(
     (r): r is HomeRail =>
-      typeof r === 'object' && r !== null && typeof (r as HomeRail).key === 'string' && (r as HomeRail).key !== '',
+      typeof r === 'object' &&
+      r !== null &&
+      typeof (r as HomeRail).key === 'string' &&
+      (r as HomeRail).key !== '' &&
+      ((r as HomeRail).pins === undefined ||
+        (Array.isArray((r as HomeRail).pins) &&
+          (r as HomeRail).pins!.every((id) => Number.isInteger(id) && id > 0))),
   )
   return rails.length === value.length ? rails : null
 }

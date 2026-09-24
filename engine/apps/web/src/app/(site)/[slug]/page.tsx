@@ -11,13 +11,13 @@ import {
   getBySlug,
   getSectionPage,
   getSectionFacets,
-  getRelated,
   isSectionSlug,
   sectionLabel,
   sectionOf,
 } from '@/lib/content'
 import { formatCount, formatDate, readingTime } from '@/lib/format'
 import { stripTags } from '@/lib/html'
+import { getArticleRails } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
 /**
@@ -81,7 +81,7 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   const site = await getSiteConfig()
   const { locale, timezone: tz } = site
   const article = (await getBySlug(slug, { draft }))!
-  const related = await getRelated(article)
+  const rails = await getArticleRails(article)
   // Tells the layout's single beacon tag which article this page is (E8.5).
   const beacon = <EntityBeacon entity={String(article.id)} entityType="article" surface="article" />
   const section = sectionOf(article)
@@ -201,29 +201,31 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
         </div>
       </div>
 
-      {related.length ? (
-        <Band>
+      {/* Every rail comes from lib/recommend.ts, already chosen, ordered and
+          labelled. Do not add a rail here that recommends by this story's own
+          section: on a hotel story that is a rail of hotels, which is the one
+          thing this page must never show (recommend.ts, "The one rule"). */}
+      {rails.map((rail) => (
+        <Band key={rail.key}>
           <div className="shell">
-            <BandHead kicker="Chosen by the engine" title="Read Next" moreHref={`/${section}`} moreLabel="More" />
+            <BandHead kicker={rail.kicker} title={rail.title} />
             <div className="grid grid--3 grid--ruled">
-              {/* The one rail the engine ranks rather than the desk ordering
-                  it, so it is the one whose position bias §10 has to correct
-                  for — which needs the slot recorded on both the impression
-                  and the click, not just the click. */}
-              {related.map((a, i) => (
+              {/* Engine-ranked, so §10's position bias has to be corrected
+                  for — the slot is recorded on the impression AND the click. */}
+              {rail.items.map((a) => (
                 <StoryCard
                   key={a.id}
                   article={a}
                   locale={locale}
                   timeZone={tz}
-                  rail="read-next"
-                  position={i + 1}
+                  rail={a.rail}
+                  position={a.position}
                 />
               ))}
             </div>
           </div>
         </Band>
-      ) : null}
+      ))}
     </article>
   )
 }
