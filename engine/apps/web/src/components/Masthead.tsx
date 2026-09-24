@@ -33,28 +33,46 @@ import type { SiteConfig } from '@/lib/site'
  * more than anywhere: the archive has 453 stay stories in Bali and 420 in
  * Jakarta, and until now there was no Hotels entry at all.
  *
- * **Edition 2 — sticky, condensing, and a real mobile menu.** Three changes,
- * none of them adding a client-rendered masthead:
+ * **Edition 2 — a real mobile menu, and (third pass) a header that does not
+ * move.** The first two passes gave the WHOLE masthead `position: sticky`
+ * and shrank it on scroll — smaller logo, utility row folded away — and hid
+ * it on scroll-down, revealing on scroll-up. The owner's own words: it
+ * "creates jitters when we try to go down and up". Both behaviours changed
+ * the header's HEIGHT while scrolling, which shifts every pixel of the page
+ * under a reader's thumb — that is the jitter, not a perception of one.
  *
- * - `<HeaderScroll>` is the one piece of client JavaScript this component
- *   pulls in, and it renders nothing — it only toggles two classes on
- *   `<body>` (see that file). The masthead itself is unchanged: still a
- *   server component, still rendered once, still fully there without JS.
- * - The nav no longer scrolls sideways at 360px. `site.nav` renders TWICE —
- *   a plain `<nav>` row shown at `62rem` and above, and a native `<details>`
- *   drawer shown below it — and `magazine.css` shows exactly one of the two
- *   with `display: none` (which also keeps the hidden copy out of the
- *   accessibility tree; a reader's screen reader never meets seven links
- *   twice). This was a `<details>` forced open above `62rem` in the first
- *   pass, on the theory that one tree could serve both — it could not:
- *   Chromium hides a CLOSED `<details>`'s content via the `::details-content`
- *   pseudo-element (`content-visibility: hidden`), which nothing short of
- *   that same new pseudo can override, and browser support for it is too
- *   new to bet a desktop nav row on. Duplicating seven links is cheaper
- *   than that bet.
- * - Condensing is the shrink a reader sees on scroll — smaller logo, the
- *   utility row folded away — driven entirely by the `hdr-condensed` class
- *   `HeaderScroll` sets; there is no second markup branch for it here.
+ * The fix the big news sites use, and this one now: only `.masthead__nav`
+ * (the section row) is `position: sticky`, and its height never changes,
+ * ever — nothing below it can move. The utility row and the big logo above
+ * it scroll away normally, like any other part of the page. A compact logo
+ * lives INSIDE the sticky nav row from the very first paint, sized exactly
+ * as it will always be sized, and is switched between `visibility: hidden`
+ * and `visibility: visible` — never a size change — once the nav row is
+ * actually pinned to the top. That "is it pinned yet" question is answered
+ * by an IntersectionObserver watching `.masthead__sentinel`, a zero-height
+ * marker placed immediately above the sticky row: the moment the sentinel
+ * scrolls past the top of the viewport, the row it precedes must be the one
+ * now sitting at `top: 0`, and not a moment before or after — a check with
+ * no scroll-position arithmetic and nothing that can lag or overshoot a fast
+ * flick, which is what a `scrollY` threshold can do.
+ *
+ * `site.nav` still renders TWICE — a plain `<nav>` row shown at `62rem` and
+ * above, and a native `<details>` drawer shown below it, both inside the
+ * same sticky row so the drawer's own summary button is reachable at every
+ * scroll position on a phone too — and `magazine.css` shows exactly one of
+ * the two with `display: none` (which also keeps the hidden copy out of the
+ * accessibility tree). This was a `<details>` forced open above `62rem` in
+ * an earlier pass, on the theory that one tree could serve both — it could
+ * not: Chromium hides a CLOSED `<details>`'s content via the
+ * `::details-content` pseudo-element (`content-visibility: hidden`), which
+ * nothing short of that same new pseudo can override, and browser support
+ * for it is too new to bet a desktop nav row on. Duplicating seven links is
+ * cheaper than that bet.
+ *
+ * `<HeaderScroll>` is the one piece of client JavaScript this component
+ * pulls in, and it renders nothing — it owns the IntersectionObserver above
+ * and closes the mobile drawer on navigation. It no longer tracks scroll
+ * DIRECTION at all; there is nothing left for a direction to drive.
  */
 export function Masthead({
   site,
@@ -109,9 +127,10 @@ export function Masthead({
   )
 
   return (
-    <header className="masthead">
-      <HeaderScroll />
-      <div className="shell">
+    <>
+      <header className="masthead">
+        <HeaderScroll />
+        <div className="shell">
         <div className="masthead__util">
           <span className="masthead__dateline">{today}</span>
           <nav className="masthead__actions" aria-label="Utility">
@@ -146,10 +165,40 @@ export function Masthead({
           </Link>
           {edition ? <p className="masthead__edition">{edition}</p> : null}
         </div>
-      </div>
+        </div>
+      </header>
+
+      {/* NOT inside `<header>` above — deliberately. `position: sticky`
+          constrains an element to stay within its containing block's own
+          box, and a short `<header>` (just the two rows above) runs out of
+          "room" for a sticky descendant the moment the header itself has
+          entirely scrolled past — proven with a minimal repro before
+          landing this: nested inside a 150px-tall wrapper, the exact same
+          sticky rule stopped clamping at `top: 0` past 100px of scroll and
+          just scrolled away with its parent instead. Siblings of `<header>`
+          at the page's own top level (both land as direct children of
+          `<body>`, since `Masthead` itself has no wrapping element) give
+          the sticky row the whole page as its effective containing block,
+          which is what "stay pinned for the rest of the scroll" needs. */}
+      {/* Zero-height, observed by `HeaderScroll`: while this is on screen the
+          nav row below has not reached `top: 0` yet, and the moment it
+          scrolls past the top of the viewport is the moment the row DOES
+          reach it — the one signal the compact logo's visibility needs, with
+          no scroll-position threshold to get wrong on a fast flick. */}
+      <div className="masthead__sentinel" aria-hidden="true" />
 
       <div className="masthead__nav">
-        <div className="shell">
+        <div className="shell masthead__nav-row">
+          {/* Always in the DOM, always this size — `visibility` only
+              (magazine.css), toggled by the sentinel above. A size change
+              here would be exactly the jitter this whole redesign removes,
+              so this logo never grows, shrinks, or is added/removed from
+              layout; it is only ever shown or hidden in place. */}
+          <Link className="masthead__compact-logo" href="/" aria-label={site.name}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- local SVG, no optimisation wanted */}
+            <img className="masthead__compact-logo-img" src={site.brand.logo} alt="" />
+          </Link>
+
           {/* Desktop row: plain, always in the DOM, hidden below 62rem with
               `display: none` — which also removes it from the a11y tree, so
               a screen-reader user below that width meets the drawer copy
@@ -161,7 +210,10 @@ export function Masthead({
           {/* Phone drawer: `open` is never set — closed is the correct
               default on a phone, and it is hidden entirely (not merely
               forced shut) at 62rem and above, where the row above is the
-              one live copy. */}
+              one live copy. Living in this same sticky row is deliberate —
+              the brief's "on a phone the same sticky row holds the Sections
+              drawer button", so the drawer is reachable at every scroll
+              position, not only at the very top of the page. */}
           <details className="navdrawer">
             <summary className="navdrawer__summary">
               <span className="navdrawer__icon" aria-hidden="true" />
@@ -173,6 +225,6 @@ export function Masthead({
           </details>
         </div>
       </div>
-    </header>
+    </>
   )
 }

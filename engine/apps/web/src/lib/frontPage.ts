@@ -194,7 +194,7 @@ export async function getFrontPage(reader: ReaderContext = {}): Promise<FrontPag
         kind: 'department',
         section,
         kicker: rail.note ?? `${page.total} STORIES`,
-        title: rail.label ?? sectionTitle(section),
+        title: rail.label ?? navLabelFor(section, site.nav) ?? sectionTitle(section),
         moreHref: `/${section}`,
         lead,
         side,
@@ -207,10 +207,31 @@ export async function getFrontPage(reader: ReaderContext = {}): Promise<FrontPag
   return { site, bands }
 }
 
-/** The one department the built-in order names by section slug rather than
- *  by an editor-supplied label, so it needs its own title casing. Anything
- *  the console pins to a different section falls back to the same
- *  `sectionLabel` humanisation `[slug]/page.tsx` uses for a section index. */
+/**
+ * A department band's title, in order of preference: an editor's own
+ * `rail.label`, then the city's own word for that section — the nav's own
+ * label, which is a console edit and can read "Resto & Bars" in one city
+ * and "Dining" in another — then a generic fallback for a section the nav
+ * happens not to list.
+ *
+ * Titling a department band by a hardcoded English word (a first version
+ * of this called it "Hotels" unconditionally) was already wrong the
+ * moment a real nav could say otherwise: `site.nav` is the one place this
+ * city's own vocabulary for a section lives (Masthead.tsx's own doc
+ * comment — "an editor renaming Dining to Resto & Bars... is a console
+ * edit rather than a deploy"), and a department band is that same section,
+ * just given more weight on the front page. Naming it differently there
+ * would be the site disagreeing with itself about what to call the same
+ * archive.
+ */
+function navLabelFor(section: string, nav: SiteConfig['nav']): string | undefined {
+  return nav.find((item) => item.href === `/${section}`)?.label
+}
+
+/** Last resort for a section the nav does not list at all — humanises the
+ *  slug the same way `sectionLabel` does for a section index. `stay` keeps
+ *  its own special case as a fallback of the fallback, in case a city's nav
+ *  is ever missing that entry. */
 function sectionTitle(section: string): string {
   if (section === 'stay') return 'Hotels'
   return section

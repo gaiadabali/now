@@ -19,43 +19,21 @@
    class it renders is styled here. Three rows: utility, brand, nav — §3.
    ========================================================================== */
 
-/* Sticky, and condensing (Edition 2 — the brief's "sticky header that
-   condenses on scroll, hide on scroll down, reveal on up"). The two states
-   are classes `HeaderScroll` sets on `<body>`, never on this element
-   directly — a server component cannot hold client state, and the whole
-   point of that file is that the masthead's own markup never changes.
-   Transitions are on `transform`/`padding` only: both are compositor-only
-   or layout-cheap, which is what "fast" has to mean for something that
-   fires on every scroll frame. */
+/* NOT sticky, and nothing about it ever changes size (Edition 2, third
+   pass). The owner's own words about the previous two passes — a
+   whole-header `position: sticky` that also shrank on scroll and hid on
+   scroll-down: "creates jitters when we try to go down and up". Both were
+   height changes on an element sitting above everything else, which shifts
+   the entire page under a reader mid-scroll — that IS the jitter. The
+   utility row and the big logo below scroll away like ordinary content
+   now; see `.masthead__nav` for the one row that stays put, and stays
+   exactly one height forever. */
 .masthead {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-header);
   background: var(--paper);
   border-bottom: var(--edge);
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
-body.hdr-condensed .masthead { box-shadow: 0 1px 0 var(--hair) , 0 8px 16px -12px rgba(29, 29, 27, 0.18); }
-body.hdr-hidden .masthead { transform: translateY(-100%); }
-
-/* Condensed: the utility row (dateline, search, account) folds away and the
-   brand row shrinks, so the reader keeps the logo and the section nav — the
-   two things worth the vertical cost while scrolling a long article — and
-   gives the rest of that space back to the page. `interpolate-size` is not
-   relied on: these are ordinary height/padding changes on an already-cheap
-   transition, and a reader with reduced motion just gets the smaller header
-   instantly instead of eased, which is `--dur` collapsing to 0 same as
-   everywhere else. */
-/* The utility row stays — "search reachable from the header" (the brief)
-   means at every scroll position, not only at the top, so Search/Sign
-   in/Subscribe are never among the things condensing removes. Its own
-   padding still tightens; the real space is given back by the brand row
-   below, where the logo and the edition line live. */
-body.hdr-condensed .masthead__util { padding-block: var(--space-3xs); }
-body.hdr-condensed .masthead__brand { padding-block: var(--space-2xs); }
-body.hdr-condensed .masthead__logo { height: 28px; }
-body.hdr-condensed .masthead__edition { display: none; }
+.masthead__sentinel { height: 0; }
 
 .masthead__util {
   display: flex;
@@ -120,7 +98,41 @@ body.hdr-condensed .masthead__edition { display: none; }
   color: var(--gold);
 }
 
-.masthead__nav { border-top: var(--edge); border-bottom: var(--hair); }
+/* THE sticky element — the only one. `top: 0` and a fixed height for the
+   life of the page: nothing here ever changes size while scrolling, which
+   is the actual fix for "jitters when we try to go down and up". A subtle
+   shadow is allowed to fade in once pinned (`.is-stuck`, set by
+   `HeaderScroll` from the sentinel above) because a shadow paints in place
+   and costs no layout — it never moves anything, unlike the box-shadow
+   toggle this replaced, which rode along with a height change and so was
+   part of the same problem. */
+.masthead__nav {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--paper);
+  border-top: var(--edge);
+  border-bottom: var(--hair);
+  transition: box-shadow var(--dur) var(--ease);
+}
+.masthead__nav.is-stuck { box-shadow: 0 8px 16px -12px rgba(29, 29, 27, 0.18); }
+
+.masthead__nav-row { display: flex; align-items: center; gap: var(--space-m); }
+
+/* Reserves its space from the very first paint — always this size, so
+   toggling `visibility` never moves the nav links beside it by so much as
+   a pixel. `visibility` rather than `opacity` because a hidden logo should
+   also leave the tab order and the accessibility tree, the way a genuinely
+   absent element would; `opacity: 0` does neither. */
+.masthead__compact-logo { flex: 0 0 auto; display: flex; align-items: center; visibility: hidden; }
+.masthead__compact-logo-img { height: 22px; width: auto; }
+.masthead__nav.is-stuck .masthead__compact-logo { visibility: visible; }
+
+/* `.navlist`/`.navdrawer` are the OTHER two flex items in `.masthead__nav-row`
+   (only one ever visible, `display: none` picks which — see below), each
+   given the row's remaining width so the compact logo never has to share
+   space it does not have a fixed claim on. */
+.navlist, .navdrawer { flex: 1; min-width: 0; }
 
 /* ---- Section nav: two copies, exactly one shown (Edition 2, corrected) --
    `Masthead.tsx` renders `site.nav` twice — `.navlist` (a plain `<nav>` row)
@@ -924,8 +936,11 @@ body.hdr-condensed .masthead__edition { display: none; }
    box" — the owner's own complaint). Share now sits above it, and the whole
    rail follows the reader down the prose column rather than ending where
    the prose happened to be shorter than the viewport. */
-.aside-sticky { position: sticky; top: calc(var(--space-l) + 3px); display: flex; flex-direction: column; gap: var(--space-xl); }
-body.hdr-condensed .aside-sticky { top: calc(var(--space-s) + 3px); }
+/* `top` clears the sticky nav row (a fixed height now, never a condensed
+   one — see Masthead.tsx) plus the 3px reading-progress bar above it, with
+   a little room to spare; there is no second value to switch to any more,
+   because there is no second header height any more. */
+.aside-sticky { position: sticky; top: calc(3.5rem + 3px); display: flex; flex-direction: column; gap: var(--space-xl); }
 
 .share { border-top: var(--edge); padding-top: var(--space-m); }
 .share__list { display: flex; flex-direction: column; gap: var(--space-2xs); margin-top: var(--space-s); }

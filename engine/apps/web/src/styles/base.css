@@ -178,8 +178,19 @@ input, select, textarea { font: inherit; color: inherit; }
 
 /* §7: the page must work at 360px with no horizontal scroll. The shell's
    own padding is a clamp() already; this is the backstop for anything a
-   band forgets to constrain (a wide table, a long unbroken token string). */
-body { overflow-x: hidden; }
+   band forgets to constrain (a wide table, a long unbroken token string).
+   On `<html>`, not `<body>`: setting `overflow-x` to anything but `visible`
+   on ONE axis makes the UA compute the other axis as `auto` if it was
+   `visible` (CSS Overflow §3) — on `<body>` that quietly turns body into
+   its own scroll container, and every `position: sticky` descendant then
+   sticks relative to THAT container instead of the real viewport, which
+   never receives its own scroll offset the same way. Found the hard way:
+   `.masthead__nav`'s `position: sticky; top: 0` computed correctly and did
+   nothing — its `getBoundingClientRect().top` kept tracking the raw
+   scroll delta instead of clamping at 0. `<html>` is already the
+   document's root scroller in standard mode, so constraining its overflow
+   does not create a second, competing one. */
+html { overflow-x: clip; }
 
 /* ---- Reveal-on-scroll (Edition 2, corrected) ------------------------------
    "Progressive enhancement is mandatory: content is visible without JS.
