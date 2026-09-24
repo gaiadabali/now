@@ -3367,3 +3367,104 @@ html[data-theme='dark'] .graphic-icon {
   text-align: right;
   color: var(--theme-elevation-600);
 }
+
+/* ============================================================================
+   ==== WS4 platform ====
+   S5.2 (partnership write path) · S5.3 (blast radius) — commerce/orgs/[id]/
+   partnerships/**. Everything below is new with this ticket; nothing above
+   this marker in the file was touched. Reuses `.platform__*` and
+   `.console__*` primitives from S5.1 rather than redrawing them — a form
+   field, a button and a notice are the same object here as on the sites
+   registry screen, and giving them a fourth spelling would be exactly the
+   inconsistency docs/DESIGN-SYSTEM.md §5 exists to close.
+   ========================================================================= */
+
+/* The blast-radius confirmation panel (S5.3). Deliberately NOT a modal
+   overlay: docs/DESIGN-SYSTEM.md §5 wants "state as form and colour", and an
+   overlay dialog is a heavier metaphor than this needs — the form is simply
+   replaced by the figure and two buttons, in place, so there is nowhere else
+   for attention to go. `--red` only when the count itself is bad information
+   (unavailable), matching `.platform__kpi-n--bad`'s existing rule rather than
+   inventing a second one. */
+.ws4-blast {
+  border-top: 3px solid var(--ok);
+  background: var(--theme-elevation-50);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: calc(var(--base) * 1.4);
+}
+
+.ws4-blast h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--theme-elevation-800);
+}
+
+.ws4-blast__figure {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-elevation-1000);
+  margin: 0 0 0.25rem;
+}
+
+.ws4-checkboxes {
+  gap: 1.5rem;
+}
+
+.ws4-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-700);
+}
+
+/* Tier pills, alongside `.console__pill--live`/`--expired` (S5.1's own
+   live/expired verdict) — a *third* independent fact about the same row, so
+   a distinct set of modifiers rather than overloading the existing ones.
+   `paid` gets `--red`: §11 is explicit that a paid placement is the one tier
+   whose rendering behaviour (an external link, `rel="sponsored"`, a badge)
+   is genuinely different from the other two, and that is worth the same
+   colour weight the coverage bars give a real finding. */
+.ws4-pill--tier-paid {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.ws4-audit {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--theme-elevation-150);
+}
+
+.ws4-audit__row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.ws4-audit__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+}
+
+.ws4-audit__actor {
+  font-weight: 600;
+  color: var(--theme-elevation-800);
+}
+
+.ws4-audit__ts {
+  font-variant-numeric: tabular-nums;
+}
+
+.ws4-audit__diff {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-700);
+}

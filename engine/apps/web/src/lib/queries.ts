@@ -1,5 +1,6 @@
 import 'server-only'
-import { query } from './db'
+import { db, query } from './db'
+import { cityPool } from './payload'
 
 /**
  * Every read the console makes, in one file.
@@ -230,4 +231,442 @@ export async function listCampaigns(): Promise<CampaignRow[]> {
       ORDER BY c.created_at DESC NULLS LAST
       LIMIT 200`,
   )
+}
+
+/* ------------------------------------------------------------------------
+ * S5.2 — the partnership write path.
+ *
+ * ARCHITECTURE.md §11's one screen: org, tier, status, contract dates, link
+ * policy, custom URL, UTM template, badge, itinerary eligibility, boost cap
+ * — plus the linked mention count (blast radius, S5.3, further down). Every
+ * write here goes through `createPartnership`/`updatePartnership`, and both
+ * insert a `partnership_audit` row in the SAME transaction as the data write
+ * — never a follow-up statement, so a crash between the two can only ever
+ * leave the database exactly as it was before either ran.
+ *
+ * **`partnership_audit.actor_id` is `uuid`, with no foreign key, and
+ * `public.users.id` is a Payload-assigned `integer` sequence.** A real
+ * mismatch, not glossed over: there is no value this file can put in that
+ * column that both fits its type and means anything back to a staff row.
+ * Rather than inventing an unexplained integer→uuid encoding to force a
+ * column to hold something it cannot really carry, `actor_id` is left NULL
+ * and the actor is named in `after` instead, under a reserved `_audit` key
+ * (`auditStamp` below) — human-readable, queryable with a plain `->>`, and
+ * honest about why the "proper" column is empty. See this file's report to
+ * the orchestrator for the migration this points at
+ * (`actor_email text`) — out of scope here (no Alembic migrations without
+ * sign-off; see AGENTS instructions).
+ * ---------------------------------------------------------------------- */
+
+export type PartnershipTier = 'free' | 'listed' | 'paid'
+export type PartnershipStatus = 'active' | 'paused' | 'ended'
+
+export type PartnershipWritable = {
+  tier: PartnershipTier
+  status: PartnershipStatus
+  startsAt: string | null
+  endsAt: string | null
+  linkPolicy: Record<string, unknown>
+  customUrl: string | null
+  utmTemplate: string | null
+  showBadge: boolean
+  badgeLabel: string | null
+  itineraryEligible: boolean
+  boostCap: number | null
+}
+
+export type NewPartnershipInput = PartnershipWritable & {
+  siteId: string
+  orgId: string | null
+  placeId: string | null
+}
+
+export type PartnershipDetail = PartnershipWritable & {
+  id: string
+  orgId: string | null
+  placeId: string | null
+  siteId: string
+  siteSlug: string
+  orgName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type Actor = { id: number; email: string }
+
+type PartnershipRawRow = {
+  id: string
+  org_id: string | null
+  place_id: string | null
+  site_id: string
+  tier: PartnershipTier
+  status: PartnershipStatus
+  starts_at: string | null
+  ends_at: string | null
+  link_policy: Record<string, unknown>
+  custom_url: string | null
+  utm_template: string | null
+  show_badge: boolean
+  badge_label: string | null
+  itinerary_eligible: boolean
+  boost_cap: string | null
+  created_at: string
+  updated_at: string
+}
+
+const PARTNERSHIP_RETURNING = `
+  id::text, org_id::text AS org_id, place_id, site_id::text AS site_id, tier, status,
+  starts_at::text, ends_at::text, link_policy, custom_url, utm_template,
+  show_badge, badge_label, itinerary_eligible, boost_cap::text,
+  created_at::text, updated_at::text`
+
+/**
+ * Same projection, column-qualified. Needed only by `updatePartnership`'s
+ * `UPDATE ... FROM engine.sites s ...` below — with a second table in scope,
+ * an unqualified `status` (both `engine.partnerships` and `engine.sites`
+ * have one) is ambiguous and Postgres refuses the query outright. Kept as
+ * its own literal list rather than derived from `PARTNERSHIP_RETURNING` by
+ * string surgery, which is exactly the kind of "looks right, silently wrong"
+ * code this file's own comments elsewhere warn against.
+ */
+const PARTNERSHIP_RETURNING_QUALIFIED = `
+  p.id::text, p.org_id::text AS org_id, p.place_id, p.site_id::text AS site_id, p.tier, p.status,
+  p.starts_at::text, p.ends_at::text, p.link_policy, p.custom_url, p.utm_template,
+  p.show_badge, p.badge_label, p.itinerary_eligible, p.boost_cap::text,
+  p.created_at::text, p.updated_at::text`
+
+function rawFields(row: PartnershipRawRow) {
+  return {
+    orgId: row.org_id,
+    placeId: row.place_id,
+    siteId: row.site_id,
+    tier: row.tier,
+    status: row.status,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    linkPolicy: row.link_policy ?? {},
+    customUrl: row.custom_url,
+    utmTemplate: row.utm_template,
+    showBadge: row.show_badge,
+    badgeLabel: row.badge_label,
+    itineraryEligible: row.itinerary_eligible,
+    boostCap: row.boost_cap === null ? null : Number(row.boost_cap),
+  }
+}
+
+/**
+ * The one shape every audit row's `after` carries. Never in `before` — a
+ * prior state was not authored by the actor making THIS write, only the new
+ * one was, so naming an actor against history they did not create would be
+ * backdating attribution. `before` is always a plain field snapshot (or
+ * `null` on create); read `after._audit` to answer "who did this."
+ */
+function auditStamp(actor: Actor, fields: ReturnType<typeof rawFields>) {
+  return { _audit: { actorId: actor.id, actorEmail: actor.email }, ...fields }
+}
+
+function toDetail(row: PartnershipRawRow, siteSlug: string, orgName: string | null): PartnershipDetail {
+  return {
+    id: row.id,
+    siteSlug,
+    orgName,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    ...rawFields(row),
+  }
+}
+
+export async function getPartnership(id: string): Promise<PartnershipDetail | null> {
+  const rows = await query<PartnershipRawRow & { site_slug: string; org_name: string | null }>(
+    `SELECT p.id::text, p.org_id::text AS org_id, p.place_id, p.site_id::text AS site_id, p.tier,
+            p.status, p.starts_at::text, p.ends_at::text, p.link_policy, p.custom_url,
+            p.utm_template, p.show_badge, p.badge_label, p.itinerary_eligible, p.boost_cap::text,
+            p.created_at::text, p.updated_at::text,
+            s.slug AS site_slug, o.name AS org_name
+       FROM engine.partnerships p
+       JOIN engine.sites s ON s.id = p.site_id
+       LEFT JOIN engine.orgs o ON o.id = p.org_id
+      WHERE p.id = $1::uuid`,
+    [id],
+  )
+  const row = rows[0]
+  return row ? toDetail(row, row.site_slug, row.org_name) : null
+}
+
+export type PartnershipAuditRow = {
+  id: string
+  ts: string
+  before: (ReturnType<typeof rawFields> & { _audit?: { actorId: number; actorEmail: string } }) | null
+  after: ReturnType<typeof rawFields> & { _audit: { actorId: number; actorEmail: string } }
+}
+
+export async function listPartnershipAudit(partnershipId: string): Promise<PartnershipAuditRow[]> {
+  return query<PartnershipAuditRow>(
+    `SELECT id::text, ts::text, before, after
+       FROM engine.partnership_audit
+      WHERE partnership_id = $1::uuid
+      ORDER BY ts DESC`,
+    [partnershipId],
+  )
+}
+
+/**
+ * Create a partnership and its opening audit row in one transaction.
+ *
+ * `site_id`, `org_id` and `place_id` are write-once: set here, never
+ * mutated by `updatePartnership` below. That is a deliberate simplification,
+ * not an oversight — it is what makes `canWritePartnershipForSite`'s
+ * site-scoping check sound. If a site could be changed after creation, a
+ * `partner_manager` scoped to their own city could create a row there and
+ * then edit it to point at another city's site, which no per-write scope
+ * check would catch without re-deriving it from a value the request itself
+ * supplied. Moving a partnership to another site is not a feature this
+ * ticket builds.
+ */
+export async function createPartnership(input: NewPartnershipInput, actor: Actor): Promise<PartnershipDetail> {
+  const client = await db().connect()
+  try {
+    await client.query('BEGIN')
+    const inserted = await client.query<PartnershipRawRow>(
+      `INSERT INTO engine.partnerships
+         (org_id, place_id, site_id, tier, status, starts_at, ends_at, link_policy,
+          custom_url, utm_template, show_badge, badge_label, itinerary_eligible, boost_cap)
+       VALUES ($1::uuid, $2, $3::uuid, $4, $5, $6::timestamptz, $7::timestamptz, $8::jsonb,
+               $9, $10, $11, $12, $13, $14::numeric)
+       RETURNING ${PARTNERSHIP_RETURNING}`,
+      [
+        input.orgId,
+        input.placeId,
+        input.siteId,
+        input.tier,
+        input.status,
+        input.startsAt,
+        input.endsAt,
+        JSON.stringify(input.linkPolicy ?? {}),
+        input.customUrl,
+        input.utmTemplate,
+        input.showBadge,
+        input.badgeLabel,
+        input.itineraryEligible,
+        input.boostCap,
+      ],
+    )
+    const row = inserted.rows[0]
+    await client.query(
+      `INSERT INTO engine.partnership_audit (partnership_id, actor_id, before, after)
+       VALUES ($1::uuid, NULL, NULL, $2::jsonb)`,
+      [row.id, JSON.stringify(auditStamp(actor, rawFields(row)))],
+    )
+    await client.query('COMMIT')
+    const site = await query<{ slug: string }>(`SELECT slug FROM engine.sites WHERE id = $1::uuid`, [row.site_id])
+    const org = row.org_id
+      ? await query<{ name: string }>(`SELECT name FROM engine.orgs WHERE id = $1::uuid`, [row.org_id])
+      : []
+    return toDetail(row, site[0]?.slug ?? input.siteId, org[0]?.name ?? null)
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+export type UpdatePartnershipResult =
+  | { ok: true; partnership: PartnershipDetail }
+  | { ok: false; reason: 'not_found_or_out_of_scope' }
+
+/**
+ * Update a partnership and its audit row in one transaction.
+ *
+ * **`scope` is enforced in the `UPDATE`'s own `WHERE` clause, not only in
+ * application code above this function.** `'any'` for a commerce admin,
+ * otherwise the one site slug a `partner_manager` may touch
+ * (`commerceCurrentSiteSlug()`, `lib/auth.ts`). If the row's site does not
+ * match, `rowCount` is 0 and nothing — not the partnership, not an audit
+ * row — is written; the caller cannot tell "does not exist" apart from
+ * "exists but is out of scope", which is the same information-hiding
+ * `requirePartnershipWriteAccess` already applies one layer up. Two
+ * independent checks of the same rule (the action's gate, and this SQL
+ * WHERE clause) is the point: a bug in one is not a bypass of the other.
+ */
+export async function updatePartnership(
+  id: string,
+  patch: PartnershipWritable,
+  actor: Actor,
+  scope: string,
+): Promise<UpdatePartnershipResult> {
+  const client = await db().connect()
+  try {
+    await client.query('BEGIN')
+
+    const beforeRes = await client.query<PartnershipRawRow & { site_slug: string }>(
+      `SELECT p.id::text, p.org_id::text AS org_id, p.place_id, p.site_id::text AS site_id, p.tier,
+              p.status, p.starts_at::text, p.ends_at::text, p.link_policy, p.custom_url,
+              p.utm_template, p.show_badge, p.badge_label, p.itinerary_eligible, p.boost_cap::text,
+              p.created_at::text, p.updated_at::text, s.slug AS site_slug
+         FROM engine.partnerships p
+         JOIN engine.sites s ON s.id = p.site_id
+        WHERE p.id = $1::uuid
+        FOR UPDATE`,
+      [id],
+    )
+    const before = beforeRes.rows[0]
+    if (!before) {
+      await client.query('ROLLBACK')
+      return { ok: false, reason: 'not_found_or_out_of_scope' }
+    }
+
+    const updateRes = await client.query<PartnershipRawRow>(
+      `UPDATE engine.partnerships p
+          SET tier = $3, status = $4, starts_at = $5::timestamptz, ends_at = $6::timestamptz,
+              link_policy = $7::jsonb, custom_url = $8, utm_template = $9, show_badge = $10,
+              badge_label = $11, itinerary_eligible = $12, boost_cap = $13::numeric, updated_at = now()
+         FROM engine.sites s
+        WHERE p.id = $1::uuid AND p.site_id = s.id AND ($2 = 'any' OR s.slug = $2)
+        RETURNING ${PARTNERSHIP_RETURNING_QUALIFIED}`,
+      [
+        id,
+        scope,
+        patch.tier,
+        patch.status,
+        patch.startsAt,
+        patch.endsAt,
+        JSON.stringify(patch.linkPolicy ?? {}),
+        patch.customUrl,
+        patch.utmTemplate,
+        patch.showBadge,
+        patch.badgeLabel,
+        patch.itineraryEligible,
+        patch.boostCap,
+      ],
+    )
+
+    if (updateRes.rowCount === 0) {
+      await client.query('ROLLBACK')
+      return { ok: false, reason: 'not_found_or_out_of_scope' }
+    }
+    const after = updateRes.rows[0]
+
+    await client.query(
+      `INSERT INTO engine.partnership_audit (partnership_id, actor_id, before, after)
+       VALUES ($1::uuid, NULL, $2::jsonb, $3::jsonb)`,
+      [id, JSON.stringify(rawFields(before)), JSON.stringify(auditStamp(actor, rawFields(after)))],
+    )
+    await client.query('COMMIT')
+
+    const org = after.org_id
+      ? await query<{ name: string }>(`SELECT name FROM engine.orgs WHERE id = $1::uuid`, [after.org_id])
+      : []
+    return { ok: true, partnership: toDetail(after, before.site_slug, org[0]?.name ?? null) }
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
+/* ------------------------------------------------------------------------
+ * S5.3 — blast radius, computed from real data before a write commits.
+ *
+ * "This affects 40 articles across 3 venues" (ARCHITECTURE.md §11) means
+ * counting `place_mentions` rows in the CITY database — `engine.orgs` and
+ * `engine.partnerships` are platform-wide, but which articles mention a
+ * place is per-city content, reachable only through `cityPool()`
+ * (`lib/payload.ts`), which is bound to whichever single city this process
+ * serves (`DATABASE_URI` — ARCHITECTURE.md §3.5's "one deliberate per-city
+ * knob"). A partnership can target ANY registered site — commerce is
+ * platform-wide and visible from both cities' admin sessions
+ * (docs/ADMIN-CONSOLIDATION.md) — but this process can only ever count ITS
+ * OWN city's mentions. Exactly `facetCoverage.ts`'s honesty problem, and
+ * this follows the same rule: report the real number for a matching site,
+ * and say plainly why there is none for any other.
+ * ---------------------------------------------------------------------- */
+
+export type BlastRadius = {
+  /** Whether this process's own city database could answer the question. */
+  computable: boolean
+  citySlug: string
+  targetSiteSlug: string
+  articleCount: number
+  venueCount: number
+  note: string
+}
+
+export async function computeBlastRadius(params: {
+  orgId: string | null
+  placeId: string | null
+  targetSiteSlug: string
+}): Promise<BlastRadius> {
+  const citySlug = process.env.SITE_SLUG ?? ''
+
+  if (params.targetSiteSlug !== citySlug) {
+    return {
+      computable: false,
+      citySlug,
+      targetSiteSlug: params.targetSiteSlug,
+      articleCount: 0,
+      venueCount: 0,
+      note:
+        `This partnership targets ${params.targetSiteSlug}. This admin session serves ` +
+        `${citySlug || 'an unset city'}'s own database, so it cannot count ${params.targetSiteSlug}'s ` +
+        `articles — sign in to ${params.targetSiteSlug}'s own admin to see its blast radius. ` +
+        `Cross-city aggregation is S5.4's cross-city bridge, which does not exist yet.`,
+    }
+  }
+
+  if (params.orgId) {
+    const { rows } = await cityPool().query<{ articles: string; venues: string }>(
+      `SELECT count(DISTINCT pm.article_id) AS articles, count(DISTINCT pl.id) AS venues
+         FROM public.places pl
+         JOIN public.place_mentions pm ON pm.place_id = pl.id
+        WHERE pl.org_id = $1`,
+      [params.orgId],
+    )
+    const articleCount = Number(rows[0]?.articles ?? 0)
+    const venueCount = Number(rows[0]?.venues ?? 0)
+    return {
+      computable: true,
+      citySlug,
+      targetSiteSlug: params.targetSiteSlug,
+      articleCount,
+      venueCount,
+      note:
+        articleCount === 0
+          ? `No article in ${citySlug} currently mentions a place belonging to this organisation. ` +
+            `Real count, not a placeholder — \`place_mentions\` is empty archive-wide until E2.3 ships (PROGRESS.md).`
+          : `This organisation's venues are mentioned in ${articleCount} article(s) across ${venueCount} venue(s) in ${citySlug}.`,
+    }
+  }
+
+  if (params.placeId) {
+    const { rows } = await cityPool().query<{ articles: string }>(
+      `SELECT count(DISTINCT pm.article_id) AS articles
+         FROM public.place_mentions pm
+         JOIN public.places pl ON pl.id = pm.place_id
+        WHERE pl.id::text = $1`,
+      [params.placeId],
+    )
+    const articleCount = Number(rows[0]?.articles ?? 0)
+    return {
+      computable: true,
+      citySlug,
+      targetSiteSlug: params.targetSiteSlug,
+      articleCount,
+      venueCount: articleCount > 0 ? 1 : 0,
+      note:
+        articleCount === 0
+          ? `No article in ${citySlug} currently mentions this place.`
+          : `This place is mentioned in ${articleCount} article(s) in ${citySlug}.`,
+    }
+  }
+
+  return {
+    computable: true,
+    citySlug,
+    targetSiteSlug: params.targetSiteSlug,
+    articleCount: 0,
+    venueCount: 0,
+    note: 'Neither an organisation nor a place is set yet.',
+  }
 }
