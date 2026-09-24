@@ -220,9 +220,9 @@ export function FrontPageEditor({
     <div className="fp">
       <p className="fp__sub">
         {governed
-          ? `The order below is what ${siteName}'s home page reads from the registry today.`
-          : `${siteName}'s home page has never had its band order saved from here — the order ` +
-            'below is a starting scaffold, not a claim about what is live. Save to start governing it.'}
+          ? `This is the order of ${siteName}'s home page right now.`
+          : `${siteName}'s home page is using its built-in order, shown below. Change anything and ` +
+            'save, and from then on the home page follows this screen.'}
       </p>
       <p className="fp__ttl">
         Saves are live for readers within <strong>{ttlSeconds}</strong> seconds — that is how long
@@ -388,7 +388,7 @@ export function FrontPageEditor({
                           <div className="fp__autofill">
                             <p className="fp__pins-label">
                               Fills automatically after the pins above{' '}
-                              <span className="fp__muted">(approximate — recency-ordered, not the engine's own ranking)</span>
+                              <span className="fp__muted">(newest first — a guide to what readers will see, not an exact copy)</span>
                             </p>
                             {autoFillLoading === i ? (
                               <p className="fp__empty">Checking…</p>

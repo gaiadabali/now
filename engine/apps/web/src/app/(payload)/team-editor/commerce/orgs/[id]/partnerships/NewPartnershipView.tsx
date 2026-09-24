@@ -50,8 +50,8 @@ export async function NewPartnershipView({ orgId }: { orgId: string }) {
       </p>
       <h1>New partnership</h1>
       <p className="console__sub">
-        For {org.name}. This applies to every place that belongs to this organisation — see the
-        blast radius before it saves.
+        For {org.name}. This applies to every venue that belongs to this organisation. Before it
+        saves, you will see exactly which stories it changes.
       </p>
       <PartnershipForm existing={null} orgId={orgId} orgName={org.name} sites={sites} />
     </>
