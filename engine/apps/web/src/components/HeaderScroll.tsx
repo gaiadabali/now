@@ -4,38 +4,29 @@ import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 
 /**
- * The masthead's two scroll behaviours — condense, and hide-on-down /
- * reveal-on-up — as one tiny client component rather than two.
+ * Two small, unrelated jobs for the masthead, neither of them decorative:
  *
- * The brief allows "at most one tiny client component using
- * IntersectionObserver" for reveal-on-scroll; reveal-on-scroll itself ended
- * up entirely CSS (`base.css`, `animation-timeline: view()`), which left the
- * one JS allowance unspent. This is what it is spent on instead, because a
- * direction-aware "hide going down, show going up" header has no honest
- * CSS-only equivalent — `position: sticky` alone cannot tell which way the
- * page is moving.
+ * 1. Close the mobile nav drawer on every client-side navigation.
+ * 2. Tell `.masthead__nav` when it is actually pinned to the top of the
+ *    viewport, so it can reveal the compact logo living inside it.
  *
- * No IntersectionObserver: a plain, passive, rAF-throttled scroll listener
- * that toggles two classes on `<body>` — `hdr-condensed` past a small scroll
- * threshold, `hdr-hidden` while scrolling down past the masthead's own
- * height, cleared on any upward scroll. Classes on `<body>` rather than a
- * ref into `Masthead` (a server component) so this never has to cross that
- * boundary — `magazine.css` reads `body.hdr-condensed .masthead` etc.
+ * Job 2 replaced a scroll-direction tracker (condense on scroll, hide on
+ * down, reveal on up) that changed the header's HEIGHT while a reader
+ * scrolled. The owner's own words about it: it "creates jitters when we
+ * try to go down and up." A height change on an element sitting above
+ * everything else shifts the whole page under a reader's thumb mid-scroll
+ * — that IS the jitter, not a perception of one. `.masthead__nav` (the one
+ * sticky element now — see Masthead.tsx and magazine.css) never changes
+ * height, ever, whatever this component does.
  *
- * Progressive enhancement: with no JS, `<body>` never gets either class and
- * the masthead renders exactly as it does today — full height, always
- * visible, never hidden. Nothing here HIDES content; it only ever adds a
- * class that makes the header smaller or temporarily off-screen, and the
- * nav underneath is real links either way.
- *
- * A second, unconditional effect closes the mobile nav drawer on every
- * pathname change. App Router keeps a shared layout — and everything in
- * it, including the masthead — mounted across a client-side navigation
- * inside that layout, so a `<details open>` a reader opened on the
- * previous page stays open on the next one unless something closes it.
- * Not gated on `prefers-reduced-motion`: an open drawer sitting over a new
- * page is a correctness bug, not a decorative flourish, so it closes
- * either way.
+ * The compact logo is not decoration either — it is the one thing the
+ * sticky row needs to say "this is still NOW!" once the full-size logo
+ * above has scrolled away — so this stays a real IntersectionObserver
+ * rather than a scroll listener with a threshold to tune: a threshold can
+ * lag or overshoot on a fast flick, and a boolean "has the sentinel above
+ * the sticky row left the viewport yet" cannot. `rootMargin`/`threshold`
+ * default to "any overlap at all", which is exactly what "has it left the
+ * viewport" needs.
  */
 export function HeaderScroll() {
   const pathname = usePathname()
@@ -45,36 +36,22 @@ export function HeaderScroll() {
   }, [pathname])
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const sentinel = document.querySelector('.masthead__sentinel')
+    const nav = document.querySelector('.masthead__nav')
+    if (!sentinel || !nav) return
 
-    let lastY = window.scrollY
-    let ticking = false
-    const CONDENSE_AT = 24
-    const HIDE_AT = 220
+    const io = new IntersectionObserver(([entry]) => {
+      // Not intersecting the viewport at all means it has scrolled past the
+      // top — the row immediately after it is the one now sitting at
+      // `top: 0`. Intersecting (including the very first check, before any
+      // scroll) means the row has not reached the top yet.
+      nav.classList.toggle('is-stuck', !entry.isIntersecting)
+    })
+    io.observe(sentinel)
 
-    const apply = () => {
-      const y = window.scrollY
-      const goingDown = y > lastY
-      document.body.classList.toggle('hdr-condensed', y > CONDENSE_AT)
-      if (y > HIDE_AT && goingDown) {
-        document.body.classList.add('hdr-hidden')
-      } else if (!goingDown) {
-        document.body.classList.remove('hdr-hidden')
-      }
-      lastY = y
-      ticking = false
-    }
-
-    const onScroll = () => {
-      if (ticking) return
-      ticking = true
-      requestAnimationFrame(apply)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      document.body.classList.remove('hdr-condensed', 'hdr-hidden')
+      io.disconnect()
+      nav.classList.remove('is-stuck')
     }
   }, [])
 
