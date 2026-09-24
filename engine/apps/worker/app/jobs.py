@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 
 from now_db.partitions import drop_partitions_older_than, ensure_daily_partitions
+from now_filters.covisitation_recompute import CovisitationRecomputeReport, recompute_covisitation
 from now_filters.hidden_rival_recompute import RecomputeReport, recompute_hidden_rival_flags
 from sqlalchemy import create_engine
 
@@ -64,6 +65,15 @@ def _recompute_hidden_rival_flags_for(site: Site) -> RecomputeReport:
     try:
         with engine.begin() as conn:
             return recompute_hidden_rival_flags(conn)
+    finally:
+        engine.dispose()
+
+
+def _recompute_covisitation_for(site: Site) -> CovisitationRecomputeReport:
+    engine = create_engine(site.dsn)
+    try:
+        with engine.begin() as conn:
+            return recompute_covisitation(conn)
     finally:
         engine.dispose()
 
@@ -157,6 +167,40 @@ async def recompute_hidden_rival_flags_job(ctx: dict) -> dict:
             slug: {"added": r.added, "removed": r.removed, "unchanged": r.unchanged}
             for slug, r in report.succeeded.items()
             if isinstance(r, RecomputeReport)
+        },
+        "failed": report.failed,
+    }
+
+
+async def recompute_covisitation_job(ctx: dict) -> dict:
+    """`engine.covisitation` was real, wired for reads
+    (`now_blender.covisitation`), and always empty -- nothing ever wrote to
+    it (WS1, Edition 2, fourth pass, item 4). This is that writer: a full
+    recompute from `engine.interactions` over a rolling 30-day window,
+    diffed against what is already there so a pair whose audience shrank
+    below `min_support` is actually removed, not left stale.
+
+    A quiet night (no new qualifying interactions) should produce
+    `added=0, removed=0` — same "non-zero diff is worth a look" logging
+    convention as `recompute_hidden_rival_flags_job`, though here the
+    baseline is "small nonzero counts are normal" once real beacon traffic
+    exists, unlike the rival-flags table which should rarely move at all."""
+
+    sites = load_sites(ctx["settings"].platform_database_url)
+    report: SiteRunReport = for_each_site(sites, _recompute_covisitation_for, job="recompute_covisitation")
+    logger.info(
+        "recompute_covisitation: %s",
+        {
+            slug: {"pairs": r.pairs_considered, "added": r.added, "removed": r.removed}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, CovisitationRecomputeReport)
+        },
+    )
+    return {
+        "sites": {
+            slug: {"pairs_considered": r.pairs_considered, "added": r.added, "removed": r.removed, "unchanged": r.unchanged}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, CovisitationRecomputeReport)
         },
         "failed": report.failed,
     }

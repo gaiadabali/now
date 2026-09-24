@@ -38,6 +38,8 @@ SYNTH_ARTICLES_TABLE = "now_filters_synth_articles"
 SYNTH_EVENTS_TABLE = "now_filters_synth_events"
 SYNTH_PLACE_MENTIONS_TABLE = "now_filters_synth_place_mentions"
 SYNTH_HIDDEN_RIVAL_FLAGS_TABLE = "now_filters_synth_hidden_rival_flags"
+SYNTH_INTERACTIONS_TABLE = "now_filters_synth_interactions"
+SYNTH_COVISITATION_TABLE = "now_filters_synth_covisitation"
 
 # The 6 venue L1 types (excludes `event`/`editorial`, which are the two
 # `exclude_same=false` rows in engine.type_relations -- see ARCHITECTURE.md
@@ -212,6 +214,81 @@ def create_synthetic_articles_table(conn: Connection, rows: list[SyntheticArticl
                 "title": r.title,
             },
         )
+    return table
+
+
+@dataclass(frozen=True)
+class SyntheticInteraction:
+    """Stands in for a row of `engine.interactions`
+    (`now_filters_recompute_covisitation`'s read side) -- only the columns
+    that module's qualifying-signal rule and session grouping need."""
+
+    session_id: str
+    entity_id: int
+    kind: str  # 'click' | 'dwell' | 'scroll' | ... (enum_interactions_kind)
+    dwell_ms: int | None = None
+    scroll_pct: float | None = None
+    # `datetime.now()`, not a fixed past date like the other synthetic
+    # dataclasses in this module use for `published_at` -- this table's
+    # own reader (`covisitation_recompute`'s `ts >= now() - window_days`
+    # predicate) is time-relative-to-now by construction, so a fixed
+    # historical default would silently fall outside the window and every
+    # test row would vanish from consideration.
+    ts: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    anon_id: str = "00000000-0000-0000-0000-000000000001"
+    user_id: str | None = None
+    entity_type: str = "article"
+
+
+def create_synthetic_interactions_table(
+    conn: Connection, rows: list[SyntheticInteraction], *, table: str = SYNTH_INTERACTIONS_TABLE
+) -> str:
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "id serial PRIMARY KEY, session_id uuid NOT NULL, anon_id uuid NOT NULL, user_id uuid, "
+            "entity_type text NOT NULL, entity_id text NOT NULL, kind text NOT NULL, "
+            "dwell_ms integer, scroll_pct numeric(5,2), ts timestamptz NOT NULL"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(
+                f"INSERT INTO {table} "
+                "(session_id, anon_id, user_id, entity_type, entity_id, kind, dwell_ms, scroll_pct, ts) "
+                "VALUES (:session_id, :anon_id, :user_id, :entity_type, :entity_id, :kind, :dwell_ms, :scroll_pct, :ts)"
+            ),
+            {
+                "session_id": r.session_id,
+                "anon_id": r.anon_id,
+                "user_id": r.user_id,
+                "entity_type": r.entity_type,
+                "entity_id": str(r.entity_id),
+                "kind": r.kind,
+                "dwell_ms": r.dwell_ms,
+                "scroll_pct": r.scroll_pct,
+                "ts": r.ts,
+            },
+        )
+    return table
+
+
+def create_synthetic_covisitation_table(conn: Connection, *, table: str = SYNTH_COVISITATION_TABLE) -> str:
+    """Empty on creation -- `recompute_covisitation` is what populates it;
+    tests seed pre-existing rows (for a diff/removal case) with a plain
+    INSERT against the returned table name."""
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            'entity_a text NOT NULL, entity_b text NOT NULL, score numeric(8,5) NOT NULL, '
+            '"window" text NOT NULL, computed_at timestamptz NOT NULL DEFAULT now(), '
+            'PRIMARY KEY (entity_a, entity_b, "window")'
+            ")"
+        )
+    )
     return table
 
 
