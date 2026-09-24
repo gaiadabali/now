@@ -81,6 +81,26 @@ export const QUALITY_FLOOR = 0.35
 export const MAX_PER_SECTION = 2 // Sec.8.D diversity cap, "max 2 per format" analogue applied to section here
 export const MAX_PLAN_AROUND_RAILS = 3 // coordinator review, second pass
 
+// WS1, fourth pass, item 4 ("Readers also read"): shown only when there are
+// at least this many qualifying, competitor-clean covisited items — S2's
+// honesty rule applied to a rail, not just a label: fewer than this and the
+// rail is hidden, never padded out with weaker fallbacks to hit a number.
+export const MIN_READERS_ALSO_READ = 3
+// `engine.covisitation.score` floor a pair must clear to count as a real
+// signal at all, independent of the write-side `min_support` the recompute
+// job already applies (now_filters.covisitation_recompute) — belt and
+// suspenders against a future writer with a looser floor.
+export const MIN_COVIS_SCORE = 0.02
+
+/** S2 honesty rule applied to a rail's very existence: fewer than
+ * `MIN_READERS_ALSO_READ` competitor-clean covisited items and the rail
+ * does not render at all, rather than padding out to a round number with
+ * weaker candidates. Pulled out as its own function purely so the exact
+ * threshold has a direct unit test. */
+export function meetsReadersAlsoReadFloor(qualifyingCount: number): boolean {
+  return qualifyingCount >= MIN_READERS_ALSO_READ
+}
+
 type Pool = Pick<pg.Pool, 'query'>
 
 // ---------------------------------------------------------------------------
@@ -367,4 +387,97 @@ export function groupComplementCandidatesBySection(
     used.add(row.id) // an article can only ever be pushed into ONE section anyway (one primary_type), but guards belt-and-suspenders against a future type->section change making one type map to two sections
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// "Readers also read" — behavioural covisitation (WS1, fourth pass, item 4)
+// ---------------------------------------------------------------------------
+
+export type CovisitedCandidateRow = CandidateRow & { score: number }
+
+/** `engine.covisitation` is directional (`entity_a` = the subject readers
+ * started from) and already text-typed to match `public.articles.id::text`
+ * (now-db migration 0005). The competitor guard here is IDENTICAL to Read
+ * Next's — same excluded-types array, same hidden-rival lookup — because a
+ * covisited item is still a candidate for a venue subject's page and the
+ * §8.A rule does not carve out an exception for "but readers really did
+ * click both". */
+const COVISITED_SQL = `
+  SELECT a.id, a.primary_type::text AS primary_type, a.series_key, c.score::float8 AS score
+    FROM engine.covisitation c
+    JOIN public.articles a ON a.id::text = c.entity_b
+   WHERE c.entity_a = $1::text
+     AND c.score >= $2
+     AND a._status = 'published'
+     AND a.published_at IS NOT NULL AND a.published_at <= now()
+     AND (
+       cardinality($3::text[]) = 0
+       OR (a.primary_type IS NOT NULL AND a.primary_type::text != ALL($3::text[]))
+     )
+     AND (
+       cardinality($3::text[]) = 0
+       OR NOT EXISTS (
+         SELECT 1 FROM engine.hidden_rival_flags hrf
+          WHERE hrf.article_id = a.id::text AND hrf.matched_type = ANY($3::text[])
+       )
+     )
+     AND a.id NOT IN (
+       SELECT entity_id::int FROM engine.quality_scores
+        WHERE entity_type = 'article' AND score < $4
+     )
+   ORDER BY c.score DESC
+   LIMIT $5
+`
+
+export async function resolveCovisitedCandidates(
+  pool: Pool,
+  articleId: number,
+  excludedTypes: readonly string[],
+  limit: number,
+): Promise<CovisitedCandidateRow[]> {
+  try {
+    const result = await pool.query<CovisitedCandidateRow>(COVISITED_SQL, [
+      String(articleId),
+      MIN_COVIS_SCORE,
+      [...excludedTypes],
+      QUALITY_FLOOR,
+      limit,
+    ])
+    return result.rows
+  } catch (error) {
+    // `engine.covisitation` may be empty (no beacon volume yet in a fresh
+    // city) or genuinely unreachable — either way this rail is optional,
+    // never the reason a page fails.
+    console.error('[recommendSql] covisitation query failed:', error instanceof Error ? error.message : error)
+    return []
+  }
+}
+
+/** The re-rank input for Read Next (item 3/4: "only the order moves").
+ * Scores come back keyed by candidate id, `0` for a pair with no row
+ * (`engine.covisitation` has no negative signal, so absence means
+ * "unknown", not "avoid" — callers add this as a small bonus, never a
+ * penalty). */
+export async function fetchCovisScoresFor(
+  pool: Pool,
+  articleId: number,
+  candidateIds: readonly number[],
+): Promise<Map<number, number>> {
+  const scores = new Map<number, number>()
+  if (candidateIds.length === 0) return scores
+  try {
+    const { rows } = await pool.query<{ entity_b: string; score: number }>(
+      `SELECT entity_b, score::float8 AS score
+         FROM engine.covisitation
+        WHERE entity_a = $1::text AND entity_b = ANY($2::text[])`,
+      [String(articleId), candidateIds.map(String)],
+    )
+    for (const row of rows) {
+      const id = Number(row.entity_b)
+      if (Number.isFinite(id)) scores.set(id, row.score)
+    }
+  } catch (error) {
+    console.error('[recommendSql] covisitation score lookup failed:', error instanceof Error ? error.message : error)
+  }
+  return scores
 }
