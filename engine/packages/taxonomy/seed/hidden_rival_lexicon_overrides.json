@@ -1,0 +1,10 @@
+{
+  "source": "docs/EDITION-2-PLAN.md WS1 deliverable #2 (hidden-rival guard), measured 2026-09-24.",
+  "purpose": "Keywords `now_filters.hidden_rival` (Python, engine-api / rails) and `engine/apps/web/src/lib/hiddenRival.ts` (TypeScript, the web app's own fallback) must BOTH drop from `engine/packages/taxonomy/seed/terms/type.json`'s subtype label/alias vocabulary when building the guard's NAME-matching pattern. This is the second half of the guard's 'one source of truth': the lexicon itself is `type.json` (shared with the E2.1 classifier prompt, unmodified); this file is the guard-specific curation on top of it, so both languages exclude the exact same words for the exact same measured reason, without either one hand-rolling its own denylist.",
+  "excluded_by_type": {
+    "drink": {
+      "words": ["club"],
+      "reason": "Measured against real place_mentions/places in both cities (~250 hand-reviewed `role='featured'` rows, ticket report has the full count): the bare word 'club' -- correct as `nightclub`'s own taxonomy alias, used by the E2.1 classifier prompt -- was the dominant false-positive source for `drink` as a NAME-match keyword. Golf clubs, private members' clubs, expat business/social associations ('The American Club Jakarta', 'Royale Jakarta Golf Club', 'Women's International Club', 'Club Med') outnumbered genuine drink venues roughly 3 to 1 in the sample. Every genuine true positive in the sample ('Potato Head Beach Club', 'Sundays Beach Club', 'BUNK Lobby Lounge', 'Emilia Bar Italiano') still matches via a more specific surviving phrase ('beach club', 'lounge', 'bar'), so this trades a small, measured recall loss (5 Bali articles caught ONLY via bare 'club': 'Mama San Supper Club', 'Kuta Social Club' x2, 'The Jungle Club Ubud', 'KANVA Ubud by K Club') for removing the majority of false positives -- the right side to err on for a guard whose failure mode must be 'misses a rival', not 'wrongly empties a rail'."
+    }
+  }
+}

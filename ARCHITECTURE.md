@@ -270,19 +270,31 @@ editorial  news · opinion · people · business · education · heritage · cit
 
 ### Type relation matrix
 
+**Updated 2026-09-24 (migration 0008, Edition 2 WS1).** The owner's rule is
+narrower than `exclude_same` alone can express: "never restaurant, cafe or
+F&B" means `eat` and `drink` are ONE competitive class, not two complementary
+ones, even though they are different L1 types. `exclude_same` only ever adds
+a type's OWN name to its excluded set; `competes_with` is a second axis — the
+OTHER L1 types a row must also never co-recommend:
+
 ```
-type        exclude_same   complements
-stay        true           eat, drink, wellness, do
-eat         true           drink, do, event
-drink       true           eat, do
-wellness    true           eat, stay, do
-shop        true           eat, drink
-do          false          eat, drink, stay
-event       false          eat, drink, stay
-editorial   false          (all)
+type        exclude_same   complements                      competes_with
+stay        true           eat, drink, wellness, do          —
+eat         true           stay, wellness, do, event         drink
+drink       true           stay, wellness, do                eat
+wellness    true           eat, stay, do                      —
+shop        true           eat, drink                          —
+do          false          eat, drink, stay                    —
+event       false          eat, drink, stay                    —
+editorial   false          (all)                                —
 ```
 
-Stored in `engine.type_relations`, per-site overridable, editable without deploy.
+Stored in `engine.type_relations` (`competes_with text[]`, migration 0008),
+per-site overridable, editable without deploy. `now_filters.type_relations
+.excluded_types_for` unions `competes_with` into the excluded set
+unconditionally, alongside `exclude_same`'s own self-exclusion and the
+`unknown` fail-closed sentinel (§8.A) — see that module's docstring for the
+full None/unknown fail-closed reasoning, unchanged by this addition.
 
 ### Location tree
 
@@ -646,7 +658,8 @@ Hybrid: `tsvector` BM25 + `pgvector` cosine, fused with Reciprocal Rank Fusion. 
 | Tenancy | `site_id` matches or explicitly syndicated |
 | Status | published, not draft/trash/private, embargo respected |
 | Self | never the current article |
-| **Competitor** | same L1 `type` excluded — **all tiers, free included** |
+| **Competitor** | same L1 `type` excluded, plus `competes_with` (§4 — F&B is one class) — **all tiers, free included** |
+| **Hidden rival** (Edition 2, WS1) | a candidate's `role='featured'` place mention whose NAME matches a competitor type's taxonomy vocabulary is excluded even when its OWN declared type passed the check above — `now_filters.hidden_rival` / `lib/hiddenRival.ts`, measured ~86% precision; see docs/EDITION-2-PLAN.md WS1 status |
 | Event expiry | `ends_at < now()` |
 | Offer expiry | past `campaign.ends_at` |
 | Venue closed | `place.status = closed` |

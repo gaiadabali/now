@@ -17,7 +17,8 @@
     "prebuild": "node scripts/sync-beacon.mjs && node scripts/lint-account-gate.mjs",
     "predev": "node scripts/sync-beacon.mjs",
     "lint:account-gate": "node scripts/lint-account-gate.mjs",
-    "verify:site-config": "node --conditions react-server --experimental-strip-types scripts/verify-site-config.mjs"
+    "verify:site-config": "node --conditions react-server --experimental-strip-types scripts/verify-site-config.mjs",
+    "verify:competitor-policy": "node --conditions react-server --experimental-strip-types scripts/verify-competitor-policy.mjs"
   },
   "dependencies": {
     "next": "15.4.11",

@@ -97,47 +97,42 @@ def _type_json_path(seed_dir: Path | str | None = None) -> Path:
     return root / "terms" / "type.json"
 
 
+def _overrides_json_path(seed_dir: Path | str | None = None) -> Path:
+    root = Path(seed_dir) if seed_dir is not None else TAXONOMY_SEED_DIR
+    return root / "hidden_rival_lexicon_overrides.json"
 
-# Measured 2026-09-24 against real `place_mentions`/`places` data in both
-# cities (this ticket's hand-labelled sample, ~250 `role='featured'` rows
-# read by the implementing engineer -- see the ticket report for the full
-# methodology and counts): the bare word "club" is `nightclub`'s own
-# taxonomy alias, correct for the E2.1 classifier prompt this file also
-# serves, but as a NAME-MATCH keyword for this guard it is dominated by
-# false positives -- "The American Club Jakarta", "Polish Business Club",
-# "Royale Jakarta Golf Club", "Club Med", "Trump International Golf Club",
-# "Cork & Screw Country Club", "Women's International Club" are all social,
-# sports or expat-association clubs, not F&B venues, and outnumbered the
-# genuine drink-venue matches (real beach clubs/nightclubs) by roughly 3
-# to 1 in the sample. Every one of those false positives disappears once
-# "club" alone is dropped, because the genuine venues in the same sample
-# ("Potato Head Beach Club", "Sundays Beach Club", "BUNK Lobby Lounge",
-# "Emilia Bar Italiano") still match via the more specific phrases
-# ("beach club", "lounge", "bar") that stay in the lexicon. The
-# recall cost is real but small and measured (five Bali articles in the
-# sample -- "Mama San Supper Club", "Kuta Social Club" x2, "The Jungle Club
-# Ubud", "KANVA Ubud by K Club" -- were caught ONLY via bare "club" and are
-# no longer flagged) and is the right side to err on for a guard whose
-# failure mode must be "misses a rival" rather than "wrongly empties a
-# rail" (deliverable #2's own constraint).
-#
-# This denylist is scoped to THIS module's guard use only -- it does not
-# edit `type.json` itself, so the classifier prompt and human review this
-# file also serves keep "club" as a legitimate nightclub cue.
-_GUARD_AMBIGUOUS_KEYWORDS: dict[str, frozenset[str]] = {
-    "drink": frozenset({"club"}),
-}
+
+def _load_guard_ambiguous_keywords(seed_dir: Path | str | None = None) -> dict[str, frozenset[str]]:
+    """Reads `hidden_rival_lexicon_overrides.json` -- the measured,
+    documented denylist ("club" for `drink`, see that file) shared with
+    `engine/apps/web/src/lib/hiddenRival.ts`'s TypeScript port, so neither
+    language's copy of the curation can drift from the other's. A missing
+    file (an older checkout, or a seed_dir built for a test that has no
+    reason to define one) means "no overrides", not an error -- this
+    curation is a precision improvement on top of the base lexicon, never
+    something the guard depends on to function at all."""
+    import json
+
+    path = _overrides_json_path(seed_dir)
+    if not path.is_file():
+        return {}
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        type_slug: frozenset(str(w).strip().lower() for w in entry.get("words", []))
+        for type_slug, entry in doc.get("excluded_by_type", {}).items()
+    }
 
 
 def load_subtype_lexicon(seed_dir: Path | str | None = None) -> dict[str, tuple[str, ...]]:
     """L1 `type` slug -> the subtype `label`s and `aliases` filed under it,
-    lowercased, exactly as authored in `type.json`, minus
-    `_GUARD_AMBIGUOUS_KEYWORDS` -- every remaining entry is a human-written
-    taxonomy word (`Resort`, `Beach club`, `warung`), never a proper noun --
-    see module docstring."""
+    lowercased, exactly as authored in `type.json`, minus this guard's
+    measured curation (`hidden_rival_lexicon_overrides.json`) -- every
+    remaining entry is a human-written taxonomy word (`Resort`, `Beach
+    club`, `warung`), never a proper noun -- see module docstring."""
     import json
 
     doc = json.loads(_type_json_path(seed_dir).read_text(encoding="utf-8"))
+    overrides = _load_guard_ambiguous_keywords(seed_dir)
     lexicon: dict[str, tuple[str, ...]] = {}
     for l1 in doc["terms"]:
         keywords: set[str] = set()
@@ -147,7 +142,7 @@ def load_subtype_lexicon(seed_dir: Path | str | None = None) -> dict[str, tuple[
                 keywords.add(str(label).strip().lower())
             for alias in child.get("aliases") or []:
                 keywords.add(str(alias).strip().lower())
-        keywords -= _GUARD_AMBIGUOUS_KEYWORDS.get(l1["slug"], frozenset())
+        keywords -= overrides.get(l1["slug"], frozenset())
         lexicon[l1["slug"]] = tuple(sorted(keywords))
     return lexicon
 

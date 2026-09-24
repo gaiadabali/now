@@ -73,3 +73,78 @@ site-literal lints · smoke), QA driving both cities end to end, screenshots.
 
 Cross-city moves (S5.4 — they bridge through `now_platform`, never city to city), a reader dark
 palette, learned personalization (E7, data-gated), the itinerary UI (E5.4).
+
+## 6. WS1 (Engine) — status, 2026-09-24
+
+**Delivered.**
+
+- **F&B is one competitive class, as data.** `engine.type_relations` gained
+  `competes_with text[]` (now-db migration 0008), seeded `eat<->drink`, and
+  un-paired them from each other's `complements`. Applied to `now_jakarta`,
+  `now_bali` and `now_test` (the migration carries its own idempotent data
+  step, since `seed_city`'s `ON CONFLICT DO NOTHING` back-fill cannot touch
+  already-seeded rows); `schema_baseline.json` regenerated.
+  `now_filters.type_relations.excluded_types_for` unions `competes_with`
+  unconditionally. ARCHITECTURE §4/§8 updated.
+- **Hidden-rival guard.** `now_filters.hidden_rival` / `engine/apps/web/src/
+  lib/hiddenRival.ts`: a `role='featured'` place mention whose NAME matches
+  a competitor type's taxonomy vocabulary (`type.json` labels/aliases —
+  never a hardcoded brand list) excludes the candidate even when its own
+  declared type passed the ordinary check. Measured against ~250+ real,
+  hand-reviewed `place_mentions`/`places` rows in both cities: the bare word
+  "club" was the dominant false-positive source for `drink` and was dropped
+  from the guard's lexicon only (shared curation file,
+  `hidden_rival_lexicon_overrides.json`, loaded by both languages).
+  Post-curation measured precision on the four venue categories is ~86%
+  (n=142); real counts today are 213 Bali / 269 Jakarta published articles
+  whose featured mention names a venue type their own `primary_type` does
+  not declare. **Honest limit:** the literal reported article (Bali 4417,
+  "The Westin Resort Nusa Dua... Celebrate Wellness 2026") is NOT caught —
+  its hotel mention is `role='mentioned'`, split across two unlinked
+  `place_id` rows, an entity-extraction fragment. A recurrence-based
+  extension for `mentioned` rows measured 8/11 precision on a small sample
+  and is a flagged follow-up, not shipped against 11 examples.
+- **`getArticleRails`/`getForYou`** (`apps/web/src/lib/recommend.ts`):
+  computed directly against `engine.*` in the web process this iteration
+  (pgvector Read Next, complement rails grouped by section, both competitor-
+  and hidden-rival-filtered) rather than via the engine-api HTTP call —
+  **a decision for the owner/architect to revisit**, see §7 below.
+  `lib/competitorPolicy.ts` + `lib/hiddenRival.ts` are independently-tested
+  TypeScript ports of the Python policy, asserted against the SAME
+  conformance-vector file
+  (`engine/packages/taxonomy/seed/competitor_conformance.json`) both the
+  Python and TS suites load — the ONE source of truth for the exclusion
+  policy the ticket required. `getForYou` builds a weighted taste centroid
+  from `engine.interactions` (§10 weights) + `engine.saved_items`, kNN via
+  pgvector, `null` when there is no signal. `readerContextFromRequest()`
+  reads the `nowb_aid` beacon cookie and the reader session
+  (`lib/reader.ts#currentReader`). `getRelated` (the old same-section
+  fallback that was the reported defect) is removed from `lib/content.ts` —
+  it had exactly one caller, `recommend.ts`'s own stub, replaced in the same
+  change.
+- **Verification.** `apps/web/scripts/verify-competitor-policy.mjs` runs the
+  competitor/hidden-rival predicates over every published venue article
+  (stay/eat/drink/wellness/shop) in a city and asserts zero violations —
+  `npm run verify:competitor-policy`, once per city
+  (`--env-file=.env.local` / `.env.jakarta.local`). Results: see the WS1
+  ticket report for the exact counts from this run.
+
+## 7. Open for the owner/architect
+
+- **Where rails compute.** This iteration computes both article rails
+  directly in the web tier (`lib/recommend.ts`), a documented exception to
+  `lib/payload.ts`'s "a page may never query Postgres directly" rule, made
+  because (a) the engine-api's existing `/articles/{id}/rails` endpoint
+  serves Row 1 as PLACES, not the ARTICLE-shaped "plan around it" rail this
+  ticket specifies, and (b) this sandboxed session had no way to verify
+  `ENGINE_API_URL` reachability. Wiring the HTTP call as the preferred path,
+  with this implementation kept as the graceful-degradation fallback, is
+  the natural next step.
+- **The Westin/Kimpton case's own entity-resolution gap** (place mentions
+  fragmented across two unlinked rows for one real venue) is a data-quality
+  issue for E2.x place extraction, not something the hidden-rival guard can
+  close by itself.
+- **`getForYou`'s label** ("Because of what you read") does not yet name a
+  specific driving article — a weighted-centroid taste vector does not
+  preserve per-item provenance the way a top-1-nearest-neighbour approach
+  would.
