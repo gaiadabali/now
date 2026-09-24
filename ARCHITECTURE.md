@@ -395,6 +395,11 @@ covisitation(entity_a, entity_b, score, window, computed_at)
 travel_matrix(place_a, place_b, seconds, meters, mode, computed_at)
 rail_cache(article_id, segment_id, rail, candidates jsonb, rung, computed_at)
 quality_scores(entity_type, entity_id, score, components jsonb)
+-- Edition 2, WS1 second pass, migration 0009. Precomputed (never
+-- authored) — offline home of `now_filters.hidden_rival`'s two signals,
+-- see §8.A/§8.G. Refreshed by `now_filters.hidden_rival_recompute`.
+hidden_rival_flags(article_id, matched_type, signal, computed_at)
+  -- signal ∈ featured_mention|title  ·  PRIMARY KEY (article_id, matched_type, signal)
 ```
 
 ### Platform DB
@@ -659,7 +664,7 @@ Hybrid: `tsvector` BM25 + `pgvector` cosine, fused with Reciprocal Rank Fusion. 
 | Status | published, not draft/trash/private, embargo respected |
 | Self | never the current article |
 | **Competitor** | same L1 `type` excluded, plus `competes_with` (§4 — F&B is one class) — **all tiers, free included** |
-| **Hidden rival** (Edition 2, WS1) | a candidate's `role='featured'` place mention whose NAME matches a competitor type's taxonomy vocabulary is excluded even when its OWN declared type passed the check above — `now_filters.hidden_rival` / `lib/hiddenRival.ts`, measured ~86% precision; see docs/EDITION-2-PLAN.md WS1 status |
+| **Hidden rival** (Edition 2, WS1) | a candidate's `role='featured'` place mention, OR (for `stay` only, measured) its own TITLE, naming a competitor type's taxonomy vocabulary excludes it even when its OWN declared type passed the check above. Precomputed into `engine.hidden_rival_flags` (migration 0009) by `now_filters.hidden_rival_recompute`, not a live join — see §8.G note below and docs/EDITION-2-PLAN.md WS1 status. |
 | Event expiry | `ends_at < now()` |
 | Offer expiry | past `campaign.ends_at` |
 | Venue closed | `place.status = closed` |
@@ -688,6 +693,14 @@ MMR λ ≈ 0.7 · max 1 per org · max 2 per area · max 2 per format · max 1 p
 ```
 
 `max 1 per org` matters: marriott.com appears 63× in the archive.
+
+**Article-page rails (Edition 2, WS1):** at most 3 "plan around it" rails,
+ordered by the subject's own `type_relations.complements` array (now-db
+migration 0010 reordered that array to double as display priority — same
+membership, only position changed). No story may appear in more than one
+rail on a page, Read Next included: "plan around it" is resolved first
+(more specific), and any id it used is excluded from Read Next's own pool
+before that rail is finalised.
 
 ### E. Commercial
 
@@ -751,6 +764,19 @@ than the large array (35 ms vs 49 ms).
 
 Net: `/search` p95 **195 ms → 69 ms**, results byte-identical to the constrained path across the
 hand-check query set (`packages/search/tests/test_candidate_set_strategy.py` is the regression gate).
+
+**Same class of finding, `apps/web/src/lib/recommendSql.ts`'s Read Next query (Edition 2, WS1
+second pass, 2026-09-24).** `EXPLAIN (ANALYZE, BUFFERS)` against real `now_bali` data found the
+live hidden-rival guard (a `place_mentions`/`places` regex `NOT EXISTS`, per-candidate) costing
+~27ms of a ~49ms query — the hard-filter predicates themselves were cheap and selective, the
+per-row regex join was not. Moved offline: `engine.hidden_rival_flags` (migration 0009), a
+precomputed (article_id, matched_type) table refreshed by `now_filters.hidden_rival_recompute`,
+turns the guard into an indexed lookup against a few-hundred-row table. Measured after: **~49ms →
+~22ms warm** for one Read Next query; the full-archive verification script's per-article average
+(five-plus queries, both rails) went from **~322ms/article (Bali) / ~162ms/article (Jakarta) → ~18ms
+/ ~23ms**, after also batching the "plan around it" complement rail into one query instead of up
+to four. `now-db hash`/`now-db check` are unaffected — `hidden_rival_flags` is a genuinely derived
+table (principle 2), never authored by a human.
 
 ---
 

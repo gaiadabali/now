@@ -68,7 +68,6 @@ from now_filters.hard import (
     build_articles_hard_filter_sql,
     fetch_articles_hard_filtered,
 )
-from now_filters.hidden_rival import hidden_rival_pattern_for_subject
 from now_filters.ladder import run_ladder
 from now_filters.models import Candidate, RungSpec
 from now_filters.type_relations import TypeRelation
@@ -106,13 +105,6 @@ def _fetch_subject_vector(conn: Connection, article_id: int, model: str) -> list
 def _eligible_ids_fetch_fn(
     conn: Connection, subject: ArticleSubject, relations: dict[str, TypeRelation], *, articles_table: str
 ):
-    # Computed once per request, not per rung: the pattern depends only on
-    # the subject's own type + `engine.type_relations`, never on which
-    # fallback rung is being tried -- and Sec.8.F is explicit that "the
-    # competitor filter never relaxes at any rung", which this guard is
-    # part of, so it must not become optional at a wider rung either.
-    hidden_rival_pattern = hidden_rival_pattern_for_subject(subject.primary_type, relations)
-
     def _fetch(rung: RungSpec) -> list[Candidate]:
         # `rung.editorial_fallback` is repurposed here as "drop the
         # quality floor" -- see `ladders.py`'s module docstring.
@@ -124,7 +116,12 @@ def _eligible_ids_fetch_fn(
             quality_floor=quality_floor,
             series_dedup=True,
             articles_table=articles_table,
-            hidden_rival_pattern=hidden_rival_pattern,
+            # apply_hidden_rival_guard defaults True -- Sec.8.F: "the
+            # competitor filter never relaxes at any rung", which this
+            # guard is part of, so it is never made conditional on rung
+            # either. Reads the precomputed `engine.hidden_rival_flags`
+            # (migration 0009) rather than a live pattern -- see
+            # `now_filters.hard`'s own docstring.
         )
         return fetch_articles_hard_filtered(conn, query)
 

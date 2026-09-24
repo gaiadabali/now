@@ -64,6 +64,37 @@ precision measurement (~250+ rows, both cities, ~86% measured precision
 on the four venue-competitor categories after the `club` curation below,
 higher on `wellness`).
 
+## Second signal (second pass, same date): the candidate's own TITLE
+
+Article 4417 is not caught by the mention-based rule above (its title
+contains "The Westin Resort Nusa Dua, Bali Presents Celebrate Wellness
+2026" -- the word "Resort" is right there). `title_signal_enabled_types`
+gates a second, independent check: for a candidate whose own declared
+`primary_type` is NOT a venue type (`exclude_same=false`: `event`/
+`editorial`/`do`, or NULL), does its TITLE itself match a subtype keyword
+of a type the subject excludes? Measured (ticket report, ~440 hand-
+reviewed real titles, both cities): `stay` clears ~85-94% precision,
+driven by specific hotel/resort brand names in promotional titles --
+enabled below. `eat`/`shop`/`wellness` measured 37-71%, dominated by this
+magazine's own recurring awards/association franchise and generic abstract
+nouns ("beauty", "craft", "market") in editorial writing that name no
+specific venue -- NOT enabled, with the exact noise and a proposed
+curated override recorded in `hidden_rival_lexicon_overrides.json` rather
+than silently widened or narrowed. `drink` measured borderline (~84%,
+small/noisy sample) and is also not enabled yet.
+
+**Precomputed, not live** (second pass): both signals above write into
+`engine.hidden_rival_flags` (migration 0009) via
+`now_filters.hidden_rival_recompute`, offline. `EXPLAIN (ANALYZE,
+BUFFERS)` against real data showed the live regex join costing ~40ms of a
+150ms total-page budget, repeated on every request across up to five rail
+queries, for a signal that only changes when an article is edited or a
+place is renamed (ARCHITECTURE.md principle 2: `engine` is derived and
+rebuildable). The functions in this module (`build_name_pattern`,
+`hidden_rival_pattern_for_subject`) are now the RECOMPUTE script's tools,
+not a live per-request code path; `now_filters.hard`'s hidden-rival
+predicate reads the precomputed table instead.
+
 ## Why this does not need `orgs`/`places.type`
 
 `places.type` is unusable for this signal today -- every place in both
@@ -121,6 +152,22 @@ def _load_guard_ambiguous_keywords(seed_dir: Path | str | None = None) -> dict[s
         type_slug: frozenset(str(w).strip().lower() for w in entry.get("words", []))
         for type_slug, entry in doc.get("excluded_by_type", {}).items()
     }
+
+
+def title_signal_enabled_types(seed_dir: Path | str | None = None) -> frozenset[str]:
+    """L1 types the TITLE signal is enabled for -- see module docstring's
+    "Second signal" section. Data-driven: adding a type here (once its
+    precision is measured and documented) is the whole enable switch, no
+    code change. Missing file / missing key -> empty (nothing enabled),
+    the same fail-safe-by-omission stance `_load_guard_ambiguous_keywords`
+    takes for its own key."""
+    import json
+
+    path = _overrides_json_path(seed_dir)
+    if not path.is_file():
+        return frozenset()
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return frozenset(doc.get("title_signal_enabled_types", {}).keys())
 
 
 def load_subtype_lexicon(seed_dir: Path | str | None = None) -> dict[str, tuple[str, ...]]:

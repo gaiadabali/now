@@ -1,9 +1,20 @@
 import 'server-only'
 
 import { toArticles, type Article } from '@/lib/content'
-import { cityPool, payloadClient, sectionForType } from '@/lib/payload'
-import { excludedTypesFor, relationsFromRows, type TypeRelations } from '@/lib/competitorPolicy'
-import { hiddenRivalPatternForSubject } from '@/lib/hiddenRival'
+import { cityPool, payloadClient } from '@/lib/payload'
+import type { TypeRelations } from '@/lib/competitorPolicy'
+import {
+  complementSectionsFor,
+  dedupeBySeries,
+  diversify,
+  groupComplementCandidatesBySection,
+  loadRelations,
+  resolveComplementCandidates,
+  resolveReadNextCandidates,
+  type CandidateRow,
+  EMBEDDING_MODEL,
+  QUALITY_FLOOR,
+} from '@/lib/recommendSql'
 
 /**
  * What the reader site asks the engine for, and nothing else.
@@ -34,39 +45,44 @@ import { hiddenRivalPatternForSubject } from '@/lib/hiddenRival'
  * server-side, fully tested (`engine/packages/rails`) — Row 3 (semantic
  * similarity) is article-shaped and could be consumed directly. Row 1
  * (complementary) is PLACE-shaped, not article-shaped, so it does not
- * directly serve this file's "plan around it" contract ("stories of the
- * complement types") without an extra place->article resolution step. Given
- * that gap, this iteration computes BOTH rails directly against `engine.*`
- * in this process, rather than calling the HTTP API — a deliberate,
- * DOCUMENTED exception to `lib/payload.ts`'s "a page may never query
- * Postgres directly" rule, made specifically because:
- *
- *   1. the article page must render a real rail even when engine-api is
- *      unreachable or unconfigured (this ticket's own requirement), and
- *      this codebase has no evidence `ENGINE_API_URL` is wired up for a
- *      rails call anywhere yet (only `/search` and the beacon use it);
- *   2. the ONE thing that must not drift between the two possible
- *      computation sites is the competitor POLICY, not the ranking — so
- *      `lib/competitorPolicy.ts` + `lib/hiddenRival.ts` are written as
- *      thin, independently-tested ports of the Python engine's own
- *      `now_filters.type_relations` / `now_filters.hidden_rival`, sharing
- *      ONE conformance-vector file both suites assert against
- *      (`engine/packages/taxonomy/seed/competitor_conformance.json`).
+ * directly serve this file's "plan around it" contract without an extra
+ * place->article resolution step. This iteration computes both rails
+ * directly against `engine.*` (the actual SQL lives in `lib/recommendSql
+ * .ts`, shared with `scripts/verify-competitor-policy.mjs` so the proof
+ * and the product can never silently diverge) rather than calling the
+ * HTTP API — a deliberate, DOCUMENTED exception to `lib/payload.ts`'s "a
+ * page may never query Postgres directly" rule, left as-is per the
+ * coordinator's second-pass review ("leave the engine-API-vs-web-tier
+ * decision as documented; I'll take it to the owner").
  *
  * Ranking may legitimately differ between this path and the engine-api
- * path (different candidate pools, no MMR/blend weights, no personalised
- * re-rank) — the exclusion policy may not, and is asserted identically on
- * both sides. Wiring an `ENGINE_API_URL` call as the PREFERRED path, with
- * this implementation kept as the graceful-degradation fallback, is the
- * natural next step and is flagged in the ticket report for the owner/
- * architect rather than attempted here without a way to verify the live
- * endpoint from this environment.
+ * path — the exclusion policy may not, and is asserted identically on
+ * both sides via `lib/competitorPolicy.ts` + `lib/hiddenRival.ts`, sharing
+ * ONE conformance-vector file both suites assert against
+ * (`engine/packages/taxonomy/seed/competitor_conformance.json`).
+ *
+ * ## Speed (second pass)
  *
  * Budget: ARCHITECTURE §7 says article-page rail work should cost
- * p95 <= 150ms server time, warm. Both queries below are single
- * round trips with every selective predicate (status, type, quality,
- * hidden-rival) pushed into SQL ahead of the vector operation, mirroring
- * `now_filters`' own Sec.8.G ordering rule.
+ * p95 <= 150ms server time, warm. `EXPLAIN (ANALYZE, BUFFERS)` against
+ * real data found the first version's live hidden-rival regex join
+ * costing ~27ms of a ~49ms Read Next query — moved offline into
+ * `engine.hidden_rival_flags` (migration 0009,
+ * `now_filters.hidden_rival_recompute`), measured ~22ms warm afterward.
+ * The complement rail is now ONE query (was up to 4), and Read Next +
+ * complement rails run in parallel (`Promise.all` below). Ticket report
+ * has the full before/after numbers for both cities.
+ *
+ * ## Rail count and overlap (second pass)
+ *
+ * At most `MAX_PLAN_AROUND_RAILS` (3) "plan around it" rails, in the
+ * subject's own `complements` order (now-db migration 0010 reordered
+ * that array to double as display priority — see `recommendSql
+ * .complementSectionsFor`). No article may appear in more than one rail
+ * on the page, complement rails included Read Next: complement rails are
+ * resolved first (they are the more specific recommendation), and any id
+ * they used is excluded when Read Next's own pool is diversified down to
+ * its final `limit`.
  */
 
 export type RailArticle = Article & {
@@ -112,15 +128,11 @@ export async function readerContextFromRequest(): Promise<ReaderContext> {
   const context: ReaderContext = {}
   try {
     // Dynamic, not a top-level import: `next/headers` only resolves inside
-    // Next's server runtime. A static import would fail to even LOAD this
-    // module (and every function in it, `getArticleRails` included) outside
-    // that runtime. Deferring the import to here, where it is actually
-    // used, keeps the rest of the module plain-Node-loadable — this file
-    // also imports `server-only`, which itself only resolves under Next's
-    // `react-server` condition, so `scripts/verify-competitor-policy.mjs`
-    // (WS1 deliverable #5) keeps its OWN literal copy of this file's SQL
-    // rather than importing this module at all — see that script's header
-    // comment for why.
+    // Next's server runtime, and this file also imports `server-only`,
+    // which only resolves under Next's `react-server` condition — neither
+    // is available to `scripts/verify-competitor-policy.mjs`, which
+    // exercises `lib/recommendSql.ts`'s candidate-resolution SQL directly
+    // with no Next process at all.
     const { cookies } = await import('next/headers')
     const jar = await cookies()
     const anonId = jar.get('nowb_aid')?.value
@@ -143,267 +155,12 @@ export async function readerContextFromRequest(): Promise<ReaderContext> {
 }
 
 // ---------------------------------------------------------------------------
-// engine.type_relations — the commercial policy, read once per rail build.
+// Row-to-Article resolution — the only thing this file still does that
+// `lib/recommendSql.ts` cannot (it has no Payload access, by design).
 // ---------------------------------------------------------------------------
 
-const RELATIONS_SQL = `SELECT type, exclude_same, complements, competes_with FROM engine.type_relations`
-
-async function loadRelations(): Promise<TypeRelations> {
-  const { rows } = await cityPool().query<{
-    type: string
-    exclude_same: boolean
-    complements: string[] | null
-    competes_with: string[] | null
-  }>(RELATIONS_SQL)
-  return relationsFromRows(rows)
-}
-
-const EMBEDDING_MODEL = 'BAAI/bge-small-en-v1.5'
-// ARCHITECTURE.md §8.A "Quality floor" / now_quality.scoring.QUALITY_FLOOR —
-// kept as the same literal the Python engine uses (see that module's
-// docstring for the derivation); duplicated here rather than imported
-// because this is a TypeScript process with no access to the Python
-// package, exactly the same constraint `now_filters` itself would face in
-// reverse.
-const QUALITY_FLOOR = 0.35
-
-const MAX_PER_SECTION = 2 // Sec.8.D diversity cap, "max 2 per format" analogue applied to section here
-
-// ---------------------------------------------------------------------------
-// Read Next — semantic similarity (Row 3's job), computed directly.
-// ---------------------------------------------------------------------------
-
-export type CandidateRow = {
-  id: number
-  primary_type: string | null
-  series_key: string | null
-}
-
-const READ_NEXT_SQL = `
-  WITH subj AS (
-    SELECT vec FROM engine.embeddings
-     WHERE entity_type = 'article' AND entity_id = $1::text AND model = $2
-  )
-  SELECT a.id, a.primary_type::text AS primary_type, a.series_key
-    FROM public.articles a
-    JOIN engine.embeddings e ON e.entity_type = 'article' AND e.entity_id = a.id::text AND e.model = $2
-   CROSS JOIN subj
-   WHERE a.id != $1::int
-     AND a._status = 'published'
-     AND a.published_at IS NOT NULL AND a.published_at <= now()
-     -- Competitor exclusion (ARCHITECTURE §8.A): empty excluded-array means
-     -- "this subject excludes nothing" (editorial/do/event, or none at all),
-     -- in which case NO predicate is applied, including for NULL
-     -- primary_type rows — matching now_filters.hard's own "if excluded:"
-     -- guard exactly, not an accidental relaxation.
-     AND (
-       cardinality($3::text[]) = 0
-       OR (a.primary_type IS NOT NULL AND a.primary_type::text != ALL($3::text[]))
-     )
-     AND a.id NOT IN (
-       SELECT entity_id::int FROM engine.quality_scores
-        WHERE entity_type = 'article' AND score < $4
-     )
-     AND (
-       $5::text IS NULL OR NOT EXISTS (
-         SELECT 1 FROM public.place_mentions pm
-           JOIN public.places pl ON pl.id = pm.place_id
-          WHERE pm.article_id = a.id AND pm.role = 'featured' AND pl.name ~* $5
-       )
-     )
-   ORDER BY e.vec <=> subj.vec ASC
-   LIMIT $6
-`
-
-/** Greedy diversification: walk the similarity-ordered pool and cap how
- * many of one section survive — a simplified stand-in for `now_blender
- * .mmr`'s real MMR pass (no embedding pairwise-similarity comparison
- * here), documented as such rather than silently claiming the same
- * guarantee. Series dedup happens earlier, in `dedupeBySeries` — this
- * function only ever sees already-deduped candidates. */
-function diversify(pool: Article[], limit: number): Article[] {
-  const picked: Article[] = []
-  const perSection = new Map<string, number>()
-  for (const article of pool) {
-    if (picked.length >= limit) break
-    const section = sectionForType(article.primaryType) ?? 'unclassified'
-    const count = perSection.get(section) ?? 0
-    if (count >= MAX_PER_SECTION) continue
-    picked.push(article)
-    perSection.set(section, count + 1)
-  }
-  return picked
-}
-
-/**
- * The pure-SQL half of Read Next: candidate (id, primary_type, series_key)
- * rows, competitor-policy- and hidden-rival-filtered, ordered by semantic
- * similarity — no Payload/Local API involved. Exported so a test/verify
- * harness could assert the policy directly against this function without
- * a Payload round trip. `scripts/verify-competitor-policy.mjs` (WS1
- * deliverable #5) does NOT import it, though — this file's own top-level
- * `server-only` import throws outside Next's `react-server` condition
- * (including under `payload run`, which the CMS-config import chain
- * `payloadClient()` pulls in would otherwise need), so that script keeps a
- * literal, commented copy of `READ_NEXT_SQL` instead. If this query
- * changes, that script's copy must change with it.
- */
-export async function resolveReadNextCandidates(
-  articleId: number,
-  subjectPrimaryType: string | null,
-  relations: TypeRelations,
-  limit: number,
-): Promise<CandidateRow[]> {
-  const excluded = Array.from(excludedTypesFor(relations, subjectPrimaryType))
-  const hiddenRivalPattern = hiddenRivalPatternForSubject(subjectPrimaryType, relations)
-  try {
-    const result = await cityPool().query<CandidateRow>(READ_NEXT_SQL, [
-      articleId,
-      EMBEDDING_MODEL,
-      excluded,
-      QUALITY_FLOOR,
-      hiddenRivalPattern,
-      limit,
-    ])
-    return result.rows
-  } catch (error) {
-    // The rail is a nicety; the article is not. A missing partition, an
-    // embeddings backfill not yet run for this article, or the city pool
-    // being cold must not 500 the page under it — same stance
-    // `lib/content.ts#getMostRead` already takes for its own direct query.
-    console.error('[recommend] getArticleRails: Read Next query failed:', error instanceof Error ? error.message : error)
-    return []
-  }
-}
-
-/** Series dedup (Sec.8.A "one per series_key") — applied HERE, at the
- * CandidateRow level, because `series_key` does not survive the Payload
- * round trip (`lib/content.ts#Article` carries no such field; it is
- * display data the view model never needed before this file existed).
- * Rows arrive already ordered by semantic similarity, so keeping the
- * FIRST occurrence per key keeps the best-ranked row in each group —
- * same outcome as `now_filters.hard`'s `DISTINCT ON` for the SQL-side
- * ladder, applied here in application code instead. */
-function dedupeBySeries(rows: CandidateRow[]): CandidateRow[] {
-  const seen = new Set<string>()
-  const out: CandidateRow[] = []
-  for (const row of rows) {
-    const key = row.series_key ?? `noseries:${row.id}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(row)
-  }
-  return out
-}
-
-async function fetchReadNext(article: Article, relations: TypeRelations, limit: number): Promise<Article[]> {
-  const pool = Math.max(limit * 4, 20) // a wider pool for `diversify` to choose from
-  const rows = dedupeBySeries(await resolveReadNextCandidates(article.id, article.primaryType, relations, pool))
+async function toOrderedArticles(rows: CandidateRow[]): Promise<Article[]> {
   if (rows.length === 0) return []
-
-  const ids = rows.map((r) => r.id)
-  const payload = await payloadClient()
-  const { docs } = await payload.find({
-    collection: 'articles',
-    where: { _status: { equals: 'published' }, id: { in: ids } },
-    limit: ids.length,
-    depth: 1,
-  })
-  const articles = await toArticles(docs)
-  const bySemanticRank = new Map(ids.map((id, i) => [id, i]))
-  const ordered = articles
-    .filter((a) => bySemanticRank.has(a.id))
-    .sort((a, b) => (bySemanticRank.get(a.id) ?? 0) - (bySemanticRank.get(b.id) ?? 0))
-
-  return diversify(ordered, limit)
-}
-
-// ---------------------------------------------------------------------------
-// "Plan around it" — Row 1's job (complementary types), computed directly.
-// ---------------------------------------------------------------------------
-
-/** One rail per SECTION (not per raw L1 type) — `eat`/`drink` already share
- * the `dining` section (`lib/payload.ts#TYPE_TO_SECTION`), and now that
- * they are one competitive class (migration 0008) they should read as one
- * "where to eat and drink" rail, not two near-duplicate ones. */
-const SECTION_RAIL_LABELS: Record<string, { kicker: string; title: string }> = {
-  stay: { kicker: 'Plan around it', title: 'Where to Stay' },
-  dining: { kicker: 'Plan around it', title: 'Where to Eat & Drink' },
-  wellness: { kicker: 'Plan around it', title: 'Where to Unwind' },
-  'things-to-do': { kicker: 'Plan around it', title: 'Things to Do Nearby' },
-  events: { kicker: 'Plan around it', title: "What's On" },
-}
-
-/** Display order for the rails this produces — a UI decision, not a policy
- * one: WHICH sections are eligible is driven entirely by the subject's own
- * `complements` (real data), this only orders how they are presented. */
-const SECTION_DISPLAY_ORDER = ['stay', 'dining', 'wellness', 'things-to-do', 'events']
-
-const COMPLEMENT_SQL = `
-  WITH subj_place AS (
-    SELECT pl.area_term
-      FROM public.place_mentions pm
-      JOIN public.places pl ON pl.id = pm.place_id
-     WHERE pm.article_id = $1::int
-     ORDER BY CASE pm.role WHEN 'featured' THEN 0 WHEN 'reviewed' THEN 1 ELSE 2 END, pm.id
-     LIMIT 1
-  )
-  SELECT a.id, a.primary_type::text AS primary_type, a.series_key,
-         EXISTS (
-           SELECT 1 FROM public.place_mentions pm2
-             JOIN public.places pl2 ON pl2.id = pm2.place_id, subj_place sp
-            WHERE pm2.article_id = a.id AND sp.area_term IS NOT NULL AND pl2.area_term = sp.area_term
-         ) AS same_area
-    FROM public.articles a
-   WHERE a.id != $1::int
-     AND a._status = 'published'
-     AND a.published_at IS NOT NULL AND a.published_at <= now()
-     AND a.primary_type::text = ANY($2::text[])
-     AND a.id NOT IN (
-       SELECT entity_id::int FROM engine.quality_scores
-        WHERE entity_type = 'article' AND score < $3
-     )
-     AND (
-       $4::text IS NULL OR NOT EXISTS (
-         SELECT 1 FROM public.place_mentions pm
-           JOIN public.places pl ON pl.id = pm.place_id
-          WHERE pm.article_id = a.id AND pm.role = 'featured' AND pl.name ~* $4
-       )
-     )
-   ORDER BY same_area DESC, a.published_at DESC
-   LIMIT $5
-`
-
-/** The pure-SQL half of a complement rail — see `resolveReadNextCandidates`
- * above for why this is exported and Payload-free. `types` here are
- * whatever the CALLER already validated against `relations[subjectType]
- * .complements` (`fetchComplementRails` below); this function trusts them,
- * same division of responsibility as `now_filters.row1_complementary`
- * trusting its own caller's `complements` lookup. */
-export async function resolveComplementCandidates(
-  articleId: number,
-  types: string[],
-  hiddenRivalPattern: string | null,
-  limit: number,
-): Promise<CandidateRow[]> {
-  try {
-    const result = await cityPool().query<CandidateRow>(COMPLEMENT_SQL, [articleId, types, QUALITY_FLOOR, hiddenRivalPattern, limit])
-    return result.rows
-  } catch (error) {
-    console.error('[recommend] getArticleRails: complement query failed:', error instanceof Error ? error.message : error)
-    return []
-  }
-}
-
-async function fetchComplementRail(
-  article: Article,
-  types: string[],
-  hiddenRivalPattern: string | null,
-  limit: number,
-): Promise<Article[]> {
-  const rows = await resolveComplementCandidates(article.id, types, hiddenRivalPattern, limit)
-  if (rows.length === 0) return []
-
   const ids = rows.map((r) => r.id)
   const payload = await payloadClient()
   const { docs } = await payload.find({
@@ -417,82 +174,24 @@ async function fetchComplementRail(
   return articles.filter((a) => rank.has(a.id)).sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
 }
 
-/**
- * Groups a venue subject's `complements` by SECTION, in
- * `SECTION_DISPLAY_ORDER`. `[]` for a non-venue subject (`relations[type]
- * .excludeSame` false, or an unclassified subject) — "plan around it" is
- * specifically a venue-story feature (docs/EDITION-2-PLAN.md §1's own
- * framing: "a hotel story gets where to eat... a restaurant story gets
- * where to stay..."). Exported (pure, no I/O) so a test could exercise the
- * exact section/type grouping `getArticleRails` uses. `scripts/verify-
- * competitor-policy.mjs` keeps its OWN copy of this logic instead — same
- * `server-only` import-chain reason as `resolveReadNextCandidates` above —
- * so this function and that script's `complementSectionsFor` must be kept
- * in step by hand if the section mapping ever changes.
- */
-export function complementSectionsFor(
-  subjectType: string | null,
-  relations: TypeRelations,
-): { section: string; types: string[]; label: { kicker: string; title: string } }[] {
-  if (!subjectType) return []
-  const relation = relations[subjectType]
-  if (!relation || !relation.excludeSame) return []
-
-  const bySection = new Map<string, string[]>()
-  for (const complementType of relation.complements) {
-    const section = sectionForType(complementType)
-    if (!section) continue
-    const list = bySection.get(section) ?? []
-    list.push(complementType)
-    bySection.set(section, list)
-  }
-
-  const out: { section: string; types: string[]; label: { kicker: string; title: string } }[] = []
-  for (const section of SECTION_DISPLAY_ORDER) {
-    const types = bySection.get(section)
-    const label = SECTION_RAIL_LABELS[section]
-    if (!types || types.length === 0 || !label) continue
-    out.push({ section, types, label })
-  }
-  return out
-}
-
-async function fetchComplementRails(
-  article: Article,
-  relations: TypeRelations,
-  limitPerRail: number,
-): Promise<ArticleRail[]> {
-  const sections = complementSectionsFor(article.primaryType, relations)
-  if (sections.length === 0) return []
-  const hiddenRivalPattern = hiddenRivalPatternForSubject(article.primaryType, relations)
-
-  const rails: ArticleRail[] = []
-  for (const { section, types, label } of sections) {
-    const items = await fetchComplementRail(article, types, hiddenRivalPattern, limitPerRail)
-    if (items.length === 0) continue
-    rails.push({
-      key: `plan-${section}`,
-      kicker: label.kicker,
-      title: label.title,
-      items: items.map((a, i) => ({ ...a, rail: `plan-${section}`, position: i + 1 })),
-    })
-  }
-  return rails
-}
-
 // ---------------------------------------------------------------------------
 // The public contract
 // ---------------------------------------------------------------------------
+
+const READ_NEXT_LIMIT = 6
+const COMPLEMENT_LIMIT_PER_RAIL = 6
+const COMPLEMENT_POOL_SIZE = 60 // one batched query across up to 3 rails' worth of types
 
 /**
  * Every recommendation rail for one article page, in the order the page
  * should render them. May be empty; the page renders no rail rather than an
  * empty one.
  */
-export async function getArticleRails(article: Article, _reader: ReaderContext = {}, limit = 6): Promise<ArticleRail[]> {
+export async function getArticleRails(article: Article, _reader: ReaderContext = {}, limit = READ_NEXT_LIMIT): Promise<ArticleRail[]> {
+  const pool = cityPool()
   let relations: TypeRelations
   try {
-    relations = await loadRelations()
+    relations = await loadRelations(pool)
   } catch (error) {
     // engine.type_relations is the ONE table this whole guarantee depends
     // on. Unreachable means "cannot prove the exclusion holds" — the fail-
@@ -502,18 +201,45 @@ export async function getArticleRails(article: Article, _reader: ReaderContext =
     return []
   }
 
-  const [readNext, complementRails] = await Promise.all([
-    fetchReadNext(article, relations, limit),
-    fetchComplementRails(article, relations, Math.min(limit, 4)),
+  const sections = complementSectionsFor(article.primaryType, relations)
+
+  const [complementRows, readNextRowsRaw] = await Promise.all([
+    sections.length > 0 ? resolveComplementCandidates(pool, article.id, sections, COMPLEMENT_POOL_SIZE) : Promise.resolve([]),
+    resolveReadNextCandidates(pool, article.id, article.primaryType, relations, Math.max(limit * 4, 20)),
   ])
 
-  const rails: ArticleRail[] = [...complementRails]
-  if (readNext.length > 0) {
+  // Complement rails are resolved FIRST logically (picked before Read Next
+  // is finalised) even though both queries ran in parallel above — no
+  // article may appear in more than one rail on the page (coordinator
+  // review, second pass), and a "plan around it" match is the more
+  // specific recommendation of the two.
+  const grouped = groupComplementCandidatesBySection(complementRows, sections, COMPLEMENT_LIMIT_PER_RAIL, new Set())
+  const usedIds = new Set<number>()
+  for (const rows of grouped.values()) for (const r of rows) usedIds.add(r.id)
+
+  const readNextRows = diversify(dedupeBySeries(readNextRowsRaw), limit, usedIds)
+
+  const rails: ArticleRail[] = []
+  for (const { section, label } of sections) {
+    const rows = grouped.get(section) ?? []
+    if (rows.length === 0) continue
+    const items = await toOrderedArticles(rows)
+    if (items.length === 0) continue
+    rails.push({
+      key: `plan-${section}`,
+      kicker: label.kicker,
+      title: label.title,
+      items: items.map((a, i) => ({ ...a, rail: `plan-${section}`, position: i + 1 })),
+    })
+  }
+
+  const readNextArticles = await toOrderedArticles(readNextRows)
+  if (readNextArticles.length > 0) {
     rails.push({
       key: 'read-next',
       kicker: 'Keep reading',
       title: 'Read Next',
-      items: readNext.map((a, i) => ({ ...a, rail: 'read-next', position: i + 1 })),
+      items: readNextArticles.map((a, i) => ({ ...a, rail: 'read-next', position: i + 1 })),
     })
   }
   return rails
@@ -699,18 +425,7 @@ export async function getForYou(reader: ReaderContext = {}, limit = 6): Promise<
   rows = dedupeBySeries(rows)
   if (rows.length === 0) return null
 
-  const ids = rows.map((r) => r.id)
-  const payload = await payloadClient()
-  const { docs } = await payload.find({
-    collection: 'articles',
-    where: { _status: { equals: 'published' }, id: { in: ids } },
-    limit: ids.length,
-    depth: 1,
-  })
-  const articles = await toArticles(docs)
-  const rank = new Map(ids.map((id, i) => [id, i]))
-  const ordered = articles.filter((a) => rank.has(a.id)).sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
-  const items = diversify(ordered, limit)
+  const items = await toOrderedArticles(diversify(rows, limit))
   if (items.length === 0) return null
 
   return {

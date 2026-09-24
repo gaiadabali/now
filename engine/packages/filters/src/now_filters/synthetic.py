@@ -37,6 +37,7 @@ SYNTH_PLACES_TABLE = "now_filters_synth_places"
 SYNTH_ARTICLES_TABLE = "now_filters_synth_articles"
 SYNTH_EVENTS_TABLE = "now_filters_synth_events"
 SYNTH_PLACE_MENTIONS_TABLE = "now_filters_synth_place_mentions"
+SYNTH_HIDDEN_RIVAL_FLAGS_TABLE = "now_filters_synth_hidden_rival_flags"
 
 # The 6 venue L1 types (excludes `event`/`editorial`, which are the two
 # `exclude_same=false` rows in engine.type_relations -- see ARCHITECTURE.md
@@ -62,6 +63,13 @@ class SyntheticPlace:
     # left `name` unset and gets the harmless default below, so this is
     # additive, not a breaking change to the synthetic-places contract.
     name: str = "Synthetic Place"
+
+
+@dataclass(frozen=True)
+class SyntheticHiddenRivalFlag:
+    article_id: int
+    matched_type: str
+    signal: str = "featured_mention"  # 'featured_mention' | 'title'
 
 
 @dataclass(frozen=True)
@@ -142,6 +150,31 @@ def create_synthetic_place_mentions_table(
                 "role": r.role,
                 "surface_text": r.surface_text,
             },
+        )
+    return table
+
+
+def create_synthetic_hidden_rival_flags_table(
+    conn: Connection, rows: list[SyntheticHiddenRivalFlag], *, table: str = SYNTH_HIDDEN_RIVAL_FLAGS_TABLE
+) -> str:
+    """Stands in for `engine.hidden_rival_flags` (migration 0009) --
+    `build_articles_hard_filter_sql(hidden_rival_flags_table=...)` reads
+    whichever table name it is given, exactly like every other
+    swap-in-a-synthetic-table parameter in this module (see this file's
+    own docstring)."""
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "article_id text NOT NULL, matched_type text NOT NULL, signal text NOT NULL, "
+            "PRIMARY KEY (article_id, matched_type, signal)"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(f"INSERT INTO {table} (article_id, matched_type, signal) VALUES (:article_id, :matched_type, :signal)"),
+            {"article_id": str(r.article_id), "matched_type": r.matched_type, "signal": r.signal},
         )
     return table
 
