@@ -4,9 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ReadNextBand, PlanAroundBand } from '@/components/ArticleRails'
 import { EntityBeacon } from '@/components/Beacon'
 import { StoryCard } from '@/components/StoryCard'
-import { Band, BandHead, Signup } from '@/components/primitives'
+import { Signup } from '@/components/primitives'
 import {
   getBySlug,
   getSectionPage,
@@ -16,7 +17,7 @@ import {
   sectionOf,
 } from '@/lib/content'
 import { formatCount, formatDate, readingTime } from '@/lib/format'
-import { stripTags } from '@/lib/html'
+import { firstWholeSentence, stripTags } from '@/lib/html'
 import { getArticleRails } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
@@ -89,13 +90,39 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   // Pull quote is lifted from the body rather than authored separately, the
   // way a sub-editor would. In production this comes from a `pullquote`
   // block in the Lexical body (see `bodyBlocks.ts` in the CMS package).
-  const quoteIndex = Math.min(3, article.paras.length - 1)
-  // Plain text: a pull quote is typeset, not marked up, and slicing it to 180
-  // characters would otherwise cut through the middle of a tag.
-  const quote = stripTags(article.paras[quoteIndex] ?? '')
+  //
+  // Starts at the same paragraph as before (the 4th, or the last one there
+  // is) and tries `firstWholeSentence` on it; if that paragraph's own first
+  // sentence does not fit whole, tries the NEXT paragraph, and so on to the
+  // end of the article. A magazine does not truncate a pull quote — the
+  // previous version fell back to a word-boundary cut and still ended
+  // "...management through…", grammatically clean and still not what the
+  // source said. If nothing in the article produces a whole sentence
+  // within the limit, `quote` stays `null` and no pull quote renders at
+  // all; `quoteAt` is where the body splits around it, and stays at the
+  // ORIGINAL paragraph when nothing was found, so the layout is unaffected
+  // by a search that came up empty.
+  const startAt = Math.min(3, article.paras.length - 1)
+  let quote: string | null = null
+  let quoteAt = startAt
+  for (let i = startAt; i < article.paras.length; i++) {
+    const candidate = firstWholeSentence(stripTags(article.paras[i] ?? ''), 180)
+    if (candidate) {
+      quote = candidate
+      quoteAt = i
+      break
+    }
+  }
+  const shareUrl = `https://www.${site.hostname}/${article.slug}`
 
   return (
     <article>
+      {/* Reading progress (DESIGN-SYSTEM motion). `animation-timeline:
+          scroll(root)` only — see magazine.css for what an unsupported
+          browser gets instead, which is an inert bar, not a broken one. */}
+      <div className="readbar" aria-hidden="true">
+        <span className="readbar__fill" />
+      </div>
       {beacon}
       {/* Says, on the page, that this page is not the published one.
           Draft mode is a cookie that outlives the story being previewed, so
@@ -122,9 +149,7 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
             </Link>
           </p>
           <h1 className="article-head__title display display--light">{article.title}</h1>
-          <p className="dek" style={{ maxWidth: '38ch' }}>
-            {article.dek}
-          </p>
+          <p className="dek">{article.dek}</p>
           <div className="byline">
             <span>
               Words by <span className="byline__name">NOW! Editorial</span>
@@ -161,19 +186,30 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
               lib/payload.ts), so a page cannot receive unvetted markup. The
               alternative — what this used to do — escaped the archive's own
               formatting and printed `<strong>` tags at readers.
+
+              Split around `quoteAt` only when a pull quote was actually
+              found (`quote !== null`, see above) — nothing in the archive
+              guarantees one exists that fits whole, and a magazine renders
+              NO pull quote rather than a truncated one when it does not. The
+              paragraphs before the split have no endmark to carry, so they
+              render plain; the endmark always belongs to the true last
+              paragraph, which is why every paragraph after the split (or
+              every paragraph, when there is no split at all) is wrapped so
+              it can carry one as a sibling rather than fight
+              `dangerouslySetInnerHTML` for a `<p>`'s only child slot.
             */}
-            {article.paras.slice(0, quoteIndex + 1).map((p, i) => (
+            {article.paras.slice(0, quote ? quoteAt + 1 : 0).map((p, i) => (
               <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
             ))}
 
-            <figure className="pullquote">
-              <p className="pullquote__text">
-                {quote.length > 180 ? `${quote.slice(0, 180).trimEnd()}…` : quote}
-              </p>
-              <figcaption className="pullquote__attr">From the report</figcaption>
-            </figure>
+            {quote ? (
+              <figure className="pullquote">
+                <p className="pullquote__text">{quote}</p>
+                <figcaption className="pullquote__attr">From the report</figcaption>
+              </figure>
+            ) : null}
 
-            {article.paras.slice(quoteIndex + 1).map((p, i, arr) => (
+            {article.paras.slice(quote ? quoteAt + 1 : 0).map((p, i, arr) => (
               <p key={i}>
                 <span dangerouslySetInnerHTML={{ __html: p }} />
                 {i === arr.length - 1 ? <span className="endmark" aria-label="End of article" /> : null}
@@ -196,7 +232,36 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
           </div>
 
           <aside className="rail">
-            <Signup site={site} />
+            {/* Sticky: the previous aside "held only a newsletter box" and
+                ended where the prose happened to run out. Share now leads
+                it, and the whole rail tracks the reader down the column —
+                `top` backs off when the header condenses (magazine.css),
+                so it never overlaps the smaller header either. */}
+            <div className="aside-sticky">
+              <div className="share">
+                <p className="bandhead__kicker">Share this story</p>
+                <div className="share__list">
+                  {/* Real, zero-JS shares — no Web Share API plumbing to
+                      hydrate for two links. WhatsApp first: the highest-
+                      traffic share channel for a reader in either city. */}
+                  <a
+                    className="share__link"
+                    href={`https://wa.me/?text=${encodeURIComponent(`${article.title} ${shareUrl}`)}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    WhatsApp <span aria-hidden="true">↗</span>
+                  </a>
+                  <a
+                    className="share__link"
+                    href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(shareUrl)}`}
+                  >
+                    Email <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </div>
+              <Signup site={site} />
+            </div>
           </aside>
         </div>
       </div>
@@ -204,28 +269,16 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
       {/* Every rail comes from lib/recommend.ts, already chosen, ordered and
           labelled. Do not add a rail here that recommends by this story's own
           section: on a hotel story that is a rail of hotels, which is the one
-          thing this page must never show (recommend.ts, "The one rule"). */}
-      {rails.map((rail) => (
-        <Band key={rail.key}>
-          <div className="shell">
-            <BandHead kicker={rail.kicker} title={rail.title} />
-            <div className="grid grid--3 grid--ruled">
-              {/* Engine-ranked, so §10's position bias has to be corrected
-                  for — the slot is recorded on the impression AND the click. */}
-              {rail.items.map((a) => (
-                <StoryCard
-                  key={a.id}
-                  article={a}
-                  locale={locale}
-                  timeZone={tz}
-                  rail={a.rail}
-                  position={a.position}
-                />
-              ))}
-            </div>
-          </div>
-        </Band>
-      ))}
+          thing this page must never show (recommend.ts, "The one rule").
+          Read Next is the only rail every article gets, venue or not, and
+          stays its own full band. On a venue story the engine also returns
+          up to three `plan-<section>` rails ("Plan around it") — grouped
+          into ONE band with a column each (see ArticleRails.tsx), so a
+          hotel story does not end with four stacked 3-up bands. Today's
+          stub returns Read Next only, so `PlanAroundBand` renders nothing —
+          it is already correct for the day the engine starts sending them. */}
+      <ReadNextBand rail={rails.find((r) => r.key === 'read-next')} locale={locale} timeZone={tz} />
+      <PlanAroundBand rails={rails.filter((r) => r.key.startsWith('plan-'))} locale={locale} timeZone={tz} />
     </article>
   )
 }
@@ -304,7 +357,7 @@ async function SectionIndex({
         </span>
       </div>
 
-      <section className="band" style={{ paddingTop: 0 }}>
+      <section className="band" style={{ paddingTop: 0 }} data-reveal>
         <div className="grid--index">
           {articles.map((a, i) => (
             <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={slug} position={i + 1} />

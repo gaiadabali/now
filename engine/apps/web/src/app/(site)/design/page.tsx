@@ -1,28 +1,36 @@
+import { PlanAroundBand, ReadNextBand } from '@/components/ArticleRails'
 import { StoryCard } from '@/components/StoryCard'
 import { Badge, BandHead, Byline, PartnerBadge } from '@/components/primitives'
-import { getLatest } from '@/lib/content'
+import { getLatest, type Article } from '@/lib/content'
+import type { ArticleRail } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
 export const metadata = { title: 'Design system', robots: { index: false } }
 
 /**
- * The reference for S6 ("The Edition") — rebuilt in full rather than
- * patched, because the previous version specimened a system this one
- * replaces: `--paper-deep`, `--ink-body`, `--t-banner` and a "three rule
- * weights" section none of which exist in `tokens.css` any more. A stale
- * reference page is worse than none, because it is the thing people check
- * against (DESIGN-SYSTEM.md, opening line).
+ * The reference for Edition 2 — updated in place rather than rebuilt,
+ * because S6's structure (stocks, scale, band head, story card) is still
+ * the system; what changed is weight contrast, chrome and motion, and this
+ * page now specimens those alongside what it already had. A stale reference
+ * page is worse than none, because it is the thing people check against
+ * (DESIGN-SYSTEM.md, opening line).
  *
  * Internal, noindexed, not linked from the masthead. Every value shown here
  * is read from a token or from real content — nothing on this page is typed
  * in by hand, for the same reason nothing on the homepage is.
  */
+/** Real articles, a FIXTURE rail assignment — see the specimen below for why. */
+function toRailItems(arts: Article[], rail: string) {
+  return arts.map((a, i) => ({ ...a, rail, position: i + 1 }))
+}
+
 export default async function DesignPage() {
   const site = await getSiteConfig()
-  const articles = await getLatest(6)
+  const articles = await getLatest(9)
 
   return (
-    <div className="shell band">
+    <>
+      <div className="shell band">
       <p className="kicker kicker--red">Internal</p>
       <h1 className="display display--light" style={{ fontSize: 'var(--t-display)' }}>
         The design system
@@ -201,6 +209,118 @@ export default async function DesignPage() {
           <StoryCard article={articles[5]} variant="rank" index={1} locale={site.locale} timeZone={site.timezone} />
         </div>
       </section>
-    </div>
+
+      {/* ---------------------------------------------------- weight contrast
+          Edition 2's answer to "every headline is Cormorant 300... at card
+          and index sizes it reads faint and monotone." Cover/display sizes
+          keep the light weight; a card or index headline no longer does. */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Weight contrast" note="display--medium · display--strong" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          Cormorant 300 stays the voice at cover and display sizes. A card headline (with a
+          photograph beside it) takes 500; an index row with no photograph — Latest's own
+          complaint — takes 600, because the type alone has to carry the hierarchy a picture
+          usually would.
+        </p>
+        <div className="specimen">
+          <div className="specimen__label">300 · display--light · cover/display sizes only</div>
+          <div className="display display--light" style={{ fontSize: 'var(--t-display)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+        <div className="specimen">
+          <div className="specimen__label">500 · display--medium · a card headline</div>
+          <div className="display display--medium" style={{ fontSize: 'var(--t-title)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+        <div className="specimen">
+          <div className="specimen__label">600 · display--strong · Latest's row, no photograph</div>
+          <div className="display display--strong" style={{ fontSize: 'var(--t-title)' }}>
+            The Quiet Rooms of Ubud
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------- chrome --- */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Chrome" note="sticky, condensing, and a real mobile menu" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          The masthead (top of this page) is sticky and condenses a few pixels into a scroll —
+          try it. Below 62rem its section list is a native <code>&lt;details&gt;</code> drawer
+          rather than the sideways-scrolling row it used to be; nothing here is client-rendered
+          except the two classes <code>HeaderScroll</code> toggles on <code>&lt;body&gt;</code>
+          (<code>hdr-condensed</code>, <code>hdr-hidden</code>) — see{' '}
+          <code>components/HeaderScroll.tsx</code>.
+        </p>
+      </section>
+
+      {/* --------------------------------------------------------- motion --- */}
+      <section className="band">
+        <BandHead kicker="Edition 2" title="Motion" note="purposeful, fast, and off under reduced motion" />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          No animation library. The reading progress bar (article pages) is CSS —
+          `animation-timeline: scroll(root)` — and stays fully visible with no animation at all
+          wherever a browser does not support it. Reveal-on-scroll is the one piece of client
+          JavaScript this system spends on more than the header:
+          a small IntersectionObserver (`RevealObserver.tsx`) that shows a band already in view
+          immediately, no animation, and animates the rest in as a reader scrolls to them —
+          a pure CSS version (`animation-timeline: view()`) held anything below the fold at
+          opacity 0 in a full-page screenshot, a print, or anything else that never scrolls a
+          real viewport, which is the exact thing "visible without JS" is meant to prevent.
+          Content stays visible with no JS at all, and under `prefers-reduced-motion` the
+          observer never runs. Hover a card below for the image-zoom and underline draw.
+        </p>
+        <div className="grid grid--3">
+          <StoryCard article={articles[0]} locale={site.locale} timeZone={site.timezone} />
+          <StoryCard article={articles[1]} locale={site.locale} timeZone={site.timezone} />
+        </div>
+      </section>
+
+      {/* ------------------------------------------- article rails, preview --
+          `getArticleRails()` (lib/recommend.ts, WS1) will return, for a venue
+          story, `read-next` plus up to three `plan-<section>` rails. The
+          live article page already renders that shape; today's engine stub
+          only ever returns `read-next`, so the "Plan around it" band below
+          cannot be seen on a real article yet. This is a FIXTURE — real
+          articles, a made-up rail assignment — built here rather than on the
+          live page, per the instruction that this shape is proven on
+          `/design` (or a test) and never on a reader-facing route until the
+          engine actually sends it. */}
+      <section className="band">
+        <BandHead
+          kicker="Edition 2 — preview"
+          title="Article rails"
+          note="fixture data — the live article page never renders a plan-* rail until getArticleRails() sends one"
+        />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          Read Next stays its own full band — every article gets it, venue or not. Up to three
+          "Plan around it" rails (a venue story only) group into ONE band, a column per rail,
+          rather than ending a hotel story with four stacked 3-up bands.
+        </p>
+      </section>
+      </div>
+      <ReadNextBand
+        rail={{
+          key: 'read-next',
+          kicker: 'Keep reading',
+          title: 'Read Next',
+          items: toRailItems(articles.slice(0, 3), 'read-next'),
+        }}
+        locale={site.locale}
+        timeZone={site.timezone}
+      />
+      <PlanAroundBand
+        rails={
+          [
+            { key: 'plan-dining', kicker: 'Plan around it', title: 'Where to Eat & Drink', items: toRailItems(articles.slice(3, 6), 'plan-dining') },
+            { key: 'plan-things-to-do', kicker: 'Plan around it', title: 'Things to Do Nearby', items: toRailItems(articles.slice(4, 7), 'plan-things-to-do') },
+            { key: 'plan-stay', kicker: 'Plan around it', title: 'Where to Stay', items: toRailItems(articles.slice(5, 8), 'plan-stay') },
+          ] satisfies ArticleRail[]
+        }
+        locale={site.locale}
+        timeZone={site.timezone}
+      />
+    </>
   )
 }

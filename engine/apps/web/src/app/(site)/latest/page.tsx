@@ -65,7 +65,7 @@ export default async function LatestPage({
         </span>
       </div>
 
-      <section className="band" style={{ paddingTop: 0 }}>
+      <section className="band" style={{ paddingTop: 0 }} data-reveal>
         <BandHead title="The full archive" />
         <div className="grid--index">
           {result.items.map((a, i) => (

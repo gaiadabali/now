@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 import { PartnerBadge } from '@/components/primitives'
 import type { Article } from '@/lib/content'
-import { sectionOf, sectionLabel } from '@/lib/content'
+import { sectionOf, sectionLabel, UNCLASSIFIED } from '@/lib/content'
 import { formatDate, readingTime } from '@/lib/format'
 
 type Variant = 'standard' | 'portrait' | 'horizontal' | 'index' | 'row' | 'rank'
@@ -58,6 +58,14 @@ export function StoryCard({
   position?: number
 }) {
   const section = sectionOf(article)
+  // `unclassified` is the editors' backlog word (lib/content.ts —
+  // "these are unsorted, not miscellaneous") and belongs on the
+  // `/unclassified` queue itself, not stamped on a real story in the
+  // magazine. Every OTHER section still reads as a promise to the reader
+  // ("Dining", "Stay"); this one would just read as a bug. The section
+  // index at that address is unaffected — this only ever hides the kicker
+  // a card or rail renders.
+  const showSection = section !== UNCLASSIFIED
   const href = `/${article.slug}`
   const withImage = variant !== 'index' && variant !== 'row'
   // On the headline link only, not the figure link beside it: both point at
@@ -84,8 +92,18 @@ export function StoryCard({
     </Link>
   ) : null
 
+  // Weight contrast (DESIGN-SYSTEM "Hierarchy"): Cormorant 300 stays a
+  // cover/display-size face only. At card and index sizes the light weight
+  // was the single biggest reason the previous pass "read faint and
+  // monotone" — the Latest index worst of all, because `row` sets the
+  // smallest headline in the system in the same weight as a 5.6rem cover.
+  // 500 for a card with a photograph carrying visual weight beside it; 600
+  // for the two variants that carry NONE (`row`, `index`) and so need the
+  // type itself to do that work.
+  const headlineWeight = variant === 'row' || variant === 'index' ? 'display--strong' : 'display--medium'
+
   const headline = (
-    <h3 className="card__headline display display--light">
+    <h3 className={`card__headline display ${headlineWeight}`}>
       <Link href={href} {...attribution}>
         {article.title}
       </Link>
@@ -94,10 +112,14 @@ export function StoryCard({
 
   const foot = (
     <div className="card__foot">
-      <Link className="card__section" href={`/${section}`}>
-        {sectionLabel(section)}
-      </Link>
-      <span className="sep">·</span>
+      {showSection ? (
+        <>
+          <Link className="card__section" href={`/${section}`}>
+            {sectionLabel(section)}
+          </Link>
+          <span className="sep">·</span>
+        </>
+      ) : null}
       <time dateTime={article.date}>{formatDate(article.date, locale, timeZone)}</time>
       {variant === 'standard' ? (
         <>
@@ -115,15 +137,17 @@ export function StoryCard({
   if (variant === 'row') {
     return (
       <article className="card card--row">
-        <h3 className="card__headline display display--light">
+        <h3 className={`card__headline display ${headlineWeight}`}>
           <Link href={href} {...attribution}>
             {article.title}
           </Link>
         </h3>
         <span className="card--row__meta">
-          <Link className="card__section" href={`/${section}`}>
-            {sectionLabel(section)}
-          </Link>
+          {showSection ? (
+            <Link className="card__section" href={`/${section}`}>
+              {sectionLabel(section)}
+            </Link>
+          ) : null}
           <time className="card--row__date" dateTime={article.date}>
             {formatDate(article.date, locale, timeZone)}
           </time>
