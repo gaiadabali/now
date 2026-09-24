@@ -170,6 +170,24 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
           description: 'Leave this as "article" unless you mean otherwise.',
         },
       },
+      /**
+       * Edition 2, WS3 — "the writing screen, for non-developers". A `ui`
+       * field stores nothing (no column, no migration): it is purely a slot
+       * for `PublishChecklist.tsx`, which reads the sidebar/tab fields above
+       * through Payload's own form state and answers one question a writer
+       * actually asks while working — "is this ready, and what will it look
+       * like out there" — instead of the twelve stored columns this sidebar
+       * used to be. See that component's header for what it does and does
+       * not check, and why two of its checks need a fetch.
+       */
+      {
+        name: 'publishChecklist',
+        type: 'ui',
+        admin: {
+          position: 'sidebar',
+          components: { Field: '/fields/PublishChecklist#PublishChecklist' },
+        },
+      },
 
       /* ------------------------------------------------------ main column */
       {

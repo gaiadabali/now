@@ -71,7 +71,18 @@ check(ungrouped.length === 0, 'every collection declares a sidebar group', ungro
 /* --------------------------------------------------------------- sidebar */
 
 const sidebar = names(top.filter((f) => f.admin?.position === 'sidebar')).sort()
-eq(sidebar, ['format', 'kind', 'primaryType', 'publishedAt'], 'the four non-writing decisions are in the sidebar')
+// Edition 2, WS3: `publishChecklist` (a `type: 'ui'` field — no column, no
+// migration) joined the four non-writing decisions. It is asserted here by
+// name and separately, below, checked to be a `ui` field rather than a data
+// one — the two checks are deliberately split so a future data field landing
+// in the sidebar cannot hide behind this one passing.
+eq(
+  sidebar,
+  ['format', 'kind', 'primaryType', 'publishChecklist', 'publishedAt'],
+  'the four non-writing decisions, plus the Ready-to-publish panel, are in the sidebar',
+)
+const checklistField = top.find((f) => f.name === 'publishChecklist')
+check(checklistField?.type === 'ui', 'publishChecklist is a presentational `ui` field, not a data column')
 
 // A required field on a tab nobody opens is a save that fails for a reason the
 // writer cannot see. If either of these is ever moved into a tab, it has to
@@ -121,7 +132,13 @@ check(leaked.length === 0, 'no import field is left in the writer default view',
 // Sanitisation injects `_status` (from `versions.drafts`) and the two
 // timestamps, so the expected set below includes them: this asserts against
 // the config the admin actually renders, not the one this file declares.
-const all = [...names(top.filter((f) => f.type !== 'tabs')), ...tabs.flatMap((t) => names(t.fields))]
+// `type === 'ui'` fields are excluded on purpose — this list is "every DATA
+// field", i.e. every column `public.articles` actually has, and a `ui` field
+// (`publishChecklist`) has none; it is asserted separately above.
+const all = [
+  ...names(top.filter((f) => f.type !== 'tabs' && f.type !== 'ui')),
+  ...tabs.flatMap((t) => names(t.fields)),
+]
 eq(
   [...all].sort(),
   [

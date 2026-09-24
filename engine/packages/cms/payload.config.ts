@@ -93,12 +93,13 @@ export default buildConfig({
       // `NavPlatform` is the same shape for the same reason — `engine.sites`
       // lives in the platform database too.
       //
-      // Order is deliberate: Curation and Commerce sit above Staff and
-      // Platform because far more people review or sell than administer
-      // accounts or the site registry. Each component decides for itself
-      // whether to render, against the role dimension it actually cares
-      // about.
+      // Order is deliberate: Front page and Curation sit above Commerce,
+      // Staff and Platform because far more people curate or review than
+      // sell than administer accounts or the site registry. Each component
+      // decides for itself whether to render, against the role dimension it
+      // actually cares about.
       afterNavLinks: [
+        '/components/nav/NavFrontPage#NavFrontPage',
         '/components/nav/NavReview#NavReview',
         '/components/nav/NavConsole#NavConsole',
         '/components/nav/StaffLink#StaffLink',
@@ -182,6 +183,24 @@ export default buildConfig({
       // the open question S3.1 was scoped to answer before committing to
       // this approach over a hand-built shared masthead.
       views: {
+        // Edition 2, WS3 — the desk home (`app/(payload)/team-editor/desk/
+        // DeskHome.tsx`). `dashboard` is a RESERVED key, not part of the
+        // path-matched set below: `@payloadcms/next`'s `DashboardView`
+        // (`views/Dashboard/index.js`) reads
+        // `config.admin?.components?.views?.dashboard?.Component` directly
+        // and falls back to its own `DefaultDashboard` when it is unset —
+        // it is not reached through `getCustomViewByRoute`'s pattern
+        // matching at all, and `getRouteData`'s `segments.length === 0`
+        // branch (the admin root) hardcodes `DashboardView` regardless of
+        // what is registered under `path` here. So this entry cannot
+        // collide with, shadow, or be shadowed by any `path`-matched view
+        // below — "one registration per area, first match wins" (this
+        // block's own note further down) is a rule about THOSE, not this.
+        // No `AdminViewFrame` needed either: see `DeskHome.tsx`'s header for
+        // why the admin root already gets Payload's template regardless.
+        dashboard: {
+          Component: '@/app/(payload)/team-editor/desk/DeskHome#DeskHome',
+        },
         classification: {
           Component: '@/app/(payload)/team-editor/classification/ClassificationView#ClassificationView',
           path: '/classification',
@@ -208,6 +227,20 @@ export default buildConfig({
         // `page.tsx` routes, which shadow Payload's catch-all, so it was the
         // one screen with a sidebar link and no sidebar. See
         // `app/(payload)/team-editor/platform/PlatformView.tsx`.
+        // Edition 2, WS3. Appended after the four areas above rather than
+        // interleaved with them: `/front-page` shares no path prefix with
+        // `/classification`, `/commerce`, `/staff` or `/platform`, so there
+        // is no first-match-wins ordering hazard to reason about against any
+        // of them — this note only needs to say that placement here is safe,
+        // not that it was chosen carefully among competing prefixes the way
+        // a genuinely overlapping pair would need. No sub-routes, so
+        // `exact: true`, same as `staff` above.
+        frontPage: {
+          Component: '@/app/(payload)/team-editor/front-page/FrontPageView#FrontPageView',
+          path: '/front-page',
+          exact: true,
+          meta: { title: 'Front page', description: 'What leads the home page, and in what order' },
+        },
         platform: {
           Component: '@/app/(payload)/team-editor/platform/PlatformView#PlatformView',
           path: '/platform',
