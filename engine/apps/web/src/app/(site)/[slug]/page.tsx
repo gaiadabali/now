@@ -102,12 +102,17 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   // all; `quoteAt` is where the body splits around it, and stays at the
   // ORIGINAL paragraph when nothing was found, so the layout is unaffected
   // by a search that came up empty.
+  const PULL_QUOTE_MIN_WORDS = 10
   const startAt = Math.min(3, article.paras.length - 1)
   let quote: string | null = null
   let quoteAt = startAt
   for (let i = startAt; i < article.paras.length; i++) {
     const candidate = firstWholeSentence(stripTags(article.paras[i] ?? ''), 180)
-    if (candidate) {
+    // A pull quote is a line worth setting large. A whole sentence can still
+    // be opening hours ("Open daily from 11am to 10pm.", which the first
+    // Edition 2 build put under a restaurant review) — under ten words it is
+    // information, not a quote, and the search moves on.
+    if (candidate && candidate.split(/\s+/).length >= PULL_QUOTE_MIN_WORDS) {
       quote = candidate
       quoteAt = i
       break
