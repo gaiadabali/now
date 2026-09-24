@@ -137,33 +137,50 @@ export function stripTags(html: string): string {
 }
 
 /**
- * A pull quote never cuts mid-word.
+ * A pull quote's first complete sentence, or nothing — never a truncation.
  *
- * The article page lifts a paragraph as its pull quote (a real `pullquote`
- * body block is what production is meant to supply — see `bodyBlocks.ts` —
- * and this is what runs until then). The previous version was
- * `quote.slice(0, 180).trimEnd() + '…'`, which truncates at a character
- * count with no regard for what is at that boundary: the owner's own
- * example ended "through K…", a family name split in half.
+ * Two rounds of the same defect. Round one was `quote.slice(0,
+ * 180).trimEnd() + '…'`, a raw character count that ended "through K…", a
+ * name split in half. Round two (`sentenceBound`, since removed) fixed the
+ * mid-word cut but still fell back to a WORD-boundary truncation when the
+ * chosen paragraph's own first sentence ran past the limit, which is how a
+ * real pull quote still ended "...management through…" — grammatically
+ * intact at the cut, and still not what the paragraph said. A magazine
+ * does not truncate a pull quote, full stop: if the sentence does not fit,
+ * this returns nothing, and the caller (`[slug]/page.tsx`) tries the next
+ * paragraph rather than trim the one it has.
  *
- * This prefers a SENTENCE boundary — the first `.`/`!`/`?` at or before
- * `limit`, so a quote that happens to make its point in one clean sentence
- * is used whole. Failing that (the first sentence itself runs past the
- * limit), it falls back to the last WORD boundary at or before it, which is
- * the one guarantee this function makes unconditionally: it never returns a
- * string that ends inside a word the source did not end there itself.
+ * The match looks for the FIRST `.`/`!`/`?` followed by whitespace or the
+ * end of the string — end-of-string matters because a paragraph's last
+ * sentence often has no trailing space to find. If that first sentence's
+ * own length is within `limit`, it is returned whole; if the paragraph has
+ * no sentence-ending punctuation at all, or its first sentence alone
+ * exceeds `limit`, this returns `null`.
+ *
+ * One more rejection, found by actually reading what this returned against
+ * a real article: a trailing address block — "Kimpton Suntaya Bali
+ * Ubud<br/>Jl. Bisma No. 31, Ubud" in the source — had its `<br>` stripped
+ * by `stripTags` with no space put back, so the plain text read "...Bali
+ * UbudJl. Bisma...", and "Jl." (Indonesian "Jalan", street) read as a
+ * sentence-ending abbreviation. The result was a pull quote reading
+ * "Kimpton Suntaya Bali UbudJl." — grammatically a "sentence" by the regex
+ * above, and gibberish. A lowercase letter immediately followed by an
+ * uppercase one with no space between is not something ordinary prose
+ * produces; it is what a missing space at a stripped tag boundary looks
+ * like, so a candidate containing one is rejected here rather than
+ * returned — which, through the same "try the next paragraph" loop that
+ * already exists in `[slug]/page.tsx`, is what keeps a non-prose block
+ * like this one from ever being offered as a quote at all.
  */
-export function sentenceBound(text: string, limit = 180): string {
+export function firstWholeSentence(text: string, limit = 180): string | null {
   const trimmed = text.trim()
-  if (trimmed.length <= limit) return trimmed
-
-  const window = trimmed.slice(0, limit + 1)
-  const sentenceEnd = Math.max(window.lastIndexOf('. '), window.lastIndexOf('! '), window.lastIndexOf('? '))
-  if (sentenceEnd > -1) return trimmed.slice(0, sentenceEnd + 1).trim()
-
-  const wordEnd = window.slice(0, limit).lastIndexOf(' ')
-  const cut = wordEnd > 0 ? wordEnd : limit
-  return `${trimmed.slice(0, cut).trimEnd()}…`
+  if (!trimmed) return null
+  const match = /^.*?[.!?](?=\s|$)/.exec(trimmed)
+  if (!match) return null
+  const sentence = match[0].trim()
+  if (sentence.length === 0 || sentence.length > limit) return null
+  if (/[a-z][A-Z]/.test(sentence)) return null
+  return sentence
 }
 
 function escapeText(text: string): string {

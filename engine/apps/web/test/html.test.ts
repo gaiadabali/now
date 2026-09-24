@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { decodeEntities, isSafeHref, sanitizeHtml, sentenceBound, stripTags } from '../src/lib/html.ts'
+import { decodeEntities, firstWholeSentence, isSafeHref, sanitizeHtml, stripTags } from '../src/lib/html.ts'
 
 // ---------------------------------------------------------------------------
 // What the archive actually contains
@@ -173,28 +173,49 @@ test('a raw-text element closed with whitespace still ends where it should', () 
 })
 
 // ---------------------------------------------------------------------------
-// sentenceBound — Edition 2's pull-quote fix
+// firstWholeSentence — Edition 2's pull-quote fix, corrected a second time
 // ---------------------------------------------------------------------------
 
-test('sentenceBound never cuts mid-word', () => {
-  // The owner's own example, reconstructed: a naive slice(0, 180) landed
-  // inside "Kimpton", so the quote read "...through K...". A word-boundary
-  // fallback must land on a real space, never inside a word.
+test('firstWholeSentence never truncates — too long returns null, not a cut', () => {
+  // The owner's own example, reconstructed. Round one truncated at a raw
+  // character count and landed inside "Kimpton" ("...through K..."). Round
+  // two fixed the mid-word cut but still fell back to a WORD boundary, and
+  // still ended "...management through...", grammatically clean and still
+  // not what the source said. A magazine renders no pull quote rather than
+  // any truncation, so this must return null, not an ellipsis.
   const long =
     'Guests can expect Kimpton signatures including the complimentary programme, ' +
-    'inspiring conversation with other guests and the hotel management through Kimpton Morning Kickstart'
-  const out = sentenceBound(long, 90)
-  assert.ok(out.endsWith('…'))
-  const withoutEllipsis = out.slice(0, -1)
-  assert.ok(long.startsWith(withoutEllipsis))
-  assert.equal(long[withoutEllipsis.length], ' ')
+    'inspiring conversation with other guests and the hotel management through Kimpton Morning Kickstart.'
+  assert.equal(firstWholeSentence(long, 90), null)
 })
 
-test('sentenceBound prefers a whole sentence when one fits', () => {
+test('firstWholeSentence returns the sentence whole when it fits', () => {
   const text = 'This is short. This second sentence is much longer and runs well past the limit given here.'
-  assert.equal(sentenceBound(text, 40), 'This is short.')
+  assert.equal(firstWholeSentence(text, 40), 'This is short.')
 })
 
-test('sentenceBound returns text unchanged when already within the limit', () => {
-  assert.equal(sentenceBound('Short and sweet.', 180), 'Short and sweet.')
+test('firstWholeSentence matches a sentence ending at the very end of the string, no trailing space', () => {
+  assert.equal(firstWholeSentence('Short and sweet.', 180), 'Short and sweet.')
+})
+
+test('firstWholeSentence returns null for a paragraph with no sentence-ending punctuation', () => {
+  assert.equal(firstWholeSentence('no terminator here at all just words', 180), null)
+})
+
+test('firstWholeSentence returns null for an empty or whitespace-only paragraph', () => {
+  assert.equal(firstWholeSentence('', 180), null)
+  assert.equal(firstWholeSentence('   ', 180), null)
+})
+
+test('firstWholeSentence takes the FIRST sentence, not the whole paragraph', () => {
+  assert.equal(firstWholeSentence('One. Two. Three.', 180), 'One.')
+})
+
+test('firstWholeSentence rejects a stripped-tag-boundary artifact rather than return gibberish', () => {
+  // Verbatim from a real article: stripTags collapsed a <br> between the
+  // venue name and its address with no space put back, so "Jl." (Indonesian
+  // "Jalan") read as a sentence-ending abbreviation and the naive match
+  // produced "Kimpton Suntaya Bali UbudJl." as a "pull quote". The
+  // lowercase-then-uppercase run with no space ("dJ") is the tell.
+  assert.equal(firstWholeSentence('Kimpton Suntaya Bali UbudJl. Bisma No. 31, Ubud', 180), null)
 })

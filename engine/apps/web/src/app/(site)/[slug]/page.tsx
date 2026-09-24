@@ -17,7 +17,7 @@ import {
   sectionOf,
 } from '@/lib/content'
 import { formatCount, formatDate, readingTime } from '@/lib/format'
-import { sentenceBound, stripTags } from '@/lib/html'
+import { firstWholeSentence, stripTags } from '@/lib/html'
 import { getArticleRails } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
@@ -90,13 +90,29 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   // Pull quote is lifted from the body rather than authored separately, the
   // way a sub-editor would. In production this comes from a `pullquote`
   // block in the Lexical body (see `bodyBlocks.ts` in the CMS package).
-  const quoteIndex = Math.min(3, article.paras.length - 1)
-  // Plain text: a pull quote is typeset, not marked up, and slicing it to 180
-  // characters would otherwise cut through the middle of a tag. `sentenceBound`
-  // is the fix for the owner's own example: a naive 180-character slice ended
-  // "through K…", a name cut in half — this prefers a sentence boundary and
-  // otherwise a word boundary, never a mid-word cut.
-  const quote = sentenceBound(stripTags(article.paras[quoteIndex] ?? ''), 180)
+  //
+  // Starts at the same paragraph as before (the 4th, or the last one there
+  // is) and tries `firstWholeSentence` on it; if that paragraph's own first
+  // sentence does not fit whole, tries the NEXT paragraph, and so on to the
+  // end of the article. A magazine does not truncate a pull quote — the
+  // previous version fell back to a word-boundary cut and still ended
+  // "...management through…", grammatically clean and still not what the
+  // source said. If nothing in the article produces a whole sentence
+  // within the limit, `quote` stays `null` and no pull quote renders at
+  // all; `quoteAt` is where the body splits around it, and stays at the
+  // ORIGINAL paragraph when nothing was found, so the layout is unaffected
+  // by a search that came up empty.
+  const startAt = Math.min(3, article.paras.length - 1)
+  let quote: string | null = null
+  let quoteAt = startAt
+  for (let i = startAt; i < article.paras.length; i++) {
+    const candidate = firstWholeSentence(stripTags(article.paras[i] ?? ''), 180)
+    if (candidate) {
+      quote = candidate
+      quoteAt = i
+      break
+    }
+  }
   const shareUrl = `https://www.${site.hostname}/${article.slug}`
 
   return (
@@ -170,17 +186,30 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
               lib/payload.ts), so a page cannot receive unvetted markup. The
               alternative — what this used to do — escaped the archive's own
               formatting and printed `<strong>` tags at readers.
+
+              Split around `quoteAt` only when a pull quote was actually
+              found (`quote !== null`, see above) — nothing in the archive
+              guarantees one exists that fits whole, and a magazine renders
+              NO pull quote rather than a truncated one when it does not. The
+              paragraphs before the split have no endmark to carry, so they
+              render plain; the endmark always belongs to the true last
+              paragraph, which is why every paragraph after the split (or
+              every paragraph, when there is no split at all) is wrapped so
+              it can carry one as a sibling rather than fight
+              `dangerouslySetInnerHTML` for a `<p>`'s only child slot.
             */}
-            {article.paras.slice(0, quoteIndex + 1).map((p, i) => (
+            {article.paras.slice(0, quote ? quoteAt + 1 : 0).map((p, i) => (
               <p key={i} dangerouslySetInnerHTML={{ __html: p }} />
             ))}
 
-            <figure className="pullquote">
-              <p className="pullquote__text">{quote}</p>
-              <figcaption className="pullquote__attr">From the report</figcaption>
-            </figure>
+            {quote ? (
+              <figure className="pullquote">
+                <p className="pullquote__text">{quote}</p>
+                <figcaption className="pullquote__attr">From the report</figcaption>
+              </figure>
+            ) : null}
 
-            {article.paras.slice(quoteIndex + 1).map((p, i, arr) => (
+            {article.paras.slice(quote ? quoteAt + 1 : 0).map((p, i, arr) => (
               <p key={i}>
                 <span dangerouslySetInnerHTML={{ __html: p }} />
                 {i === arr.length - 1 ? <span className="endmark" aria-label="End of article" /> : null}

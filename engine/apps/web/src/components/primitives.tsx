@@ -158,11 +158,14 @@ export function Signup({ site }: { site: SiteConfig }) {
   return (
     <div className="signup">
       <p className="bandhead__kicker">The Weekly</p>
-      <h2 className="signup__title">
-        Everything worth your
-        <br />
-        attention, once a week.
-      </h2>
+      {/* No hard-coded <br/> — that was the actual cause of "your" landing
+          alone on its own line in a narrow column: a forced break between
+          "your" and "attention" survives regardless of `text-wrap: balance`
+          on `.signup__title`, because `text-wrap` only ever chooses among
+          natural wrap points, never removes an explicit one. Plain text
+          lets the column's own width decide where the two (or more) lines
+          fall, and `balance` (magazine.css) evens them out. */}
+      <h2 className="signup__title">Everything worth your attention, once a week.</h2>
       <form className="signup__form" action={subscribe}>
         <label className="visually-hidden" htmlFor="signup-email">
           Email address

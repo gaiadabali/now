@@ -649,6 +649,13 @@ body.hdr-condensed .masthead__edition { display: none; }
 .grid--dept__side > * + * { border-top: var(--hair); margin-top: var(--space-m); padding-top: var(--space-m); }
 @media (max-width: 62rem) { .grid--dept { grid-template-columns: 1fr; } }
 
+/* A second `department:*` band on the same page (lib/bandVariant.ts):
+   the same grid, columns swapped — the side list first in the markup so it
+   lands in the (now-narrower) first column, the lead second so it keeps
+   the larger share on the opposite side instead. */
+.grid--dept--mirror { grid-template-columns: 1fr 1.3fr; }
+@media (max-width: 62rem) { .grid--dept--mirror { grid-template-columns: 1fr; } }
+
 /* Plan around it (article page, Edition 2) — a column per `plan-<section>`
    rail, 1 to 3 of them (`ArticleRails.tsx`). `auto-fit` with a `minmax`
    floor is what makes "degrades cleanly to 1, 2 or 3 columns" true without
@@ -1007,7 +1014,12 @@ body.hdr-condensed .aside-sticky { top: calc(var(--space-s) + 3px); }
    ========================================================================== */
 
 .signup { border-top: var(--edge); padding-top: var(--space-l); }
-.signup__title { font-family: var(--font-display); font-weight: 300; font-size: var(--t-headline); color: var(--type); line-height: 1.1; margin-top: var(--space-2xs); }
+/* `text-wrap: balance` — the newsletter unit sits in a narrow aside column
+   (the article page's sticky rail, `.rail`) as often as it sits full-width,
+   and an unbalanced wrap there was breaking "your" onto its own line. Any
+   display heading in a column this narrow wants the same treatment; this
+   is the one that was actually found doing it. */
+.signup__title { font-family: var(--font-display); font-weight: 300; font-size: var(--t-headline); color: var(--type); line-height: 1.1; margin-top: var(--space-2xs); text-wrap: balance; }
 .signup__form { display: flex; gap: var(--space-2xs); margin-top: var(--space-m); max-width: 30rem; }
 .signup__input { flex: 1; min-width: 0; border: var(--edge); background: var(--paper); padding: 0.7em 0.8em; font-size: var(--t-small); }
 .signup__input::placeholder { color: var(--faint); }
