@@ -19,7 +19,43 @@
    class it renders is styled here. Three rows: utility, brand, nav — §3.
    ========================================================================== */
 
-.masthead { background: var(--paper); border-bottom: var(--edge); }
+/* Sticky, and condensing (Edition 2 — the brief's "sticky header that
+   condenses on scroll, hide on scroll down, reveal on up"). The two states
+   are classes `HeaderScroll` sets on `<body>`, never on this element
+   directly — a server component cannot hold client state, and the whole
+   point of that file is that the masthead's own markup never changes.
+   Transitions are on `transform`/`padding` only: both are compositor-only
+   or layout-cheap, which is what "fast" has to mean for something that
+   fires on every scroll frame. */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background: var(--paper);
+  border-bottom: var(--edge);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+body.hdr-condensed .masthead { box-shadow: 0 1px 0 var(--hair) , 0 8px 16px -12px rgba(29, 29, 27, 0.18); }
+body.hdr-hidden .masthead { transform: translateY(-100%); }
+
+/* Condensed: the utility row (dateline, search, account) folds away and the
+   brand row shrinks, so the reader keeps the logo and the section nav — the
+   two things worth the vertical cost while scrolling a long article — and
+   gives the rest of that space back to the page. `interpolate-size` is not
+   relied on: these are ordinary height/padding changes on an already-cheap
+   transition, and a reader with reduced motion just gets the smaller header
+   instantly instead of eased, which is `--dur` collapsing to 0 same as
+   everywhere else. */
+/* The utility row stays — "search reachable from the header" (the brief)
+   means at every scroll position, not only at the top, so Search/Sign
+   in/Subscribe are never among the things condensing removes. Its own
+   padding still tightens; the real space is given back by the brand row
+   below, where the logo and the edition line live. */
+body.hdr-condensed .masthead__util { padding-block: var(--space-3xs); }
+body.hdr-condensed .masthead__brand { padding-block: var(--space-2xs); }
+body.hdr-condensed .masthead__logo { height: 28px; }
+body.hdr-condensed .masthead__edition { display: none; }
 
 .masthead__util {
   display: flex;
@@ -86,31 +122,106 @@
 
 .masthead__nav { border-top: var(--edge); border-bottom: var(--hair); }
 
-.masthead__nav-list {
-  display: flex;
-  gap: clamp(var(--space-m), 2.6vw, var(--space-xl));
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-block: var(--space-xs);
-}
-.masthead__nav-list::-webkit-scrollbar { display: none; }
+/* ---- The nav drawer (Edition 2) ------------------------------------------
+   `<details class="navdrawer">` in Masthead.tsx. Below 62rem it is a real
+   disclosure: closed by default (a phone should not spend a third of its
+   first screen on a nav bar), opened by a real `<summary>` — focusable,
+   `Enter`/`Space` native, arrow-navigable by every screen reader without a
+   line of ARIA. At 62rem and above the summary is hidden and the panel is
+   forced open regardless of the `[open]` attribute, which is what lets one
+   markup tree serve the old horizontal list AND the new drawer: nothing
+   here reads `matchMedia` or renders twice. */
+.navdrawer { border: 0; }
+.navdrawer summary { list-style: none; cursor: pointer; }
+.navdrawer summary::-webkit-details-marker,
+.navdrawer summary::marker { display: none; content: ''; }
 
-.masthead__nav-link {
+.navdrawer__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding-block: var(--space-s);
   font-family: var(--font-sans);
   font-size: var(--t-small);
   font-weight: 500;
   color: var(--type);
-  white-space: nowrap;
-  padding-block: var(--space-3xs);
-  border-bottom: 2px solid transparent;
-  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
+/* Three bars → an X. Pure CSS, no icon font and no SVG sprite for a shape
+   this simple; a border-box square with a centre bar plus two pseudo-
+   element bars, rotated open. */
+.navdrawer__icon,
+.navdrawer__icon::before,
+.navdrawer__icon::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.navdrawer__icon { position: relative; }
+.navdrawer__icon::before,
+.navdrawer__icon::after { content: ''; position: absolute; left: 0; }
+.navdrawer__icon::before { top: -6px; }
+.navdrawer__icon::after { top: 6px; }
+.navdrawer[open] .navdrawer__icon { background: transparent; }
+.navdrawer[open] .navdrawer__icon::before { transform: translateY(6px) rotate(45deg); }
+.navdrawer[open] .navdrawer__icon::after { transform: translateY(-6px) rotate(-45deg); }
+
+.navdrawer__panel { padding-bottom: var(--space-s); }
+
+.masthead__nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.masthead__nav-link {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  font-weight: 500;
+  color: var(--type);
+  padding-block: var(--space-xs);
+  border-bottom: var(--hair);
+}
+.masthead__nav-list li:first-child .masthead__nav-link { border-top: var(--hair); }
+
 .masthead__nav-link:hover,
-.masthead__nav-link[aria-current='page'] {
-  color: var(--red);
-  border-bottom-color: var(--red);
+.masthead__nav-link[aria-current='page'] { color: var(--red); }
+
+@media (min-width: 62rem) {
+  .navdrawer__summary { display: none; }
+  /* Forced open: the `<details>` element itself still has no `[open]`
+     attribute on desktop (nothing set it), so this overrides its own
+     default `display: none` on the content rather than relying on the
+     attribute at all. */
+  .navdrawer__panel { display: block !important; padding-bottom: 0; }
+
+  .masthead__nav-list {
+    flex-direction: row;
+    gap: clamp(var(--space-m), 2.6vw, var(--space-xl));
+    padding-block: var(--space-xs);
+  }
+
+  .masthead__nav-link {
+    padding-block: var(--space-3xs);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    /* The "draw" underline (DESIGN-SYSTEM motion): the rule grows from the
+       left on hover/focus rather than snapping on, using a background
+       strip rather than `border-bottom` so its width can transition — a
+       border cannot animate from 0 the way a background-size can. */
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 2px;
+    transition: background-size var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .masthead__nav-link:hover,
+  .masthead__nav-link:focus-visible,
+  .masthead__nav-link[aria-current='page'] { background-size: 100% 2px; }
 }
 
 /* ==========================================================================
@@ -121,6 +232,12 @@
 
 .band { padding-block: var(--band-pad); }
 .band--hair { border-top: var(--hair); }
+/* The lead package alone: denser than the standard band rhythm on purpose
+   — "the next band's head visible" (a 1440×900 laptop) is a real budget,
+   measured against the built app, and the lead is the one band whose
+   bottom padding is worth spending some of that budget on. Every other
+   band keeps the full `--band-pad` rhythm. */
+.band--lead { padding-bottom: var(--space-l); }
 .band--ivory { background: var(--ivory); }
 .band--ink { background: var(--ink); color: var(--invert); }
 
@@ -180,36 +297,95 @@
 .band--ink .bandhead__more { color: var(--invert); }
 
 /* ==========================================================================
-   3. COVER — the lead story, full-bleed, never viewport-sized (§3: "It is a
-   cover, not a hero — the bands below it must be visible on a laptop").
+   3. THE LEAD PACKAGE (Edition 2)
+   The owner's first complaint: "the first screen is masthead plus a single
+   21:9 cover — no secondary top stories, no timestamped latest." This
+   replaces the old full-bleed `.cover` with a package: a large lead, 3-4
+   secondary top stories beside it, and a timestamped strip below both.
+   Still never viewport-sized — the design system's own rule for a cover
+   holds for a lead package too: it is a lead, not a hero, and what changed
+   is that the SAME vertical budget now also fits the secondaries and the
+   strip, sized against the masthead's measured height rather than against
+   the viewport.
    ========================================================================== */
 
-.cover {
+.frontlead {
+  display: grid;
+  gap: var(--gutter);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 62rem) {
+  /* `align-items: start`, not grid's own default `stretch` — the
+     secondaries column is a list of 3-4 items and is very often taller
+     than the hero's own fixed-height media box. `stretch` was found
+     stretching `.frontlead__hero` (the grid item) to match the TALLER
+     column, which pulled `.frontlead__body`'s `bottom: 0` down with it —
+     the headline rendered in the empty gap below the photograph instead of
+     overlaid on it. Each column keeps its own natural height instead. */
+  .frontlead { grid-template-columns: 1.6fr 1fr; align-items: start; }
+}
+
+.frontlead__hero { position: relative; display: block; }
+
+.frontlead__media {
   position: relative;
-  width: 100%;
-  aspect-ratio: 21 / 9;
+  display: block;
   overflow: hidden;
   background: var(--ink);
   isolation: isolate;
+  /* A fixed band of heights rather than an aspect-ratio: the hero shares a
+     row with the secondaries column, and an aspect-ratio tall enough to
+     read as "large" at 1.6fr width would answer to the WIDTH, which is
+     exactly what made the old full-bleed cover eat the whole first screen
+     on its own. Capping the height directly is what leaves room for the
+     secondaries and the strip beneath at a 1440×900 laptop. */
+  height: clamp(300px, 32vw, 400px);
+}
+/* Phone: headline moves below the image rather than over it — "never
+   clipped" (the brief's own words for what the old cover did at 390px). An
+   overlay headline is a desktop-only bet on how much scrim a photograph
+   needs; below it, there is no bet to get wrong. `.frontlead__body` is a
+   SIBLING of `.frontlead__media` (not a child), precisely so this
+   media/body split can flip from "overlaid" to "stacked" by changing only
+   position and height here, with nothing fighting `next/image`'s own inline
+   styles on the `fill` image inside. */
+@media (max-width: 61.9375rem) {
+  .frontlead__media { height: auto; aspect-ratio: 4 / 3; }
 }
 
-.cover__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.frontlead__hero-img { object-fit: cover; transition: transform 600ms var(--ease); }
+.frontlead__hero:hover .frontlead__hero-img { transform: scale(1.02); }
 
-/* Photographs vary in luminance; the scrim guarantees the headline reads at
-   AA contrast against ANY source image rather than the one used in dev. */
-.cover::after {
-  content: '';
+.frontlead__scrim {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  background: linear-gradient(to top, rgba(10, 9, 8, 0.92) 0%, rgba(10, 9, 8, 0.5) 40%, rgba(10, 9, 8, 0) 72%);
+  /* Photographs vary in luminance; the scrim guarantees the headline reads
+     at AA contrast against ANY source image rather than the one used in
+     dev. */
+  background: linear-gradient(to top, rgba(10, 9, 8, 0.92) 0%, rgba(10, 9, 8, 0.5) 45%, rgba(10, 9, 8, 0) 78%);
+}
+@media (max-width: 61.9375rem) {
+  /* No scrim below the image — the headline needs the ink stock behind it,
+     not a gradient over a photograph it no longer sits on. */
+  .frontlead__scrim { display: none; }
 }
 
-.cover__body {
+.frontlead__body {
+  /* Explicit, not left to `position: absolute`'s auto block-level
+     promotion: on mobile this becomes `position: static` below, and a
+     `<span>` left at its default `display: inline` with block-level
+     children (the headline, the meta line) paints its background only
+     behind the FIRST inline fragment — the kicker — which is exactly the
+     "dark box around the kicker, white behind the headline" bug this
+     replaced. */
+  display: block;
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  padding-bottom: clamp(var(--space-l), 4vw, var(--space-xl));
+  padding: clamp(var(--space-m), 3vw, var(--space-l));
+}
+@media (max-width: 61.9375rem) {
+  .frontlead__body { position: static; background: var(--ink); padding: var(--space-m); }
 }
 
 .cover__kicker {
@@ -225,17 +401,27 @@
 }
 
 .cover__headline {
+  display: block;
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: var(--t-cover);
+  /* NOT `--t-cover`. That token was sized for the old full-bleed, viewport-
+     width cover; this hero shares its row with a secondaries column and a
+     fixed-height media box (`.frontlead__media`), and `--t-cover` on a real
+     11-word headline overflowed that box by some 250px in review — the
+     text spilling out both above the photograph and below the fold. Sized
+     against `--t-headline` (the article h1) instead: still the largest
+     thing on the front page, but built to fit a real archive headline
+     inside a bounded box rather than an empty comp string. */
+  font-size: clamp(1.7rem, 1.1rem + 2.1vw, 2.6rem);
   letter-spacing: var(--track-display);
-  line-height: 1.02;
+  line-height: 1.08;
   color: var(--invert);
-  max-width: 19ch;
+  max-width: 24ch;
   text-wrap: balance;
 }
 
 .cover__meta {
+  display: block;
   margin-top: var(--space-m);
   font-family: var(--font-sans);
   font-size: var(--t-micro);
@@ -244,6 +430,46 @@
   color: var(--invert);
   opacity: 0.85;
 }
+
+/* The secondary top stories beside the lead — `card--horizontal`, reused,
+   ruled rather than gapped so the column reads as one list. Thumbnails are
+   scoped smaller here than `card--horizontal`'s other use (the Hotels
+   department band): measured against the hero's fixed 460px, the shared
+   component's default clamp (up to 160px per row) made three rows alone
+   taller than the photograph beside them, which pushed the "Just in" strip
+   — and the next band's own head — well past a 900px fold. */
+.frontlead__secondaries { display: flex; flex-direction: column; }
+.frontlead__secondaries > .card + .card { border-top: var(--hair); margin-top: var(--space-s); padding-top: var(--space-s); }
+.frontlead__secondaries .card__figure { flex-basis: clamp(64px, 12vw, 96px); }
+
+/* The timestamped "Latest" strip — real, live headlines, not a caption.
+   A single flex row that wraps, so it costs one or two lines rather than a
+   whole extra band; DESIGN-SYSTEM's index treatment ("no thumbnails") in
+   miniature. */
+.fronticker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs) var(--space-l);
+  margin-top: var(--space-s);
+  padding-top: var(--space-xs);
+  border-top: var(--edge);
+}
+.fronticker__label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-family: var(--font-label);
+  font-size: var(--t-meta);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--red);
+}
+.fronticker__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.fronticker__item { display: inline-flex; align-items: baseline; gap: var(--space-2xs); font-size: var(--t-small); }
+.fronticker__item a { font-weight: 500; }
+.fronticker__item a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.fronticker__time { color: var(--mute); font-size: var(--t-micro); letter-spacing: var(--track-micro); text-transform: uppercase; white-space: nowrap; }
 
 /* ==========================================================================
    4. STORY CARD
@@ -263,6 +489,20 @@
 }
 
 .card:hover .card__img { transform: scale(1.02); }
+
+/* ---- Image fade-in (Edition 2 motion) ------------------------------------
+   Not tied to the actual decode event — that needs a script per `<img>` —
+   but width/height (or `fill` + an aspect-ratio'd container) are already
+   reserved by every image on the site, so this is opacity only and never
+   touches layout: zero CLS cost either way. A flat `both`-filling animation
+   rather than a transition because there is no state change to transition
+   FROM; it simply plays once on paint. */
+@media (prefers-reduced-motion: no-preference) {
+  .card__img, .article-hero__img, .frontlead__hero-img, .lead__img {
+    animation: img-fade-in 480ms var(--ease) both;
+  }
+}
+@keyframes img-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 .card__headline { font-size: var(--t-title); letter-spacing: var(--track-title); }
 .card:hover .card__headline { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
@@ -581,7 +821,55 @@
 
 .article-head__title { font-size: var(--t-headline); letter-spacing: var(--track-display); }
 
+/* Standfirst hierarchy: the article's own dek reads at full body ink
+   rather than `--mute` (used everywhere a dek is a secondary caption beside
+   a photograph) and a touch wider, because on the article page itself the
+   standfirst has no competing photograph yet — it IS the second thing a
+   reader reads, not a caption. Was flat grey italic at card size; the
+   owner's own complaint. */
+.article-head .dek { color: var(--body); max-width: 46ch; }
+
 .article-hero__img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--ivory); }
+
+/* ---- Reading progress bar -------------------------------------------------
+   A thin line pinned above everything, including the condensed header — a
+   reader mid-article should always be able to glance at it. Entirely
+   `animation-timeline: scroll(root)`: no scroll listener, no layout read,
+   nothing that can jank the frame it is trying to describe. Unsupported
+   browsers get a bar that stays at zero width — inert, not broken, the
+   same "absent rather than wrong" rule §S2 applies to a rail with no data. */
+.readbar { position: fixed; inset-inline: 0; top: 0; height: 3px; z-index: calc(var(--z-header) + 5); pointer-events: none; }
+.readbar__fill { display: block; height: 100%; width: 100%; background: var(--red); transform: scaleX(0); transform-origin: 0 50%; }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .readbar__fill { animation: readbar-grow linear both; animation-timeline: scroll(root); }
+  }
+}
+@keyframes readbar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---- The article's sticky aside ------------------------------------------
+   Only the newsletter unit lived here before ("holds only a newsletter
+   box" — the owner's own complaint). Share now sits above it, and the whole
+   rail follows the reader down the prose column rather than ending where
+   the prose happened to be shorter than the viewport. */
+.aside-sticky { position: sticky; top: calc(var(--space-l) + 3px); display: flex; flex-direction: column; gap: var(--space-xl); }
+body.hdr-condensed .aside-sticky { top: calc(var(--space-s) + 3px); }
+
+.share { border-top: var(--edge); padding-top: var(--space-m); }
+.share__list { display: flex; flex-direction: column; gap: var(--space-2xs); margin-top: var(--space-s); }
+.share__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--type);
+  padding-block: var(--space-2xs);
+  border-bottom: var(--hair);
+  transition: color var(--dur) var(--ease);
+}
+.share__link:hover { color: var(--red); }
 
 /* ==========================================================================
    10. FACET BAR / PAGER — the engine made visible
@@ -709,7 +997,7 @@
    Deliberately the loudest thing on the site: brand red, reversed out, above
    everything. Sticky rather than fixed so it cannot cover the headline it
    sits above. */
-.preview-bar { position: sticky; top: 0; z-index: 50; background: var(--red); color: var(--paper); font-family: var(--font-sans); font-size: var(--t-small); padding-block: var(--space-2xs); }
+.preview-bar { position: sticky; top: 0; z-index: var(--z-preview); background: var(--red); color: var(--paper); font-family: var(--font-sans); font-size: var(--t-small); padding-block: var(--space-2xs); }
 .preview-bar__inner { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-s); }
 .preview-bar strong { text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--t-meta); }
 .preview-bar__exit { margin-left: auto; color: var(--paper); text-decoration: underline; text-underline-offset: 0.2em; white-space: nowrap; }
