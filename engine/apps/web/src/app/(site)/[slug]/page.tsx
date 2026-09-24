@@ -4,9 +4,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ReadNextBand, PlanAroundBand } from '@/components/ArticleRails'
 import { EntityBeacon } from '@/components/Beacon'
 import { StoryCard } from '@/components/StoryCard'
-import { Band, BandHead, Signup } from '@/components/primitives'
+import { Signup } from '@/components/primitives'
 import {
   getBySlug,
   getSectionPage,
@@ -240,32 +241,15 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
           labelled. Do not add a rail here that recommends by this story's own
           section: on a hotel story that is a rail of hotels, which is the one
           thing this page must never show (recommend.ts, "The one rule").
-          More than one rail must not read as the same band twice — DESIGN-
-          SYSTEM §2's "grid changes with the job" applies here too, so a
-          second rail switches to the index treatment rather than repeating
-          the card grid the first one just used. */}
-      {rails.map((rail, i) => (
-        <Band key={rail.key} reveal>
-          <div className="shell">
-            <BandHead kicker={rail.kicker} title={rail.title} />
-            {i % 2 === 0 ? (
-              <div className="grid grid--3 grid--ruled">
-                {/* Engine-ranked, so §10's position bias has to be corrected
-                    for — the slot is recorded on the impression AND the click. */}
-                {rail.items.map((a) => (
-                  <StoryCard key={a.id} article={a} locale={locale} timeZone={tz} rail={a.rail} position={a.position} />
-                ))}
-              </div>
-            ) : (
-              <div className="grid--index">
-                {rail.items.map((a) => (
-                  <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={a.rail} position={a.position} />
-                ))}
-              </div>
-            )}
-          </div>
-        </Band>
-      ))}
+          Read Next is the only rail every article gets, venue or not, and
+          stays its own full band. On a venue story the engine also returns
+          up to three `plan-<section>` rails ("Plan around it") — grouped
+          into ONE band with a column each (see ArticleRails.tsx), so a
+          hotel story does not end with four stacked 3-up bands. Today's
+          stub returns Read Next only, so `PlanAroundBand` renders nothing —
+          it is already correct for the day the engine starts sending them. */}
+      <ReadNextBand rail={rails.find((r) => r.key === 'read-next')} locale={locale} timeZone={tz} />
+      <PlanAroundBand rails={rails.filter((r) => r.key.startsWith('plan-'))} locale={locale} timeZone={tz} />
     </article>
   )
 }
@@ -344,7 +328,7 @@ async function SectionIndex({
         </span>
       </div>
 
-      <section className="band" style={{ paddingTop: 0 }}>
+      <section className="band" style={{ paddingTop: 0 }} data-reveal>
         <div className="grid--index">
           {articles.map((a, i) => (
             <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={slug} position={i + 1} />

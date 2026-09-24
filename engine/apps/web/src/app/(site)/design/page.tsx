@@ -1,6 +1,8 @@
+import { PlanAroundBand, ReadNextBand } from '@/components/ArticleRails'
 import { StoryCard } from '@/components/StoryCard'
 import { Badge, BandHead, Byline, PartnerBadge } from '@/components/primitives'
-import { getLatest } from '@/lib/content'
+import { getLatest, type Article } from '@/lib/content'
+import type { ArticleRail } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
 export const metadata = { title: 'Design system', robots: { index: false } }
@@ -17,12 +19,18 @@ export const metadata = { title: 'Design system', robots: { index: false } }
  * is read from a token or from real content — nothing on this page is typed
  * in by hand, for the same reason nothing on the homepage is.
  */
+/** Real articles, a FIXTURE rail assignment — see the specimen below for why. */
+function toRailItems(arts: Article[], rail: string) {
+  return arts.map((a, i) => ({ ...a, rail, position: i + 1 }))
+}
+
 export default async function DesignPage() {
   const site = await getSiteConfig()
-  const articles = await getLatest(6)
+  const articles = await getLatest(9)
 
   return (
-    <div className="shell band">
+    <>
+      <div className="shell band">
       <p className="kicker kicker--red">Internal</p>
       <h1 className="display display--light" style={{ fontSize: 'var(--t-display)' }}>
         The design system
@@ -263,6 +271,51 @@ export default async function DesignPage() {
           <StoryCard article={articles[1]} locale={site.locale} timeZone={site.timezone} />
         </div>
       </section>
-    </div>
+
+      {/* ------------------------------------------- article rails, preview --
+          `getArticleRails()` (lib/recommend.ts, WS1) will return, for a venue
+          story, `read-next` plus up to three `plan-<section>` rails. The
+          live article page already renders that shape; today's engine stub
+          only ever returns `read-next`, so the "Plan around it" band below
+          cannot be seen on a real article yet. This is a FIXTURE — real
+          articles, a made-up rail assignment — built here rather than on the
+          live page, per the instruction that this shape is proven on
+          `/design` (or a test) and never on a reader-facing route until the
+          engine actually sends it. */}
+      <section className="band">
+        <BandHead
+          kicker="Edition 2 — preview"
+          title="Article rails"
+          note="fixture data — the live article page never renders a plan-* rail until getArticleRails() sends one"
+        />
+        <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
+          Read Next stays its own full band — every article gets it, venue or not. Up to three
+          "Plan around it" rails (a venue story only) group into ONE band, a column per rail,
+          rather than ending a hotel story with four stacked 3-up bands.
+        </p>
+      </section>
+      </div>
+      <ReadNextBand
+        rail={{
+          key: 'read-next',
+          kicker: 'Keep reading',
+          title: 'Read Next',
+          items: toRailItems(articles.slice(0, 3), 'read-next'),
+        }}
+        locale={site.locale}
+        timeZone={site.timezone}
+      />
+      <PlanAroundBand
+        rails={
+          [
+            { key: 'plan-dining', kicker: 'Plan around it', title: 'Where to Eat & Drink', items: toRailItems(articles.slice(3, 6), 'plan-dining') },
+            { key: 'plan-things-to-do', kicker: 'Plan around it', title: 'Things to Do Nearby', items: toRailItems(articles.slice(4, 7), 'plan-things-to-do') },
+            { key: 'plan-stay', kicker: 'Plan around it', title: 'Where to Stay', items: toRailItems(articles.slice(5, 8), 'plan-stay') },
+          ] satisfies ArticleRail[]
+        }
+        locale={site.locale}
+        timeZone={site.timezone}
+      />
+    </>
   )
 }
