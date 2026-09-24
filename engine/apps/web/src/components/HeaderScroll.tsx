@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 
 /**
  * The masthead's two scroll behaviours — condense, and hide-on-down /
@@ -26,8 +27,23 @@ import { useEffect } from 'react'
  * visible, never hidden. Nothing here HIDES content; it only ever adds a
  * class that makes the header smaller or temporarily off-screen, and the
  * nav underneath is real links either way.
+ *
+ * A second, unconditional effect closes the mobile nav drawer on every
+ * pathname change. App Router keeps a shared layout — and everything in
+ * it, including the masthead — mounted across a client-side navigation
+ * inside that layout, so a `<details open>` a reader opened on the
+ * previous page stays open on the next one unless something closes it.
+ * Not gated on `prefers-reduced-motion`: an open drawer sitting over a new
+ * page is a correctness bug, not a decorative flourish, so it closes
+ * either way.
  */
 export function HeaderScroll() {
+  const pathname = usePathname()
+
+  useEffect(() => {
+    document.querySelectorAll('details.navdrawer[open]').forEach((el) => el.removeAttribute('open'))
+  }, [pathname])
+
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 

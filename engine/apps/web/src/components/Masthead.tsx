@@ -40,12 +40,18 @@ import type { SiteConfig } from '@/lib/site'
  *   pulls in, and it renders nothing — it only toggles two classes on
  *   `<body>` (see that file). The masthead itself is unchanged: still a
  *   server component, still rendered once, still fully there without JS.
- * - The nav no longer scrolls sideways at 360px. `site.nav` now sits inside
- *   a native `<details>` disclosure below `62rem` — a real drawer, keyboard-
- *   operable and screen-reader-correct for free, needing no script to open
- *   or close it. Above `62rem` the same markup renders as the horizontal
- *   list it always was; `magazine.css` is what switches between the two,
- *   not this component.
+ * - The nav no longer scrolls sideways at 360px. `site.nav` renders TWICE —
+ *   a plain `<nav>` row shown at `62rem` and above, and a native `<details>`
+ *   drawer shown below it — and `magazine.css` shows exactly one of the two
+ *   with `display: none` (which also keeps the hidden copy out of the
+ *   accessibility tree; a reader's screen reader never meets seven links
+ *   twice). This was a `<details>` forced open above `62rem` in the first
+ *   pass, on the theory that one tree could serve both — it could not:
+ *   Chromium hides a CLOSED `<details>`'s content via the `::details-content`
+ *   pseudo-element (`content-visibility: hidden`), which nothing short of
+ *   that same new pseudo can override, and browser support for it is too
+ *   new to bet a desktop nav row on. Duplicating seven links is cheaper
+ *   than that bet.
  * - Condensing is the shrink a reader sees on scroll — smaller logo, the
  *   utility row folded away — driven entirely by the `hdr-condensed` class
  *   `HeaderScroll` sets; there is no second markup branch for it here.
@@ -86,6 +92,22 @@ export function Masthead({
    */
   accountsEnabled?: boolean
 }) {
+  // Rendered twice (see the doc comment above) — a `key` prefix keeps React
+  // from treating the two copies' list items as the same nodes across a
+  // navigation, which does not matter for correctness here (both are plain
+  // links) but avoids two identically-keyed lists existing in one tree.
+  const navItems = (rowKeyPrefix: string) => (
+    <ul className="masthead__nav-list">
+      {site.nav.map((item) => (
+        <li key={`${rowKeyPrefix}-${item.href}`}>
+          <Link className="masthead__nav-link" href={item.href}>
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+
   return (
     <header className="masthead">
       <HeaderScroll />
@@ -128,24 +150,25 @@ export function Masthead({
 
       <div className="masthead__nav">
         <div className="shell">
-          {/* `open` is never set — closed is the correct default on a phone,
-              and `magazine.css` forces the panel open above 62rem regardless
-              of this attribute, so the same markup serves both. */}
+          {/* Desktop row: plain, always in the DOM, hidden below 62rem with
+              `display: none` — which also removes it from the a11y tree, so
+              a screen-reader user below that width meets the drawer copy
+              only. */}
+          <nav className="navlist" aria-label="Sections">
+            {navItems('row')}
+          </nav>
+
+          {/* Phone drawer: `open` is never set — closed is the correct
+              default on a phone, and it is hidden entirely (not merely
+              forced shut) at 62rem and above, where the row above is the
+              one live copy. */}
           <details className="navdrawer">
             <summary className="navdrawer__summary">
               <span className="navdrawer__icon" aria-hidden="true" />
               <span className="navdrawer__label">Sections</span>
             </summary>
             <nav className="navdrawer__panel" aria-label="Sections">
-              <ul className="masthead__nav-list">
-                {site.nav.map((item) => (
-                  <li key={item.href}>
-                    <Link className="masthead__nav-link" href={item.href}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {navItems('drawer')}
             </nav>
           </details>
         </div>
