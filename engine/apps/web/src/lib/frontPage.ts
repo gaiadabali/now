@@ -6,6 +6,7 @@ import {
   getSectionPage,
   type Article,
 } from '@/lib/content'
+import { departmentVariant, type DepartmentVariant } from '@/lib/bandVariant'
 import { areasWithCounts } from '@/lib/payload'
 import { getForYou, type ArticleRail, type ReaderContext } from '@/lib/recommend'
 import { getSiteConfig, type HomeRail, type SiteConfig } from '@/lib/site'
@@ -35,7 +36,21 @@ export type FrontBand =
   | { key: 'lead'; kind: 'lead'; hero: FrontLeadItem; secondaries: Article[]; ticker: Article[] }
   | { key: 'edit'; kind: 'edit'; kicker: string; title: string; items: Article[] }
   | { key: 'for-you'; kind: 'for-you'; rail: ArticleRail }
-  | { key: `department:${string}`; kind: 'department'; section: string; kicker: string; title: string; moreHref: string; lead: Article; side: Article[] }
+  | {
+      key: `department:${string}`
+      kind: 'department'
+      section: string
+      kicker: string
+      title: string
+      moreHref: string
+      lead: Article
+      side: Article[]
+      /** See `lib/bandVariant.ts`: only the first department band on the
+       *  page is `'ivory'` — an editor can place several `department:*`
+       *  bands in `home_rails`, and `--ivory` is a per-page budget, not a
+       *  per-band one. */
+      variant: DepartmentVariant
+    }
   | { key: 'guides'; kind: 'guides'; kicker: string; title: string; items: Article[] }
   | { key: 'latest'; kind: 'latest'; kicker: string; title: string; items: Article[] }
   | { key: 'explore'; kind: 'explore'; kicker: string; title: string; areas: Array<{ slug: string; label: string; count: number }> }
@@ -45,11 +60,18 @@ export type FrontPage = {
   bands: FrontBand[]
 }
 
-/** No `sites.home_rails` row: the shape this page has always had, in order.
- *  `for-you` sits right after `edit` so the day WS1's engine starts returning
- *  a real personalised rail, it appears with no further change here — the
- *  contract already says a null `getForYou` renders nothing. */
-const DEFAULT_ORDER: HomeRail[] = [
+/**
+ * No `sites.home_rails` row: the shape this page has always had, in order.
+ * `for-you` sits right after `edit` so the day WS1's engine starts returning
+ * a real personalised rail, it appears with no further change here — the
+ * contract already says a null `getForYou` renders nothing.
+ *
+ * Exported so the desk's front-page editor can start an editor session from
+ * exactly the order the home page renders when `homeRails` is unset, rather
+ * than a second copy of this list living in `packages/cms` that could drift
+ * from what actually ships.
+ */
+export const DEFAULT_HOME_RAILS: HomeRail[] = [
   { key: 'lead' },
   { key: 'edit' },
   { key: 'for-you' },
@@ -85,9 +107,13 @@ const SLACK = 10
 
 export async function getFrontPage(reader: ReaderContext = {}): Promise<FrontPage> {
   const site = await getSiteConfig()
-  const order = site.homeRails?.filter((r) => isKnownKey(r.key)) ?? DEFAULT_ORDER
+  const order = site.homeRails?.filter((r) => isKnownKey(r.key)) ?? DEFAULT_HOME_RAILS
   const used = new Set<number>()
   const bands: FrontBand[] = []
+  // How many `department:*` bands have been placed so far — not reset by a
+  // gap (a `guides` band between two department bands does not entitle the
+  // second to `--ivory` again). See `lib/bandVariant.ts`.
+  let departmentCount = 0
 
   for (const rail of order) {
     if (rail.key === 'lead') {
@@ -188,6 +214,7 @@ export async function getFrontPage(reader: ReaderContext = {}): Promise<FrontPag
         moreHref: `/${section}`,
         lead,
         side,
+        variant: departmentVariant(departmentCount++),
       })
       continue
     }

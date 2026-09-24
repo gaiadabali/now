@@ -175,20 +175,66 @@ export default async function HomePage() {
 
           case 'department': {
             const [side1, ...sideRest] = band.side
+            const sideList = side1 ? (
+              <div className="grid--dept__side">
+                <StoryCard article={side1} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={2} />
+                {sideRest.map((a, i) => (
+                  <StoryCard key={a.id} article={a} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={i + 3} />
+                ))}
+              </div>
+            ) : null
+
+            // Three treatments (lib/bandVariant.ts) so an editor stacking
+            // several `department:*` bands never repeats "1 large + 3 side
+            // on ivory" back to back — DESIGN-SYSTEM's "adjacent bands must
+            // not share a grid" and "--ivory once per page" both apply the
+            // moment there is more than one. `priority` is never set here:
+            // that belongs to the lead package's own hero, the one image
+            // this page ever marks as the LCP candidate, and a department
+            // band is never the first thing painted.
+            if (band.variant === 'mirror') {
+              // The same `.grid--dept` grid, mirrored: the side list on the
+              // left, the lead on the right, on `--paper` rather than
+              // `--ivory` (already spent by the first department band).
+              return (
+                <Band key={band.key} reveal>
+                  <div className="shell">
+                    <BandHead kicker={band.kicker} title={band.title} moreHref={band.moreHref} moreLabel={`Every ${band.title.toLowerCase()}`} />
+                    <div className="grid--dept grid--dept--mirror">
+                      {sideList}
+                      <StoryCard article={band.lead} locale={locale} timeZone={tz} rail={band.key} position={1} />
+                    </div>
+                  </div>
+                </Band>
+              )
+            }
+
+            if (band.variant === 'quad') {
+              // The Edit's own 4-up portrait grid, reused rather than a new
+              // one invented for this: the lead and the side items fold
+              // into one row of equals instead of a lead-plus-list.
+              const quad = [band.lead, ...band.side].slice(0, 4)
+              return (
+                <Band key={band.key} reveal>
+                  <div className="shell">
+                    <BandHead kicker={band.kicker} title={band.title} moreHref={band.moreHref} moreLabel={`Every ${band.title.toLowerCase()}`} />
+                    <div className="grid--edit">
+                      {quad.map((a, i) => (
+                        <StoryCard key={a.id} article={a} variant="portrait" locale={locale} timeZone={tz} rail={band.key} position={i + 1} />
+                      ))}
+                    </div>
+                  </div>
+                </Band>
+              )
+            }
+
             return (
               <Band key={band.key} tone="ivory" reveal>
                 <div className="shell">
                   <BandHead kicker={band.kicker} title={band.title} moreHref={band.moreHref} moreLabel={`Every ${band.title.toLowerCase()}`} />
                   <div className="grid--dept">
-                    <StoryCard article={band.lead} locale={locale} timeZone={tz} priority rail={band.key} position={1} />
-                    {side1 ? (
-                      <div className="grid--dept__side">
-                        <StoryCard article={side1} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={2} />
-                        {sideRest.map((a, i) => (
-                          <StoryCard key={a.id} article={a} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={i + 3} />
-                        ))}
-                      </div>
-                    ) : null}
+                    <StoryCard article={band.lead} locale={locale} timeZone={tz} rail={band.key} position={1} />
+                    {sideList}
                   </div>
                 </div>
               </Band>
