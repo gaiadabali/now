@@ -227,6 +227,47 @@ Env vars (matching `now-db`'s existing convention, nothing new):
 `localhost`/`5432`/`now`/`now` — this host remaps Postgres to `15432`, see
 PROGRESS.md F3), `NOW_PLATFORM_DATABASE_URL` (full DSN override), `REDIS_URL`
 (worker only, no default password baked in — must be supplied).
+`NOW_EMBEDDING_MODEL` selects the model (below); unset means the default.
+
+## Changing model (WS6)
+
+Which model is live is decided in one place, `now_embeddings/models.py`:
+`REGISTRY` lists what this package can run, `DEFAULT_MODEL` is
+`BAAI/bge-small-en-v1.5`, and the `NOW_EMBEDDING_MODEL` env var overrides
+it. The backfill, the worker (`_provider("local")`), search's query
+embedder and the web tier's Read Next query (`apps/web/src/lib/
+embeddingModel.ts`, which reads the same env var) all resolve through it;
+`tests/test_models.py` fails if the web fallback literal drifts from
+`DEFAULT_MODEL`. The classifier's centroid routing and the calibration
+measurements are deliberately *pinned* to the model their artifacts were
+built with, not switched — see that test file for why.
+
+WS6 measured whether a multilingual or larger model is worth switching to;
+the numbers and the decision are in `docs/EDITION-2-PLAN.md`, "WS6 —
+Embeddings". The tooling that produced them:
+
+```bash
+uv sync --extra dev --extra model-eval
+uv run python scripts/measure_corpus_language.py --out report.json --focus-keywords <slug>=<articles.jsonl>
+uv run python scripts/compare_embedding_models.py make-slice|dump-texts|embed|eval-search|eval-related|label-pool|score-labels|latency ...
+uv run python scripts/bench_embedding_models.py --db-ref <city db> --model <m> [--model <m> ...]
+```
+
+To roll a model out (it must be registered and 384-d — `engine.embeddings.vec`
+is `vector(384)`; anything wider needs a migration first):
+
+```bash
+uv run python scripts/rollout_embedding_model.py backfill --model <m>   # new rows, keyed by model; old rows untouched
+uv run python scripts/rollout_embedding_model.py check --model <m>      # exits non-zero on any coverage gap
+# then set NOW_EMBEDDING_MODEL=<m> on web, engine-api and worker, and rebuild
+# the classifier centroids (see the script's docstring)
+```
+
+Rollback is unsetting `NOW_EMBEDDING_MODEL`. One caveat, stated plainly:
+while the new model is live the worker embeds new and republished articles
+under the new model only, so an article published during that window has no
+row under the old one until `now-embeddings backfill --model <old>` is run
+after the rollback (its Read Next rail is empty until then, not wrong).
 
 ## Notes for E3.1 (hybrid search)
 

@@ -540,3 +540,28 @@ is explicit that a number should not be reported without trusting it. The
 405-item adjudication queue (8.4) is what converts this into a number
 someone can act on; this package deliberately stops short of guessing that
 number in its place.
+
+## 9. `search_queries.crosslingual_id.jsonl` — WS6 (embedding-model comparison)
+
+128 queries (62 Bali, 66 Jakarta), each an English Yoast focus keyword with
+a hand-written Indonesian rendering of the same search intent, and the
+published article(s) whose own focus keyword it is as the relevant set.
+
+- **Sampling.** Multi-word focus keywords of published articles, ordered by
+  `sha256("ws6-xling:" + keyword)`, first 400 per city; from those, the ones
+  that name a *topic* rather than a proper noun were kept — "traditional
+  markets", "vegetarian restaurants in jakarta" yes; "fat mermaid",
+  "jw marriott hotel surabaya" no, because a venue name is the same string
+  in either language and would measure nothing.
+- **Translation.** By the WS6 agent, into the everyday Indonesian a
+  resident would type into a search box, not a literal gloss (so "sunday
+  brunch jakarta" became "brunch hari minggu di jakarta"; place names and
+  loanwords such as "brunch", "spa", "padel" were left as Indonesians write
+  them). No machine translation was used. A native speaker has not
+  reviewed them — that is the first thing to do before treating the
+  Indonesian numbers as more than directional.
+- **What it measures.** The same intent in both languages against the same
+  judgments, so the English/Indonesian gap for one model is a clean
+  cross-lingual penalty. It is **not** a sample of real reader queries —
+  there are 5 logged searches in total across both cities, all English
+  (`engine.interactions.query`, 2026-09-25).
