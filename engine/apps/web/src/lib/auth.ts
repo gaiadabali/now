@@ -168,6 +168,28 @@ export async function requireReviewerAccess(): Promise<StaffUser> {
 }
 
 /**
+ * May this user see "How suggestions are doing" (rail click analytics and
+ * A/B experiment results)? Admin or editor, per the ticket — a plain read
+ * surface over `engine.impressions`/`engine.interactions`, no write
+ * anywhere on it, so there is no commerce dimension to ask about here the
+ * way `requireCommerceAccess` does. Named for what it actually gates
+ * rather than reusing `canReviewClassification` by coincidence of an
+ * identical boolean today — the two questions ("adjudicate the
+ * classifier" vs "view engagement numbers") are unrelated, and a future
+ * change to either one's role requirement should not silently move the
+ * other's.
+ */
+export function canViewRailAnalytics(user: StaffUser): boolean {
+  return user.role === 'admin' || user.role === 'editor'
+}
+
+export async function requireRailAnalyticsAccess(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canViewRailAnalytics(user)) redirect('/team-editor')
+  return user
+}
+
+/**
  * The same gate, but returning the user document Payload itself produced
  * rather than this file's `StaffUser` view of it.
  *

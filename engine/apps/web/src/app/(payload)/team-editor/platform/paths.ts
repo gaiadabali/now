@@ -17,3 +17,6 @@ export const EDITOR_ROOT = '/team-editor'
 export const platformHref = (path = ''): string => `${PLATFORM_ROOT}${path}`
 
 export const siteHref = (slug: string): string => `${PLATFORM_ROOT}/sites/${encodeURIComponent(slug)}`
+
+/** "How suggestions are doing" — rail click analytics and A/B experiments. */
+export const railsAnalyticsHref = (): string => `${PLATFORM_ROOT}/rails`
