@@ -103,7 +103,7 @@ export default async function SearchPage({
         </form>
       </header>
 
-      <section className="band">
+      <section className="band" data-reveal>
         {error ? (
           <p className="dek">{error}</p>
         ) : !q && !facets ? (
@@ -115,12 +115,19 @@ export default async function SearchPage({
             <p className="dek" style={{ marginBottom: 'var(--space-l)' }}>
               {hits.length} of {total} searched.
             </p>
-            <div style={{ display: 'grid', gap: 'var(--space-l)' }}>
+            {/* Ruled rows rather than a bare grid of gaps — the index
+                treatment DESIGN-SYSTEM §2 already uses for Latest, applied
+                here because a result list is exactly that: a dense list
+                with no thumbnail to carry hierarchy on its own, which is
+                why the headline takes the same `display--medium` weight a
+                card headline does rather than the plain system-font `<h2>`
+                this used to be. */}
+            <div className="search-results">
               {hits.map((hit) => {
                 const slug = (hit.legacy_permalink ?? '').replace(/^\/+|\/+$/g, '')
                 return (
                   <article key={hit.entity_id}>
-                    <h2 style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-2xs)' }}>
+                    <h2 className="display display--medium" style={{ fontSize: 'var(--t-title)', marginBottom: 'var(--space-2xs)' }}>
                       {/*
                         Decoded here as well as in the Payload mapper: these
                         hits come from engine-api, not the Local API, so they

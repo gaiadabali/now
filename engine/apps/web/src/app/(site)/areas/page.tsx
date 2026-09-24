@@ -74,7 +74,7 @@ export default async function AreasPage() {
       ) : null}
 
       {tree.local.regions.length > 0 ? (
-        <section className="band" style={{ paddingTop: 0 }}>
+        <section className="band" style={{ paddingTop: 0 }} data-reveal>
           <BandHead
             title={tree.local.label}
             note={`${formatCount(tree.local.total)} stories close to home`}
@@ -102,14 +102,14 @@ export default async function AreasPage() {
       ) : null}
 
       {tree.indonesia.length > 0 ? (
-        <section className="band" style={{ paddingTop: 0 }}>
+        <section className="band" style={{ paddingTop: 0 }} data-reveal>
           <BandHead title="Elsewhere in Indonesia" />
           <Chips items={tree.indonesia} />
         </section>
       ) : null}
 
       {tree.international.length > 0 ? (
-        <section className="band" style={{ paddingTop: 0 }}>
+        <section className="band" style={{ paddingTop: 0 }} data-reveal>
           <BandHead title="International" note="Where we have travelled" />
           <Chips items={tree.international} />
         </section>
