@@ -49,3 +49,25 @@ export function slugify(s: string): string {
 export function formatCount(value: number): string {
   return value.toLocaleString('en')
 }
+
+/**
+ * Every spelling one address can arrive in.
+ *
+ * WordPress stored non-ASCII permalinks percent-encoded in LOWER case
+ * (`kita-%e5%96%9c%e5%a4%9a-restaurant-…`), and the S1.1 backfill copied them
+ * into `slug` verbatim. Next hands the route param over DECODED (`kita-喜多-…`),
+ * so an exact match never met the stored form and three legacy addresses —
+ * one Bali, two Jakarta, found by requesting every venue story on the
+ * production build — returned 404. Old addresses are the search traffic, so
+ * both spellings are tried: as given, and re-encoded the way WordPress wrote it.
+ */
+export function slugForms(slug: string): string[] {
+  let decoded = slug
+  try {
+    decoded = decodeURIComponent(slug)
+  } catch {
+    // A stray '%' that is not an escape: keep the address as it came.
+  }
+  const wordpress = encodeURIComponent(decoded).replace(/%[0-9A-F]{2}/g, (escape) => escape.toLowerCase())
+  return Array.from(new Set([slug, decoded, wordpress]))
+}

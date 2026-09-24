@@ -21,7 +21,7 @@ import {
   sectionFormatCounts,
   toArticle,
 } from '@/lib/payload'
-import { slugify } from '@/lib/format'
+import { slugForms, slugify } from '@/lib/format'
 import { decodeEntities } from '@/lib/html'
 
 export type Article = {
@@ -487,9 +487,10 @@ export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): P
   const status = opts.draft ? {} : PUBLISHED
   const find = { limit: 1, depth: 1, ...(opts.draft ? { draft: true } : {}) }
 
+  const forms = slugForms(slug)
   const bySlug = await payload.find({
     collection: 'articles',
-    where: { ...status, slug: { equals: slug } },
+    where: { ...status, slug: { in: forms } },
     ...find,
   })
   const doc =
@@ -497,7 +498,7 @@ export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): P
     (
       await payload.find({
         collection: 'articles',
-        where: { ...status, legacyPermalink: { equals: `/${slug}/` } },
+        where: { ...status, legacyPermalink: { in: forms.map((f) => `/${f}/`) } },
         ...find,
       })
     ).docs[0]
