@@ -21,6 +21,9 @@ import type { ArticleRail } from '@/lib/recommend'
  * decides which bands the already-chosen items are laid out inside.
  */
 
+const READ_NEXT_COLUMNS = 3
+const PLAN_ITEMS_PER_COLUMN = 3
+
 export function ReadNextBand({
   rail,
   locale,
@@ -31,6 +34,10 @@ export function ReadNextBand({
   timeZone: string
 }) {
   if (!rail || rail.items.length === 0) return null
+  // Whole rows only. The engine returns up to six after cross-rail dedup, so
+  // four or five is common, and a 3-up grid then leaves one or two cards
+  // stranded on a row of their own. Fewer than a row is shown as it is.
+  const items = rail.items.length < READ_NEXT_COLUMNS ? rail.items : rail.items.slice(0, rail.items.length - (rail.items.length % READ_NEXT_COLUMNS))
   return (
     <Band reveal>
       <div className="shell">
@@ -38,7 +45,7 @@ export function ReadNextBand({
         <div className="grid grid--3 grid--ruled">
           {/* Engine-ranked, so §10's position bias has to be corrected for
               — the slot is recorded on the impression AND the click. */}
-          {rail.items.map((a) => (
+          {items.map((a) => (
             <StoryCard key={a.id} article={a} locale={locale} timeZone={timeZone} rail={a.rail} position={a.position} />
           ))}
         </div>
@@ -85,7 +92,10 @@ export function PlanAroundBand({
             <div className="plan-col" key={rail.key}>
               <p className="plan-col__head">{rail.title}</p>
               <div className="plan-col__items">
-                {rail.items.map((a) => (
+                {/* Three per column, as specified: six made the band taller
+                    than the story above it. The engine's order is kept, so
+                    these are its top three and positions stay 1-3. */}
+                {rail.items.slice(0, PLAN_ITEMS_PER_COLUMN).map((a) => (
                   <StoryCard
                     key={a.id}
                     article={a}
