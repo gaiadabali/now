@@ -178,6 +178,33 @@ export async function getLead(): Promise<Article | undefined> {
   return lead
 }
 
+/**
+ * Articles by id, published only, in the order the caller asked for.
+ *
+ * Added for `lib/frontPage.ts` (Edition 2): `HomeRail.pins` is a list of
+ * article ids an editor chose, and "skip pins that do not resolve to a
+ * published article" (EDITION-2-PLAN §3) means this has to filter through
+ * the same `PUBLISHED` gate every other reader query uses rather than trust
+ * the id list — a pin to a since-unpublished or deleted article must vanish
+ * from the band, not 500 it or render a hole. Payload does not promise to
+ * return rows in `id: { in: [...] }` order, so the order is reimposed here
+ * from the caller's own array, which is also what lets a caller ask for
+ * [heroId, ...secondaryIds] and get the hero back first.
+ */
+export async function getByIds(ids: number[]): Promise<Article[]> {
+  if (ids.length === 0) return []
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'articles',
+    where: { ...PUBLISHED, id: { in: ids } },
+    limit: ids.length,
+    depth: 1,
+  })
+  const articles = await toArticles(docs)
+  const rank = new Map(ids.map((id, i) => [id, i]))
+  return articles.sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+}
+
 export type Page<T> = {
   items: T[]
   page: number

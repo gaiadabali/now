@@ -26,18 +26,34 @@ import { subscribe } from '@/lib/newsletter'
 export function Band({
   tone = 'paper',
   hair = false,
+  reveal = false,
   className,
   children,
 }: {
   tone?: 'paper' | 'ivory' | 'ink'
   hair?: boolean
+  /**
+   * Reveal-on-scroll (DESIGN-SYSTEM §... motion): a small upward fade as the
+   * band enters the viewport. Pure CSS, behind `@supports (animation-timeline:
+   * view())` in magazine.css — nothing is hidden when the feature or
+   * JavaScript is absent, `[data-reveal]`'s un-annotated state IS the
+   * finished, visible page (base.css). Opt-in per band because the lead
+   * package must never move: it is what a reader sees first, and a reveal
+   * animation on the very first thing painted reads as a flash of missing
+   * content, not as motion.
+   */
+  reveal?: boolean
   className?: string
   children: ReactNode
 }) {
   const cls = ['band', tone !== 'paper' ? `band--${tone}` : null, hair ? 'band--hair' : null, className]
     .filter(Boolean)
     .join(' ')
-  return <section className={cls}>{children}</section>
+  return (
+    <section className={cls} data-reveal={reveal ? '' : undefined}>
+      {children}
+    </section>
+  )
 }
 
 /**

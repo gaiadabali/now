@@ -3,50 +3,36 @@ import Link from 'next/link'
 
 import { StoryCard } from '@/components/StoryCard'
 import { Band, BandHead, AreaIndex, Signup } from '@/components/primitives'
-import { getLatest, getLead, getSectionPage, sectionLabel, sectionOf } from '@/lib/content'
-import { areasWithCounts } from '@/lib/payload'
-import { formatCount, formatDate } from '@/lib/format'
-import { getSiteConfig } from '@/lib/site'
+import { getFrontPage } from '@/lib/frontPage'
+import { sectionLabel, sectionOf } from '@/lib/content'
+import { currentReader } from '@/lib/reader'
+import { formatDate } from '@/lib/format'
 
 /**
- * The home page, rebuilt on the band system (DESIGN-SYSTEM §2/§3).
+ * The home page — Edition 2's front page, assembled by `lib/frontPage.ts`
+ * and rendered here without a query of its own (DESIGN-SYSTEM "the desk
+ * writes them, the home page reads them").
  *
- * Every band below is real content, fetched here, or it is not rendered —
- * S2 already settled that an empty rail is hidden rather than shown empty
- * (Most Read has no traffic yet, every event is 2016–2020), and nothing in
- * this rebuild reopens that. What changed is the SHAPE of the page, not its
- * honesty policy: the previous layout was a lead plus a two-column
- * well-and-rail that put Most Read, "What's On" and the newsletter in one
- * sidebar. §3's home spec does not carry a sidebar at all — cover, The Edit,
- * one department, one franchise band, Latest, Explore, a subscribe foot —
- * so Most Read and events have no slot to reappear in here even once they
- * have data. That is a page-shape decision, not a re-litigation of S2; if a
- * future band wants them, it is a new band, not a rail bolted onto this one.
+ * Rebuilt for the owner's first complaint: "the first screen is masthead
+ * plus a single 21:9 cover — no secondary top stories, no timestamped
+ * latest." The `lead` band is now a package rather than a single image: a
+ * large lead, 3–4 secondary top stories beside it, and a timestamped strip
+ * below both — sized (masthead ≈230px + package ≈650px on a 1440×900
+ * laptop, measured against the built production bundle) so the next band's
+ * own heading is the thing peeking into view, not a hard cut mid-band.
  *
- * The franchise band (§2's "oversized numeral + text + one portrait, on
- * `--ink`") needed a real, ranked, image-bearing rail and the archive has
- * exactly one that fits all three: the guides, newest first — the same
- * ordering every other band on this page uses, so numbering them 1–5 claims
- * nothing beyond "these are recent," not "these are best." A quality
- * ranking is not a thing this archive can back today (§10's presentation
- * bias warning is exactly the reason recency was never relabelled as rank).
+ * Every band after the lead is real content or it does not render — S2's
+ * honesty policy, unchanged. What changed is that `getFrontPage` now also
+ * guarantees no story repeats across bands (the Hotels band no longer
+ * re-leads with the story the front page just told) and that the desk's
+ * `home_rails` pins and ordering are honoured when set.
  */
 export default async function HomePage() {
-  const site = await getSiteConfig()
+  const reader = await currentReader()
+  const { site, bands } = await getFrontPage({ identityId: reader?.id })
   const { locale, timezone: tz } = site
 
-  const [lead, latest, hotels, guides, areas] = await Promise.all([
-    getLead(),
-    getLatest(21),
-    getSectionPage('stay', { limit: 4 }),
-    getSectionPage('guides', { limit: 5 }),
-    areasWithCounts(),
-  ])
-
-  // A real database can be empty — a freshly provisioned city has no
-  // articles until the load runs. A masthead over a crash is worse than a
-  // masthead over an honest empty state.
-  if (!lead) {
+  if (bands.length === 0) {
     return (
       <Band>
         <div className="shell">
@@ -62,163 +48,197 @@ export default async function HomePage() {
     )
   }
 
-  // getLatest(21) includes the lead itself (newest-first, and the lead IS
-  // the newest article) — excluded here so The Edit and Latest never repeat
-  // the story the cover already told.
-  const rest = latest.filter((a) => a.id !== lead.id)
-  const edit = rest.slice(0, 4)
-  const index = rest.slice(4, 16)
-
-  const [hotel, ...hotelSide] = hotels.items
-
   return (
     <>
-      {/* --------------------------------------------------------- cover -- */}
-      <div className="cover">
-        <Image
-          className="cover__img"
-          src={lead.image}
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-        />
-        <div className="cover__body">
-          <div className="shell">
-            <p className="cover__kicker">{sectionLabel(sectionOf(lead))} / The Feature</p>
-            <h1 className="cover__headline">
-              <Link
-                href={`/${lead.slug}`}
-                data-nowb-entity={String(lead.id)}
-                data-nowb-entity-type="article"
-                data-nowb-rail="cover"
-                data-nowb-position="1"
-              >
-                {lead.title}
-              </Link>
-            </h1>
-            <p className="cover__meta">{formatDate(lead.date, locale, tz)}</p>
-          </div>
-        </div>
-      </div>
+      {bands.map((band) => {
+        switch (band.kind) {
+          case 'lead': {
+            const { hero, secondaries, ticker } = band
+            return (
+              <Band key="lead" hair className="band--lead">
+                <div className="shell">
+                  <div className="frontlead">
+                    <Link className="frontlead__hero" href={`/${hero.slug}`}>
+                      <span className="frontlead__media">
+                        <Image
+                          className="frontlead__hero-img"
+                          src={hero.image}
+                          alt=""
+                          fill
+                          sizes="(max-width: 62rem) 100vw, 60vw"
+                          priority
+                        />
+                        <span className="frontlead__scrim" aria-hidden="true" />
+                      </span>
+                      <span className="frontlead__body">
+                        <span className="cover__kicker">
+                          {sectionLabel(sectionOf(hero))} / The Feature
+                        </span>
+                        <span
+                          className="cover__headline"
+                          data-nowb-entity={String(hero.id)}
+                          data-nowb-entity-type="article"
+                          data-nowb-rail="lead"
+                          data-nowb-position="1"
+                        >
+                          {hero.title}
+                        </span>
+                        <span className="cover__meta">{formatDate(hero.date, locale, tz)}</span>
+                      </span>
+                    </Link>
 
-      {/* ------------------------------------------------------- the edit -- */}
-      <Band>
-        <div className="shell">
-          <BandHead kicker="Chosen this week" title="The Edit" moreHref="/latest" moreLabel="Latest" />
-          <div className="grid--edit">
-            {edit.map((a, i) => (
-              <StoryCard
-                key={a.id}
-                article={a}
-                variant="portrait"
-                locale={locale}
-                timeZone={tz}
-                rail="the-edit"
-                position={i + 1}
-              />
-            ))}
-          </div>
-        </div>
-      </Band>
+                    {secondaries.length > 0 ? (
+                      <div className="frontlead__secondaries" data-reveal>
+                        <p className="kicker" style={{ marginBottom: 'var(--space-2xs)' }}>
+                          Also this week
+                        </p>
+                        {secondaries.map((a, i) => (
+                          <StoryCard
+                            key={a.id}
+                            article={a}
+                            variant="horizontal"
+                            showDek={false}
+                            locale={locale}
+                            timeZone={tz}
+                            rail="lead"
+                            position={i + 2}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
 
-      {/* -------------------------------------------------- department: Hotels */}
-      {hotel ? (
-        <Band tone="ivory">
-          <div className="shell">
-            <BandHead
-              kicker={`${formatCount(hotels.total)} STORIES`}
-              title="Hotels"
-              moreHref="/stay"
-              moreLabel="Every stay"
-            />
-            <div className="grid--dept">
-              <StoryCard article={hotel} locale={locale} timeZone={tz} priority rail="hotels" position={1} />
-              <div className="grid--dept__side">
-                {hotelSide.map((a, i) => (
-                  <StoryCard
-                    key={a.id}
-                    article={a}
-                    variant="horizontal"
-                    showDek={false}
-                    locale={locale}
-                    timeZone={tz}
-                    rail="hotels"
-                    position={i + 2}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </Band>
-      ) : null}
+                  {ticker.length > 0 ? (
+                    <div className="fronticker" data-reveal>
+                      <span className="fronticker__label">
+                        <span className="fronticker__dot" aria-hidden="true" />
+                        Just in
+                      </span>
+                      {ticker.map((a, i) => (
+                        <span className="fronticker__item" key={a.id}>
+                          <Link
+                            href={`/${a.slug}`}
+                            data-nowb-entity={String(a.id)}
+                            data-nowb-entity-type="article"
+                            data-nowb-rail="ticker"
+                            data-nowb-position={i + 1}
+                          >
+                            {a.title}
+                          </Link>
+                          <time className="fronticker__time" dateTime={a.date}>
+                            {formatDate(a.date, locale, tz)}
+                          </time>
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </Band>
+            )
+          }
 
-      {/* ---------------------------------------------- franchise: The Guides */}
-      {guides.items.length > 0 ? (
-        <Band tone="ink">
-          <div className="shell">
-            <BandHead
-              kicker={`${formatCount(guides.total)} GUIDES`}
-              title="The Guides"
-              moreHref="/guides"
-              moreLabel="Every guide"
-            />
-            {guides.items.map((a, i) => (
-              <StoryCard
-                key={a.id}
-                article={a}
-                variant="rank"
-                index={i + 1}
-                locale={locale}
-                timeZone={tz}
-                rail="guides"
-                position={i + 1}
-              />
-            ))}
-          </div>
-        </Band>
-      ) : null}
+          case 'edit':
+            return (
+              <Band key={band.key} reveal>
+                <div className="shell">
+                  <BandHead kicker={band.kicker} title={band.title} moreHref="/latest" moreLabel="Latest" />
+                  <div className="grid--edit">
+                    {band.items.map((a, i) => (
+                      <StoryCard
+                        key={a.id}
+                        article={a}
+                        variant="portrait"
+                        locale={locale}
+                        timeZone={tz}
+                        rail="the-edit"
+                        position={i + 1}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </Band>
+            )
 
-      {/* ------------------------------------------------------------ latest */}
-      {index.length > 0 ? (
-        <Band>
-          <div className="shell">
-            <BandHead kicker="Newest first" title="Latest" moreHref="/latest" moreLabel="Load more stories" />
-            <div className="grid--index">
-              {index.map((a, i) => (
-                <StoryCard
-                  key={a.id}
-                  article={a}
-                  variant="row"
-                  locale={locale}
-                  timeZone={tz}
-                  rail="latest"
-                  position={i + 1}
-                />
-              ))}
-            </div>
-          </div>
-        </Band>
-      ) : null}
+          case 'for-you':
+            return (
+              <Band key={band.key} tone="ivory" reveal>
+                <div className="shell">
+                  <BandHead kicker={band.rail.kicker} title={band.rail.title} />
+                  <div className="grid--edit">
+                    {band.rail.items.map((a) => (
+                      <StoryCard key={a.id} article={a} variant="portrait" locale={locale} timeZone={tz} rail={a.rail} position={a.position} />
+                    ))}
+                  </div>
+                </div>
+              </Band>
+            )
 
-      {/* ----------------------------------------------------------- explore
-          `--paper`, not `--ivory`: §1 spends ivory on "one department given
-          weight" — Hotels already is it — and files an index (which Explore
-          is) under `--paper` explicitly ("news and indexes"). Two ivory
-          bands on one page would spend the same restraint twice. */}
-      {areas.length > 0 ? (
-        <Band hair>
-          <div className="shell">
-            <BandHead kicker={`${formatCount(areas.length)} NEIGHBOURHOODS`} title="Explore" moreHref="/areas" moreLabel="Every area" />
-            <AreaIndex areas={areas.slice(0, 12)} />
-            <p className="meta meta--micro" style={{ marginTop: 'var(--space-m)' }}>
-              Counts are stories published about each area.
-            </p>
-          </div>
-        </Band>
-      ) : null}
+          case 'department': {
+            const [side1, ...sideRest] = band.side
+            return (
+              <Band key={band.key} tone="ivory" reveal>
+                <div className="shell">
+                  <BandHead kicker={band.kicker} title={band.title} moreHref={band.moreHref} moreLabel={`Every ${band.title.toLowerCase()}`} />
+                  <div className="grid--dept">
+                    <StoryCard article={band.lead} locale={locale} timeZone={tz} priority rail={band.key} position={1} />
+                    {side1 ? (
+                      <div className="grid--dept__side">
+                        <StoryCard article={side1} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={2} />
+                        {sideRest.map((a, i) => (
+                          <StoryCard key={a.id} article={a} variant="horizontal" showDek={false} locale={locale} timeZone={tz} rail={band.key} position={i + 3} />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </Band>
+            )
+          }
 
-      {/* -------------------------------------------------------- subscribe */}
+          case 'guides':
+            return (
+              <Band key={band.key} tone="ink" reveal>
+                <div className="shell">
+                  <BandHead kicker={band.kicker} title={band.title} moreHref="/guides" moreLabel="Every guide" />
+                  {band.items.map((a, i) => (
+                    <StoryCard key={a.id} article={a} variant="rank" index={i + 1} locale={locale} timeZone={tz} rail={band.key} position={i + 1} />
+                  ))}
+                </div>
+              </Band>
+            )
+
+          case 'latest':
+            return (
+              <Band key={band.key} reveal>
+                <div className="shell">
+                  <BandHead kicker={band.kicker} title={band.title} moreHref="/latest" moreLabel="Load more stories" />
+                  <div className="grid--index">
+                    {band.items.map((a, i) => (
+                      <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={band.key} position={i + 1} />
+                    ))}
+                  </div>
+                </div>
+              </Band>
+            )
+
+          case 'explore':
+            return (
+              <Band key={band.key} hair reveal>
+                <div className="shell">
+                  <BandHead kicker={band.kicker} title={band.title} moreHref="/areas" moreLabel="Every area" />
+                  <AreaIndex areas={band.areas} />
+                  <p className="meta meta--micro" style={{ marginTop: 'var(--space-m)' }}>
+                    Counts are stories published about each area.
+                  </p>
+                </div>
+              </Band>
+            )
+
+          default:
+            return null
+        }
+      })}
+
       <Band hair>
         <div className="shell">
           <Signup site={site} />
