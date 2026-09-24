@@ -1,0 +1,30 @@
+{
+  "source": "ARCHITECTURE.md §4 + §8.A, as implemented by now_filters.type_relations.is_competitor (Python) and engine/apps/web/src/lib/competitorPolicy.ts (TypeScript).",
+  "purpose": "The ONE conformance vector list both suites assert against (docs/EDITION-2-PLAN.md WS1 deliverable #3: 'the competitor POLICY has one source of truth ... plus ONE conformance-vector JSON file that both the Python and the TS test suites assert against'). Ranking may differ between the engine-api path and the web app's fallback path; this file is what proves the EXCLUSION POLICY never does. Both suites build their `relations` input from THIS DIRECTORY's `type_relations.json` (the same seed data every city database is migrated/seeded from) -- this file supplies only the (subject_type, candidate_type) pairs and the expected verdict, never a second copy of the matrix itself.",
+  "vectors": [
+    {"subject_type": "stay", "candidate_type": "stay", "expect_excluded": true, "note": "same L1 type"},
+    {"subject_type": "stay", "candidate_type": "villa", "expect_excluded": false, "note": "candidate_type is always an L1 type in practice -- 'villa' as a literal string has no relation row and is not excluded by this function; subtype-to-L1 resolution happens before this policy is consulted, see hard.py which reads primary_type (L1) directly"},
+    {"subject_type": "stay", "candidate_type": "eat", "expect_excluded": false, "note": "genuine complement"},
+    {"subject_type": "stay", "candidate_type": "drink", "expect_excluded": false, "note": "genuine complement"},
+    {"subject_type": "eat", "candidate_type": "drink", "expect_excluded": true, "note": "migration 0008 -- F&B is one competitive class, the owner's rule 2026-09-11/2026-09-24"},
+    {"subject_type": "drink", "candidate_type": "eat", "expect_excluded": true, "note": "symmetric with the row above"},
+    {"subject_type": "eat", "candidate_type": "stay", "expect_excluded": false, "note": "eat/drink unification must not touch eat's other complements"},
+    {"subject_type": "drink", "candidate_type": "wellness", "expect_excluded": false},
+    {"subject_type": "wellness", "candidate_type": "eat", "expect_excluded": false},
+    {"subject_type": "shop", "candidate_type": "shop", "expect_excluded": true},
+    {"subject_type": "do", "candidate_type": "eat", "expect_excluded": false, "note": "do has exclude_same=false and is not part of the F&B pairing"},
+    {"subject_type": "do", "candidate_type": "do", "expect_excluded": false, "note": "do does not exclude its own kind"},
+    {"subject_type": "event", "candidate_type": "stay", "expect_excluded": false},
+    {"subject_type": "editorial", "candidate_type": "eat", "expect_excluded": false},
+    {"subject_type": "stay", "candidate_type": "unknown", "expect_excluded": true, "note": "F57 -- unknown sentinel excluded from every venue-shaped subject"},
+    {"subject_type": "unknown", "candidate_type": "unknown", "expect_excluded": true},
+    {"subject_type": "editorial", "candidate_type": "unknown", "expect_excluded": false, "note": "F57 scopes the unknown-exclusion to venue-shaped (exclude_same=true) subjects only"},
+    {"subject_type": null, "candidate_type": "stay", "expect_excluded": true, "note": "F68 -- an unclassified subject fails closed against every venue type"},
+    {"subject_type": null, "candidate_type": "eat", "expect_excluded": true, "note": "F68"},
+    {"subject_type": null, "candidate_type": "drink", "expect_excluded": true, "note": "F68"},
+    {"subject_type": null, "candidate_type": "editorial", "expect_excluded": false, "note": "F68 fail-closed set is exactly the venue types + unknown, not everything"},
+    {"subject_type": "stay", "candidate_type": null, "expect_excluded": true, "note": "F73 -- an unidentifiable candidate fails closed whenever the subject excludes anything"},
+    {"subject_type": "do", "candidate_type": null, "expect_excluded": false, "note": "F73 -- a subject that excludes nothing is not turned into 'everything is a competitor' by an unidentifiable candidate"},
+    {"subject_type": "editorial", "candidate_type": null, "expect_excluded": false}
+  ]
+}

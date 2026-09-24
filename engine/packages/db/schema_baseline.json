@@ -1,5 +1,5 @@
 {
-  "hash": "10a958b6b2bf70e46c31bac70b2f4cc37375683a31220ad7487f20557f901f4e",
+  "hash": "fb890977938605fc67ab41b2d3db7952b960f7d6422c52b881c48074e5b7c40f",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -412,6 +412,92 @@
             "def": "CREATE INDEX ix_entity_terms_term ON engine.entity_terms USING btree (term_id)",
             "method": "btree",
             "name": "ix_entity_terms_term"
+          }
+        ],
+        "partitioned": false
+      },
+      "hidden_rival_flags": {
+        "checks": [
+          {
+            "clause": "CHECK ((signal = ANY (ARRAY['featured_mention'::text, 'title'::text])))",
+            "name": "hidden_rival_flags_signal_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "article_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "computed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "matched_type",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "signal",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "{",
+              "a",
+              "r",
+              "t",
+              "i",
+              "c",
+              "l",
+              "e",
+              "_",
+              "i",
+              "d",
+              ",",
+              "m",
+              "a",
+              "t",
+              "c",
+              "h",
+              "e",
+              "d",
+              "_",
+              "t",
+              "y",
+              "p",
+              "e",
+              ",",
+              "s",
+              "i",
+              "g",
+              "n",
+              "a",
+              "l",
+              "}"
+            ],
+            "name": "hidden_rival_flags_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX hidden_rival_flags_pkey ON engine.hidden_rival_flags USING btree (article_id, matched_type, signal)",
+            "method": "btree",
+            "name": "hidden_rival_flags_pkey"
           }
         ],
         "partitioned": false
@@ -957,6 +1043,13 @@
       "type_relations": {
         "checks": [],
         "columns": [
+          {
+            "default": "'{}'::text[]",
+            "name": "competes_with",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
           {
             "default": "'{}'::text[]",
             "name": "complements",

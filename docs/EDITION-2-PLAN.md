@@ -73,3 +73,132 @@ site-literal lints · smoke), QA driving both cities end to end, screenshots.
 
 Cross-city moves (S5.4 — they bridge through `now_platform`, never city to city), a reader dark
 palette, learned personalization (E7, data-gated), the itinerary UI (E5.4).
+
+## 6. WS1 (Engine) — status, 2026-09-24
+
+**Delivered.**
+
+- **F&B is one competitive class, as data.** `engine.type_relations` gained
+  `competes_with text[]` (now-db migration 0008), seeded `eat<->drink`, and
+  un-paired them from each other's `complements`. Applied to `now_jakarta`,
+  `now_bali` and `now_test` (the migration carries its own idempotent data
+  step, since `seed_city`'s `ON CONFLICT DO NOTHING` back-fill cannot touch
+  already-seeded rows); `schema_baseline.json` regenerated.
+  `now_filters.type_relations.excluded_types_for` unions `competes_with`
+  unconditionally. ARCHITECTURE §4/§8 updated.
+- **Hidden-rival guard.** `now_filters.hidden_rival` / `engine/apps/web/src/
+  lib/hiddenRival.ts`: a `role='featured'` place mention whose NAME matches
+  a competitor type's taxonomy vocabulary (`type.json` labels/aliases —
+  never a hardcoded brand list) excludes the candidate even when its own
+  declared type passed the ordinary check. Measured against ~250+ real,
+  hand-reviewed `place_mentions`/`places` rows in both cities: the bare word
+  "club" was the dominant false-positive source for `drink` and was dropped
+  from the guard's lexicon only (shared curation file,
+  `hidden_rival_lexicon_overrides.json`, loaded by both languages).
+  Post-curation measured precision on the four venue categories is ~86%
+  (n=142); real counts today are 213 Bali / 269 Jakarta published articles
+  whose featured mention names a venue type their own `primary_type` does
+  not declare. First-pass honest limit (closed in the second pass below):
+  the literal reported article (Bali 4417) was not caught by this signal
+  alone — its hotel mention is `role='mentioned'`, split across two
+  unlinked `place_id` rows, an entity-extraction fragment.
+- **`getArticleRails`/`getForYou`** (`apps/web/src/lib/recommend.ts`):
+  computed directly against `engine.*` in the web process this iteration
+  (pgvector Read Next, complement rails grouped by section, both competitor-
+  and hidden-rival-filtered) rather than via the engine-api HTTP call —
+  **a decision for the owner/architect to revisit**, see §7 below.
+  `lib/competitorPolicy.ts` + `lib/hiddenRival.ts` are independently-tested
+  TypeScript ports of the Python policy, asserted against the SAME
+  conformance-vector file
+  (`engine/packages/taxonomy/seed/competitor_conformance.json`) both the
+  Python and TS suites load — the ONE source of truth for the exclusion
+  policy the ticket required. `getForYou` builds a weighted taste centroid
+  from `engine.interactions` (§10 weights) + `engine.saved_items`, kNN via
+  pgvector, `null` when there is no signal. `readerContextFromRequest()`
+  reads the `nowb_aid` beacon cookie and the reader session
+  (`lib/reader.ts#currentReader`). `getRelated` (the old same-section
+  fallback that was the reported defect) is removed from `lib/content.ts` —
+  it had exactly one caller, `recommend.ts`'s own stub, replaced in the same
+  change.
+
+## 6a. WS1 second pass (coordinator review, 2026-09-24)
+
+Four items, all closed:
+
+1. **Article 4417 is now caught.** A second, independent signal: a
+   candidate whose own `primary_type` is NOT a venue type (event/editorial/
+   do, or NULL) and whose own TITLE names a subtype label/alias of a type
+   the subject excludes. Same `type.json` lexicon + overrides file, no
+   brand names. Hand-reviewed ~440 real title matches across both cities:
+   `stay` measured ~85.5% (Bali, 59/69) / ~94% (Jakarta) precision — shipped.
+   `eat`/`shop`/`wellness` measured 37–71%, dominated by this magazine's own
+   recurring "Best Restaurant/Bar/Cafe Awards" franchise and abstract nouns
+   ("beauty", "craft", "market", "library") naming no specific venue — **not
+   shipped**; the exact noise and a proposed curated override (an awards/
+   association negative-phrase exclusion for `eat`; dropping single generic
+   words for `shop`/`wellness`) are recorded in
+   `hidden_rival_lexicon_overrides.json` rather than silently widened.
+   `drink` measured borderline (~84%, small/noisy sample, "walk into a bar"
+   idiom + a Pilates-studio brand coincidence) and is also not shipped.
+   Confirmed directly: article 4417 no longer appears in the Kimpton story's
+   (id 4429) Read Next candidate pool (2,854 eligible candidates, checked).
+2. **Speed.** `EXPLAIN (ANALYZE, BUFFERS)` found the live hidden-rival
+   `place_mentions`/`places` regex join costing ~27ms of a ~49ms Read Next
+   query. Moved offline: `engine.hidden_rival_flags` (migration 0009), a
+   precomputed (article_id, matched_type, signal) table, refreshed by
+   `now_filters.hidden_rival_recompute` — both signals (featured-mention
+   and title) write into it; the live path is now an indexed lookup, not a
+   regex join. Complement rails also went from up to 4 round trips to 1
+   (`lib/recommendSql.ts#resolveComplementCandidates`, one query for every
+   eligible section). Measured, full-archive verification (real data, both
+   cities): **Bali 322ms/article → 18.2ms/article**; **Jakarta 162ms/article
+   → 23.4ms/article** (~14–18×). A single Read Next query alone: ~49ms →
+   ~22ms warm.
+3. **Rail count and overlap.** At most 3 "plan around it" rails now
+   (`MAX_PLAN_AROUND_RAILS`), ordered by the subject's own
+   `type_relations.complements` array — now-db migration 0010 reordered
+   that array (same membership, new position) to double as display
+   priority, so the priority lives in DATA, not a TS literal per type:
+   stay → dining, things-to-do, wellness; eat → stay, things-to-do, events
+   (matching the coordinator's own two examples exactly). No story may
+   appear in more than one rail on a page, Read Next included — "plan
+   around it" resolves first and its ids are excluded from Read Next's
+   pool before that rail is finalised. 6 items/rail cap unchanged. Verified
+   over the full archive: 0 articles with >3 plan-around rails, 0 cross-
+   rail overlaps, both cities.
+4. **One copy of the SQL.** `lib/recommendSql.ts` (no `server-only` import,
+   takes its `pg.Pool` as a parameter) now holds every query and row-
+   shaping function; both `recommend.ts` (passing `cityPool()`) and
+   `scripts/verify-competitor-policy.mjs` (passing its own bare `pg.Pool`,
+   since it cannot load the CMS-config-importing `lib/payload.ts`) call the
+   SAME functions. Full-archive verification re-run against this shared
+   module, 2026-09-24: **Bali** 2,047 checked, 0 empty, 8,188 rails, mean
+   5.84 items/rail, 0 rail-count violations, 0 cross-rail overlaps, **0
+   competitor violations**, 18.2ms/article. **Jakarta** 1,632 checked, 0
+   empty, 5,939 rails, mean 5.77/rail, 0/0/**0**, 23.4ms/article.
+
+## 7. Open for the owner/architect
+
+- **Where rails compute.** Left as documented (coordinator: "I'll take it
+  to the owner"). This iteration computes both article rails directly in
+  the web tier (`lib/recommendSql.ts`), a documented exception to `lib/
+  payload.ts`'s "a page may never query Postgres directly" rule, made
+  because (a) the engine-api's existing `/articles/{id}/rails` endpoint
+  serves Row 1 as PLACES, not the ARTICLE-shaped "plan around it" rail this
+  ticket specifies, and (b) this sandboxed session had no way to verify
+  `ENGINE_API_URL` reachability. Wiring the HTTP call as the preferred path,
+  with this implementation kept as the graceful-degradation fallback, is
+  the natural next step.
+- **F&B-on-F&B for a hidden rival specifically raised, not decided:** an
+  `eat`-typed article titled "...at Sofitel Bali Nusa Dua Beach Resort" on
+  a `stay` subject's page stays eligible — venue-typed candidates are
+  untouched by the title signal, unchanged from the first pass. Whether a
+  rival hotel's own restaurant write-up should count as a `stay` competitor
+  is the owner's call, raised, not engineered around.
+- **`eat`/`shop`/`wellness` title-signal overrides** (item 1 above) are
+  documented, not implemented — a follow-up once someone signs off on the
+  proposed curation.
+- **`getForYou`'s label** ("Because of what you read") does not yet name a
+  specific driving article — a weighted-centroid taste vector does not
+  preserve per-item provenance the way a top-1-nearest-neighbour approach
+  would.
