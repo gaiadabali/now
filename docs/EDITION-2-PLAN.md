@@ -396,3 +396,275 @@ recommend.ts` (+ two new sibling modules) and `engine/apps/worker`:
 - `read-next`'s A/B variants are not yet analysed anywhere — WS4's
   dashboard reads the beacon convention this pass establishes, but nobody
   has looked at the numbers yet.
+
+## 10. WS5 (Tagging) — topic/audience/vibe/cuisine/price_band/occasion, 2026-09-24/25
+
+F137: the preference picker (`engine/apps/web/src/lib/preferences.ts`) offers
+topics, personas (audience) and budgets (price_band); vibe/cuisine/occasion
+feed §9's filters and facet_affinity. All six measured at **zero** tagged
+articles in both cities before this work (`select count(*) from
+engine.entity_terms where term_id = any(<the 139 term ids for these six
+facets>)` — 0 in `now_bali`, 0 in `now_jakarta`, confirmed live, not just
+quoted from F137). No LLM is available (the shared Ollama Cloud key is
+Unauthorized; no Anthropic key exists), so the primary method is entirely
+local: lexical + embedding evidence, calibrated against a hand-labelled
+sample. New package code lives in `engine/packages/classifier/src/
+now_classifier/facet_tagging/` (a subpackage of the existing classifier, not
+a new package — it shares vocabulary loading, DB settings and the
+title/lead/body zone-trust convention `now_taxonomy_evidence.text` already
+established).
+
+### Method
+
+For the five facets with real vocabulary aliases (topic, audience, vibe,
+cuisine, occasion — `engine/packages/taxonomy/seed/terms/*.json`), every
+article↔term pair is scored on:
+
+1. **Lexical zone** (`lexicon.py`): a literal, word-boundary match of the
+   term's label or any alias, checked title → dek/lead(400 chars) →
+   body(400-1600 chars), reported as whichever zone is strongest (title
+   beats lead beats body) — the same trust ordering
+   `now_taxonomy_evidence.text`'s location matcher already uses ("a name in
+   the headline is a stronger, more deliberate editorial signal").
+2. **Embedding similarity** (`embed.py`), only when no lexical zone matched:
+   direct cosine between the article's own embedding (`engine.embeddings`,
+   `BAAI/bge-small-en-v1.5`, already backfilled for all 4,429 Bali / 4,772
+   Jakarta published articles) and the SAME model's embedding of the
+   candidate term (also already present, per-city, `entity_type='term'`,
+   407 rows in each city DB — no cross-DB join needed). A few-shot centroid
+   path (`build_facet_centroids`, reusing
+   `now_taxonomy_evidence.embed_similarity.build_trusted_centroids`, the
+   same machinery `now_classifier.embed_routing` uses for type/format) is
+   implemented and tested but not used in production this round: at
+   ~90-100 labelled positives per facet spread across 15-44 terms, almost
+   no term reaches the `min_class_n=5` exemplar floor — disclosed as a
+   follow-up, not silently skipped.
+
+`price_band` has no lexical vocabulary at all (its labels are literally
+"$".."$$$$") — `price_cues.py` is a small, hand-authored keyword-cue
+instrument in the exact shape of `now_taxonomy_evidence.text.TYPE_CUES`
+(regex/weight, zone-weighted, argmax + abstain), since `price_band` is
+single-cardinality like `type`/`format`, not multi like the other five.
+
+**Scope** (`scope.py`): `cuisine` only on `eat`/`drink` articles;
+`price_band` only on venue types (`stay`/`eat`/`drink`/`wellness`/`shop`,
+reusing `now_taxonomy_evidence.text.VENUE_TYPES`); the other four apply to
+every article, per the ticket spec.
+
+### Calibration — how, and the full precision table
+
+For each facet, `scripts/build_calibration_sample.py` drew a **seeded
+random, stratified sample of 100 candidates** (25 per band: title / lead /
+body / embed_only; or 50 each of cue_confident / cue_fired for
+`price_band`) from the full published archive of BOTH cities — not
+cherry-picked. Hansel read each candidate's title + dek/excerpt + opening
+text and judged, one at a time, whether the proposed term genuinely applies
+— yes/no, no partial credit — recorded in a labels file.
+`scripts/score_calibration.py` computes precision = true / n per band.
+Ship bar: **precision ≥ 0.80** (`calibration.SHIP_AT_OR_ABOVE`). A band that
+misses it is never written — its candidates are simply dropped, not queued
+for review (this job never touches `classification_reviews`, so the
+6,442-item pending queue is untouched).
+
+| Facet | Band | n | precision | Ship? |
+|---|---|---:|---:|---|
+| topic | **title** | 25 | **0.80** | **YES** |
+| topic | lead | 25 | 0.44 | no |
+| topic | body | 25 | 0.20 | no |
+| topic | embed_only | 25 | 0.04 | no |
+| vibe | **title** | 25 | **0.92** | **YES** |
+| vibe | lead | 25 | 0.72 | no |
+| vibe | body | 25 | 0.20 | no |
+| vibe | embed_only | 25 | 0.00 | no |
+| cuisine | **title** | 25 | **0.84** | **YES** |
+| cuisine | lead | 25 | 0.52 | no |
+| cuisine | body | 25 | 0.04 | no |
+| cuisine | embed_only | 25 | 0.00 | no |
+| audience | title (raw, "local" included) | 25 | 0.56 | no |
+| audience | **title, excl. "local"** | 13 | **0.92** | **YES** |
+| audience | lead | 25 | 0.44 | no |
+| audience | body | 25 | 0.12 | no |
+| audience | embed_only | 25 | 0.04 | no |
+| occasion | title (raw, "date-night" included) | 25 | 0.72 | no |
+| occasion | **title, excl. "date-night"/"anniversary"** | 19 | **0.95** | **YES** |
+| occasion | lead | 25 | 0.56 | no |
+| occasion | body | 25 | 0.04 | no |
+| occasion | embed_only | 25 | 0.00 | no |
+| price_band | **cue_confident** | 50 | **0.86** | **YES** |
+| price_band | **cue_fired** | 50 | **0.84** | **YES** |
+
+**A repeated, not facet-specific, finding**: `embed_only` (no lexical hit,
+bare direct-term-embedding cosine ≥ 0.45) measured 0.00–0.04 on every one
+of the five alias-based facets. A term embedded as `"vibe: trendy
+(trendy)"` (`now_embeddings.textbuild.build_term_text`) is not semantically
+specific enough on this corpus to beat "generic hospitality article" —
+confirmed by five independent measurements landing in the same place, not
+assumed. `body`-only lexical evidence never cleared the bar either
+(0.04–0.20 everywhere it was measured). **Title-zone literal matches are
+the only signal, of everything measured, that consistently works.**
+
+**Two disclosed alias exclusions** (`calibration.ALIAS_EXCLUSIONS`), each
+found by reading the false positives in the raw sample, not guessed:
+- `audience`/`local` — excluded ENTIRELY (label too, not just its
+  aliases). "Local" is an ordinary English adjective ("local flavours",
+  "local diners") that appears constantly in hospitality copy having
+  nothing to do with the AUDIENCE meaning ("this piece targets residents,
+  not tourists"). Measured on its own: 2/12 title, 1/13 body, 0/2
+  embed_only — nowhere near the bar, and large enough (40 of the original
+  100 audience candidates) to sink the whole `title` band by itself (raw
+  0.56; 0.92 with it excluded).
+- `occasion`/`date-night`'s `anniversary` alias only (its other aliases —
+  Valentine's, romantic dinner — are untouched, though none happened to be
+  measured in this sample; they simply never fired). Every one of 6
+  `date-night` title hits in the raw sample was a HOTEL'S OWN business
+  anniversary ("celebrating its 8th anniversary"), never a reader's
+  romantic occasion. 0/6 on its own; excluding just that alias moves
+  `occasion`/title from 0.72 (18/25) to 0.95 (18/19).
+
+**Approximate recall** (true positives in the shipped band ÷ true positives
+found across ALL measured bands in the same sample — the honest ceiling
+this method can even see; an article with a true tag but zero lexical or
+embedding signal anywhere is invisible to this estimate and to the shipped
+job alike): topic ≈ 20/37 = 54%, vibe ≈ 23/46 = 50%, cuisine ≈ 21/35 = 60%,
+audience and occasion are similar order (title-only, so recall is real but
+modest — most true instances live in the lead/body zones this method
+correctly declined to ship). `price_band`'s cue instrument fires or
+abstains per-article (no separate "did we even look" step), so this ratio
+isn't meaningful there; both its firing bands ship.
+
+### Counts written, both cities (source `inferred`, confidence = the measured
+precision above)
+
+| Facet | Bali articles (of 4,429) | Bali rows | Jakarta articles (of 4,772) | Jakarta rows |
+|---|---:|---:|---:|---:|
+| topic | 1,012 (22.8%) | 1,184 | 1,410 (29.5%) | 1,632 |
+| audience | 180 (4.1%) | 181 | 198 (4.1%) | 199 |
+| vibe | 534 (12.1%) | 581 | 477 (10.0%) | 503 |
+| cuisine | 324 (7.3%) | 353 | 300 (6.3%) | 318 |
+| price_band | 657 (14.8%) | 657 | 521 (10.9%) | 521 |
+| occasion | 385 (8.7%) | 423 | 456 (9.6%) | 548 |
+| **total** | | **3,379** | | **3,721** |
+
+Before: 0 rows, 0 articles, every facet, both cities (measured, see above).
+
+### Picker-combination matches (before → after)
+
+| Combination | Bali | Jakarta |
+|---|---:|---:|
+| topics: sustainability OR food-drink | 0 → **165** | 0 → **212** |
+| personas: tourist | 0 → **25** | 0 → **22** |
+| budgets: luxury | 0 → **486** | 0 → **381** |
+
+("personas" in the picker is `audience` restricted to `PERSONA_SLUGS =
+['expat','local','tourist','business-traveller']` — `preferences.ts`'s own
+constant. A reader who picks the **"local" persona** specifically will
+still match zero of this job's rows: `local` is the one audience term this
+job deliberately never tags, for the measured reason above. Everything
+else `audience` offers — `tourist`, `expat`, `business-traveller`, plus the
+eleven non-picker audience terms like `family`/`couples`/`foodies` — is
+tagged normally.)
+
+### Writes: idempotent, scoped, removable
+
+- **`source = 'inferred'`** for the base job; **`source = 'ai'`** for the
+  optional LLM-refinement pass (below) — the two non-`editor` values the
+  existing `entity_terms_source_check` CHECK constraint allows
+  (`ai`/`editor`/`inferred`; no migration taken — a new `source` value or a
+  provenance column is senior-db/architect territory, flagged as an open
+  follow-up, not improvised here). Both are scoped by `term_id ∈` the 139
+  term ids belonging to these six facets specifically, which is what makes
+  either producer's rows unambiguously its own for re-run/removal, given
+  `inferred` is already heavily used elsewhere (location) and cannot be
+  claimed as "only this job" without that scoping.
+- `confidence` = the measured precision of the (facet, band) that produced
+  the row (or the fixed, disclosed `LLM_CONFIDENCE = 0.75` for the `ai`
+  rows) — never invented, matching `now_classifier.confidence`'s own
+  stated discipline.
+- Every write is `INSERT ... ON CONFLICT ... WHERE source <> 'editor'` (an
+  editor override is never touched) and every re-run **retracts** a
+  previously-written row this run no longer proposes, scoped to
+  `(entity, that facet's term ids, that same source)` — so a base-job
+  re-run can never delete an `ai`-sourced row and vice versa, and a
+  retraction for one facet can never touch another. Covered by
+  `tests/test_facet_db.py` (idempotent re-run, stale retraction, editor
+  protection, dry-run, `remove_all`) against `now_test`'s real
+  `engine.entity_terms`.
+
+**Rerun** (safe, any time — re-derives from the current article text and
+the current `MEASURED_PRECISION`/`ALIAS_EXCLUSIONS` tables):
+```
+cd engine/packages/classifier
+uv run now-classifier tag-facets bali
+uv run now-classifier tag-facets jakarta
+```
+Add `--dry-run` to see counts without writing, `--limit N` to sample.
+
+**Removal** (all six facets, one city):
+```
+uv run now-classifier remove-facet-tags bali
+uv run now-classifier remove-facet-tags jakarta
+```
+`--facet <key>` (repeatable) to remove just one or a few facets;
+`--dry-run` to count without deleting. This deletes `source='inferred'`
+rows only (pass nothing else) — add nothing for the base job's rows; there
+is no flag needed for `ai` rows because none exist yet (the refinement
+pass has not been run against a real provider — see below).
+
+### Optional LLM refinement (deliverable #4) — OFF by default, unused today
+
+`facet_tagging/llm_refine.py` + `now-classifier refine-facets <city>`.
+Reviews ONLY the `lead` band — the borderline band every alias-based facet
+measured just under the ship bar (0.44–0.72 above) — and writes
+`source='ai'` for whatever the model judges `applies: true`, at the fixed
+`LLM_CONFIDENCE = 0.75`. Provider-agnostic: `ANTHROPIC_API_KEY` first (if
+one ever appears), else the Ollama Cloud OpenAI-compatible endpoint per the
+user's own global notes (`OLLAMA_CLOUD_API_KEY`/`OLLAMA_CLOUD_BASE_URL`,
+env or `~/.claude/secrets/ollama-cloud.env`, base `https://ollama.com/v1`,
+model `deepseek-v4-flash`). **No valid key exists in this environment**
+(Ollama Cloud key returns Unauthorized; no Anthropic key) — `load_llm_config()`
+returns `None`, `refine-facets` prints one line and exits 0, no partial
+write, exactly the "fails closed and cleanly on auth errors, as today"
+requirement. A live 401/403 from either provider is treated identically
+(abstain, no retry — retrying an auth failure wastes the shared weekly cap
+for nothing). Responses are cached on disk by exact prompt hash, so a
+re-run costs zero calls for anything already judged. Unit-tested
+(`tests/test_llm_refine.py`) against a mocked HTTP layer — config loading
+(both providers, fails-closed), response parsing (including markdown-fenced
+JSON), disk caching, and the 401 fail-closed path — since no real request
+has ever been made against a working key. **To run it once a valid key
+exists**: `uv run now-classifier refine-facets bali` (add `--dry-run`
+first).
+
+### Gate
+
+`uv run pytest tests/` in `engine/packages/classifier`: **128/128 passed**
+(scope rules, lexicon zone/exclusion logic, price_band cue instrument and
+its documented title-anchoring exception, candidate band precedence and
+the embed-only floor, the calibration gate itself — every shipped band
+`>= SHIP_AT_OR_ABOVE`, idempotent/retraction/editor-protection DB
+integration tests against `now_test`, and the LLM-refinement fail-closed
+path). The job ran end to end, real writes, both cities (counts above).
+
+### Open follow-ups (not blocking, flagged rather than improvised)
+
+- **A `primary_type_source`-shaped provenance gap for `entity_terms` too**:
+  like F132's `articles.primary_type`, `entity_terms` has no per-row
+  "which run/method wrote this" column beyond `source`+`confidence` — fine
+  at today's scale (two producers, six facets, both scoped by term_id) but
+  worth a real column if a third automated producer for these facets ever
+  appears. Senior-db/architect call, not taken here.
+- **Few-shot centroids are implemented but not fed by enough labels yet**
+  (`embed.build_facet_centroids`, `min_class_n=5`) — a larger calibration
+  round (or accumulating this job's own high-confidence title-band hits as
+  exemplars, carefully, to avoid circularity) could let `embed_only`
+  clear the bar where bare direct-term cosine could not. Not attempted
+  this round because it needs more labelled positives per term than a
+  ~100-item calibration sample gives most terms.
+- **`vibe`/`occasion` recall is real but modest** (title-only). If the
+  owner wants deeper coverage before the LLM path has a working key, the
+  next-cheapest lever is re-authoring `occasion`/`vibe`'s weakest aliases
+  (the same "resort-style"/"anniversary" class of generic alias that hurt
+  `audience`/`occasion`) and re-measuring `lead` on a fresh sample — not
+  done here because it would invalidate the measured 0.44–0.72 lead
+  numbers above without a re-measurement, which was out of scope for this
+  pass.

@@ -124,6 +124,92 @@ def classify_cmd(city: str, dry_run: bool, limit: int | None) -> None:
         click.echo(f"[{city}] DRY RUN -- nothing written to the database.")
 
 
+@cli.command("tag-facets")
+@click.argument("city", type=click.Choice(["jakarta", "bali"]))
+@click.option("--dry-run", is_flag=True, help="Compute everything, print stats, write nothing to the DB.")
+@click.option("--limit", type=int, default=None, help="Only process the first N articles (debugging).")
+def tag_facets_cmd(city: str, dry_run: bool, limit: int | None) -> None:
+    """WS5: topic/audience/vibe/cuisine/price_band/occasion tagging --
+    writes only the (facet, band) pairs `facet_tagging.calibration`
+    measured at or above the 0.80 ship bar, source='inferred'. See
+    docs/EDITION-2-PLAN.md's WS5 section for the calibration method and
+    the full precision table."""
+    from .facet_tagging.calibration import MEASURED_PRECISION
+    from .facet_tagging.pipeline import build_run
+    from .facet_tagging.db import write_tags
+
+    click.echo(f"[{city}] shipped bands this run: "
+               f"{ {f: list(b) for f, b in MEASURED_PRECISION.items()} }")
+    run, engine = build_run(city, limit=limit)
+    click.echo(f"[{city}] {run.articles_seen} articles scanned, "
+               f"{run.articles_missing_row} skipped (no matching public.articles row)")
+    try:
+        stats = write_tags(engine, run.proposals, run.facet_term_ids, dry_run=dry_run)
+    finally:
+        engine.dispose()
+    click.echo(f"[{city}] written={stats.written} retracted={stats.retracted} per_facet={stats.per_facet}")
+    if dry_run:
+        click.echo(f"[{city}] DRY RUN -- nothing written to the database.")
+
+
+@cli.command("remove-facet-tags")
+@click.argument("city", type=click.Choice(["jakarta", "bali"]))
+@click.option("--facet", multiple=True, help="Limit removal to these facet keys; default: all six WS5 facets.")
+@click.option("--dry-run", is_flag=True, help="Report how many rows WOULD be removed, without deleting.")
+def remove_facet_tags_cmd(city: str, facet: tuple[str, ...], dry_run: bool) -> None:
+    """Deletes every `source='inferred'` row this job wrote for the given
+    facet(s) (default: all six) in one city -- never touches `editor` or
+    `ai` rows. See docs/EDITION-2-PLAN.md for when to use this (e.g. a
+    facet's calibration regresses below the ship bar on a re-measurement)."""
+    from now_db.settings import city_database_url
+    from sqlalchemy import create_engine
+
+    from .facet_tagging.db import remove_all
+    from .facet_tagging.scope import ALL_FACETS
+    from .vocabulary import load_term_index
+
+    facets = list(facet) or list(ALL_FACETS)
+    terms = load_term_index()
+    term_ids = [uid for f in facets for uid, _p in terms.by_facet.get(f, {}).values()]
+    engine = create_engine(city_database_url(CITY_DB[city]))
+    try:
+        n = remove_all(engine, term_ids, dry_run=dry_run)
+    finally:
+        engine.dispose()
+    verb = "would remove" if dry_run else "removed"
+    click.echo(f"[{city}] {verb} {n} entity_terms rows for facets {facets}")
+
+
+@cli.command("refine-facets")
+@click.argument("city", type=click.Choice(["jakarta", "bali"]))
+@click.option("--dry-run", is_flag=True, help="Compute everything, print stats, write nothing to the DB.")
+@click.option("--limit", type=int, default=None, help="Only process the first N articles (debugging/cost control).")
+def refine_facets_cmd(city: str, dry_run: bool, limit: int | None) -> None:
+    """WS5 deliverable #4, OFF by default: an LLM second opinion on the
+    `lead`-band candidates every alias-based facet measured just under
+    the 0.80 ship bar. Requires a valid `ANTHROPIC_API_KEY` or
+    `OLLAMA_CLOUD_API_KEY` (env or `~/.claude/secrets/ollama-cloud.env`);
+    prints a message and exits cleanly (no error, no partial write) if
+    neither is set or the key is rejected. Writes `source='ai'`, never
+    `'inferred'` -- see `facet_tagging.db`'s module docstring."""
+    from .facet_tagging.llm_refine import load_llm_config
+    from .facet_tagging.pipeline import run_llm_refine
+
+    cfg = load_llm_config()
+    if cfg is None:
+        click.echo(f"[{city}] no LLM key configured (checked ANTHROPIC_API_KEY, OLLAMA_CLOUD_API_KEY env/secrets "
+                   f"file) -- skipping cleanly. This is the expected result until a valid key exists.")
+        return
+    click.echo(f"[{city}] using {cfg.safe_repr}")
+    stats, judged = run_llm_refine(city, dry_run=dry_run, limit=limit)
+    if stats is None:
+        click.echo(f"[{city}] no LLM key configured -- skipped.")
+        return
+    click.echo(f"[{city}] judged={judged} written={stats.written} retracted={stats.retracted} per_facet={stats.per_facet}")
+    if dry_run:
+        click.echo(f"[{city}] DRY RUN -- nothing written to the database.")
+
+
 @cli.command("check-bali-embeddings")
 def check_bali_embeddings() -> None:
     from now_db.settings import city_database_url
