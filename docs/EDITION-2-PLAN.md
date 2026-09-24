@@ -668,3 +668,31 @@ path). The job ran end to end, real writes, both cities (counts above).
   done here because it would invalidate the measured 0.44–0.72 lead
   numbers above without a re-measurement, which was out of scope for this
   pass.
+
+## 11. Release candidate, 2026-09-25
+
+Everything above is merged on `feat/edition-2` except WS6 (embedding model),
+which is still measuring and ships afterwards as a config switch if it wins —
+the default stays `BAAI/bge-small-en-v1.5`. Measured on this branch's
+production build, both cities:
+
+| Check | Result |
+|---|---|
+| Web typecheck · tests · both lints | clean · **100/100** · clean |
+| CMS tests | **51/51** |
+| Python against the real DB (filters · worker · classifier) | **128 · 64 · 128** |
+| `scripts/smoke.sh` | **39/39** |
+| `verify:competitor-policy` | 0 violations · 0 empty · 0 overlap, both cities (49–57 ms/article at concurrency 10) |
+| Rendered-page crawl, every venue story | Bali 2,047/2,047 · Jakarta 1,632/1,632 pages 200 · **0 competitor items in 50,925** |
+| Sticky nav, both scroll directions | top 0 px and height 53 px at every sampled position (WS2: CLS 0.00000 while scrolling) |
+
+**Deploy order additions since §8:** none to the schema. WS5's facet tags
+(`source='inferred'`, six facets) are DATA in the local city DBs and do not
+travel with a deploy — run `uv run now-classifier tag-facets <city>` against
+production after the migrations (dry-run first), or preferences for topics,
+personas and budgets match nothing there. The covisitation (04:15 UTC) and
+rival-flag (03:55 UTC) jobs ride in the worker image.
+
+**Production today:** `sha-1dded08`; city DBs at Alembic `0007` with
+`articles.slug` already applied; platform DB at `0009`. So the rollout also
+carries #45–#47, which were merged and never deployed.
