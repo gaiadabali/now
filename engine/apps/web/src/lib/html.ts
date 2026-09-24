@@ -136,6 +136,36 @@ export function stripTags(html: string): string {
   return decodeEntities(html.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim()
 }
 
+/**
+ * A pull quote never cuts mid-word.
+ *
+ * The article page lifts a paragraph as its pull quote (a real `pullquote`
+ * body block is what production is meant to supply — see `bodyBlocks.ts` —
+ * and this is what runs until then). The previous version was
+ * `quote.slice(0, 180).trimEnd() + '…'`, which truncates at a character
+ * count with no regard for what is at that boundary: the owner's own
+ * example ended "through K…", a family name split in half.
+ *
+ * This prefers a SENTENCE boundary — the first `.`/`!`/`?` at or before
+ * `limit`, so a quote that happens to make its point in one clean sentence
+ * is used whole. Failing that (the first sentence itself runs past the
+ * limit), it falls back to the last WORD boundary at or before it, which is
+ * the one guarantee this function makes unconditionally: it never returns a
+ * string that ends inside a word the source did not end there itself.
+ */
+export function sentenceBound(text: string, limit = 180): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= limit) return trimmed
+
+  const window = trimmed.slice(0, limit + 1)
+  const sentenceEnd = Math.max(window.lastIndexOf('. '), window.lastIndexOf('! '), window.lastIndexOf('? '))
+  if (sentenceEnd > -1) return trimmed.slice(0, sentenceEnd + 1).trim()
+
+  const wordEnd = window.slice(0, limit).lastIndexOf(' ')
+  const cut = wordEnd > 0 ? wordEnd : limit
+  return `${trimmed.slice(0, cut).trimEnd()}…`
+}
+
 function escapeText(text: string): string {
   return text
     .replace(/&/g, '&amp;')

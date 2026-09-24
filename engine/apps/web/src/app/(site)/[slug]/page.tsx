@@ -16,7 +16,7 @@ import {
   sectionOf,
 } from '@/lib/content'
 import { formatCount, formatDate, readingTime } from '@/lib/format'
-import { stripTags } from '@/lib/html'
+import { sentenceBound, stripTags } from '@/lib/html'
 import { getArticleRails } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
@@ -91,11 +91,21 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   // block in the Lexical body (see `bodyBlocks.ts` in the CMS package).
   const quoteIndex = Math.min(3, article.paras.length - 1)
   // Plain text: a pull quote is typeset, not marked up, and slicing it to 180
-  // characters would otherwise cut through the middle of a tag.
-  const quote = stripTags(article.paras[quoteIndex] ?? '')
+  // characters would otherwise cut through the middle of a tag. `sentenceBound`
+  // is the fix for the owner's own example: a naive 180-character slice ended
+  // "through K…", a name cut in half — this prefers a sentence boundary and
+  // otherwise a word boundary, never a mid-word cut.
+  const quote = sentenceBound(stripTags(article.paras[quoteIndex] ?? ''), 180)
+  const shareUrl = `https://www.${site.hostname}/${article.slug}`
 
   return (
     <article>
+      {/* Reading progress (DESIGN-SYSTEM motion). `animation-timeline:
+          scroll(root)` only — see magazine.css for what an unsupported
+          browser gets instead, which is an inert bar, not a broken one. */}
+      <div className="readbar" aria-hidden="true">
+        <span className="readbar__fill" />
+      </div>
       {beacon}
       {/* Says, on the page, that this page is not the published one.
           Draft mode is a cookie that outlives the story being previewed, so
@@ -122,9 +132,7 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
             </Link>
           </p>
           <h1 className="article-head__title display display--light">{article.title}</h1>
-          <p className="dek" style={{ maxWidth: '38ch' }}>
-            {article.dek}
-          </p>
+          <p className="dek">{article.dek}</p>
           <div className="byline">
             <span>
               Words by <span className="byline__name">NOW! Editorial</span>
@@ -167,9 +175,7 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
             ))}
 
             <figure className="pullquote">
-              <p className="pullquote__text">
-                {quote.length > 180 ? `${quote.slice(0, 180).trimEnd()}…` : quote}
-              </p>
+              <p className="pullquote__text">{quote}</p>
               <figcaption className="pullquote__attr">From the report</figcaption>
             </figure>
 
@@ -196,7 +202,36 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
           </div>
 
           <aside className="rail">
-            <Signup site={site} />
+            {/* Sticky: the previous aside "held only a newsletter box" and
+                ended where the prose happened to run out. Share now leads
+                it, and the whole rail tracks the reader down the column —
+                `top` backs off when the header condenses (magazine.css),
+                so it never overlaps the smaller header either. */}
+            <div className="aside-sticky">
+              <div className="share">
+                <p className="bandhead__kicker">Share this story</p>
+                <div className="share__list">
+                  {/* Real, zero-JS shares — no Web Share API plumbing to
+                      hydrate for two links. WhatsApp first: the highest-
+                      traffic share channel for a reader in either city. */}
+                  <a
+                    className="share__link"
+                    href={`https://wa.me/?text=${encodeURIComponent(`${article.title} ${shareUrl}`)}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    WhatsApp <span aria-hidden="true">↗</span>
+                  </a>
+                  <a
+                    className="share__link"
+                    href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(shareUrl)}`}
+                  >
+                    Email <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+              </div>
+              <Signup site={site} />
+            </div>
           </aside>
         </div>
       </div>
@@ -204,25 +239,30 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
       {/* Every rail comes from lib/recommend.ts, already chosen, ordered and
           labelled. Do not add a rail here that recommends by this story's own
           section: on a hotel story that is a rail of hotels, which is the one
-          thing this page must never show (recommend.ts, "The one rule"). */}
-      {rails.map((rail) => (
-        <Band key={rail.key}>
+          thing this page must never show (recommend.ts, "The one rule").
+          More than one rail must not read as the same band twice — DESIGN-
+          SYSTEM §2's "grid changes with the job" applies here too, so a
+          second rail switches to the index treatment rather than repeating
+          the card grid the first one just used. */}
+      {rails.map((rail, i) => (
+        <Band key={rail.key} reveal>
           <div className="shell">
             <BandHead kicker={rail.kicker} title={rail.title} />
-            <div className="grid grid--3 grid--ruled">
-              {/* Engine-ranked, so §10's position bias has to be corrected
-                  for — the slot is recorded on the impression AND the click. */}
-              {rail.items.map((a) => (
-                <StoryCard
-                  key={a.id}
-                  article={a}
-                  locale={locale}
-                  timeZone={tz}
-                  rail={a.rail}
-                  position={a.position}
-                />
-              ))}
-            </div>
+            {i % 2 === 0 ? (
+              <div className="grid grid--3 grid--ruled">
+                {/* Engine-ranked, so §10's position bias has to be corrected
+                    for — the slot is recorded on the impression AND the click. */}
+                {rail.items.map((a) => (
+                  <StoryCard key={a.id} article={a} locale={locale} timeZone={tz} rail={a.rail} position={a.position} />
+                ))}
+              </div>
+            ) : (
+              <div className="grid--index">
+                {rail.items.map((a) => (
+                  <StoryCard key={a.id} article={a} variant="row" locale={locale} timeZone={tz} rail={a.rail} position={a.position} />
+                ))}
+              </div>
+            )}
           </div>
         </Band>
       ))}

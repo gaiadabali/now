@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { decodeEntities, isSafeHref, sanitizeHtml, stripTags } from '../src/lib/html.ts'
+import { decodeEntities, isSafeHref, sanitizeHtml, sentenceBound, stripTags } from '../src/lib/html.ts'
 
 // ---------------------------------------------------------------------------
 // What the archive actually contains
@@ -170,4 +170,31 @@ test('a raw-text element closed with whitespace still ends where it should', () 
   // so this used to fail to match and everything after it was dropped.
   assert.equal(sanitizeHtml('a<script>evil()</script >b'), 'ab')
   assert.equal(sanitizeHtml('a<style>x{}</style\t>b'), 'ab')
+})
+
+// ---------------------------------------------------------------------------
+// sentenceBound — Edition 2's pull-quote fix
+// ---------------------------------------------------------------------------
+
+test('sentenceBound never cuts mid-word', () => {
+  // The owner's own example, reconstructed: a naive slice(0, 180) landed
+  // inside "Kimpton", so the quote read "...through K...". A word-boundary
+  // fallback must land on a real space, never inside a word.
+  const long =
+    'Guests can expect Kimpton signatures including the complimentary programme, ' +
+    'inspiring conversation with other guests and the hotel management through Kimpton Morning Kickstart'
+  const out = sentenceBound(long, 90)
+  assert.ok(out.endsWith('…'))
+  const withoutEllipsis = out.slice(0, -1)
+  assert.ok(long.startsWith(withoutEllipsis))
+  assert.equal(long[withoutEllipsis.length], ' ')
+})
+
+test('sentenceBound prefers a whole sentence when one fits', () => {
+  const text = 'This is short. This second sentence is much longer and runs well past the limit given here.'
+  assert.equal(sentenceBound(text, 40), 'This is short.')
+})
+
+test('sentenceBound returns text unchanged when already within the limit', () => {
+  assert.equal(sentenceBound('Short and sweet.', 180), 'Short and sweet.')
 })
