@@ -60,12 +60,8 @@ export async function DeskHome(props: Record<string, unknown>) {
             label="My drafts"
             count={desk.myDrafts.count}
             href={desk.myDrafts.href}
-            emptyNote={
-              desk.myDrafts.matched
-                ? 'Nothing waiting in your own drafts.'
-                : "We can't yet tell which byline is yours — add articles.createdBy to link a login " +
-                  'to a byline. Showing 0 rather than guessing.'
-            }
+            emptyNote="Nothing waiting in your own drafts."
+            note={desk.myDrafts.note}
           />
           <NeedsYouRow
             label="Scheduled stories"
@@ -175,16 +171,24 @@ function NeedsYouRow({
   count,
   href,
   emptyNote,
+  note,
 }: {
   label: string
   count: number
   href: string | null
   emptyNote: string
+  /** An always-shown caption under the label, regardless of count — for a
+   * limitation worth stating plainly every time rather than only when the
+   * number looks suspicious (see `MY_DRAFTS_NOTE` in `data.ts`). */
+  note?: string
 }) {
   if (count === 0) {
     return (
       <li className="desk__stat desk__stat--zero">
-        <span className="desk__stat-label">{label}</span>
+        <div>
+          <span className="desk__stat-label">{label}</span>
+          {note ? <span className="desk__stat-caption">{note}</span> : null}
+        </div>
         <span className="desk__stat-note">{emptyNote}</span>
       </li>
     )
@@ -192,7 +196,10 @@ function NeedsYouRow({
   const value = <span className="desk__stat-value">{count.toLocaleString()}</span>
   return (
     <li className="desk__stat">
-      <span className="desk__stat-label">{label}</span>
+      <div>
+        <span className="desk__stat-label">{label}</span>
+        {note ? <span className="desk__stat-caption">{note}</span> : null}
+      </div>
       {href ? (
         <Link className="desk__stat-link" href={href}>
           {value}

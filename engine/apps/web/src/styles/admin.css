@@ -3387,8 +3387,29 @@ html[data-theme='dark'] .graphic-icon {
 
 /* --- desk home ------------------------------------------------------------ */
 
+/* The dashboard override gets no `contentClassName` wrapper the way
+   `AdminViewFrame` gives every other custom view — see `DeskHome.tsx`'s own
+   header for why (the admin root's template is hardcoded regardless of a
+   custom dashboard, so there is no seam to hang a wrapper class on except
+   this one). Payload's own `DefaultDashboard` gets its gutter from wrapping
+   itself in `<Gutter>` (`@payloadcms/ui`); this reproduces the same padding
+   directly, off Payload's own `--gutter-h` — the same variable
+   `.classify__main` / `.console__main` already use, not a value invented for
+   this file. Its absence was the desk home sitting flush against the
+   viewport edge in the first pass. */
 .desk {
   max-width: 860px;
+  padding: calc(var(--base) * 1.4) var(--gutter-h) calc(var(--base) * 4);
+}
+
+.desk__stat-caption {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--theme-elevation-500);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .desk__hero {
@@ -3549,8 +3570,16 @@ html[data-theme='dark'] .graphic-icon {
 
 /* --- front-page editor ------------------------------------------------------ */
 
+/* Same gutter fix as `.desk` above, and the same reason: `AdminViewFrame`'s
+   `contentClassName` is only ever a bare classname wrapper — the padding has
+   to come from here, off Payload's own `--gutter-h`, the way
+   `.classify__main` / `.console__main` already do it. `max-width` grows
+   past the old single-column figure to give `.fp__layout`'s two columns
+   room; the bands column itself still reads at a sane measure because IT
+   caps its own width, not this outer wrapper. */
 .fp__main {
-  max-width: 960px;
+  max-width: 1400px;
+  padding: calc(var(--base) * 1.4) var(--gutter-h) calc(var(--base) * 4);
 }
 
 .fp__sub {
@@ -3583,78 +3612,145 @@ html[data-theme='dark'] .graphic-icon {
   border-color: var(--theme-error-500);
 }
 
+/* Bands on the left, the live preview on the right and STICKY — the second
+   pass's answer to "keep the preview, but not at the bottom of a 4,900px
+   page". Below the breakpoint both stack full-width, bands first: a writer
+   opens this screen to arrange bands, and even stacked, the page is now a
+   fraction of its first-pass height because rows are collapsed by default. */
+.fp__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: calc(var(--base) * 1.5);
+  align-items: start;
+}
+
+@media (max-width: 68.75rem) {
+  .fp__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fp__bands-col {
+  max-width: 720px;
+}
+
 .fp__bands {
   list-style: none;
   margin: 0 0 1rem;
   padding: 0;
-  counter-reset: none;
-}
-
-.fp__band {
-  padding: 1rem 0;
   border-top: 1px solid var(--theme-elevation-1000);
 }
 
-.fp__band:last-child {
+.fp__row {
   border-bottom: var(--hair, 1px solid var(--theme-elevation-150));
 }
 
-.fp__band-head {
+.fp__row-summary {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.6rem;
+  width: 100%;
+  padding: 0.65rem 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
 }
 
-.fp__band-index {
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
-  color: var(--theme-elevation-400);
+.fp__row-summary:hover .fp__row-name {
+  color: var(--now-accent);
+}
+
+.fp__row-summary:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+.fp__row-pos {
   flex: none;
   width: 1.5rem;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--theme-elevation-400);
 }
 
-.fp__band-fields {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
+.fp__row-main {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 
-.fp__band-fields input {
+.fp__row-name {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--theme-elevation-800);
+}
+
+.fp__row-meta {
+  font-size: 0.75rem;
+  color: var(--theme-elevation-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fp__row-chevron {
+  flex: none;
+  width: 1.5rem;
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--theme-elevation-400);
+}
+
+.fp__row--open .fp__row-chevron {
+  color: var(--now-accent);
+}
+
+.fp__row-detail {
+  padding: 0 0 1.1rem 2.25rem;
+}
+
+.fp__label-override {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.75rem;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--theme-elevation-150);
   border-radius: var(--style-radius-s, 3px);
   background: var(--theme-input-bg);
   color: var(--theme-text);
   font: inherit;
-  font-size: 0.875rem;
-}
-
-.fp__band-label {
   font-size: 0.8125rem;
-  color: var(--theme-elevation-500);
-  white-space: nowrap;
-}
-
-.fp__band-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  padding-left: 2.25rem;
-}
-
-@media (max-width: 52rem) {
-  .fp__band-body {
-    grid-template-columns: 1fr;
-  }
 }
 
 .fp__note {
-  padding-left: 2.25rem;
   color: var(--theme-elevation-500);
   font-size: 0.875rem;
+  max-width: 55ch;
+}
+
+.fp__add-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0 1.5rem;
+}
+
+.fp__add-band select,
+.fp__add-band input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-s, 3px);
+  background: var(--theme-input-bg);
+  color: var(--theme-text);
+  font: inherit;
+  font-size: 0.8125rem;
 }
 
 .fp__pins-label {
@@ -3787,8 +3883,21 @@ html[data-theme='dark'] .graphic-icon {
   color: var(--theme-error-500);
 }
 
+/* Sticky, so the preview stays in view while the (usually much taller) band
+   list scrolls beside it — the two-column half of "not at the bottom of a
+   4,900px page". `top` clears Payload's own fixed app header. Below the
+   `.fp__layout` breakpoint this simply stacks after the bands column, full
+   width, no longer sticky (there is nothing beside it to stay level with). */
 .fp__preview {
-  margin-top: 1.5rem;
+  position: sticky;
+  top: calc(var(--base) * 1.4);
+}
+
+@media (max-width: 68.75rem) {
+  .fp__preview {
+    position: static;
+    margin-top: 1.5rem;
+  }
 }
 
 .fp__preview-head {
@@ -3800,7 +3909,9 @@ html[data-theme='dark'] .graphic-icon {
 
 .fp__preview-frame {
   width: 100%;
-  height: 720px;
+  height: calc(100vh - var(--base) * 6);
+  min-height: 480px;
+  max-height: 820px;
   border: var(--edge, 1px solid var(--theme-elevation-1000));
   background: var(--theme-elevation-0);
 }

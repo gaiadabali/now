@@ -18,8 +18,6 @@ export const EDITOR_ROOT = '/team-editor'
  */
 export const DEPARTMENT_SECTIONS = ['dining', 'stay', 'wellness', 'things-to-do', 'events', 'editorial'] as const
 
-export const NON_DEPARTMENT_BAND_KEYS = ['lead', 'edit', 'for-you', 'guides', 'latest', 'explore'] as const
-
 /** A sensible starting order for a site whose `home_rails` has never been
  * saved — not a claim about what the home page currently renders, which
  * WS2 owns, only a scaffold so an editor has bands to arrange rather than a
@@ -36,20 +34,29 @@ export function defaultBandOrder(): string[] {
   ]
 }
 
-/** Bands that are a list of stories — the only ones pinning applies to.
- * `explore` is the areas index (DESIGN-SYSTEM.md §3), not stories. */
-export function bandHoldsStories(key: string): boolean {
-  return key !== 'explore'
-}
-
-export function bandLabel(key: string): string {
+/**
+ * "Raw band keys must never be the visible label" (DESIGN-SYSTEM.md §6 — say
+ * what a thing does, in the reader's own words). `key` is stored and is the
+ * one thing every `HomeRail` needs; everything below turns it into words a
+ * writer would actually use, and nothing in this file's public surface ever
+ * hands a raw key back to a component to render as a heading.
+ *
+ * `navLabels` is this site's REAL, currently governed nav — `Map<href
+ * without its leading slash, label>`, built by the caller from
+ * `getSiteConfig().nav` (`lib/site.ts`) so a department band reads "Resto &
+ * Bars section" the day someone renames Dining in the console, not the word
+ * "dining" forever. Falls back to a plain, capitalised section name only
+ * when this site's nav has no matching item.
+ */
+export function bandLabel(key: string, navLabels: Map<string, string>): string {
   if (key.startsWith('department:')) {
     const section = key.slice('department:'.length)
-    return `Department — ${section.replace(/-/g, ' ')}`
+    const navLabel = navLabels.get(section)
+    return `${navLabel ?? titleCase(section)} section`
   }
   switch (key) {
     case 'lead':
-      return 'Lead (the cover)'
+      return 'The cover'
     case 'edit':
       return 'The Edit'
     case 'for-you':
@@ -59,8 +66,68 @@ export function bandLabel(key: string): string {
     case 'latest':
       return 'Latest'
     case 'explore':
-      return 'Explore (areas)'
+      return 'Explore by area'
     default:
-      return key
+      // An unrecognised key (hand-written via the "custom" option, or set by
+      // something other than this screen) still never renders as itself —
+      // dashes/colons become spaces and the words are capitalised, which
+      // reads as an approximation rather than a raw identifier.
+      return titleCase(key.replace(/[-:]/g, ' '))
   }
+}
+
+function titleCase(s: string): string {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/**
+ * One line, plain words, for the collapsed row — "what fills this if you
+ * pin nothing". A description, not a query: the real content is fetched on
+ * demand only when a writer expands the band (`refreshAutoFillPreview`),
+ * so twelve bands do not mean twelve queries before anyone has looked at
+ * any of them.
+ */
+export function bandFillDescription(key: string, navLabels: Map<string, string>): string {
+  if (key.startsWith('department:')) {
+    const section = key.slice('department:'.length)
+    const navLabel = navLabels.get(section) ?? titleCase(section)
+    return `newest ${navLabel} stories`
+  }
+  switch (key) {
+    case 'guides':
+      return 'newest guides'
+    case 'for-you':
+      return 'each reader’s own recommendations — this band is personal, not editable here'
+    case 'explore':
+      return 'the areas index — not a list of stories'
+    default:
+      return 'newest stories'
+  }
+}
+
+/**
+ * Bands whose slots a writer may fill by hand. `for-you` is personal to
+ * each reader (pinning one story would override that for everyone) and
+ * `explore` lists areas, not stories — both are ordered like any other
+ * band, and neither is ever searched, pinned or previewed as a story list.
+ */
+export function bandPinnable(key: string): boolean {
+  return key !== 'for-you' && key !== 'explore'
+}
+
+/** The catalogue offered when adding a band — human label first, so nothing
+ * on this list ever shows a writer a raw key. `custom` is the escape hatch
+ * for a key this build does not know about; choosing it reveals a plain
+ * text input, clearly marked as advanced, rather than making free-text key
+ * entry the default way to add a band. */
+export function addableBandTypes(navLabels: Map<string, string>): Array<{ key: string; label: string }> {
+  return [
+    { key: 'lead', label: bandLabel('lead', navLabels) },
+    { key: 'edit', label: bandLabel('edit', navLabels) },
+    { key: 'for-you', label: bandLabel('for-you', navLabels) },
+    ...DEPARTMENT_SECTIONS.map((s) => ({ key: `department:${s}`, label: bandLabel(`department:${s}`, navLabels) })),
+    { key: 'guides', label: bandLabel('guides', navLabels) },
+    { key: 'latest', label: bandLabel('latest', navLabels) },
+    { key: 'explore', label: bandLabel('explore', navLabels) },
+  ]
 }

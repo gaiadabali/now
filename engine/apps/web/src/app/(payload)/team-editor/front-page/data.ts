@@ -4,7 +4,7 @@ import type { Where } from 'payload'
 
 import { getRegistrySite } from '@/lib/queries'
 import { payloadClient } from '@/lib/payload'
-import { railsFrom } from '@/lib/site'
+import { getSiteConfig, railsFrom } from '@/lib/site'
 import type { HomeRail } from '@/lib/site'
 
 import { defaultBandOrder, DEPARTMENT_SECTIONS } from './paths'
@@ -59,6 +59,20 @@ export async function getFrontPageState(): Promise<FrontPageState> {
     // never quote a different number than the one actually governing reads.
     ttlSeconds: Number(process.env.SITE_CONFIG_TTL_MS ?? 30_000) / 1000,
   }
+}
+
+/**
+ * The real, currently-governed nav — `Map<href without its leading slash,
+ * label>` — so a `department:<section>` band reads as this site's actual
+ * section name ("Resto & Bars section") rather than the internal slug
+ * (`dining`). `getSiteConfig()` (`lib/site.ts`) is the SAME merged read the
+ * masthead itself renders from (registry over the file), not a second guess
+ * at what the nav says — if the console renamed a section five minutes ago,
+ * this reads the new name.
+ */
+export async function getNavLabels(): Promise<Map<string, string>> {
+  const { nav } = await getSiteConfig()
+  return new Map(nav.map((item) => [item.href.replace(/^\//, ''), item.label]))
 }
 
 export type ArticleSummary = {

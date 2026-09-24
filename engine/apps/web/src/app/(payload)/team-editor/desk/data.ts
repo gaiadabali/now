@@ -1,10 +1,9 @@
 import 'server-only'
 
-import { cityPool } from '@/lib/payload'
+import { cityPool, payloadClient } from '@/lib/payload'
 import { platformConnectionString, query } from '@/lib/db'
 import { canEditFrontPage, canReviewClassification } from '@/lib/auth'
 import type { StaffUser } from '@/lib/auth'
-import { payloadClient } from '@/lib/payload'
 
 import {
   ARTICLE_CREATE,
@@ -37,7 +36,7 @@ export type DeskData = {
   greetingName: string
   isReviewer: boolean
   canEditFrontPage: boolean
-  myDrafts: Counted & { matched: boolean }
+  myDrafts: Counted & { note: string }
   scheduled: Counted
   reviewQueue: Counted | null
   problems: {
@@ -61,37 +60,23 @@ export type DeskData = {
 }
 
 /**
- * "My drafts" needs to know which `authors` row (the public byline) belongs
- * to the signed-in CMS login. There is no such link in the schema —
- * `Authors.ts`'s own header says so plainly: "`articles.author` relates to
- * this collection, not to `users`." Adding `articles.createdBy` would fix
- * this properly; it is a schema change (a new column + a Payload migration
- * against two live-ish city databases while three other workstreams are
- * mid-flight against the same collection), which is the architect's call,
- * not this ticket's. Until then this MATCHES ON NAME, best-effort, and says
- * so on screen rather than pretending the match is exact — a wrong "yours"
- * on somebody else's unpublished draft would be a worse bug than an honest
- * "we can't tell yet".
+ * "My drafts" — exact, via `articles.createdBy`.
+ *
+ * Approved as a follow-up once the desk home shipped without a reliable
+ * "is this yours": `author` is the public byline (`Authors.ts`'s own
+ * header — "not to `users`"), so this used to match on name, best-effort.
+ * `createdBy` (`stampCreatedBy` hook, set once on create) is a real link
+ * now, and this counts against it directly — no guessing, no name matching.
+ *
+ * **Existing rows have nobody recorded.** The migration added the column
+ * with no backfill — nothing recorded who started any of the 4,000+ rows
+ * already in this archive before today, and there was no honest way to
+ * guess it. `MY_DRAFTS_NOTE` says so on screen, in the reader's own words,
+ * every time — not only when the count looks suspiciously low — because the
+ * scope of what this counts is worth stating plainly rather than leaving a
+ * writer to work out why an old draft they remember starting isn't here.
  */
-async function findAuthorIdsForUser(
-  payload: Awaited<ReturnType<typeof payloadClient>>,
-  user: DeskUser,
-): Promise<number[]> {
-  const name = user.name?.trim()
-  if (!name) return []
-  try {
-    const { docs } = await payload.find({
-      collection: 'authors',
-      where: { name: { equals: name } },
-      limit: 5,
-      depth: 0,
-      pagination: false,
-    })
-    return docs.map((d) => Number(d.id)).filter(Number.isFinite)
-  } catch {
-    return []
-  }
-}
+const MY_DRAFTS_NOTE = 'Counts drafts you started here. Stories begun before today aren’t linked to anyone yet.'
 
 /**
  * Published articles carrying the platform's `location` facet, straight from
@@ -139,8 +124,6 @@ export async function getDeskData(user: DeskUser): Promise<DeskData> {
   const editsFrontPage = canEditFrontPage(user)
   const nowIso = new Date().toISOString()
 
-  const authorIds = await findAuthorIdsForUser(payload, user)
-
   const [
     myDraftsCount,
     scheduledCount,
@@ -151,12 +134,10 @@ export async function getDeskData(user: DeskUser): Promise<DeskData> {
     publishedIdRows,
     recent,
   ] = await Promise.all([
-    authorIds.length > 0
-      ? payload.count({
-          collection: 'articles',
-          where: { and: [{ _status: { equals: 'draft' } }, { author: { in: authorIds } }] },
-        })
-      : Promise.resolve({ totalDocs: 0 }),
+    payload.count({
+      collection: 'articles',
+      where: { and: [{ _status: { equals: 'draft' } }, { createdBy: { equals: user.id } }] },
+    }),
     payload.count({
       collection: 'articles',
       where: { and: [{ _status: { equals: 'draft' } }, { publishedAt: { greater_than: nowIso } }] },
@@ -198,12 +179,11 @@ export async function getDeskData(user: DeskUser): Promise<DeskData> {
     isReviewer: reviewer,
     canEditFrontPage: editsFrontPage,
     myDrafts: {
-      matched: authorIds.length > 0,
+      note: MY_DRAFTS_NOTE,
       count: myDraftsCount.totalDocs,
-      href:
-        authorIds.length > 0
-          ? articlesFilteredHref({ and: [{ _status: { equals: 'draft' } }, { author: { in: authorIds } }] })
-          : null,
+      href: articlesFilteredHref({
+        and: [{ _status: { equals: 'draft' } }, { createdBy: { equals: user.id } }],
+      }),
     },
     scheduled: {
       count: scheduledCount.totalDocs,

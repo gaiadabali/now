@@ -1,9 +1,8 @@
 import { canEditFrontPage, requireUser } from '@/lib/auth'
 
 import { AdminViewFrame, type AdminViewFrameProps } from '../AdminViewFrame'
-import { autoFillPreview, getFrontPageState, resolveArticleSummaries } from './data'
+import { getFrontPageState, getNavLabels, resolveArticleSummaries } from './data'
 import type { ArticleSummary } from './data'
-import { bandHoldsStories } from './paths'
 import { FrontPageEditor } from './FrontPageEditor'
 
 /**
@@ -31,6 +30,14 @@ import { FrontPageEditor } from './FrontPageEditor'
  * already sees on arrival. Redirecting an author away from a screen that
  * only shows them today's public home page would be hiding information for
  * no protective reason; showing it without edit controls is not.
+ *
+ * **Only pins are resolved eagerly here.** The per-band "what fills this"
+ * preview used to be fetched for all twelve bands on every load — a page
+ * nobody had looked at yet was already twelve queries deep. Bands now render
+ * collapsed, and the preview is fetched only when a writer expands one
+ * (`refreshAutoFillPreview` in `actions.ts`), so this view's own job shrinks
+ * to what every band needs regardless of whether it is ever opened: its
+ * pinned stories' headlines.
  */
 type Props = Omit<AdminViewFrameProps, 'children' | 'contentClassName' | 'params' | 'searchParams'> & {
   params?: { segments?: string[] } | Record<string, string | string[] | undefined>
@@ -41,22 +48,13 @@ export async function FrontPageView({ params, searchParams, ...frame }: Props) {
   const user = await requireUser()
   const canEdit = canEditFrontPage(user)
 
-  const state = await getFrontPageState()
+  const [state, navLabels] = await Promise.all([getFrontPageState(), getNavLabels()])
 
   const allPinIds = state.rails.flatMap((b) => b.pins ?? [])
-  const [summaries, autoFillEntries] = await Promise.all([
-    resolveArticleSummaries(allPinIds),
-    Promise.all(
-      state.rails
-        .filter((b) => bandHoldsStories(b.key))
-        .map(async (b) => [b.key, await autoFillPreview(b.key, b.pins ?? [])] as const),
-    ),
-  ])
+  const summaries = await resolveArticleSummaries(allPinIds)
 
   const initialSummaries: Record<number, ArticleSummary> = {}
   for (const [id, summary] of summaries) initialSummaries[id] = summary
-  const initialAutoFill: Record<string, ArticleSummary[]> = {}
-  for (const [key, preview] of autoFillEntries) initialAutoFill[key] = preview
 
   return (
     <AdminViewFrame {...frame} params={params} searchParams={searchParams} contentClassName="fp__main">
@@ -68,9 +66,9 @@ export async function FrontPageView({ params, searchParams, ...frame }: Props) {
       ) : null}
       <FrontPageEditor
         governed={state.governed}
-        initialAutoFill={initialAutoFill}
         initialRails={state.rails}
         initialSummaries={initialSummaries}
+        navLabelEntries={[...navLabels.entries()]}
         readOnly={!canEdit}
         siteName={state.siteName}
         ttlSeconds={state.ttlSeconds}
