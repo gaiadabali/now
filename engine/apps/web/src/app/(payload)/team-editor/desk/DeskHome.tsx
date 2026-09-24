@@ -160,6 +160,11 @@ export async function DeskHome(props: Record<string, unknown>) {
               Front page
             </Link>
           ) : null}
+          {desk.quickActions.suggestions ? (
+            <Link className="desk__action" href={desk.quickActions.suggestions}>
+              How suggestions are doing
+            </Link>
+          ) : null}
         </div>
       </section>
     </div>

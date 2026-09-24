@@ -2,7 +2,8 @@ import 'server-only'
 
 import { cityPool, payloadClient } from '@/lib/payload'
 import { platformConnectionString, query } from '@/lib/db'
-import { canEditFrontPage, canReviewClassification } from '@/lib/auth'
+import { canEditFrontPage, canReviewClassification, canViewRailAnalytics } from '@/lib/auth'
+import { railsAnalyticsHref } from '../platform/paths'
 import type { StaffUser } from '@/lib/auth'
 
 import {
@@ -56,6 +57,8 @@ export type DeskData = {
     upload: string
     review: string | null
     frontPage: string | null
+    /** Editor/admin only — the page otherwise had no way in but its URL. */
+    suggestions: string | null
   }
 }
 
@@ -229,6 +232,7 @@ export async function getDeskData(user: DeskUser): Promise<DeskData> {
       upload: MEDIA_CREATE,
       review: reviewer ? REVIEW_ROOT : null,
       frontPage: editsFrontPage ? FRONT_PAGE_ROOT : null,
+      suggestions: canViewRailAnalytics(user) ? railsAnalyticsHref() : null,
     },
   }
 }
