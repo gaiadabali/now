@@ -84,8 +84,18 @@ export function StoryCard({
     </Link>
   ) : null
 
+  // Weight contrast (DESIGN-SYSTEM "Hierarchy"): Cormorant 300 stays a
+  // cover/display-size face only. At card and index sizes the light weight
+  // was the single biggest reason the previous pass "read faint and
+  // monotone" — the Latest index worst of all, because `row` sets the
+  // smallest headline in the system in the same weight as a 5.6rem cover.
+  // 500 for a card with a photograph carrying visual weight beside it; 600
+  // for the two variants that carry NONE (`row`, `index`) and so need the
+  // type itself to do that work.
+  const headlineWeight = variant === 'row' || variant === 'index' ? 'display--strong' : 'display--medium'
+
   const headline = (
-    <h3 className="card__headline display display--light">
+    <h3 className={`card__headline display ${headlineWeight}`}>
       <Link href={href} {...attribution}>
         {article.title}
       </Link>
@@ -115,7 +125,7 @@ export function StoryCard({
   if (variant === 'row') {
     return (
       <article className="card card--row">
-        <h3 className="card__headline display display--light">
+        <h3 className={`card__headline display ${headlineWeight}`}>
           <Link href={href} {...attribution}>
             {article.title}
           </Link>

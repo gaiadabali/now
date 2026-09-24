@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { HeaderScroll } from '@/components/HeaderScroll'
 import type { SignedInReader } from '@/lib/reader'
 import type { SiteConfig } from '@/lib/site'
 
@@ -32,9 +33,22 @@ import type { SiteConfig } from '@/lib/site'
  * more than anywhere: the archive has 453 stay stories in Bali and 420 in
  * Jakarta, and until now there was no Hotels entry at all.
  *
- * Still a server component with no client JavaScript. The nav does not
- * collapse into a hamburger on desktop; on small screens it scrolls
- * horizontally, which keeps every section one tap away instead of two.
+ * **Edition 2 — sticky, condensing, and a real mobile menu.** Three changes,
+ * none of them adding a client-rendered masthead:
+ *
+ * - `<HeaderScroll>` is the one piece of client JavaScript this component
+ *   pulls in, and it renders nothing — it only toggles two classes on
+ *   `<body>` (see that file). The masthead itself is unchanged: still a
+ *   server component, still rendered once, still fully there without JS.
+ * - The nav no longer scrolls sideways at 360px. `site.nav` now sits inside
+ *   a native `<details>` disclosure below `62rem` — a real drawer, keyboard-
+ *   operable and screen-reader-correct for free, needing no script to open
+ *   or close it. Above `62rem` the same markup renders as the horizontal
+ *   list it always was; `magazine.css` is what switches between the two,
+ *   not this component.
+ * - Condensing is the shrink a reader sees on scroll — smaller logo, the
+ *   utility row folded away — driven entirely by the `hdr-condensed` class
+ *   `HeaderScroll` sets; there is no second markup branch for it here.
  */
 export function Masthead({
   site,
@@ -74,6 +88,7 @@ export function Masthead({
 }) {
   return (
     <header className="masthead">
+      <HeaderScroll />
       <div className="shell">
         <div className="masthead__util">
           <span className="masthead__dateline">{today}</span>
@@ -113,17 +128,26 @@ export function Masthead({
 
       <div className="masthead__nav">
         <div className="shell">
-          <nav aria-label="Sections">
-            <ul className="masthead__nav-list">
-              {site.nav.map((item) => (
-                <li key={item.href}>
-                  <Link className="masthead__nav-link" href={item.href}>
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          {/* `open` is never set — closed is the correct default on a phone,
+              and `magazine.css` forces the panel open above 62rem regardless
+              of this attribute, so the same markup serves both. */}
+          <details className="navdrawer">
+            <summary className="navdrawer__summary">
+              <span className="navdrawer__icon" aria-hidden="true" />
+              <span className="navdrawer__label">Sections</span>
+            </summary>
+            <nav className="navdrawer__panel" aria-label="Sections">
+              <ul className="masthead__nav-list">
+                {site.nav.map((item) => (
+                  <li key={item.href}>
+                    <Link className="masthead__nav-link" href={item.href}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </details>
         </div>
       </div>
     </header>
