@@ -259,12 +259,17 @@ export default async function DesignPage() {
       <section className="band">
         <BandHead kicker="Edition 2" title="Motion" note="purposeful, fast, and off under reduced motion" />
         <p className="dek" style={{ marginBottom: 'var(--space-m)' }}>
-          No animation library. Everything below is CSS — reveal-on-scroll is
-          `animation-timeline: view()` behind `@supports`, the reading progress bar (article
-          pages) is `animation-timeline: scroll(root)`, and both stay fully visible with no
-          animation at all wherever a browser or a reader's OS does not support or does not
-          want it (`prefers-reduced-motion`). Hover a card below for the image-zoom and
-          underline draw.
+          No animation library. The reading progress bar (article pages) is CSS —
+          `animation-timeline: scroll(root)` — and stays fully visible with no animation at all
+          wherever a browser does not support it. Reveal-on-scroll is the one piece of client
+          JavaScript this system spends on more than the header:
+          a small IntersectionObserver (`RevealObserver.tsx`) that shows a band already in view
+          immediately, no animation, and animates the rest in as a reader scrolls to them —
+          a pure CSS version (`animation-timeline: view()`) held anything below the fold at
+          opacity 0 in a full-page screenshot, a print, or anything else that never scrolls a
+          real viewport, which is the exact thing "visible without JS" is meant to prevent.
+          Content stays visible with no JS at all, and under `prefers-reduced-motion` the
+          observer never runs. Hover a card below for the image-zoom and underline draw.
         </p>
         <div className="grid grid--3">
           <StoryCard article={articles[0]} locale={site.locale} timeZone={site.timezone} />

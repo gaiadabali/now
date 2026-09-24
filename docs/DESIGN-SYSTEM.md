@@ -406,7 +406,7 @@ Words are design material. The register is a magazine's, not a product's.
 
 "Fast, with proper animation" — the owner's brief — and, immediately after,
 the constraint that makes it possible: **no animation library**. Everything
-below is CSS, plus one small client component that owns exactly the one
+below is CSS, plus two small client components that own exactly the
 behaviour CSS cannot express on its own.
 
 **Tokens** (`tokens.css`): `--dur` (180ms) for anything that responds to a
@@ -415,12 +415,37 @@ direct interaction — hover, focus, the header condensing. `--dur-reveal`
 they scroll — long enough to see, short enough not to lag behind the scroll
 that triggered it. Both collapse under `prefers-reduced-motion`.
 
-**Reveal-on-scroll** — `[data-reveal]` in `base.css`. `animation-timeline:
-view()`, `@supports`-gated: a band's own head and body settle a beat apart
-(a small negative `animation-delay` in the scroll-driven timeline's own
-percentage space) as it enters the viewport. Nothing here is a class a script
-sets — the unannotated state is fully visible, which is what a browser
-without the feature, or a reader without JavaScript at all, gets. Opt-in per
+**Reveal-on-scroll** — `[data-reveal]` in `base.css`, driven by
+`components/RevealObserver.tsx`. The first version was pure CSS
+(`animation-timeline: view()`), and it broke the exact rule it was built to
+honour: an element that never scrolls into a REAL viewport — a full-page
+screenshot, a print, a reader mode, some crawlers — sits at its `from`
+keyframe (opacity 0) forever, because the timeline that would move it past
+that keyframe never advances. Found in review as a page blank from the fold
+down in a full-page capture. "Visible without JS" was true and "visible
+without scrolling" was not, and the brief's rule covers both.
+
+So it is JS-gated the other way now: `[data-reveal]` is unconditionally
+`opacity: 1` in CSS, and NOTHING hides it unless a script has added
+`.reveal-ready` to `<html>` (once, on mount, never under
+`prefers-reduced-motion` or with no JavaScript) AND `.reveal-pending` to the
+element itself — applied only from INSIDE an IntersectionObserver callback
+that has positively confirmed the element is off-screen, never from a
+synchronous measurement taken before the observer exists. That distinction
+is itself a fix: a version that measured position up front and pre-hid
+anything below the fold still produced a blank full-page screenshot,
+because that kind of capture resizes the viewport to the page's whole
+height and can complete before the observer's first (asynchronous)
+callback ever runs — a synchronously pre-hidden element had no path back to
+visible in time. Deciding only inside the callback means every element
+stays at its unconditional `opacity: 1` until that callback runs, and stays
+there for good if it never does. `.is-visible` — added the moment an
+element is confirmed in view, first callback or a later scroll — is what
+plays the actual reveal, and is also how an element already on screen at
+load is shown immediately with no animation: straight to `.is-visible`,
+never through `.reveal-pending` at all. `@media print` forces every state
+back to visible regardless, because a
+print is exactly the "never scrolls" case the bug was found in. Opt-in per
 band (`<Band reveal>`) and never on the first band on a page.
 
 **Image hover zoom** — `.card__img`/`.frontlead__hero-img` scale 1.02 inside a
@@ -435,9 +460,10 @@ cannot animate from a width of zero the way a background can.
 
 **The header condense/hide transition** — `transform`/`box-shadow` only, on
 `.masthead`, triggered by two classes `HeaderScroll.tsx` toggles on `<body>`.
-The one client component this system uses, and it renders nothing: a
-passive, rAF-throttled scroll listener, no IntersectionObserver needed
-because reveal-on-scroll turned out to have a pure-CSS answer instead.
+A passive, rAF-throttled scroll listener — the header's hide-on-down/
+reveal-on-up has no CSS-only equivalent, which is why this is still a small
+client component even though reveal-on-scroll (above) also ended up needing
+one.
 
 **Reading progress** — the article page's `.readbar`, `animation-timeline:
 scroll(root)`. Same reasoning as reveal: `@supports`-gated, inert rather than
