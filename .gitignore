@@ -84,3 +84,8 @@ engine/apps/web/public/beacon.min.js
 
 # Agent worktrees (Claude Code isolation) — local scratch checkouts, never content.
 .claude/worktrees/
+
+# Local caches (e.g. the classifier's LLM verdict cache, 8.7k files). Machine-
+# generated and re-creatable; an archive of the 2026-09-25 verdicts is kept on
+# helios at /root/.now-deploy/llm-facet-refine-cache-20260925.tgz.
+.cache/
