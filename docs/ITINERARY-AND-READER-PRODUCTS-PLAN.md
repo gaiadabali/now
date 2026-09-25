@@ -1,6 +1,6 @@
 # Itineraries, reading state, the print edition, subscriptions and partner offers — plan
 
-**Status:** proposed 2026-09-26, not yet reviewed with the owner. Nothing here is built.
+**Status:** proposed 2026-09-26; owner answers recorded in §11a (2026-09-26). Build starting.
 **Companion to:** [ARCHITECTURE.md](../ARCHITECTURE.md) (§5 data model, §10 personalization,
 §11 partner tiers, §12 itinerary engine), [READER-IDENTITY.md](READER-IDENTITY.md) (accounts,
 the reader/staff boundary), [SURFACES-PLAN.md](SURFACES-PLAN.md) (the admin shell and console
@@ -1076,6 +1076,28 @@ strengthen the hidden-rival guard rather than weaken it).
 8. **Curated itineraries' voice.** Are "48 Hours in Canggu" pieces written as itineraries
    (stops with times) or as articles that *link* an itinerary? Proposed: both — an itinerary
    object with a slug, and a story that embeds it.
+
+### 11a. The owner's answers (Hansel, 2026-09-26) — these supersede the proposals above
+
+1. **Partners and offers.** A partner is a venue under contract with NOW! that pays for exposure
+   in the articles (e.g. a restaurant that wants to give readers a discount). Offers are a
+   partner benefit: only venues under an active paid partnership issue them.
+2. **No membership product.** Two reader products, named separately:
+   **Newsletter** (the standard email subscription, promotions opt-in inside it) and a
+   **print subscription** to buy the magazine — a year, or month by month. The dashboard's
+   Membership panel is retired.
+3. **Print terms, prices and delivery** follow the current live site (take them from its
+   subscribe page; do not invent).
+4. **Payment gateway: not decided.** Build behind a provider interface and ship a
+   **simulated gateway** first (full order lifecycle, webhooks, refunds, failures), so
+   Midtrans or Xendit is a later drop-in.
+5. **An account is required** to buy print. No guest checkout.
+6. **NOW! handles everything** — circulation, offers and partnerships. No separate
+   circulation role.
+7. **Partner logins are needed now**, not after ten offers. The partner portal (P8.1, the third
+   identity population) moves up to run alongside the offers console.
+8. **Curated itineraries: both** — itinerary objects with a slug, and stories that embed them.
+9. **Media storage: MinIO** (S3-compatible), replacing the planned Garage bucket.
 
 ---
 
