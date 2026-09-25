@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { HeaderScroll } from '@/components/HeaderScroll'
 import type { SignedInReader } from '@/lib/reader'
+import { signOut } from '@/lib/readerActions'
 import type { SiteConfig } from '@/lib/site'
 
 /**
@@ -137,19 +138,35 @@ export function Masthead({
             <Link href="/search">Search</Link>
             <Link href="/subscribe">Newsletter</Link>
             {/* The entrance to an account system that has been complete and
-                unreachable. Signed in, the slot shows the reader's own name
-                rather than "Sign in" a second time — the name IS the proof
-                they are in, and a reader who is already signed in has no use
-                for a link that would just sign them in again. */}
+                unreachable. Signed in, this reads as two controls doing two
+                different jobs — "Your account" (where the bare uppercase
+                name used to sit, which read as a label rather than a link:
+                nothing about "DEWI" said it was clickable or where it went)
+                and a real "Sign out" beside it, so ending a session never
+                requires a trip to the dashboard first. Signed out, "Join"
+                sits beside "Sign in" — the previous row only offered the
+                one, and a reader with no account yet had no header path to
+                get one short of guessing `/account/register`. */}
             {accountsEnabled ? (
               reader ? (
-                <Link className="masthead__reader" href="/account">
-                  {reader.name ?? 'Account'}
-                </Link>
+                <>
+                  <Link className="masthead__reader" href="/account">
+                    <span className="masthead__greeting">Hi, {reader.name ?? 'there'} · </span>
+                    Your account
+                  </Link>
+                  <form action={signOut} className="masthead__signout">
+                    <button type="submit">Sign out</button>
+                  </form>
+                </>
               ) : (
-                <Link className="masthead__signin" href="/account/login">
-                  Sign in
-                </Link>
+                <>
+                  <Link className="masthead__signin" href="/account/login">
+                    Sign in
+                  </Link>
+                  <Link className="masthead__join" href="/account/register">
+                    Join
+                  </Link>
+                </>
               )
             ) : null}
             <Link className="masthead__subscribe" href="/subscribe">
