@@ -165,7 +165,15 @@ smoke_city() {
   # province. A rail is allowed to be absent (there are no upcoming events in
   # either archive, so "What's On" does not render); it is not allowed to be
   # made up. These four titles were the fixture's, verbatim.
-  if grep -qE 'Ubud Writers|Sanur Village Festival|Bali Arts Alliance|Nusa Dua Light Festival' <<<"$home"; then
+  #
+  # The fixture's fingerprint is the SET, not any one name: the Events
+  # department band (#50) now shows real Bali coverage, which includes a real
+  # story titled "Ubud Writers & Readers Festival Finds Its Voice Each Year".
+  # Matching any single name failed a correct page; three of the four
+  # together is what the fixture rendered and real coverage will not.
+  local fixture_hits
+  fixture_hits=$(grep -oE 'Ubud Writers|Sanur Village Festival|Bali Arts Alliance|Nusa Dua Light Festival' <<<"$home" | sort -u | wc -l)
+  if [[ "$fixture_hits" -ge 3 ]]; then
     bad "$name home page is rendering fixture events"
   else
     ok "no fixture content on the home page"
