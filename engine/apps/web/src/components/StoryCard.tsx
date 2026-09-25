@@ -67,7 +67,9 @@ export function StoryCard({
   // a card or rail renders.
   const showSection = section !== UNCLASSIFIED
   const href = `/${article.slug}`
-  const withImage = variant !== 'index' && variant !== 'row'
+  // A story with no hero has `image === ''`; next/image then logs "missing
+  // required src" on every render, so such a card simply has no figure.
+  const withImage = variant !== 'index' && variant !== 'row' && Boolean(article.image)
   // On the headline link only, not the figure link beside it: both point at
   // the same article, and tagging both would let one card report two clicks.
   const attribution = {
