@@ -58,7 +58,11 @@ function content(
   if (rest.length === 0) return <CommerceOverviewView />
 
   if (rest.length === 1 && rest[0] === 'orgs') {
-    return <OrgsListView searchParams={{ q: searchParam(searchParams, 'q') }} />
+    return (
+      <OrgsListView
+        searchParams={{ q: searchParam(searchParams, 'q'), page: searchParam(searchParams, 'page') }}
+      />
+    )
   }
 
   if (rest.length === 1 && rest[0] === 'campaigns') return <CampaignsView />

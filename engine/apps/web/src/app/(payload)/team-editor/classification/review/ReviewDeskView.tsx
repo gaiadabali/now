@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { requireReviewerAccess } from '@/lib/auth'
 import { getQueueShape, getReviewClusters } from '@/lib/review'
 
+import { AdminPager, pagerSummary } from '../../Pager'
 import { clusterHref, REVIEW_ROOT } from '../paths'
 
 /**
@@ -33,7 +34,22 @@ import { clusterHref, REVIEW_ROOT } from '../paths'
 
 const pct = (n: number | null): string => (n === null ? '—' : `${Math.round(n * 100)}%`)
 
-export async function ReviewDeskView({ searchParams }: { searchParams: { facet?: string } }) {
+/**
+ * How many clusters one screenful shows.
+ *
+ * `getReviewClusters()` still fetches every pending cluster in one query —
+ * there is no SQL `LIMIT` here, unlike the orgs list below, because the
+ * summary numbers on this page (`shape`, the per-facet counts, "N clusters
+ * covering M proposals") are computed over the WHOLE set and have to stay
+ * that way whichever page is showing. What changed is only how much of
+ * `clusters` gets past the `.slice()` and into the DOM: unpaginated, 345
+ * clusters at roughly 65px each rendered a 22,000px page (found on staging,
+ * screenshot `09b-classification-review-viewport.png`) — nothing was wrong
+ * with any one row, there were just all of them, at once, every time.
+ */
+const CLUSTERS_PER_PAGE = 25
+
+export async function ReviewDeskView({ searchParams }: { searchParams: { facet?: string; page?: string } }) {
   await requireReviewerAccess()
   const { facet } = searchParams
   const [shape, all] = await Promise.all([getQueueShape(), getReviewClusters()])
@@ -41,6 +57,17 @@ export async function ReviewDeskView({ searchParams }: { searchParams: { facet?:
   const facets = [...new Set(all.map((c) => c.facetKey))].sort()
   const clusters = facet ? all.filter((c) => c.facetKey === facet) : all
   const shown = clusters.reduce((n, c) => n + c.pending, 0)
+
+  const totalPages = Math.max(1, Math.ceil(clusters.length / CLUSTERS_PER_PAGE))
+  const requestedPage = Number(searchParams.page)
+  const page = Number.isInteger(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1
+  const pageClusters = clusters.slice((page - 1) * CLUSTERS_PER_PAGE, page * CLUSTERS_PER_PAGE)
+  const hrefForPage = (target: number) => {
+    const qs = [facet ? `facet=${encodeURIComponent(facet)}` : null, target > 1 ? `page=${target}` : null]
+      .filter(Boolean)
+      .join('&')
+    return qs ? `${REVIEW_ROOT}?${qs}` : REVIEW_ROOT
+  }
 
   return (
     <>
@@ -96,7 +123,7 @@ export async function ReviewDeskView({ searchParams }: { searchParams: { facet?:
         </div>
       ) : (
         <ul className="classify__clusters">
-          {clusters.map((c) => (
+          {pageClusters.map((c) => (
             <li className="classify__cluster" key={`${c.facetKey}|${c.legacyCategory}|${c.proposedValue}`}>
               <Link className="classify__cluster-link" href={clusterHref(c)}>
                 <span className="classify__cluster-count">{c.pending.toLocaleString()}</span>
@@ -143,6 +170,13 @@ export async function ReviewDeskView({ searchParams }: { searchParams: { facet?:
         {shown.toLocaleString()} proposal{shown === 1 ? '' : 's'} across{' '}
         {shape.articlesPending.toLocaleString()} articles.
       </p>
+
+      {clusters.length > 0 ? (
+        <>
+          <p className="admin-pager__summary">{pagerSummary(page, CLUSTERS_PER_PAGE, clusters.length)} clusters</p>
+          <AdminPager hrefForPage={hrefForPage} page={page} totalPages={totalPages} />
+        </>
+      ) : null}
     </>
   )
 }

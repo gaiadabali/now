@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { decodeEntities } from '@/lib/html'
 import { cityPool } from '@/lib/payload'
 import { facetTerms } from '@/lib/classification'
 
@@ -139,7 +140,7 @@ export async function getReviewClusters(): Promise<ReviewCluster[]> {
     minConfidence: r.min_conf === null ? null : Number(r.min_conf),
     maxConfidence: r.max_conf === null ? null : Number(r.max_conf),
     reasonings: Number(r.reasonings),
-    sampleTitles: (r.sample_titles ?? []).map((t: unknown) => String(t)),
+    sampleTitles: (r.sample_titles ?? []).map((t: unknown) => decodeEntities(String(t))),
     proposalIsTerm: vocab.get(String(r.facet_key))?.has(String(r.proposed_value)) ?? false,
   }))
 }
@@ -308,7 +309,7 @@ export async function getCluster(key: ClusterKey): Promise<ClusterDetail | null>
     members: members.rows.map((r) => ({
       reviewId: Number(r.review_id),
       articleId: Number(r.article_id),
-      title: String(r.title ?? ''),
+      title: decodeEntities(String(r.title ?? '')),
       dek: r.dek === null ? null : String(r.dek),
       status: String(r.status ?? ''),
       publishedAt: r.published_at === null ? null : new Date(r.published_at).toISOString(),

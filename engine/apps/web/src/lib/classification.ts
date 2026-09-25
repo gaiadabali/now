@@ -2,6 +2,7 @@ import 'server-only'
 
 import pg from 'pg'
 
+import { decodeEntities } from '@/lib/html'
 import { cityPool } from '@/lib/payload'
 
 /**
@@ -412,7 +413,7 @@ export async function getClassificationQueue(
     const meta = r.weakest_term ? terms.get(String(r.weakest_term)) : undefined
     return {
       id: Number(r.id),
-      title: String(r.title ?? ''),
+      title: decodeEntities(String(r.title ?? '')),
       status: String(r.status ?? 'draft'),
       primaryType: r.primary_type === null ? null : String(r.primary_type),
       format: r.format === null ? null : String(r.format),
