@@ -48,7 +48,15 @@
 .masthead__actions {
   display: flex;
   align-items: baseline;
-  gap: var(--space-m);
+  /* Was a hard no-wrap row. "Hi, {name} · Your account" plus a separate
+     "Sign out" control is longer than the bare name it replaced, and at
+     390px there is not always room for the full row beside Search,
+     Newsletter and Subscribe — wrapping is what keeps that a tidy second
+     line instead of the row running past the edge of the page (§7: no
+     horizontal scroll at 360px, on every reader page). */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2xs) var(--space-m);
   font-size: var(--t-micro);
   letter-spacing: var(--track-micro);
   text-transform: uppercase;
@@ -61,26 +69,55 @@
    every reader page. It is the kind of collision that looks like a colour
    choice rather than a bug, so each named action is scoped under
    `.masthead__actions` to (0,2,0) and the cascade resolves by structure rather
-   than by `!important`. */
-.masthead__actions a {
+   than by `!important`. Extended to `button` (0,1,1 there too) for "Sign
+   out", which is the same slot's other new control and browser button
+   chrome needs resetting to read as a nav item rather than a widget. */
+.masthead__actions a,
+.masthead__actions button {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
   color: var(--mute);
   transition: color var(--dur) var(--ease);
 }
-.masthead__actions a:hover {
+.masthead__actions a:hover,
+.masthead__actions button:hover {
   color: var(--red);
 }
+.masthead__actions form {
+  display: contents;
+}
 
-/* Sign-in and the signed-in reader's name occupy the same slot and carry the
-   same weight — one is not a lesser version of the other, it is the state
-   before it. */
+/* Sign-in/Join and the signed-in "Your account" occupy the same slot and
+   carry the same weight — one is not a lesser version of the other, it is
+   the state before it. "Sign out" stays with the plain nav-item colour
+   above: it is neither of those two, and giving it the same weight would
+   read as a third primary action in one slot. */
 .masthead__actions .masthead__signin,
+.masthead__actions .masthead__join,
 .masthead__actions .masthead__reader {
   color: var(--type);
   font-weight: 500;
 }
 .masthead__actions .masthead__reader:hover,
-.masthead__actions .masthead__signin:hover {
+.masthead__actions .masthead__signin:hover,
+.masthead__actions .masthead__join:hover {
   color: var(--red);
+}
+
+/* The greeting clause only, hidden below 30rem so "Sign in · Join" and
+   "Your account · Sign out" both stay one tidy phrase at 390px rather than
+   the row wrapping mid-sentence — "Your account" alone still says exactly
+   where the link goes. */
+@media (max-width: 29.9rem) {
+  .masthead__greeting {
+    display: none;
+  }
 }
 
 .masthead__actions .masthead__subscribe {
@@ -346,6 +383,16 @@
   }
 }
 
+/* The main column: "Picked for you" leads it, above the two-up panel grid
+   below. A plain flex stack — the lead panel and the grid are two different
+   shapes, not two more cells of the same one. */
+.acct-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  min-width: 0;
+}
+
 .acct-panels {
   display: grid;
   gap: var(--space-2xl) var(--gutter);
@@ -355,6 +402,72 @@
   .acct-panels {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* A panel that earns the whole row rather than half of it — today, Saved,
+   once it has real cards in it (account/page.tsx has the reasoning). */
+@media (min-width: 40rem) {
+  .acct-panel--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* "Picked for you"'s own subtitle — the rail's honest label ("Because you
+   like Ubud and Wellness" / "Because of what you read"), sentence case
+   because it is a sentence, not a Bebas section label. */
+.acct-foryou__reason {
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  color: var(--mute);
+  margin-top: var(--space-3xs);
+}
+
+/* Shared by "Picked for you" and "Saved" — a flat grid of compact
+   `card--horizontal` cards. Same reasoning as `ArticleRails.tsx`'s
+   `.grid--plan`: `auto-fill`/`minmax` gives 1-3 columns depending on what
+   fits, with no breakpoint per count, so a phone that cannot fit two
+   collapses to one on its own. */
+.acct-card-grid {
+  display: grid;
+  align-items: start;
+  gap: var(--space-l) var(--gutter);
+  /* 20rem, not `PlanAroundBand`'s 15rem: `card--horizontal`'s own figure
+     is `clamp(88px, 20vw, 160px)` — sized in ArticleRails.tsx against a
+     narrower PER-COLUMN context (one card per column, stacked), where 15rem
+     leaves it room. Flat in a grid at that same width the figure ate most
+     of a 3-up column and left the headline wrapping into a sliver next to
+     the next card's own photo — found on the first real render of this
+     panel. 20rem holds 2-up at the dashboard's own main-column width
+     instead of 3, with the figure a minority of the card rather than most
+     of it. */
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  margin-top: var(--space-s);
+}
+
+.acct-saved-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+/* Remove-from-saved: a plain-text control, not a second button style next to
+   `.acct-btn` — it is a correction, not a primary action, and §1 reserves
+   red-as-fill for the one action per screen that is. */
+.acct-remove-btn {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--mute);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+.acct-remove-btn:hover {
+  color: var(--red);
 }
 
 .acct-aside {

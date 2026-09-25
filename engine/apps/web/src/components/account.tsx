@@ -138,14 +138,19 @@ export function Submit({ children }: { children: ReactNode }) {
 export function Panel({
   title,
   action,
+  className,
   children,
 }: {
   title: string
   action?: { href: string; label: string }
+  /** e.g. `acct-panel--wide`, to span the full main-column width in
+   * `.acct-panels`' two-up grid — a panel with a real card grid inside it
+   * reads better across the whole column than squeezed into half of it. */
+  className?: string
   children: ReactNode
 }) {
   return (
-    <section className="acct-panel">
+    <section className={className ? `acct-panel ${className}` : 'acct-panel'}>
       <div className="acct-panel__head">
         <h2 className="acct-panel__title">{title}</h2>
         {action ? (
