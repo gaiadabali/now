@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, Field, Submit, type StatusMessage } from '@/components/account'
+import { safeInternalPath } from '@/lib/internalPath'
 import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signIn } from '@/lib/readerActions'
 
@@ -59,10 +60,17 @@ export default async function LoginPage({
   // cannot complete is worse than no form (F141). notFound(), not a message:
   // an explanation would invite people to keep trying.
   if (!accountsEnabled()) notFound()
-  if (await currentReader()) redirect('/account')
 
   const query = (await searchParams) ?? {}
   const status = statusFor(typeof query.status === 'string' ? query.status : undefined)
+  // Where to return to after signing in — the Save toggle's own sign-in link
+  // is the first caller (`components/SaveButton.tsx`). Validated the same
+  // way `signIn` validates it server-side (`safeInternalPath`): this is a
+  // query parameter, so it is exactly as hand-editable as a posted form
+  // field, and an unvalidated one would make this page an open redirect.
+  const next = safeInternalPath(typeof query.next === 'string' ? query.next : undefined)
+
+  if (await currentReader()) redirect(next ?? '/account')
 
   return (
     <AccountShell
@@ -77,6 +85,7 @@ export default async function LoginPage({
       }
     >
       <form action={signIn}>
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <Field id="email" name="email" label="Email" type="email" autoComplete="email" required />
         <Field
           id="password"
