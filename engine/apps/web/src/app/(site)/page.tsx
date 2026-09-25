@@ -106,13 +106,17 @@ export default async function HomePage() {
                             key={a.id}
                             article={a}
                             variant="horizontal"
-                            showDek={false}
                             locale={locale}
                             timeZone={tz}
                             rail="lead"
                             position={i + 2}
                           />
                         ))}
+                        {/* The owner's note: this column needs a way on to
+                            the next stories, not a dead end after three. */}
+                        <Link className="frontlead__more" href="/latest">
+                          More this week <span aria-hidden="true">→</span>
+                        </Link>
                       </div>
                     ) : null}
                   </div>

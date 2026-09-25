@@ -584,19 +584,29 @@
    three times what a card grid does. ------------------------------------- */
 .card--row {
   display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-m);
-  padding-block: var(--space-xs);
+  flex-direction: column;
+  gap: var(--space-3xs);
+  padding-block: var(--space-s);
   border-bottom: var(--hair);
 }
-.card--row .card__headline { font-size: var(--t-title); flex: 1; min-width: 0; }
+.card--row .card__headline {
+  font-size: clamp(1.15rem, 1rem + 0.45vw, 1.4rem);
+  line-height: 1.18;
+  text-wrap: balance;
+}
+.card--row .card__headline a {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size var(--dur) var(--ease);
+}
+.card--row .card__headline a:hover,
+.card--row .card__headline a:focus-visible { background-size: 100% 1px; }
 .card--row__meta {
   display: flex;
   align-items: baseline;
   gap: var(--space-2xs);
-  flex-shrink: 0;
   font-family: var(--font-sans);
   font-size: var(--t-micro);
   letter-spacing: var(--track-micro);
@@ -1104,3 +1114,32 @@
 .preview-bar__inner { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-s); }
 .preview-bar strong { text-transform: uppercase; letter-spacing: 0.08em; font-size: var(--t-meta); }
 .preview-bar__exit { margin-left: auto; color: var(--paper); text-decoration: underline; text-underline-offset: 0.2em; white-space: nowrap; }
+
+/* Edition 2, owner feedback 2026-09-25: the Latest index and "Also this week"
+   carried a headline and a date and nothing to decide on. A standfirst, held
+   to two lines so the index keeps its density, and the way on to the next
+   stories. */
+.card__dek--clamp,
+.card--horizontal .card__dek {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--body);
+  margin-top: var(--space-3xs);
+}
+.frontlead__more {
+  display: inline-flex;
+  gap: var(--space-2xs);
+  margin-top: var(--space-s);
+  font-family: var(--font-sans);
+  font-size: var(--t-micro);
+  letter-spacing: var(--track-micro);
+  text-transform: uppercase;
+  color: var(--red);
+}
+.frontlead__more:hover span { transform: translateX(3px); }
+.frontlead__more span { transition: transform var(--dur) var(--ease); }
