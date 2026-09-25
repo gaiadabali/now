@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 
 /**
@@ -26,7 +25,6 @@ import { useState, type FormEvent } from 'react'
  * for itself.
  */
 export function StaffLoginForm({ destination }: { destination: string }) {
-  const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,11 +47,34 @@ export function StaffLoginForm({ destination }: { destination: string }) {
       })
 
       if (response.ok) {
-        // `refresh()` before `push()` so the server components on the next
-        // page re-run with the cookie now set, rather than rendering from a
-        // cache that still believes nobody is signed in.
-        router.refresh()
-        router.push(destination)
+        // A HARD navigation, not `router.refresh(); router.push(destination)`.
+        // That was the original approach and it does not do what its own
+        // comment says: `@payloadcms/ui`'s `AuthProvider` seeds its `user`
+        // state from an `initialUser` PROP with a bare `useState(initialUser)`
+        // — which only ever reads that argument on the component's first
+        // mount. `router.refresh()` re-runs the server components and would
+        // hand the ROOT LAYOUT a fresh `initialUser`, but `AuthProvider`
+        // itself is not remounted by a refresh, so the new prop value never
+        // reaches its state. Every nav item gated on `useAuth()` — nav/
+        // StaffLink.tsx, nav/NavPlatform.tsx, both plain `'use client'`
+        // components with no server prop of their own — kept reading the
+        // signed-OUT snapshot from the moment the login PAGE first mounted,
+        // until the next full page load. (`NavConsole`'s Commerce group is
+        // NOT one of these: it takes `user` as an ordinary server prop
+        // rather than through this context, which is exactly why it kept
+        // working — the bug is specific to the client auth context, not to
+        // "the sidebar" in general.)
+        //
+        // Found by comparing two ways of reaching an authenticated page in
+        // the same tour: a hard `page.goto()` with an already-valid cookie
+        // rendered the full sidebar every time; a scripted sign-in through
+        // this form, followed by the soft navigation this replaces, rendered
+        // a signed-in dashboard with an admin-only sidebar missing its
+        // admin-only links — same account, same role, same request's `/api/
+        // users/me` answering "admin" correctly the whole time. The bug was
+        // never about which city; it was about which navigation this form
+        // performed after a correct sign-in.
+        window.location.assign(destination)
         return
       }
 
