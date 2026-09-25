@@ -227,7 +227,11 @@ export function toArticle(doc: PayloadDoc): Article {
     image: heroUrl(doc),
     // The dek is plain text in the view model (it becomes a meta description
     // and a card subtitle), so any stray markup is stripped rather than kept.
-    dek: stripTags(String(doc.dek ?? '')),
+    // So are `%%…%%` template tokens: an old WordPress plugin's excerpt
+    // placeholder (`%%cf_content%%`) was imported verbatim into Jakarta deks
+    // and showed on 12 cards across the home page and /culture (QA,
+    // 2026-09-25). The data still carries it; readers no longer see it.
+    dek: stripTags(String(doc.dek ?? '')).replace(/%%[a-z0-9_]+%%\s*/gi, '').trim(),
     paras: paragraphs(doc),
     // Deliberately 0, never imported. §6: WordPress view counts are
     // bot-contaminated, and `getMostRead` must be recomputed from beacon data
