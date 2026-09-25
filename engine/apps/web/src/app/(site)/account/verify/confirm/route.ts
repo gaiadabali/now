@@ -7,7 +7,7 @@ import {
 } from '@now/auth'
 import { NextResponse } from 'next/server'
 
-import { readerSecret, readerStore, accountsEnabled } from '@/lib/reader'
+import { readerSecret, readerStore, accountsEnabled, siteBaseUrl } from '@/lib/reader'
 import { stitchAnonymousHistory } from '@/lib/stitch'
 
 /**
@@ -37,7 +37,14 @@ export async function GET(request: Request): Promise<Response> {
   // could never have been sent has nothing to confirm.
   if (!accountsEnabled()) return new NextResponse(null, { status: 404 })
   const token = new URL(request.url).searchParams.get('token')
-  const origin = new URL(request.url).origin
+  // The configured origin, never the request's. Built from `request.url`, a
+  // reader who reached this route by any host other than Next's canonical
+  // one (127.0.0.1 vs localhost, a proxy's internal name) was redirected to
+  // an origin their `__Host-` session cookie does not belong to, and landed
+  // on the sign-in page having just been verified and signed in (QA,
+  // 2026-09-25, reproduced twice). siteBaseUrl() is what every other reader
+  // link is built from, and it never trusts a Host header.
+  const origin = await siteBaseUrl()
 
   // Every failure — expired, already used, never existed, wrong kind — lands
   // on the same message. Telling someone holding a guessed token which one
