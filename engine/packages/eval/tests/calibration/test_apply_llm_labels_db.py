@@ -25,7 +25,14 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine, text
 
-from now_classifier.vocabulary import load_term_index, term_uuid
+# `now_classifier` ships only with the `calibration` extra, and CI's eval job
+# installs `--extra dev` alone (the harness gate is meant to need no DB). This
+# module is a DB-integration test of the calibration path, so without the
+# extra it skips like the package's other DB tests rather than failing
+# collection and taking the whole suite down with it.
+pytest.importorskip("now_classifier")
+
+from now_classifier.vocabulary import load_term_index, term_uuid  # noqa: E402
 from now_db.settings import city_database_url
 
 from now_eval.calibration.apply_llm_labels import (
