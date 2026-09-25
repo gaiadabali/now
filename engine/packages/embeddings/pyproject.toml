@@ -31,6 +31,16 @@ dependencies = [
 dev = [
     "pytest>=8.0",
 ]
+# WS6 model comparison only (scripts/measure_corpus_language.py,
+# scripts/compare_embedding_models.py) -- never imported by the runtime
+# pipeline, worker or CLI, so the worker image does not carry it.
+model-eval = [
+    "langdetect>=1.0.9,<2",
+    # the harness's own nDCG/precision and the 253-label calibration set --
+    # a model comparison scored with different metric code than the CI gate
+    # would not be comparable to it
+    "now-eval",
+]
 
 [project.scripts]
 now-embeddings = "now_embeddings.cli:cli"
@@ -39,6 +49,7 @@ now-embeddings = "now_embeddings.cli:cli"
 now-db = { path = "../db", editable = true }
 now-platform-db = { path = "../platform-db", editable = true }
 now-content-clean = { path = "../content-clean", editable = true }
+now-eval = { path = "../eval", editable = true }
 
 [build-system]
 requires = ["hatchling"]
