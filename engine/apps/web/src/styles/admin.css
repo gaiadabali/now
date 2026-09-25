@@ -4358,3 +4358,73 @@ html[data-theme='dark'] .graphic-icon {
   background: var(--red);
   opacity: 0.35;
 }
+
+/* ---- shared server-side pagination (Pager.tsx) ---------------------------
+   Used by the review desk (345 clusters) and the commerce console's partner
+   list (1,562 orgs) — both render the whole matching set in one query so the
+   summary numbers above the table stay computed over the whole set, but only
+   ever show one page's worth of rows, sliced (or LIMIT/OFFSET'd) server-side.
+   Visually modelled on Payload's own `@payloadcms/ui` `Pagination` component
+   (arrows either side, a windowed run of page numbers, an em dash for the
+   gap) without depending on it being loaded — see `Pager.tsx`'s own comment
+   for why this is a plain link grid rather than that client component. */
+.admin-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+}
+
+.admin-pager__page,
+.admin-pager__arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--style-radius-s);
+  color: var(--theme-elevation-800);
+  text-decoration: none;
+  line-height: 1;
+}
+
+.admin-pager__page:hover,
+.admin-pager__arrow:hover:not(.admin-pager__arrow--disabled) {
+  background: var(--theme-elevation-100);
+}
+
+.admin-pager__page:focus-visible,
+.admin-pager__arrow:focus-visible {
+  outline: var(--accessibility-outline);
+  outline-offset: var(--accessibility-outline-offset);
+}
+
+.admin-pager__page--current {
+  background: var(--theme-elevation-100);
+  color: var(--theme-elevation-400);
+  cursor: default;
+}
+
+.admin-pager__arrow {
+  width: 1.25rem;
+}
+
+.admin-pager__arrow svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.admin-pager__arrow--disabled {
+  color: var(--theme-elevation-300);
+  cursor: default;
+}
+
+.admin-pager__sep {
+  color: var(--theme-elevation-400);
+  margin-right: 0.25rem;
+}
+
+.admin-pager__summary {
+  color: var(--theme-elevation-600);
+  font-size: 0.8125rem;
+}

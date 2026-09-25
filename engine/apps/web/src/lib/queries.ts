@@ -154,24 +154,37 @@ export async function countOrgs(): Promise<number> {
   return Number(row?.n ?? 0)
 }
 
+export type OrgsPage = { orgs: OrgRow[]; total: number }
+
 /**
- * Orgs with their partnership counts.
+ * Orgs with their partnership counts, one page of them.
  *
  * `active_partnerships` is computed from the dates here rather than trusting
  * `status` alone: ARCHITECTURE.md §11 resolves link policy from the *current*
  * partnership, and E4.1 proved expiry at query time. A row whose `ends_at`
  * has passed is not live no matter what its status column says, and a console
  * that showed otherwise would be lying about what the renderer will do.
+ *
+ * PAGINATED, where this used to hand back every matching row (a flat
+ * `limit = 100` that quietly dropped anything past it, with nothing on
+ * screen saying so — 1,562 orgs in one unsearched table on staging, all of
+ * them past that literal 100 invisible). `count(*) OVER()` computes the
+ * total over the FILTERED set, before `LIMIT`/`OFFSET`, in the same pass
+ * that fetches the page — one round trip, not a second `count(*)` query
+ * against the same join.
  */
-export async function listOrgs(search?: string, limit = 100): Promise<OrgRow[]> {
+export async function listOrgs(search: string | undefined, page: number, pageSize = 50): Promise<OrgsPage> {
   const params: unknown[] = []
   let where = ''
   if (search && search.trim()) {
     params.push(`%${search.trim()}%`)
     where = `WHERE o.name ILIKE $1 OR o.slug ILIKE $1`
   }
-  params.push(limit)
-  return query<OrgRow>(
+  params.push(pageSize, Math.max(0, (page - 1) * pageSize))
+  const limitParam = `$${params.length - 1}`
+  const offsetParam = `$${params.length}`
+
+  const rows = await query<OrgRow & { total_count: string }>(
     `SELECT o.id::text,
             o.name,
             o.slug,
@@ -184,15 +197,22 @@ export async function listOrgs(search?: string, limit = 100): Promise<OrgRow[]> 
               WHERE p.status = 'active'
                 AND (p.starts_at IS NULL OR p.starts_at <= now())
                 AND (p.ends_at   IS NULL OR p.ends_at   >  now())
-            )::int AS active_partnerships
+            )::int AS active_partnerships,
+            count(*) OVER()::text AS total_count
        FROM engine.orgs o
        LEFT JOIN engine.partnerships p ON p.org_id = o.id
        ${where}
       GROUP BY o.id
       ORDER BY active_partnerships DESC, partnership_count DESC, o.name
-      LIMIT $${params.length}`,
+      LIMIT ${limitParam} OFFSET ${offsetParam}`,
     params,
   )
+
+  const total = rows.length > 0 ? Number(rows[0].total_count) : 0
+  return {
+    orgs: rows.map(({ total_count: _total_count, ...org }) => org),
+    total,
+  }
 }
 
 export async function getOrg(id: string): Promise<OrgRow | null> {

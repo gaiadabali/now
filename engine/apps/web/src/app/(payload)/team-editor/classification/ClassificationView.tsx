@@ -97,7 +97,11 @@ function content(
   }
 
   if (rest.length === 1 && rest[0] === 'review') {
-    return <ReviewDeskView searchParams={{ facet: searchParam(searchParams, 'facet') }} />
+    return (
+      <ReviewDeskView
+        searchParams={{ facet: searchParam(searchParams, 'facet'), page: searchParam(searchParams, 'page') }}
+      />
+    )
   }
 
   if (rest.length === 2 && rest[0] === 'review' && rest[1] === 'cluster') {
