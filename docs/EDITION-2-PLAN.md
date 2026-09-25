@@ -301,3 +301,259 @@ keys off (own type, featured venue, and headline for non-venue types).
    `articles.created_by`; without the column every article query 500s while
    `/healthz` stays green — the S1.1 trap again.
 4. Roll the web and worker images. Smoke, then `verify:competitor-policy` per city.
+
+## 9. WS6 — Embeddings (2026-09-25)
+
+**The question.** The roadmap asks for "a stronger multilingual embedding
+model, for better similarity across English and Indonesian". This section is
+the measurement. **Decision: stay on `BAAI/bge-small-en-v1.5`.** No candidate
+beats it on the English search or related-article ground truth. The one
+large win is on Indonesian queries, which the archive and its readers do not
+currently produce. The model is now a single config value, so a later switch
+is a config change plus a backfill.
+
+### Corpus facts (census of every published article, both cities)
+
+| | Bali (4,429) | Jakarta (4,772) |
+|---|---|---|
+| English / mixed / Indonesian, **langdetect** per segment | 97.13% / 2.53% / 0.34% | 98.41% / 1.55% / 0.04% |
+| same, **Indonesian function-word rate** (independent check) | 99.93% / 0% / 0.07% | 99.98% / 0.02% / 0% |
+| agreement between the two instruments | 97.2% | 98.4% |
+| full body instead of the embedded prefix (langdetect) | 97.04% / 2.62% / 0.34% | 98.41% / 1.57% / 0.02% |
+| articles naming an Indonesian loanword/place (warung, nasi, Ubud, ...) | 52.2% | 15.2% |
+| embedded text, median chars | 1,794 | 1,689 |
+| tokens, median / p90 / >512: bge-small (WordPiece) | 377 / 420 / 0.07% | 362 / 407 / 0.02% |
+| tokens, median / p90 / >512: e5 and bge-m3 (XLM-R) | 421 / 462 / 0.05% | 400 / 447 / 0.10% |
+| Yoast focus keywords containing an Indonesian function word | 8 of 2,856 (0.28%) | 2 of 1,136 (0.18%) |
+| logged reader searches (`engine.interactions.query`) | 2, English | 3, English |
+
+**What gets embedded** (`textbuild.build_article_text`): title, dek, then
+`type:`/`format:`/facets when present, then the first 1,600 characters of
+visible body text. Terms are `"<facet>: <label> (<slug>)"`. Almost nothing is
+truncated at 512 tokens under any of the tokenizers.
+
+The "mixed" and "Indonesian" buckets are mostly English articles that quote
+Indonesian: temple calendars full of *pura* names, and Ramadan listings.
+langdetect segments text into sentences and needs about 20 letters per
+segment, and name-dense lines fool it. The function-word check is stricter
+and finds almost no Indonesian prose. So the corpus is English, and a
+multilingual model can only help through **Indonesian queries**. None have
+been logged yet.
+
+### Candidates, and why
+
+| Model | Dim | Why it is in the comparison |
+|---|---|---|
+| `BAAI/bge-small-en-v1.5` | 384 | the live model (baseline) |
+| `intfloat/multilingual-e5-small` | 384 | the only multilingual model that fits the existing `vector(384)` column, so a switch needs no migration |
+| `BAAI/bge-m3` | 1024 | the strongest widely used multilingual model that runs on CPU (ONNX export, fastembed custom model) |
+| `BAAI/bge-base-en-v1.5` | 768 | the English control: if the corpus is English, a larger English model is the honest alternative |
+
+All four run through `fastembed`/ONNX (no torch), via `now_embeddings.models.REGISTRY`.
+
+### Method
+
+- **Slice.** Embedding the full corpus with bge-m3 is not feasible here: it
+  took 1.0 s per article on the Bali pass (827 s for 800), and the Jakarta
+  pass took 7.8 h because the host slept or throttled partway through. So every model was embedded on
+  the same frozen **800-article slice per city** (`compare_embedding_models
+  make-slice`). The slice holds every article a query or classifier label
+  points at, about 200 articles in whole same-venue groups, and a hash
+  sample for the rest. It also holds all 407 terms. Absolute scores on 800
+  articles are higher than on the full corpus. Only the differences between
+  models are the result. The live model was scored twice: on its stored
+  vectors (`--from-db`) and on a fresh re-embedding (`@fresh`). The stored
+  vectors are what production serves. Both are baselines.
+- **Search.** The production lexical leg (`now_search.lexical`, restricted to
+  the slice) plus each model's exact-cosine semantic leg, fused with
+  production RRF (k=60). Before any comparison, the offline pipeline for the
+  live model was checked against the real `SearchEngine` on the full corpus:
+  **100/100 identical top-10s in each city.** Query sets:
+  - every distinct focus keyword (518 Bali, 216 Jakarta after the slice
+    cut);
+  - 128 topic-shaped focus keywords with a hand-written Indonesian twin
+    (`eval/data/search_queries.crosslingual_id.jsonl`, provenance in
+    `eval/data/PROVENANCE.md` §9; no native-speaker review yet);
+  - the harness's provisional set (Jakarta).
+
+  Significance is a paired bootstrap on per-query nDCG@10, 2,000 resamples,
+  95% interval.
+- **Related articles.** Four checks:
+  - same featured venue: the other articles featuring the same place should
+    rank in the top 10;
+  - series siblings: only 1 group in the slice, so not usable;
+  - editor primary category: now-eval's labelled set, precision@6;
+  - classifier: F120 centroid 5-fold CV and term zero-shot accuracy on the
+    253 adjudicated labels.
+
+  Plus a **blind hand-label pass**, described below.
+- **Latency and size.** The `recommendSql.ts` Read Next query was run
+  verbatim against a session-local TEMP copy of `engine.embeddings`, over
+  the full row count, 200 subjects, with serial HNSW builds. The shared
+  table was never written. Read Next sorts exactly, so its cost depends on
+  width and row count, not on what the vectors mean. The 768-d and 1024-d
+  rows are therefore random vectors at full size.
+
+**Hand labels.** 24 seeds (12 per city) were drawn by hash from the slice.
+For each seed I pooled every model's top 2 neighbours, which gave 121
+distinct pairs. I shuffled them and graded them blind, reading the seed and
+candidate title, dek and lead with no model attribution, and unblinded only
+after grading:
+
+- **2**: a reader would want it next (same venue or brand, same event or
+  series, same narrow subject);
+- **1**: same broad subject or genre;
+- **0**: unrelated, or linked only by a word or format.
+
+Labeller: the WS6 agent. Grades are in
+`eval/data/related_articles.handlabel_ws6.jsonl`.
+
+### Results
+
+**(a) Search, hybrid nDCG@10 (recall@10)** on the 800-article slice. Δ is
+the change against bge-small's stored vectors, with its 95% interval.
+**Bold** marks an interval that excludes 0.
+
+| Query set | bge-small (stored) | e5-small | bge-base | bge-m3 |
+|---|---|---|---|---|
+| Bali focus keywords (518) | 0.909 (0.981) | 0.876 · **Δ −0.034** | 0.902 · Δ −0.007 | 0.907 · Δ −0.002 |
+| Jakarta focus keywords (216) | 0.929 (0.986) | 0.926 · Δ −0.003 | 0.935 · Δ +0.006 | 0.937 · Δ +0.007 |
+| Bali topic queries, English (62) | 0.947 (1.000) | 0.919 | 0.935 | 0.956 |
+| Jakarta topic queries, English (66) | 0.938 (0.977) | 0.919 | 0.935 | 0.941 |
+| Bali, same queries in **Indonesian** (62) | 0.280 (0.323) | **0.680 (0.807)** | 0.337 | **0.854 (0.952)** |
+| Jakarta, same queries in **Indonesian** (66) | 0.366 (0.462) | **0.784 (0.894)** | 0.458 | **0.854 (0.947)** |
+| Jakarta harness provisional set (119) | 0.315 | 0.321 | 0.312 | 0.310 |
+
+The deltas in the table are against bge-small's stored vectors. The
+bootstrap intervals were computed against the fresh re-embedding; against
+it, bge-m3's Indonesian gain is +0.59 in Bali and +0.48 in Jakarta, and
+e5-small's is +0.41 in both, all significant. No English-query difference
+between bge-m3 or bge-base and bge-small is significant in either city.
+e5-small is significantly worse on Bali focus keywords (−0.039) and on Bali
+English topic queries (−0.042). The same live model on stored versus fresh
+vectors differs by at most 0.014.
+
+Full-corpus figures for the live model: Bali 0.831, Jakarta 0.878 (focus
+keywords); Jakarta provisional set 0.774. In Bali "hybrid" is semantic only:
+`now_bali.engine.article_search` has 0 rows, so the lexical leg returns
+nothing there. That is a follow-up, not a WS6 change.
+
+**(b) Related articles**
+
+| | bge-small (stored) | e5-small | bge-base | bge-m3 |
+|---|---|---|---|---|
+| Same featured venue, nDCG@10, Bali (258 seeds) | 0.678 | 0.634 · **Δ −0.039** | 0.697 · **Δ +0.024** | 0.665 · Δ −0.008 |
+| Same featured venue, nDCG@10, Jakarta (242 seeds) | 0.632 | 0.596 · **Δ −0.034** | 0.663 · **Δ +0.034** | 0.648 · Δ +0.019 |
+| Primary category precision@6, Jakarta (37 seeds) | 0.243 | 0.225 | 0.239 | 0.248 (all n.s.) |
+| Classifier centroid CV accuracy, type (111) / format (142) | 0.595 / 0.458 | 0.667 / 0.437 | 0.640 / 0.472 | 0.658 / 0.444 |
+| Term zero-shot accuracy, type / format | 0.351 / 0.162 | 0.243 / 0.155 | 0.315 / 0.148 | 0.306 / 0.197 |
+| **Hand labels**, mean grade 0–2 (48 top-2 slots each) | 1.208 | 1.104 | 1.208 | 1.271 |
+| Hand labels, share graded ≥1 / graded 2 | 0.79 / 0.42 | 0.69 / 0.42 | 0.77 / 0.44 | 0.79 / 0.48 |
+
+In this table Δ and its interval are against the fresh re-embedding of
+bge-small (0.673 in Bali, 0.630 in Jakarta), not the stored column shown.
+The hand-label sample is small (48 slots per model, one labeller). It
+agrees with the venue proxy: e5-small is the weakest, and bge-m3 and
+bge-base are level with or slightly above bge-small. It shows no clear
+winner.
+
+**(c) Cost** (this machine, 16 cores. Embedding runs were benchmarked with
+no other embedding job running, but host load was not otherwise controlled)
+
+| | bge-small | e5-small | bge-base | bge-m3 |
+|---|---|---|---|---|
+| Embed, ms per article (batch, 16 threads) | 115 | 108 | 222 | 618 |
+| Embed one query, p50 / p95 ms (4 threads, the search path) | 3.3 / 4.0 | 4.3 / 5.6 | 10.9 / 12.7 | 39.9 / 46.7 |
+| Read Next SQL p50 / p95 ms, Bali, full row count | 10.2 / 15.3 | same width as bge-small | 19.2 / 34.7 | 22.9 / 37.7 |
+| Read Next SQL p50 / p95 ms, Jakarta | 12.9 / 19.5 | same width | 20.3 / 33.7 | 25.3 / 40.8 |
+| Bytes per row, table + HNSW | 3,864–3,873 | same | 8,432–8,449 | 13,919–13,931 |
+| Articles-only table + index, Bali / Jakarta | 17.2 / 18.4 MB | same | 37.4 / 40.2 MB | 61.7 / 66.4 MB |
+| Fits `engine.embeddings.vec vector(384)` | yes | **yes** | no, needs a migration | no, needs a migration |
+
+With both 384-d models in one graph (800 + 800 rows per city), the live
+model's approximate HNSW path returned a short result in 0 of 200 probes
+per city. Coexistence is safe at this scale.
+
+### Decision
+
+**No switch.** The brief's bar is a clear win on both search (a) and
+related articles (b), at acceptable cost (c). None of the candidates clears
+it:
+
+- **bge-m3** ties bge-small on every English measure: focus keywords, topic
+  queries, venue proxy, primary category and hand labels. On Indonesian
+  queries its nDCG@10 is 2.3 to 3.1 times bge-small's (0.854 against 0.366
+  and 0.280). It costs 5.4 times more per article,
+  12 times more per query embed (40 ms on the search p95 path), about 2
+  times more Read Next latency and 3.6 times more storage, and it needs a
+  migration.
+- **e5-small** is the only candidate that needs no migration. It is
+  significantly worse on English search in Bali and on the venue proxy in
+  both cities. Buying Indonesian recall with English quality on an English
+  corpus is the wrong trade.
+- **bge-base** is the only candidate with a significant English win (+0.024
+  and +0.034 on the venue proxy). It shows none on search, and it needs a
+  migration and 1.6 to 1.9 times the Read Next latency.
+
+**When to revisit.** Revisit if real Indonesian queries appear. Logged
+searches (`engine.interactions.query`) are the signal to watch. At that
+point bge-m3 is the model to move to. It needs a senior-db-reviewed
+migration first, because `vec` is fixed at `vector(384)`: for example a
+separate `engine.embeddings_1024` table with its own HNSW index. That is not
+built here.
+
+### The config point (off by default)
+
+- `engine/packages/embeddings/src/now_embeddings/models.py`: `REGISTRY`,
+  `DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"`, and the `NOW_EMBEDDING_MODEL`
+  env override. An unregistered name raises an error. A model wider than
+  384-d is refused by the backfill, the worker and the CLI.
+- These readers follow it: the backfill and `now-embeddings` CLI (`--model`),
+  the publish worker (`_provider("local")`), `now_search.query_embedder`
+  (which applies e5's `query:` marker), and the web tier's Read Next via
+  `apps/web/src/lib/embeddingModel.ts`. `recommendSql.ts` changed only its
+  constant. `tests/test_models.py` pins the web fallback literal to
+  `DEFAULT_MODEL`.
+- These stay **pinned on purpose**: the classifier's F120 centroid routing
+  (`now_taxonomy_evidence.vectors`) and `now_eval.calibration.embed_data`.
+  Their artifacts were trained in bge-small's space. If they followed the
+  switch, they would compare vectors across two spaces, and nothing would
+  error. The same test pins them to the default.
+
+**Rollout, if a later decision says switch** (the model must be registered
+and 384-d, or have a reviewed migration):
+
+1. `uv run python scripts/rollout_embedding_model.py backfill --model <m>`
+   in `engine/packages/embeddings`. It writes new rows under the new model
+   and leaves the old rows alone.
+2. `... rollout_embedding_model.py check --model <m>`. It exits non-zero
+   unless every published article in every city has a row.
+3. Rebuild the classifier centroids with `eval/scripts/build_routing_centroids.py`
+   and re-measure F120 (`f120_routing_report.py`), then update the two
+   pinned literals.
+4. Set `NOW_EMBEDDING_MODEL=<m>` on web, engine-api and worker, restart them,
+   then run `verify:competitor-policy` per city.
+
+**Rollback:** unset `NOW_EMBEDDING_MODEL` and restart. The bge-small rows
+are never modified by a backfill under another model. While the new model
+was live, the worker embedded new articles only under the new model, so run
+`now-embeddings backfill --city <db> --model BAAI/bge-small-en-v1.5` after
+rolling back. Until then those articles' Read Next rails are empty, not
+wrong.
+
+**Storage this work added to the shared databases: 0 bytes.** No rows were
+written. Candidate vectors live in local files. The TEMP tables were
+session-local and dropped.
+
+**Found along the way:**
+
+- 4,253 of 4,429 Bali and 4,275 of 4,772 Jakarta stored bge-small vectors
+  have a `text_hash` that no longer matches the article's current text: they
+  predate the classification fill. A re-embed moves the scores by at most
+  0.014 nDCG, but it is still owed. It is a plain `now-embeddings backfill`
+  per city, which rewrites the live model's rows, so it was not run here.
+- Bali's `engine.article_search` is empty.
+- The first latency run built a 1024-d HNSW index with parallel workers and
+  took the shared Postgres into crash recovery once (container `/dev/shm`
+  is 64 MB). The script now builds serially. The container was later found
+  exited (137); it is not known what caused that.
