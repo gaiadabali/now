@@ -1,5 +1,6 @@
 import 'server-only'
 import { db, query } from './db'
+import { decodeEntities } from './html'
 import { cityPool } from './payload'
 
 /**
@@ -748,8 +749,15 @@ export async function computeBlastRadius(params: {
 
 export type CityPlace = { id: string; name: string; slug: string; type: string | null; orgId: string | null }
 
+/**
+ * `places.name` is legacy WordPress content, same as an article's own title —
+ * `Fish &amp; Co` is the literal stored string for eighty-odd venues, and the
+ * commerce console's venue search (`VenuesPanel.tsx`) rendered it as plain
+ * text with the entity un-decoded, same bug and same fix as `lib/content.ts`'s
+ * `decodeEntities` calls.
+ */
 function toCityPlace(row: { id: string; name: string; slug: string; type: string | null; org_id: string | null }): CityPlace {
-  return { id: row.id, name: row.name, slug: row.slug, type: row.type, orgId: row.org_id }
+  return { id: row.id, name: decodeEntities(row.name), slug: row.slug, type: row.type, orgId: row.org_id }
 }
 
 export async function listOrgVenues(orgId: string): Promise<CityPlace[]> {

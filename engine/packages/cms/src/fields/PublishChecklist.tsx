@@ -4,7 +4,7 @@ import { useDocumentInfo, useFormFields } from '@payloadcms/ui'
 import { useEffect, useState } from 'react'
 
 import type { Block } from './blockModel'
-import { wordCount } from './blockModel'
+import { plainText, wordCount } from './blockModel'
 
 /**
  * "Ready to publish" — a sidebar panel for the writing screen, not a gate.
@@ -158,9 +158,19 @@ export function PublishChecklist() {
   // and the real origin appears in a normal post-hydration update instead.
   const [origin, setOrigin] = useState('')
   useEffect(() => setOrigin(window.location.origin), [])
-  const previewTitle = title.trim() || 'Untitled story'
+  // `title`/`dek` are this form field's raw value, which for a
+  // WordPress-imported story is the literal stored string — `&amp;`, not
+  // `&`. Everywhere else this preview shows up (the desk's "Recently
+  // published", the front-page editor) reads through `decodeEntities`
+  // before it ever reaches JSX; this is the one place still reading the form
+  // field directly, so the search-result and share-card previews are the
+  // one screen where a writer opening an old story would see the entity
+  // literally. `plainText` is the same decode, already written here for the
+  // word count above and safe to reuse on a plain title/dek with no markup
+  // of its own.
+  const previewTitle = plainText(title) || 'Untitled story'
   const previewUrl = `${origin}/${slug.trim() || 'web-address'}`
-  const previewDek = dek.trim() || 'No standfirst written yet — this space will look empty to a reader.'
+  const previewDek = plainText(dek) || 'No standfirst written yet — this space will look empty to a reader.'
 
   return (
     <div className="now-checklist">

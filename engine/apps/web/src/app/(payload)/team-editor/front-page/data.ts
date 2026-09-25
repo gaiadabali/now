@@ -3,6 +3,7 @@ import 'server-only'
 import type { Where } from 'payload'
 
 import { getRegistrySite } from '@/lib/queries'
+import { decodeEntities } from '@/lib/html'
 import { payloadClient } from '@/lib/payload'
 import { getSiteConfig, railsFrom } from '@/lib/site'
 import type { HomeRail } from '@/lib/site'
@@ -106,7 +107,7 @@ export async function resolveArticleSummaries(ids: number[]): Promise<Map<number
       Number(d.id),
       {
         id: Number(d.id),
-        title: String(d.title ?? `Article ${d.id}`),
+        title: decodeEntities(String(d.title ?? `Article ${d.id}`)),
         slug: typeof d.slug === 'string' ? d.slug : null,
         status: String(d._status ?? 'draft'),
         publishedAt: typeof d.publishedAt === 'string' ? d.publishedAt : null,
@@ -166,7 +167,7 @@ export async function autoFillPreview(bandKey: string, excludeIds: number[], lim
 
   return docs.map((d) => ({
     id: Number(d.id),
-    title: String(d.title ?? `Article ${d.id}`),
+    title: decodeEntities(String(d.title ?? `Article ${d.id}`)),
     slug: typeof d.slug === 'string' ? d.slug : null,
     status: String(d._status ?? 'draft'),
     publishedAt: typeof d.publishedAt === 'string' ? d.publishedAt : null,

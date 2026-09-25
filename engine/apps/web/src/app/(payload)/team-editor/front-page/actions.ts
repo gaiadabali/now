@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { requireFrontPageEditor } from '@/lib/auth'
+import { decodeEntities } from '@/lib/html'
 import { payloadClient } from '@/lib/payload'
 import { getRegistrySite, updateSiteHomeRails } from '@/lib/queries'
 import { railsFrom } from '@/lib/site'
@@ -97,7 +98,7 @@ export async function searchArticlesByTitle(q: string): Promise<ArticleSummary[]
 
   return docs.map((d) => ({
     id: Number(d.id),
-    title: String(d.title ?? `Article ${d.id}`),
+    title: decodeEntities(String(d.title ?? `Article ${d.id}`)),
     slug: typeof d.slug === 'string' ? d.slug : null,
     status: String(d._status ?? 'draft'),
     publishedAt: typeof d.publishedAt === 'string' ? d.publishedAt : null,

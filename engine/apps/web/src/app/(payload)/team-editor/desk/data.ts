@@ -3,6 +3,7 @@ import 'server-only'
 import { cityPool, payloadClient } from '@/lib/payload'
 import { platformConnectionString, query } from '@/lib/db'
 import { canEditFrontPage, canReviewClassification, canViewRailAnalytics } from '@/lib/auth'
+import { decodeEntities } from '@/lib/html'
 import { railsAnalyticsHref } from '../platform/paths'
 import type { StaffUser } from '@/lib/auth'
 
@@ -223,7 +224,7 @@ export async function getDeskData(user: DeskUser): Promise<DeskData> {
     },
     recentlyPublished: recent.docs.map((d) => ({
       id: Number(d.id),
-      title: String(d.title ?? `Article ${d.id}`),
+      title: decodeEntities(String(d.title ?? `Article ${d.id}`)),
       slug: typeof d.slug === 'string' ? d.slug : null,
       publishedAt: typeof d.publishedAt === 'string' ? d.publishedAt : null,
     })),
