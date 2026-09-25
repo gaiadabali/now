@@ -18,16 +18,20 @@ export const DEFAULT_HOME_RAILS: readonly HomeRail[] = [
   { key: 'lead' },
   { key: 'edit' },
   { key: 'for-you' },
-  // Two department bands, deliberately not adjacent — DESIGN-SYSTEM's
-  // "adjacent bands must not share a grid" holds whether the desk console
-  // put them next to each other or the default order did. `guides` sits
-  // between them. Dining leads (first department band → `--ivory`, see
-  // `lib/bandVariant.ts`) because it is the bigger department in both
-  // cities: Bali eat 1,083 + drink 171 vs stay 453; Jakarta eat 935 +
-  // drink 84 vs stay 420 (measured 2026-09-24).
+  // Every department the nav carries has a band (owner, 2026-09-25: "do we
+  // have all the categories in the landing page?" -- it had two of six).
+  // Dining leads, on `--ivory`, as the biggest department in both cities
+  // (Bali eat 1,083 + drink 171; Jakarta eat 935 + drink 84, measured
+  // 2026-09-24). Where two land next to each other, `lib/bandVariant.ts`
+  // alternates mirror and 4-up so no two adjacent bands share a grid; the
+  // guides and Latest bands break up the run.
   { key: 'department:dining' },
   { key: 'guides' },
   { key: 'department:stay' },
+  { key: 'department:wellness' },
   { key: 'latest' },
+  { key: 'department:things-to-do' },
+  { key: 'department:events' },
+  { key: 'department:editorial' },
   { key: 'explore' },
 ]

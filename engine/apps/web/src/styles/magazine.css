@@ -702,10 +702,19 @@
    grid: a `row` card's height varies with its headline, and multi-column
    lets the next row start immediately below the shortest one instead of
    pinning every row in a column to the tallest row in its rank. */
-.grid--index { column-count: 3; column-gap: var(--gutter); }
-.grid--index > * { break-inside: avoid; }
-@media (max-width: 62rem) { .grid--index { column-count: 2; } }
-@media (max-width: 36rem) { .grid--index { column-count: 1; } }
+/* A row grid, not newspaper columns (owner, 2026-09-25): with
+   `column-count` each column's rules fell wherever its own headlines ended,
+   so no rule lined up across the page. As a grid every row of three shares
+   one height and every hairline runs edge to edge. Reading order becomes
+   left to right, which is also how the eye scans an index. */
+.grid--index {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  align-items: stretch;
+}
+@media (max-width: 62rem) { .grid--index { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 36rem) { .grid--index { grid-template-columns: minmax(0, 1fr); } }
 
 /* Explore — 4-column area index, same reasoning as Latest's. */
 .grid--areas { column-count: 4; column-gap: var(--gutter); }
