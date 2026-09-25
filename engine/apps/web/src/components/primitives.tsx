@@ -26,18 +26,34 @@ import { subscribe } from '@/lib/newsletter'
 export function Band({
   tone = 'paper',
   hair = false,
+  reveal = false,
   className,
   children,
 }: {
   tone?: 'paper' | 'ivory' | 'ink'
   hair?: boolean
+  /**
+   * Reveal-on-scroll (DESIGN-SYSTEM §... motion): a small upward fade as the
+   * band enters the viewport. Pure CSS, behind `@supports (animation-timeline:
+   * view())` in magazine.css — nothing is hidden when the feature or
+   * JavaScript is absent, `[data-reveal]`'s un-annotated state IS the
+   * finished, visible page (base.css). Opt-in per band because the lead
+   * package must never move: it is what a reader sees first, and a reveal
+   * animation on the very first thing painted reads as a flash of missing
+   * content, not as motion.
+   */
+  reveal?: boolean
   className?: string
   children: ReactNode
 }) {
   const cls = ['band', tone !== 'paper' ? `band--${tone}` : null, hair ? 'band--hair' : null, className]
     .filter(Boolean)
     .join(' ')
-  return <section className={cls}>{children}</section>
+  return (
+    <section className={cls} data-reveal={reveal ? '' : undefined}>
+      {children}
+    </section>
+  )
 }
 
 /**
@@ -142,11 +158,14 @@ export function Signup({ site }: { site: SiteConfig }) {
   return (
     <div className="signup">
       <p className="bandhead__kicker">The Weekly</p>
-      <h2 className="signup__title">
-        Everything worth your
-        <br />
-        attention, once a week.
-      </h2>
+      {/* No hard-coded <br/> — that was the actual cause of "your" landing
+          alone on its own line in a narrow column: a forced break between
+          "your" and "attention" survives regardless of `text-wrap: balance`
+          on `.signup__title`, because `text-wrap` only ever chooses among
+          natural wrap points, never removes an explicit one. Plain text
+          lets the column's own width decide where the two (or more) lines
+          fall, and `balance` (magazine.css) evens them out. */}
+      <h2 className="signup__title">Everything worth your attention, once a week.</h2>
       <form className="signup__form" action={subscribe}>
         <label className="visually-hidden" htmlFor="signup-email">
           Email address

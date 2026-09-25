@@ -126,11 +126,29 @@
 
   /* ---- Motion ---------------------------------------------------------
      Editorial restraint: things fade and underline. Nothing slides,
-     bounces or scales.                                                   */
+     bounces or scales.
+     Edition 2 adds two tokens rather than reusing `--dur` for everything:
+     a hover/underline/header-condense transition needs to feel instant
+     (180ms), but a reveal-on-scroll needs to be SEEN — the brief's own
+     ceiling is 450ms, and 180ms of translate reads as a flicker, not a
+     reveal. Both collapse under reduced motion, same as `--dur` always
+     has. `--reveal-y` is deliberately small (12px is the brief's own
+     ceiling) — this is a magazine settling into place, not a slide-in. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --dur: 180ms;
+  --dur-reveal: 420ms;
+  --reveal-y: 10px;
+
+  /* ---- Chrome stacking --------------------------------------------------
+     One place both z-indices live, so the sticky header and the preview
+     bar (magazine.css, written before this file gained a header worth
+     stacking against) can never silently swap order. The preview bar
+     stays on top: it is the loudest thing on the site by design (S4) and
+     must never be hidden under a condensed header. */
+  --z-header: 40;
+  --z-preview: 50;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur: 0ms; }
+  :root { --dur: 0ms; --dur-reveal: 0ms; --reveal-y: 0px; }
 }

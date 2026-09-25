@@ -36,6 +36,10 @@ from sqlalchemy.engine import Connection
 SYNTH_PLACES_TABLE = "now_filters_synth_places"
 SYNTH_ARTICLES_TABLE = "now_filters_synth_articles"
 SYNTH_EVENTS_TABLE = "now_filters_synth_events"
+SYNTH_PLACE_MENTIONS_TABLE = "now_filters_synth_place_mentions"
+SYNTH_HIDDEN_RIVAL_FLAGS_TABLE = "now_filters_synth_hidden_rival_flags"
+SYNTH_INTERACTIONS_TABLE = "now_filters_synth_interactions"
+SYNTH_COVISITATION_TABLE = "now_filters_synth_covisitation"
 
 # The 6 venue L1 types (excludes `event`/`editorial`, which are the two
 # `exclude_same=false` rows in engine.type_relations -- see ARCHITECTURE.md
@@ -55,6 +59,27 @@ class SyntheticPlace:
     price_band: str | None = "moderate"
     lat: float | None = None
     lng: float | None = None
+    # Added for the hidden-rival guard (`now_filters.hidden_rival`), which
+    # matches a FEATURED place_mentions row's place NAME against the
+    # taxonomy subtype lexicon -- every earlier caller of this dataclass
+    # left `name` unset and gets the harmless default below, so this is
+    # additive, not a breaking change to the synthetic-places contract.
+    name: str = "Synthetic Place"
+
+
+@dataclass(frozen=True)
+class SyntheticHiddenRivalFlag:
+    article_id: int
+    matched_type: str
+    signal: str = "featured_mention"  # 'featured_mention' | 'title'
+
+
+@dataclass(frozen=True)
+class SyntheticPlaceMention:
+    article_id: int
+    place_id: int
+    role: str  # 'featured' | 'reviewed' | 'mentioned' -- enum_place_mentions_role
+    surface_text: str = "synthetic mention"
 
 
 @dataclass(frozen=True)
@@ -65,6 +90,13 @@ class SyntheticArticle:
     series_key: str | None = None
     published_at: datetime = field(default_factory=lambda: datetime(2025, 1, 1, tzinfo=timezone.utc))
     status: str = "published"
+    # Added for the hidden-rival guard's TITLE signal
+    # (`now_filters.hidden_rival_recompute`), which matches an article's
+    # own title against the taxonomy subtype lexicon -- every earlier
+    # caller left `title` unset and gets the harmless default below, so
+    # this is additive, not a breaking change to the synthetic-articles
+    # contract.
+    title: str = "Synthetic Article"
 
 
 def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], *, table: str = SYNTH_PLACES_TABLE) -> str:
@@ -74,7 +106,7 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
             f"CREATE TEMP TABLE {table} ("
             "id int PRIMARY KEY, type text NOT NULL, subtype text, status text NOT NULL, "
             "area_term text, org_id text, price_band text, lat double precision, lng double precision, "
-            "geo geography(Point,4326)"
+            "geo geography(Point,4326), name text NOT NULL DEFAULT 'Synthetic Place'"
             ")"
         )
     )
@@ -83,9 +115,9 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
         geo_expr = "ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography" if has_geo else "NULL"
         conn.execute(
             text(
-                f"INSERT INTO {table} (id, type, subtype, status, area_term, org_id, price_band, lat, lng, geo) "
+                f"INSERT INTO {table} (id, type, subtype, status, area_term, org_id, price_band, lat, lng, geo, name) "
                 "VALUES (:id, :type, :subtype, :status, :area_term, :org_id, :price_band, :lat, :lng, "
-                f"{geo_expr})"
+                f"{geo_expr}, :name)"
             ),
             {
                 "id": r.id,
@@ -97,7 +129,61 @@ def create_synthetic_places_table(conn: Connection, rows: list[SyntheticPlace], 
                 "price_band": r.price_band,
                 "lat": r.lat,
                 "lng": r.lng,
+                "name": r.name,
             },
+        )
+    return table
+
+
+def create_synthetic_place_mentions_table(
+    conn: Connection, rows: list[SyntheticPlaceMention], *, table: str = SYNTH_PLACE_MENTIONS_TABLE
+) -> str:
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "id serial PRIMARY KEY, article_id int NOT NULL, place_id int NOT NULL, "
+            "role text NOT NULL, surface_text text"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(
+                f"INSERT INTO {table} (article_id, place_id, role, surface_text) "
+                "VALUES (:article_id, :place_id, :role, :surface_text)"
+            ),
+            {
+                "article_id": r.article_id,
+                "place_id": r.place_id,
+                "role": r.role,
+                "surface_text": r.surface_text,
+            },
+        )
+    return table
+
+
+def create_synthetic_hidden_rival_flags_table(
+    conn: Connection, rows: list[SyntheticHiddenRivalFlag], *, table: str = SYNTH_HIDDEN_RIVAL_FLAGS_TABLE
+) -> str:
+    """Stands in for `engine.hidden_rival_flags` (migration 0009) --
+    `build_articles_hard_filter_sql(hidden_rival_flags_table=...)` reads
+    whichever table name it is given, exactly like every other
+    swap-in-a-synthetic-table parameter in this module (see this file's
+    own docstring)."""
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "article_id text NOT NULL, matched_type text NOT NULL, signal text NOT NULL, "
+            "PRIMARY KEY (article_id, matched_type, signal)"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(f"INSERT INTO {table} (article_id, matched_type, signal) VALUES (:article_id, :matched_type, :signal)"),
+            {"article_id": str(r.article_id), "matched_type": r.matched_type, "signal": r.signal},
         )
     return table
 
@@ -108,15 +194,15 @@ def create_synthetic_articles_table(conn: Connection, rows: list[SyntheticArticl
         text(
             f"CREATE TEMP TABLE {table} ("
             "id int PRIMARY KEY, primary_type text, format text, series_key text, "
-            "published_at timestamptz, _status text NOT NULL"
+            "published_at timestamptz, _status text NOT NULL, title text NOT NULL DEFAULT 'Synthetic Article'"
             ")"
         )
     )
     for r in rows:
         conn.execute(
             text(
-                f"INSERT INTO {table} (id, primary_type, format, series_key, published_at, _status) "
-                "VALUES (:id, :primary_type, :format, :series_key, :published_at, :status)"
+                f"INSERT INTO {table} (id, primary_type, format, series_key, published_at, _status, title) "
+                "VALUES (:id, :primary_type, :format, :series_key, :published_at, :status, :title)"
             ),
             {
                 "id": r.id,
@@ -125,8 +211,84 @@ def create_synthetic_articles_table(conn: Connection, rows: list[SyntheticArticl
                 "series_key": r.series_key,
                 "published_at": r.published_at,
                 "status": r.status,
+                "title": r.title,
             },
         )
+    return table
+
+
+@dataclass(frozen=True)
+class SyntheticInteraction:
+    """Stands in for a row of `engine.interactions`
+    (`now_filters_recompute_covisitation`'s read side) -- only the columns
+    that module's qualifying-signal rule and session grouping need."""
+
+    session_id: str
+    entity_id: int
+    kind: str  # 'click' | 'dwell' | 'scroll' | ... (enum_interactions_kind)
+    dwell_ms: int | None = None
+    scroll_pct: float | None = None
+    # `datetime.now()`, not a fixed past date like the other synthetic
+    # dataclasses in this module use for `published_at` -- this table's
+    # own reader (`covisitation_recompute`'s `ts >= now() - window_days`
+    # predicate) is time-relative-to-now by construction, so a fixed
+    # historical default would silently fall outside the window and every
+    # test row would vanish from consideration.
+    ts: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    anon_id: str = "00000000-0000-0000-0000-000000000001"
+    user_id: str | None = None
+    entity_type: str = "article"
+
+
+def create_synthetic_interactions_table(
+    conn: Connection, rows: list[SyntheticInteraction], *, table: str = SYNTH_INTERACTIONS_TABLE
+) -> str:
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            "id serial PRIMARY KEY, session_id uuid NOT NULL, anon_id uuid NOT NULL, user_id uuid, "
+            "entity_type text NOT NULL, entity_id text NOT NULL, kind text NOT NULL, "
+            "dwell_ms integer, scroll_pct numeric(5,2), ts timestamptz NOT NULL"
+            ")"
+        )
+    )
+    for r in rows:
+        conn.execute(
+            text(
+                f"INSERT INTO {table} "
+                "(session_id, anon_id, user_id, entity_type, entity_id, kind, dwell_ms, scroll_pct, ts) "
+                "VALUES (:session_id, :anon_id, :user_id, :entity_type, :entity_id, :kind, :dwell_ms, :scroll_pct, :ts)"
+            ),
+            {
+                "session_id": r.session_id,
+                "anon_id": r.anon_id,
+                "user_id": r.user_id,
+                "entity_type": r.entity_type,
+                "entity_id": str(r.entity_id),
+                "kind": r.kind,
+                "dwell_ms": r.dwell_ms,
+                "scroll_pct": r.scroll_pct,
+                "ts": r.ts,
+            },
+        )
+    return table
+
+
+def create_synthetic_covisitation_table(conn: Connection, *, table: str = SYNTH_COVISITATION_TABLE) -> str:
+    """Empty on creation -- `recompute_covisitation` is what populates it;
+    tests seed pre-existing rows (for a diff/removal case) with a plain
+    INSERT against the returned table name."""
+    conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
+    conn.execute(
+        text(
+            f"CREATE TEMP TABLE {table} ("
+            'entity_a text NOT NULL, entity_b text NOT NULL, score numeric(8,5) NOT NULL, '
+            '"window" text NOT NULL, computed_at timestamptz NOT NULL DEFAULT now(), '
+            'PRIMARY KEY (entity_a, entity_b, "window")'
+            ")"
+        )
+    )
     return table
 
 

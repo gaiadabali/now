@@ -14,6 +14,7 @@ import json
 
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
 from now_db.settings import city_database_url
 
@@ -40,6 +41,24 @@ def _row_counts(engine) -> dict[str, int]:
                      "order by entity_id, term_id)) from engine.entity_terms")
             ).scalar(),
         }
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _databases_reachable():
+    """Both tests read the real city databases and the platform vocabulary.
+    With neither reachable (CI's eval job has no Postgres) the module skips
+    rather than failing -- the same contract as test_apply_llm_labels_db."""
+    from now_platform_db.settings import platform_database_url
+
+    for url in [city_database_url(ref) for ref in LIVE_DB_REF.values()] + [platform_database_url()]:
+        eng = create_engine(url, connect_args={"connect_timeout": 5})
+        try:
+            with eng.connect():
+                pass
+        except OperationalError as exc:
+            pytest.skip(f"a database this module reads is not reachable ({exc.__class__.__name__})")
+        finally:
+            eng.dispose()
 
 
 @pytest.fixture(scope="module")

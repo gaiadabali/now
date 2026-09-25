@@ -81,3 +81,6 @@ engine/packages/eval/data/llm_batch/
 # script. Committing it would create a second copy that goes stale the first
 # time the beacon is fixed. See apps/web/scripts/sync-beacon.mjs.
 engine/apps/web/public/beacon.min.js
+
+# Agent worktrees (Claude Code isolation) — local scratch checkouts, never content.
+.claude/worktrees/

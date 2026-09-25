@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { AdminViewFrame, type AdminViewFrameProps } from '../AdminViewFrame'
 import { RegistryIndexView } from './RegistryIndexView'
 import { SiteDetailView } from './sites/[slug]/SiteDetailView'
+import { RailsAnalyticsView } from './rails/RailsAnalyticsView'
 
 /**
  * The platform console's single door into Payload's admin.
@@ -58,6 +59,12 @@ function content(rest: string[]) {
   // rest of S5 — partnerships, syndication, classification health — without
   // the registry having claimed the root.
   if (rest.length === 2 && rest[0] === 'sites') return <SiteDetailView slug={rest[1]} />
+
+  // "How suggestions are doing" — the rail-click-analytics/A-B-test screen.
+  // Same reasoning as `commerce/orgs/[id]/partnerships/**`: a new path
+  // under an already-registered prefix-matched view needs no new
+  // registration in `payload.config.ts`.
+  if (rest.length === 1 && rest[0] === 'rails') return <RailsAnalyticsView />
 
   notFound()
 }

@@ -4,6 +4,7 @@ import { Bebas_Neue, Cormorant, Heebo } from 'next/font/google'
 import { Beacon } from '@/components/Beacon'
 import { Masthead } from '@/components/Masthead'
 import { Footer } from '@/components/primitives'
+import { RevealObserver } from '@/components/RevealObserver'
 import { accountsEnabled, currentReader } from '@/lib/reader'
 import { getSiteConfig } from '@/lib/site'
 
@@ -103,6 +104,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Masthead site={site} today={today} reader={reader} accountsEnabled={accountsEnabled()} />
         <main id="main">{children}</main>
         <Footer site={site} />
+        {/* Reveal-on-scroll's one client component — see RevealObserver.tsx
+            for why this replaced a pure-CSS `animation-timeline: view()`
+            version that held anything below the fold at opacity 0 forever
+            in a full-page screenshot, a print, or any other context that
+            never scrolls a real viewport. Renders nothing. */}
+        <RevealObserver />
         {/* One tag for the whole site. Pages that represent an entity emit
             `<meta name="nowb:entity">` and the beacon picks it up — see
             components/Beacon.tsx. Rendered last so it never delays paint;

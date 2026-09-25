@@ -24,8 +24,16 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
-from now_classifier.vocabulary import load_term_index, term_uuid
+# `now_classifier` ships only with the `calibration` extra, and CI's eval job
+# installs `--extra dev` alone (the harness gate is meant to need no DB). This
+# module is a DB-integration test of the calibration path, so without the
+# extra it skips like the package's other DB tests rather than failing
+# collection and taking the whole suite down with it.
+pytest.importorskip("now_classifier")
+
+from now_classifier.vocabulary import load_term_index, term_uuid  # noqa: E402
 from now_db.settings import city_database_url
 
 from now_eval.calibration.apply_llm_labels import (
@@ -48,7 +56,16 @@ CITY = "testcity"  # deliberately not "jakarta"/"bali" -- keeps these tests visi
 
 @pytest.fixture(scope="module")
 def engine():
-    eng = create_engine(city_database_url("now_test"))
+    # A DB-integration module: with no reachable `now_test` (CI's eval job has
+    # no Postgres) it skips rather than erroring, the same contract as the
+    # `now_classifier` import guard above.
+    eng = create_engine(city_database_url("now_test"), connect_args={"connect_timeout": 5})
+    try:
+        with eng.connect():
+            pass
+    except OperationalError as exc:
+        eng.dispose()
+        pytest.skip(f"now_test database not reachable ({exc.__class__.__name__})")
     create_scratch_public_schema(eng)
     try:
         yield eng
@@ -59,7 +76,10 @@ def engine():
 
 @pytest.fixture(scope="module")
 def terms():
-    return load_term_index()
+    try:
+        return load_term_index()
+    except OperationalError as exc:
+        pytest.skip(f"platform vocabulary not reachable ({exc.__class__.__name__})")
 
 
 @pytest.fixture

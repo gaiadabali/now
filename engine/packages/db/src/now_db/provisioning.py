@@ -208,8 +208,11 @@ class SeedTerm:
 class TaxonomySeed:
     facets: list[SeedFacet]
     terms: list[SeedTerm]  # topologically ordered: a parent always precedes its children
-    type_relations: dict[str, tuple[bool, list[str]]]  # type -> (exclude_same, complements)
-    unknown_type_default: tuple[bool, list[str]]
+    # type -> (exclude_same, complements, competes_with). `competes_with`
+    # added by migration 0008 (Edition 2, 2026-09-24) -- a second exclusion
+    # axis alongside `exclude_same`, see that migration's docstring.
+    type_relations: dict[str, tuple[bool, list[str], list[str]]]
+    unknown_type_default: tuple[bool, list[str], list[str]]
     decay: dict[str, Any]  # the object written to sites.ranking_weights['decay']
 
     def terms_of(self, facet: str) -> list[SeedTerm]:
@@ -304,7 +307,7 @@ def load_taxonomy_seed(seed_dir: Path | str | None = None) -> TaxonomySeed:
     # type_relations.json — must agree with the `type` vocabulary exactly.
     rel_doc = _read_json(root / "type_relations.json")
     type_slugs = {t.slug for t in terms if t.facet == "type"}
-    relations: dict[str, tuple[bool, list[str]]] = {}
+    relations: dict[str, tuple[bool, list[str], list[str]]] = {}
     for r in rel_doc["relations"]:
         t = r["type"]
         if t not in type_slugs:
@@ -317,9 +320,28 @@ def load_taxonomy_seed(seed_dir: Path | str | None = None) -> TaxonomySeed:
             raise TaxonomySeedError(f"type_relations.json: {t!r} complements unknown types {unknown}")
         if t in complements:
             raise TaxonomySeedError(f"type_relations.json: {t!r} cannot complement itself")
-        relations[t] = (bool(r["exclude_same"]), complements)
-    default = rel_doc.get("unknown_type_default", {"exclude_same": True, "complements": []})
-    unknown_default = (bool(default["exclude_same"]), list(default["complements"]))
+        # `competes_with` (migration 0008): optional in the file's shape so
+        # an older seed/hand-test fixture that predates Edition 2 still
+        # loads -- absence means "nothing", not "unknown/invalid".
+        competes_with = list(r.get("competes_with", []))
+        unknown_competes = [c for c in competes_with if c not in type_slugs]
+        if unknown_competes:
+            raise TaxonomySeedError(f"type_relations.json: {t!r} competes_with unknown types {unknown_competes}")
+        if t in competes_with:
+            raise TaxonomySeedError(f"type_relations.json: {t!r} cannot compete with itself")
+        overlap = set(complements) & set(competes_with)
+        if overlap:
+            raise TaxonomySeedError(
+                f"type_relations.json: {t!r} lists {sorted(overlap)} in both complements and "
+                "competes_with -- a type cannot simultaneously be a co-recommendation and a competitor"
+            )
+        relations[t] = (bool(r["exclude_same"]), complements, competes_with)
+    default = rel_doc.get("unknown_type_default", {"exclude_same": True, "complements": [], "competes_with": []})
+    unknown_default = (
+        bool(default["exclude_same"]),
+        list(default["complements"]),
+        list(default.get("competes_with", [])),
+    )
 
     # format_decay.json — must list exactly the `format` terms.
     decay = _read_json(root / "format_decay.json")["decay"]
@@ -512,8 +534,8 @@ def seed_platform_taxonomy(
 
 _INSERT_TYPE_RELATION = text(
     """
-    INSERT INTO engine.type_relations (type, exclude_same, complements)
-    VALUES (:type, :exclude_same, CAST(:complements AS text[]))
+    INSERT INTO engine.type_relations (type, exclude_same, complements, competes_with)
+    VALUES (:type, :exclude_same, CAST(:complements AS text[]), CAST(:competes_with AS text[]))
     ON CONFLICT (type) DO NOTHING
     RETURNING type
     """
@@ -576,16 +598,23 @@ def seed_city(
 
             inserted: list[str] = []
             for type_slug in l1_types:
-                exclude_same, complements = seed.type_relations.get(type_slug, seed.unknown_type_default)
+                exclude_same, complements, competes_with = seed.type_relations.get(
+                    type_slug, seed.unknown_type_default
+                )
                 if type_slug not in seed.type_relations:
                     log.warning(
                         "type %r has no entry in type_relations.json; seeding the strict default "
-                        "(exclude_same=%s, complements=%s)",
-                        type_slug, exclude_same, complements,
+                        "(exclude_same=%s, complements=%s, competes_with=%s)",
+                        type_slug, exclude_same, complements, competes_with,
                     )
                 row = conn.execute(
                     _INSERT_TYPE_RELATION,
-                    {"type": type_slug, "exclude_same": exclude_same, "complements": complements},
+                    {
+                        "type": type_slug,
+                        "exclude_same": exclude_same,
+                        "complements": complements,
+                        "competes_with": competes_with,
+                    },
                 ).first()
                 if row is not None:
                     inserted.append(type_slug)
@@ -604,6 +633,24 @@ def seed_city(
                 raise RuntimeError(
                     "engine.type_relations references types missing from the platform vocabulary: "
                     + ", ".join(f"{t} -> {c}" for t, c in dangling)
+                )
+
+            # Same consistency check, for the `competes_with` axis (migration
+            # 0008) -- a competitor reference to a type outside the
+            # vocabulary is exactly as silently-broken as a dangling
+            # complement: `excluded_types_for` would union in a type name
+            # `entity_terms`/`primary_type` can never actually carry.
+            dangling_competes = conn.execute(
+                text(
+                    "SELECT tr.type, c FROM engine.type_relations tr, unnest(tr.competes_with) AS c "
+                    "WHERE NOT (c = ANY(CAST(:types AS text[]))) ORDER BY tr.type, c"
+                ),
+                {"types": l1_types},
+            ).fetchall()
+            if dangling_competes:
+                raise RuntimeError(
+                    "engine.type_relations.competes_with references types missing from the platform "
+                    "vocabulary: " + ", ".join(f"{t} -> {c}" for t, c in dangling_competes)
                 )
 
             orphans = [

@@ -1,0 +1,241 @@
+import 'server-only'
+
+import {
+  getByIds,
+  getLatest,
+  getSectionPage,
+  type Article,
+} from '@/lib/content'
+import { departmentVariant, type DepartmentVariant } from '@/lib/bandVariant'
+import { areasWithCounts } from '@/lib/payload'
+import { getForYou, type ArticleRail, type ReaderContext } from '@/lib/recommend'
+import { DEFAULT_HOME_RAILS } from '@/lib/homeBands'
+import { getSiteConfig, type HomeRail, type SiteConfig } from '@/lib/site'
+
+/**
+ * The home page's own data assembly — one server module, so the page
+ * component only renders what comes back (EDITION-2-PLAN §3: "the desk
+ * writes them, the home page reads them").
+ *
+ * Two rules this file exists to enforce, that a page component assembling
+ * its own queries kept getting wrong before:
+ *
+ * 1. **`HomeRail.pins` lead a band, in order, then its automatic fill** — and
+ *    a pin that no longer resolves to a published article (unpublished,
+ *    deleted, mistyped id) is skipped rather than rendered as a hole or a
+ *    crash. `getByIds` (lib/content.ts) already applies the `PUBLISHED` gate.
+ * 2. **Every story appears once per page.** The previous home page queried
+ *    each band independently, which is exactly how the Hotels band ended up
+ *    repeating the cover story (IHG/Kimpton) as its own lead — both bands
+ *    asked "what's newest" and got the same answer. `used` is threaded
+ *    through every band in rendering order and nothing after the first band
+ *    to claim a story may claim it again.
+ */
+
+export type FrontLeadItem = Article
+export type FrontBand =
+  | { key: 'lead'; kind: 'lead'; hero: FrontLeadItem; secondaries: Article[]; ticker: Article[] }
+  | { key: 'edit'; kind: 'edit'; kicker: string; title: string; items: Article[] }
+  | { key: 'for-you'; kind: 'for-you'; rail: ArticleRail }
+  | {
+      key: `department:${string}`
+      kind: 'department'
+      section: string
+      kicker: string
+      title: string
+      moreHref: string
+      lead: Article
+      side: Article[]
+      /** See `lib/bandVariant.ts`: only the first department band on the
+       *  page is `'ivory'` — an editor can place several `department:*`
+       *  bands in `home_rails`, and `--ivory` is a per-page budget, not a
+       *  per-band one. */
+      variant: DepartmentVariant
+    }
+  | { key: 'guides'; kind: 'guides'; kicker: string; title: string; items: Article[] }
+  | { key: 'latest'; kind: 'latest'; kicker: string; title: string; items: Article[] }
+  | { key: 'explore'; kind: 'explore'; kicker: string; title: string; areas: Array<{ slug: string; label: string; count: number }> }
+
+export type FrontPage = {
+  site: SiteConfig
+  bands: FrontBand[]
+}
+
+/** Re-exported from `lib/homeBands.ts`, which both this page and the desk's
+ * front-page editor read, so the two can never start from different orders. */
+export { DEFAULT_HOME_RAILS }
+
+const KNOWN_KEYS = new Set(['lead', 'edit', 'for-you', 'guides', 'latest', 'explore'])
+function isKnownKey(key: string): boolean {
+  return KNOWN_KEYS.has(key) || key.startsWith('department:')
+}
+
+/** Pins first (in the order given, published only, deduped against every
+ *  earlier band), then `pool` fills the rest. `pool` should already be
+ *  over-fetched by the caller — comfortably more than `limit` — because
+ *  dedupe removes an unpredictable number before this ever sees it. */
+function pinsThenFill(pins: number[] | undefined, pinned: Article[], pool: Article[], used: Set<number>, limit: number): Article[] {
+  const keptPins = pinned.filter((a) => !used.has(a.id)).slice(0, limit)
+  keptPins.forEach((a) => used.add(a.id))
+  const remaining = limit - keptPins.length
+  if (remaining <= 0) return keptPins
+  const fill = pool.filter((a) => !used.has(a.id)).slice(0, remaining)
+  fill.forEach((a) => used.add(a.id))
+  return [...keptPins, ...fill]
+}
+
+/** Overfetch factor for a band's automatic fill: enough slack that a page
+ *  with several curated pins and several earlier bands still has real
+ *  content left to fill with, without a second round-trip. */
+const SLACK = 10
+
+export async function getFrontPage(reader: ReaderContext = {}): Promise<FrontPage> {
+  const site = await getSiteConfig()
+  const order = site.homeRails?.filter((r) => isKnownKey(r.key)) ?? DEFAULT_HOME_RAILS
+  const used = new Set<number>()
+  const bands: FrontBand[] = []
+  // How many `department:*` bands have been placed so far — not reset by a
+  // gap (a `guides` band between two department bands does not entitle the
+  // second to `--ivory` again). See `lib/bandVariant.ts`.
+  let departmentCount = 0
+
+  for (const rail of order) {
+    if (rail.key === 'lead') {
+      // hero + 3 secondaries by default — the brief's own "3-4", and 3 is
+      // what keeps the package's measured height inside the 1440×900 fold
+      // budget alongside the hero's fixed-height media box (see
+      // `.frontlead__secondaries` in magazine.css for the measurement).
+      const limit = rail.limit ?? 4
+      const pins = rail.pins ?? []
+      const pinned = await getByIds(pins)
+      const pool = await getLatest(limit + used.size + SLACK)
+      const picked = pinsThenFill(pins, pinned, pool, used, limit)
+      const [hero, ...secondaries] = picked
+      if (!hero) continue // nothing published at all (fresh city) — page.tsx handles that state
+      // The above-the-fold "Latest" strip: real, timestamped, and never one
+      // of the stories the lead package just told. Not the deep `latest`
+      // band further down the page — that one is the full paginated index.
+      const tickerPool = await getLatest(4 + used.size + SLACK)
+      const ticker = tickerPool.filter((a) => !used.has(a.id)).slice(0, 4)
+      ticker.forEach((a) => used.add(a.id))
+      bands.push({ key: 'lead', kind: 'lead', hero, secondaries, ticker })
+      continue
+    }
+
+    if (rail.key === 'edit') {
+      const limit = rail.limit ?? 4
+      const pins = rail.pins ?? []
+      const pinned = await getByIds(pins)
+      const pool = await getLatest(limit + used.size + SLACK)
+      const items = pinsThenFill(pins, pinned, pool, used, limit)
+      if (items.length === 0) continue
+      bands.push({ key: 'edit', kind: 'edit', kicker: rail.note ?? 'Chosen this week', title: rail.label ?? 'The Edit', items })
+      continue
+    }
+
+    if (rail.key === 'for-you') {
+      const forYou = await getForYou(reader, rail.limit ?? 6)
+      if (!forYou || forYou.items.length === 0) continue
+      bands.push({ key: 'for-you', kind: 'for-you', rail: forYou })
+      continue
+    }
+
+    if (rail.key === 'guides') {
+      const limit = rail.limit ?? 5
+      const pins = rail.pins ?? []
+      const pinned = await getByIds(pins)
+      const page = await getSectionPage('guides', { limit: limit + used.size + SLACK })
+      const items = pinsThenFill(pins, pinned, page.items, used, limit)
+      if (items.length === 0) continue
+      bands.push({
+        key: 'guides',
+        kind: 'guides',
+        kicker: rail.note ?? `${page.total} GUIDES`,
+        title: rail.label ?? 'The Guides',
+        items,
+      })
+      continue
+    }
+
+    if (rail.key === 'latest') {
+      const limit = rail.limit ?? 12
+      const pool = await getLatest(limit + used.size + SLACK)
+      const items = pool.filter((a) => !used.has(a.id)).slice(0, limit)
+      items.forEach((a) => used.add(a.id))
+      if (items.length === 0) continue
+      bands.push({ key: 'latest', kind: 'latest', kicker: rail.note ?? 'Newest first', title: rail.label ?? 'Latest', items })
+      continue
+    }
+
+    if (rail.key === 'explore') {
+      const areas = (await areasWithCounts()).slice(0, rail.limit ?? 12)
+      if (areas.length === 0) continue
+      bands.push({
+        key: 'explore',
+        kind: 'explore',
+        kicker: rail.note ?? `${areas.length} NEIGHBOURHOODS`,
+        title: rail.label ?? 'Explore',
+        areas,
+      })
+      continue
+    }
+
+    if (rail.key.startsWith('department:')) {
+      const section = rail.key.slice('department:'.length)
+      const limit = rail.limit ?? 4 // one lead + up to 3 side items
+      const pins = rail.pins ?? []
+      const pinned = await getByIds(pins)
+      const page = await getSectionPage(section, { limit: limit + used.size + SLACK })
+      const items = pinsThenFill(pins, pinned, page.items, used, limit)
+      const [lead, ...side] = items
+      if (!lead) continue
+      bands.push({
+        key: rail.key as `department:${string}`,
+        kind: 'department',
+        section,
+        kicker: rail.note ?? `${page.total} STORIES`,
+        title: rail.label ?? navLabelFor(section, site.nav) ?? sectionTitle(section),
+        moreHref: `/${section}`,
+        lead,
+        side,
+        variant: departmentVariant(departmentCount++),
+      })
+      continue
+    }
+  }
+
+  return { site, bands }
+}
+
+/**
+ * A department band's title, in order of preference: an editor's own
+ * `rail.label`, then the city's own word for that section — the nav's own
+ * label, which is a console edit and can read "Resto & Bars" in one city
+ * and "Dining" in another — then a generic fallback for a section the nav
+ * happens not to list.
+ *
+ * Titling a department band by a hardcoded English word (a first version
+ * of this called it "Hotels" unconditionally) was already wrong the
+ * moment a real nav could say otherwise: `site.nav` is the one place this
+ * city's own vocabulary for a section lives (Masthead.tsx's own doc
+ * comment — "an editor renaming Dining to Resto & Bars... is a console
+ * edit rather than a deploy"), and a department band is that same section,
+ * just given more weight on the front page. Naming it differently there
+ * would be the site disagreeing with itself about what to call the same
+ * archive.
+ */
+function navLabelFor(section: string, nav: SiteConfig['nav']): string | undefined {
+  return nav.find((item) => item.href === `/${section}`)?.label
+}
+
+/** Last resort for a section the nav does not list at all — humanises the
+ *  slug the same way `sectionLabel` does for a section index. `stay` keeps
+ *  its own special case as a fallback of the fallback, in case a city's nav
+ *  is ever missing that entry. */
+function sectionTitle(section: string): string {
+  if (section === 'stay') return 'Hotels'
+  return section
+    .split('-')
+    .map((w) => w[0]?.toUpperCase() + w.slice(1))
+    .join(' ')
+}

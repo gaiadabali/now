@@ -2,10 +2,17 @@
 commercial competitor-exclusion matrix. Real table, real seed data (8 L1
 types, per-site overridable in place); nothing here is synthetic.
 
-This module is the ONLY place `exclude_same`/`complements` are
-interpreted, so the competitor-exclusion promise (Sec.1 principle 6: "It
-never relaxes, at any fallback rung, for any tier") has exactly one
+This module is the ONLY place `exclude_same`/`complements`/`competes_with`
+are interpreted, so the competitor-exclusion promise (Sec.1 principle 6:
+"It never relaxes, at any fallback rung, for any tier") has exactly one
 implementation to audit.
+
+`competes_with` (migration 0008, 2026-09-24) is the second exclusion axis:
+`exclude_same` says "excludes its own L1 type"; `competes_with` says
+"also excludes THESE OTHER L1 types" -- the owner's "F&B is one class"
+rule (`eat`/`drink`) needs the second axis because they are not each
+other's "own kind", they are two different types the business treats as
+one competitive class.
 """
 
 from __future__ import annotations
@@ -15,7 +22,7 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-_SELECT_ALL = text("SELECT type, exclude_same, complements FROM engine.type_relations")
+_SELECT_ALL = text("SELECT type, exclude_same, complements, competes_with FROM engine.type_relations")
 
 
 @dataclass(frozen=True)
@@ -23,12 +30,26 @@ class TypeRelation:
     type: str
     exclude_same: bool
     complements: tuple[str, ...]
+    # Edition 2 (2026-09-24, migration 0008): a SECOND, narrower exclusion
+    # axis alongside `exclude_same`. The owner's rule ("never restaurant,
+    # cafe or F&B" on a restaurant story) named `eat`/`drink` as ONE
+    # competitive class even though they are two separate L1 types --
+    # `exclude_same` cannot express "excludes a DIFFERENT type", only "excludes
+    # its own kind". `competes_with` is a per-row list of other L1 types this
+    # type must never co-recommend, regardless of `complements`. See
+    # `excluded_types_for`'s docstring for how the two axes combine.
+    competes_with: tuple[str, ...] = ()
 
 
 def load_type_relations(conn: Connection) -> dict[str, TypeRelation]:
     rows = conn.execute(_SELECT_ALL).fetchall()
     return {
-        r.type: TypeRelation(type=r.type, exclude_same=bool(r.exclude_same), complements=tuple(r.complements or ()))
+        r.type: TypeRelation(
+            type=r.type,
+            exclude_same=bool(r.exclude_same),
+            complements=tuple(r.complements or ()),
+            competes_with=tuple(r.competes_with or ()),
+        )
         for r in rows
     }
 
@@ -66,6 +87,18 @@ def excluded_types_for(relations: dict[str, TypeRelation], subject_type: str | N
     complement, and Sec.4's matrix already exempts them from the
     same-type rule for the same reason.
 
+    Migration 0008 (2026-09-24) added a second axis, `competes_with`: two
+    DIFFERENT L1 types the owner named as one competitive class ("never
+    restaurant, cafe or F&B" -- `eat`/`drink`). `exclude_same` only ever
+    adds the subject's OWN type to the excluded set; it has nothing to say
+    about a different type that nonetheless must never co-recommend. Every
+    subject's `competes_with` list is unioned in below, unconditionally --
+    unlike `exclude_same`, this axis is not itself gated on "is this a
+    venue-shaped type", because the DATA is the gate: an `exclude_same=False`
+    row's `competes_with` is `{}` by construction (nothing today populates
+    it for editorial/do/event), so the union is a no-op for them, not a
+    special case this function has to know about.
+
     `unknown` the literal type name is still a special case in the one
     place that names it (this line) -- deliberately: it is not "one more
     catalog type" a data row can express generically, it is THE sentinel
@@ -95,7 +128,18 @@ def excluded_types_for(relations: dict[str, TypeRelation], subject_type: str | N
     it.
     """
     if subject_type is None:
-        return frozenset({r.type for r in relations.values() if r.exclude_same} | {"unknown"})
+        base = {r.type for r in relations.values() if r.exclude_same}
+        # Fail-closed must stay a superset of every KNOWN venue subject's own
+        # excluded set (this function's own invariant, stated above) -- so
+        # the None branch also unions every exclude_same=True row's
+        # competes_with, not just its own type name. In practice this is
+        # already covered when competes_with pairs are symmetric within the
+        # exclude_same=True set (eat/drink both have exclude_same=True, so
+        # each is already in `base`), but computing it explicitly rather
+        # than relying on that symmetry keeps the invariant true even if a
+        # future `competes_with` entry points outside that set.
+        competes = {t for r in relations.values() if r.exclude_same for t in r.competes_with}
+        return frozenset(base | competes | {"unknown"})
     if not subject_type:
         return frozenset()
     relation = relations.get(subject_type)
@@ -103,7 +147,7 @@ def excluded_types_for(relations: dict[str, TypeRelation], subject_type: str | N
         return frozenset()
     if not relation.exclude_same:
         return frozenset()
-    return frozenset({subject_type, "unknown"})
+    return frozenset({subject_type, "unknown"} | set(relation.competes_with))
 
 
 def is_competitor(relations: dict[str, TypeRelation], subject_type: str | None, candidate_type: str | None) -> bool:

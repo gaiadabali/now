@@ -4,6 +4,12 @@ import { headers as nextHeaders } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { payloadClient } from '@/lib/payload'
+import { canManagePartners, canWritePartnershipForSite, commerceCurrentSiteSlug } from '@/lib/commerceAccess'
+
+// Re-exported so every existing and future caller keeps importing these
+// three from `@/lib/auth` — see `lib/commerceAccess.ts`'s module comment for
+// why the actual implementations live in a Next-free file instead.
+export { canManagePartners, canWritePartnershipForSite, commerceCurrentSiteSlug }
 
 /**
  * Who is signed in, and what they may see.
@@ -52,9 +58,54 @@ export function canReadCommerce(user: StaffUser): boolean {
   return Boolean(user.commerceRole) && user.commerceRole !== 'none'
 }
 
-/** May this user change partnership state? Reserved for the E4.4 write surface. */
-export function canManagePartners(user: StaffUser): boolean {
-  return user.commerceRole === 'admin' || user.commerceRole === 'partner_manager'
+/**
+ * The gate every partnership-writing server action calls FIRST, before it
+ * looks at what the request is asking to change.
+ *
+ * Deliberately narrow — `canManagePartners` only, nothing site-specific —
+ * and deliberately a hard redirect: this is for someone with no business on
+ * this surface at all (an editorial `author`, an unauthenticated request, a
+ * `viewer`). Same reasoning as `requireStaffAdmin`: a server action is its
+ * own POST endpoint, reachable by anyone who has ever loaded the page that
+ * renders its form, so the page's `requireCommerceAccess()` protects the
+ * *reading* and does nothing for the *writing*.
+ *
+ * **Site-scoping is deliberately NOT done here.** A `partner_manager` who
+ * picks the wrong site in a form is not an intruder — they are a legitimate
+ * writer who made a choice this process cannot honour, and that is a
+ * message the action can return normally (`canWritePartnershipForSite`,
+ * called by the action once it knows which site the request names), not a
+ * reason to redirect them off the screen and discard whatever else they had
+ * typed. Splitting the two means "you may not write here at all" and "you
+ * may not write THIS site" fail differently, which is also what makes both
+ * independently testable — see `test/partnershipAccess.test.ts`.
+ */
+export async function requireCommerceWriter(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canManagePartners(user)) redirect('/team-editor/commerce')
+  return user
+}
+
+/**
+ * The same gate, returning the real Payload user document rather than this
+ * file's trimmed `StaffUser` view of it — for the one commerce write that
+ * goes through Payload's Local API instead of raw SQL (linking a venue to
+ * an organisation, `commerce/orgs/[id]/venuesActions.ts`, on the `places`
+ * collection). Same reasoning as `requireReviewerActor`: `payload.update()`
+ * hands whatever `user` it is given to hooks and version history as
+ * `req.user`, and the trimmed shape could disagree with what one of those
+ * expects. Places' own `update` access (`isAuthorOrAbove`) is the
+ * EDITORIAL dimension and is deliberately not what gates this — a
+ * commerce writer is judged on `canManagePartners`, the same as every
+ * other write in this area, so the call site passes `overrideAccess: true`
+ * and this function is the only authority that matters.
+ */
+export async function requireCommerceWriterActor() {
+  const payload = await payloadClient()
+  const { user } = await payload.auth({ headers: await nextHeaders() })
+  if (!user) redirect('/team-editor/login')
+  if (!canManagePartners(user as StaffUser)) redirect('/team-editor/commerce')
+  return user
 }
 
 /** May this user see editorial content at all? */
@@ -113,6 +164,28 @@ export function canReviewClassification(user: StaffUser): boolean {
 export async function requireReviewerAccess(): Promise<StaffUser> {
   const user = await requireUser()
   if (!canReviewClassification(user)) redirect('/team-editor')
+  return user
+}
+
+/**
+ * May this user see "How suggestions are doing" (rail click analytics and
+ * A/B experiment results)? Admin or editor, per the ticket — a plain read
+ * surface over `engine.impressions`/`engine.interactions`, no write
+ * anywhere on it, so there is no commerce dimension to ask about here the
+ * way `requireCommerceAccess` does. Named for what it actually gates
+ * rather than reusing `canReviewClassification` by coincidence of an
+ * identical boolean today — the two questions ("adjudicate the
+ * classifier" vs "view engagement numbers") are unrelated, and a future
+ * change to either one's role requirement should not silently move the
+ * other's.
+ */
+export function canViewRailAnalytics(user: StaffUser): boolean {
+  return user.role === 'admin' || user.role === 'editor'
+}
+
+export async function requireRailAnalyticsAccess(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canViewRailAnalytics(user)) redirect('/team-editor')
   return user
 }
 
@@ -187,5 +260,40 @@ export function canManageStaff(user: StaffUser): boolean {
 export async function requireStaffAdmin(): Promise<StaffUser> {
   const user = await requireUser()
   if (!canManageStaff(user)) redirect('/team-editor')
+  return user
+}
+
+/**
+ * May this user pin, unpin and reorder stories on the front page?
+ *
+ * Editor or admin — the same test as `isReviewer`/`isEditorOrAbove` in
+ * `packages/cms/src/access`, and for the same reason those are separate
+ * exports rather than one shared "is this person senior" predicate that
+ * happens to agree today: this is a distinct decision (who may change what
+ * every reader sees on arrival) that only currently has the same answer as
+ * "who may publish". `requireStaffAdmin` (editorial `admin` only) is too
+ * narrow here — SURFACES-PLAN's editor role exists specifically to publish
+ * and curate, and the front page is curation, not account administration.
+ */
+export function canEditFrontPage(user: StaffUser): boolean {
+  return user.role === 'admin' || user.role === 'editor'
+}
+
+/**
+ * The gate the front-page editor's own writes call first — in every action,
+ * not once on the page. Same reasoning as `requireStaffAdmin`: a server
+ * action is its own endpoint, reachable by anyone who has ever loaded the
+ * page that renders its form.
+ *
+ * There is no `requireFrontPageAccess()` redirect-on-read counterpart: the
+ * page itself decides (see `front-page/FrontPageView.tsx`) to render a
+ * read-only summary for an author rather than redirect away, because the
+ * front page's current layout is not confidential the way partner terms or
+ * classification internals are — an author benefits from seeing what is
+ * live without being able to change it.
+ */
+export async function requireFrontPageEditor(): Promise<StaffUser> {
+  const user = await requireUser()
+  if (!canEditFrontPage(user)) redirect('/team-editor')
   return user
 }

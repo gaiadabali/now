@@ -5,6 +5,8 @@ import { searchParam } from '../searchParams'
 import { CommerceOverviewView } from './OverviewView'
 import { OrgsListView } from './orgs/OrgsListView'
 import { OrgDetailView } from './orgs/[id]/OrgDetailView'
+import { NewPartnershipView } from './orgs/[id]/partnerships/NewPartnershipView'
+import { EditPartnershipView } from './orgs/[id]/partnerships/[partnershipId]/EditPartnershipView'
 import { CampaignsView } from './campaigns/CampaignsView'
 
 /**
@@ -63,6 +65,18 @@ function content(
 
   if (rest.length === 2 && rest[0] === 'orgs') {
     return <OrgDetailView id={rest[1]} />
+  }
+
+  // S5.2 — the partnership write path, nested under the org it belongs to.
+  // Still no ordering hazard: `/orgs/:id` (2 segments), `/orgs/:id/partnerships`
+  // (3) and `/orgs/:id/partnerships/:partnershipId` (4) are three distinct
+  // lengths, so each `if` above still only ever matches its own shape.
+  if (rest.length === 3 && rest[0] === 'orgs' && rest[2] === 'partnerships') {
+    return <NewPartnershipView orgId={rest[1]} />
+  }
+
+  if (rest.length === 4 && rest[0] === 'orgs' && rest[2] === 'partnerships') {
+    return <EditPartnershipView orgId={rest[1]} partnershipId={rest[3]} />
   }
 
   notFound()

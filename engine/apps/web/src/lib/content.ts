@@ -21,7 +21,7 @@ import {
   sectionFormatCounts,
   toArticle,
 } from '@/lib/payload'
-import { slugify } from '@/lib/format'
+import { slugForms, slugify } from '@/lib/format'
 import { decodeEntities } from '@/lib/html'
 
 export type Article = {
@@ -36,6 +36,13 @@ export type Article = {
   dek: string
   paras: string[]
   views: number
+  /**
+   * The §4 L1 `primaryType` (`stay`, `eat`, `drink`, ... or `null` when
+   * unclassified). Edition 2 (WS1): `getArticleRails`'s competitor guard
+   * (`lib/competitorPolicy.ts`) needs a rail candidate's own type to check
+   * it against the subject's excluded set — see that module.
+   */
+  primaryType: string | null
 }
 
 /**
@@ -149,7 +156,15 @@ const PUBLISHED = { _status: { equals: 'published' } } as const
  * page should cost one media lookup, not twelve. See `legacyMediaUrls` for why
  * the Local API cannot answer this.
  */
-async function toArticles(docs: Record<string, unknown>[]): Promise<Article[]> {
+/**
+ * Exported for `lib/recommend.ts` (Edition 2, WS1): the rails builder
+ * resolves ranked ARTICLE IDS itself (competitor policy + semantic
+ * ordering, computed against `engine.*`) and then needs exactly this
+ * doc-to-view-model mapping — same batched hero-media lookup, same
+ * decoded/stripped fields — to build a `RailArticle`, rather than a
+ * second, drifting copy of it.
+ */
+export async function toArticles(docs: Record<string, unknown>[]): Promise<Article[]> {
   const urls = await legacyMediaUrls(
     docs.map(heroMediaId).filter((id): id is number => id !== null),
   )
@@ -176,6 +191,33 @@ export async function getLatest(limit = 20): Promise<Article[]> {
 export async function getLead(): Promise<Article | undefined> {
   const [lead] = await getLatest(1)
   return lead
+}
+
+/**
+ * Articles by id, published only, in the order the caller asked for.
+ *
+ * Added for `lib/frontPage.ts` (Edition 2): `HomeRail.pins` is a list of
+ * article ids an editor chose, and "skip pins that do not resolve to a
+ * published article" (EDITION-2-PLAN §3) means this has to filter through
+ * the same `PUBLISHED` gate every other reader query uses rather than trust
+ * the id list — a pin to a since-unpublished or deleted article must vanish
+ * from the band, not 500 it or render a hole. Payload does not promise to
+ * return rows in `id: { in: [...] }` order, so the order is reimposed here
+ * from the caller's own array, which is also what lets a caller ask for
+ * [heroId, ...secondaryIds] and get the hero back first.
+ */
+export async function getByIds(ids: number[]): Promise<Article[]> {
+  if (ids.length === 0) return []
+  const payload = await payloadClient()
+  const { docs } = await payload.find({
+    collection: 'articles',
+    where: { ...PUBLISHED, id: { in: ids } },
+    limit: ids.length,
+    depth: 1,
+  })
+  const articles = await toArticles(docs)
+  const rank = new Map(ids.map((id, i) => [id, i]))
+  return articles.sort((a, b) => (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER))
 }
 
 export type Page<T> = {
@@ -445,9 +487,10 @@ export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): P
   const status = opts.draft ? {} : PUBLISHED
   const find = { limit: 1, depth: 1, ...(opts.draft ? { draft: true } : {}) }
 
+  const forms = slugForms(slug)
   const bySlug = await payload.find({
     collection: 'articles',
-    where: { ...status, slug: { equals: slug } },
+    where: { ...status, slug: { in: forms } },
     ...find,
   })
   const doc =
@@ -455,7 +498,7 @@ export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): P
     (
       await payload.find({
         collection: 'articles',
-        where: { ...status, legacyPermalink: { equals: `/${slug}/` } },
+        where: { ...status, legacyPermalink: { in: forms.map((f) => `/${f}/`) } },
         ...find,
       })
     ).docs[0]
@@ -466,111 +509,18 @@ export async function getBySlug(slug: string, opts: { draft?: boolean } = {}): P
 }
 
 /**
- * Related content.
- *
- * Same-section recency, not the engine's rails. `GET /v1/{site}/articles/{id}/rails`
- * is live and is the correct source, but §10's presentation-bias warning cuts
- * both ways: wiring the rails in means their impressions must be logged with
- * rail and position, and the beacon that does that is not deployed yet. A
- * ranked rail whose impressions go unrecorded trains nothing and teaches the
- * eventual model that whatever shipped first was right.
- *
- * So this stays a simple, honest fallback until the beacon lands, at which
- * point it becomes one fetch.
+ * Related content lived here as a same-section-excluded, round-robin
+ * fallback (`getRelated`) until Edition 2 (WS1). It is gone: the fallback
+ * itself was the defect the owner reported — it filled by `format` alone,
+ * so a restaurant story could be handed a restaurant guide, which is
+ * exactly the F&B-on-F&B recommendation the competitor-exclusion rule
+ * exists to prevent (ARCHITECTURE.md §8.A). `lib/recommend.ts`'s
+ * `getArticleRails` replaces it: real competitor-policy enforcement
+ * (`lib/competitorPolicy.ts`, `lib/hiddenRival.ts`) plus semantic
+ * similarity, computed directly against `engine.*`, not a section
+ * heuristic. Grepped for callers before deleting — `getRelated` had
+ * exactly one, `recommend.ts`'s own stub, replaced in the same change.
  */
-/**
- * Sections worth recommending, in the order a reader is offered them.
- *
- * `unclassified` is absent on purpose: it is the editors' work queue, not a
- * recommendation. `editorial` sits last — it is real coverage, but a reader
- * who has just finished a restaurant review is better served by somewhere to
- * stay than by general commentary.
- */
-const RECOMMEND_ORDER = ['stay', 'things-to-do', 'events', 'dining', 'wellness', 'guides', 'editorial']
-
-/**
- * Read Next — deliberately NOT more of the same.
- *
- * This used to call `getBySection(sectionOf(article))`, which recommended the
- * one thing a reader demonstrably already has: an article about Raja's
- * Balinese Cuisine offered three more restaurants. A reader finishing a
- * restaurant review has chosen where to eat. What they have not chosen is
- * where to stay, what to do, or what is on.
- *
- * So the current section is excluded outright, and the remainder is taken
- * round-robin so three results come from three DIFFERENT sections rather than
- * three from whichever one happens to have published most recently.
- *
- * One query, not one per section: fetch a generous recent slice with the
- * article's own types excluded in SQL, then spread it here. An article page
- * should not cost six round trips to fill a rail of three.
- *
- * The rotation is seeded from the article id so that two dining articles
- * published the same week do not show an identical rail, while any single
- * article stays stable across renders — this is server-rendered and cached,
- * so randomness would mean a rail that changes under the reader.
- */
-export async function getRelated(article: Article, limit = 3): Promise<Article[]> {
-  const section = sectionOf(article)
-  const pool = RECOMMEND_ORDER.filter((s) => s !== section)
-  if (pool.length === 0) return []
-
-  // One small query PER SECTION, in parallel, rather than one big recent slice.
-  //
-  // The single-query version was cheaper but could not guarantee variety: it
-  // took the 60 most recent non-dining articles and spread those, so when
-  // recent publishing clustered — as it does — a dining article got two
-  // wellness recommendations out of three. Asking each section directly
-  // guarantees one from each, which is the actual requirement. Six queries of
-  // two rows, issued together, cost less than the media batch that follows.
-  const perSection = await Promise.all(
-    pool.map(async (key) => {
-      const types = SECTION_TO_TYPES[key]
-      const formats = FORMAT_SECTIONS[key]
-      if (!types && !formats) return [] as Article[]
-      const payload = await payloadClient()
-      const { docs } = await payload.find({
-        collection: 'articles',
-        where: {
-          and: [
-            PUBLISHED,
-            { id: { not_equals: article.id } },
-            formats ? { format: { in: formats } } : { primaryType: { in: types } },
-          ],
-        },
-        sort: '-publishedAt',
-        limit: 2,
-        depth: 1,
-      })
-      return toArticles(docs)
-    }),
-  )
-
-  const available = pool
-    .map((key, i) => [key, perSection[i]] as const)
-    .filter(([, items]) => items.length > 0)
-  if (available.length === 0) return []
-
-  // Rotate by article id so two dining pieces published the same week do not
-  // carry an identical rail, while any one article stays stable across
-  // renders — this is server-rendered and cached, so randomness would mean a
-  // rail that shifts under the reader.
-  const rotation = article.id % available.length
-  const rotated = [...available.slice(rotation), ...available.slice(0, rotation)]
-
-  const picked: Article[] = []
-  const seen = new Set<number>()
-  for (let round = 0; picked.length < limit && round < 2; round++) {
-    for (const [, items] of rotated) {
-      const candidate = items[round]
-      if (!candidate || seen.has(candidate.id)) continue
-      seen.add(candidate.id)
-      picked.push(candidate)
-      if (picked.length === limit) break
-    }
-  }
-  return picked
-}
 
 
 /* ========================================================================== */

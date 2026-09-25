@@ -4,7 +4,7 @@ exact matrix ARCHITECTURE.md Sec.4 specifies, and the exclude_same-only
 
 from __future__ import annotations
 
-from now_filters.type_relations import excluded_types_for, is_competitor
+from now_filters.type_relations import TypeRelation, excluded_types_for, is_competitor
 
 # 2026-09-11 -- the six VENUE types are now mutually complementary. Hansel hit
 # this live: "when a restaurant page is open, never suggest another restaurant.
@@ -23,38 +23,70 @@ from now_filters.type_relations import excluded_types_for, is_competitor
 # NOTE this touches `complements` ONLY. The exclusion semantics F27/QA.2 pinned
 # down are unchanged -- `complements` is a co-recommendation whitelist and is
 # still explicitly NOT unioned into the excluded set (see `excluded_types_for`).
+#
+# 2026-09-24 (migration 0008, docs/EDITION-2-PLAN.md §1): `eat`/`drink` no
+# longer complement each other -- the owner's rule is that F&B is ONE
+# competitive class, not two complementary types. `competes_with` is the new
+# third element of each tuple below; every other pairing this file already
+# asserted is unchanged.
 EXPECTED = {
-    "stay": (True, {"eat", "drink", "wellness", "do", "shop"}),
-    "eat": (True, {"stay", "drink", "wellness", "do", "shop", "event"}),
-    "drink": (True, {"eat", "stay", "wellness", "do", "shop"}),
-    "wellness": (True, {"eat", "stay", "drink", "do", "shop"}),
-    "shop": (True, {"eat", "stay", "drink", "wellness", "do"}),
-    "do": (False, {"eat", "stay", "drink", "wellness", "shop"}),
-    "event": (False, {"eat", "drink", "stay"}),
-    "editorial": (False, {"stay", "eat", "drink", "wellness", "shop", "do", "event"}),
+    "stay": (True, {"eat", "drink", "wellness", "do", "shop"}, set()),
+    "eat": (True, {"stay", "wellness", "do", "shop", "event"}, {"drink"}),
+    "drink": (True, {"stay", "wellness", "do", "shop"}, {"eat"}),
+    "wellness": (True, {"eat", "stay", "drink", "do", "shop"}, set()),
+    "shop": (True, {"eat", "stay", "drink", "wellness", "do"}, set()),
+    "do": (False, {"eat", "stay", "drink", "wellness", "shop"}, set()),
+    "event": (False, {"eat", "drink", "stay"}, set()),
+    "editorial": (False, {"stay", "eat", "drink", "wellness", "shop", "do", "event"}, set()),
     # F49: the fail-closed sentinel for unclassified venues. `exclude_same=True`
     # with NO complements means it excludes its own kind and offers nothing as a
     # complement — the opposite of `editorial`, which was the old sentinel and
     # was invisible to exclusion in both directions.
-    "unknown": (True, set()),
+    "unknown": (True, set(), set()),
 }
 
 
 def test_matrix_matches_architecture_spec(relations):
     assert set(relations) == set(EXPECTED)
-    for type_, (exclude_same, complements) in EXPECTED.items():
+    for type_, (exclude_same, complements, competes_with) in EXPECTED.items():
         rel = relations[type_]
         assert rel.exclude_same is exclude_same, type_
         assert set(rel.complements) == complements, type_
+        assert set(rel.competes_with) == competes_with, type_
 
 
 def test_exclude_same_true_types_exclude_themselves(relations):
     """F57: every `exclude_same=True` (venue-shaped) subject also excludes
     `unknown` -- the F49 sentinel is possibly-any-type, so it cannot be
     ruled out as a same-type competitor of ANY venue-shaped subject, not
-    just of another `unknown`. See type_relations.py docstring."""
-    for type_ in ("stay", "eat", "drink", "wellness", "shop"):
+    just of another `unknown`. See type_relations.py docstring.
+
+    `eat`/`drink` are excluded from this table (asserted separately below)
+    since migration 0008 gives them a THIRD member in the excluded set --
+    each other, via `competes_with` -- so `{type_, "unknown"}` alone is no
+    longer their complete answer."""
+    for type_ in ("stay", "wellness", "shop"):
         assert excluded_types_for(relations, type_) == {type_, "unknown"}
+
+
+def test_eat_and_drink_are_one_competitive_class(relations):
+    """2026-09-24 (docs/EDITION-2-PLAN.md §1): the owner's rule is narrower
+    than `exclude_same` alone can express -- 'never restaurant, cafe or
+    F&B' on a restaurant story means a `drink` candidate must never appear
+    on an `eat` subject's rail, and vice versa, even though they are two
+    different L1 types. Migration 0008's `competes_with` is exactly this;
+    this is the test that would have caught the original gap (§4's matrix
+    had `eat`/`drink` listing each other as COMPLEMENTS)."""
+    assert excluded_types_for(relations, "eat") == {"eat", "drink", "unknown"}
+    assert excluded_types_for(relations, "drink") == {"drink", "eat", "unknown"}
+    assert is_competitor(relations, "eat", "drink") is True
+    assert is_competitor(relations, "drink", "eat") is True
+    # Every other venue-type pairing is untouched -- eat/stay, eat/wellness,
+    # drink/stay, drink/wellness all remain non-competitors.
+    assert is_competitor(relations, "eat", "stay") is False
+    assert is_competitor(relations, "drink", "stay") is False
+    assert is_competitor(relations, "eat", "wellness") is False
+    assert is_competitor(relations, "drink", "wellness") is False
 
 
 def test_exclude_same_false_types_exclude_nothing(relations):

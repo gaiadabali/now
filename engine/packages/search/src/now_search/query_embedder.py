@@ -51,9 +51,18 @@ per-query p95 path.
 
 from __future__ import annotations
 
-from now_embeddings.providers.local import DIM, MODEL_NAME
+from now_embeddings.models import get_spec
+from now_embeddings.providers.local import DIM, MODEL_NAME, load_text_embedding
 
 THREADS = 4
+
+# WS6: MODEL_NAME follows the one config point (`now_embeddings.models`,
+# NOW_EMBEDDING_MODEL). The spec supplies what a non-default model needs
+# on the query side -- a fastembed registration for models fastembed does
+# not ship, and the query marker asymmetric models (e5) were trained with.
+# For the default model both are no-ops, so its query vectors are
+# unchanged by this indirection.
+_SPEC = get_spec(MODEL_NAME)
 
 _model = None
 
@@ -69,14 +78,12 @@ def model_dim() -> int:
 def _get_model():
     global _model
     if _model is None:
-        from fastembed import TextEmbedding
-
-        _model = TextEmbedding(model_name=MODEL_NAME, threads=THREADS)
+        _model = load_text_embedding(_SPEC, threads=THREADS)
     return _model
 
 
 def embed_query(query: str) -> list[float]:
-    return next(iter(_get_model().embed([query]))).tolist()
+    return next(iter(_get_model().embed([_SPEC.query_prefix + query]))).tolist()
 
 
 def warm_up() -> None:

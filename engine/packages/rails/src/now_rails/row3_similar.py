@@ -116,6 +116,12 @@ def _eligible_ids_fetch_fn(
             quality_floor=quality_floor,
             series_dedup=True,
             articles_table=articles_table,
+            # apply_hidden_rival_guard defaults True -- Sec.8.F: "the
+            # competitor filter never relaxes at any rung", which this
+            # guard is part of, so it is never made conditional on rung
+            # either. Reads the precomputed `engine.hidden_rival_flags`
+            # (migration 0009) rather than a live pattern -- see
+            # `now_filters.hard`'s own docstring.
         )
         return fetch_articles_hard_filtered(conn, query)
 

@@ -21,6 +21,8 @@ from __future__ import annotations
 import logging
 
 from now_db.partitions import drop_partitions_older_than, ensure_daily_partitions
+from now_filters.covisitation_recompute import CovisitationRecomputeReport, recompute_covisitation
+from now_filters.hidden_rival_recompute import RecomputeReport, recompute_hidden_rival_flags
 from sqlalchemy import create_engine
 
 from app.sites import Site, SiteRunReport, for_each_site, load_sites
@@ -56,6 +58,24 @@ def _ensure_partitions_for(site: Site, *, days_ahead: int) -> list[str]:
     if created:
         logger.info("site=%s created partitions: %s", site.slug, ", ".join(created))
     return created
+
+
+def _recompute_hidden_rival_flags_for(site: Site) -> RecomputeReport:
+    engine = create_engine(site.dsn)
+    try:
+        with engine.begin() as conn:
+            return recompute_hidden_rival_flags(conn)
+    finally:
+        engine.dispose()
+
+
+def _recompute_covisitation_for(site: Site) -> CovisitationRecomputeReport:
+    engine = create_engine(site.dsn)
+    try:
+        with engine.begin() as conn:
+            return recompute_covisitation(conn)
+    finally:
+        engine.dispose()
 
 
 def _drop_old_partitions_for(site: Site, *, retention_days: int) -> list[str]:
@@ -110,6 +130,80 @@ async def drop_old_partitions(ctx: dict) -> dict:
     )
     logger.info("drop_old_partitions: %s", report.summary())
     return {"dropped": report.succeeded, "failed": report.failed}
+
+
+async def recompute_hidden_rival_flags_job(ctx: dict) -> dict:
+    """The nightly safety net under `app/consumer.py`'s per-article
+    recompute (WS1 third pass). That handler reacts within one delivery of
+    `article.published`/`.republished`/`.unpublished`; this is what catches
+    everything it structurally cannot: a place-mentions-only change with no
+    domain event of its own (`now_filters.hidden_rival_recompute`'s module
+    docstring, item 2), a missed/duplicated delivery the consumer group
+    somehow didn't reconcile, or a manual DB edit.
+
+    `added`/`removed` are logged per site because a NON-ZERO count on a
+    quiet night — nothing published, nothing unpublished — is exactly the
+    signal the docstring promises: the event path missed something, worth
+    looking at, not an incident on its own (which is why this returns
+    normally rather than raising on a non-zero diff)."""
+
+    sites = load_sites(ctx["settings"].platform_database_url)
+    report: SiteRunReport = for_each_site(
+        sites, _recompute_hidden_rival_flags_for, job="recompute_hidden_rival_flags"
+    )
+    changed_sites = {
+        slug: r for slug, r in report.succeeded.items() if isinstance(r, RecomputeReport) and r.changed
+    }
+    if changed_sites:
+        logger.warning(
+            "recompute_hidden_rival_flags: %d site(s) had a non-zero diff (event path may have missed something): %s",
+            len(changed_sites),
+            {slug: {"added": r.added, "removed": r.removed} for slug, r in changed_sites.items()},
+        )
+    else:
+        logger.info("recompute_hidden_rival_flags: %s (no drift from the event path)", report.summary())
+    return {
+        "sites": {
+            slug: {"added": r.added, "removed": r.removed, "unchanged": r.unchanged}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, RecomputeReport)
+        },
+        "failed": report.failed,
+    }
+
+
+async def recompute_covisitation_job(ctx: dict) -> dict:
+    """`engine.covisitation` was real, wired for reads
+    (`now_blender.covisitation`), and always empty -- nothing ever wrote to
+    it (WS1, Edition 2, fourth pass, item 4). This is that writer: a full
+    recompute from `engine.interactions` over a rolling 30-day window,
+    diffed against what is already there so a pair whose audience shrank
+    below `min_support` is actually removed, not left stale.
+
+    A quiet night (no new qualifying interactions) should produce
+    `added=0, removed=0` — same "non-zero diff is worth a look" logging
+    convention as `recompute_hidden_rival_flags_job`, though here the
+    baseline is "small nonzero counts are normal" once real beacon traffic
+    exists, unlike the rival-flags table which should rarely move at all."""
+
+    sites = load_sites(ctx["settings"].platform_database_url)
+    report: SiteRunReport = for_each_site(sites, _recompute_covisitation_for, job="recompute_covisitation")
+    logger.info(
+        "recompute_covisitation: %s",
+        {
+            slug: {"pairs": r.pairs_considered, "added": r.added, "removed": r.removed}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, CovisitationRecomputeReport)
+        },
+    )
+    return {
+        "sites": {
+            slug: {"pairs_considered": r.pairs_considered, "added": r.added, "removed": r.removed, "unchanged": r.unchanged}
+            for slug, r in report.succeeded.items()
+            if isinstance(r, CovisitationRecomputeReport)
+        },
+        "failed": report.failed,
+    }
 
 
 async def heartbeat(ctx: dict) -> dict:

@@ -13,6 +13,10 @@ dependencies = [
     "psycopg[binary]>=3.1,<4",
     "now-db",
     "now-embeddings",
+    # Edition 2, WS1 third pass: engine.hidden_rival_flags freshness --
+    # per-article recompute on the domain-event path (app/consumer.py) and
+    # a nightly full-recompute safety net (app/jobs.py).
+    "now-filters",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +31,7 @@ now-worker = "app.cli:cli"
 [tool.uv.sources]
 now-db = { path = "../../packages/db", editable = true }
 now-embeddings = { path = "../../packages/embeddings", editable = true }
+now-filters = { path = "../../packages/filters", editable = true }
 
 [build-system]
 requires = ["hatchling"]

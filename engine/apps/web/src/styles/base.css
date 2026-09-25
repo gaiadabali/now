@@ -79,6 +79,14 @@ input, select, textarea { font: inherit; color: inherit; }
 
 .display--light { font-weight: 300; }
 .display--medium { font-weight: 500; }
+/* Edition 2: the weight a card or index headline reads at when there is no
+   photograph next to it carrying visual weight of its own — Latest's row
+   index and the numbered `index` variant. 300 at these sizes was the
+   complaint "the Latest index is the worst": the lightest weight in the
+   system, at the smallest size in the system, is illegible as a hierarchy
+   signal. Nothing above --t-title ever takes this — cover and display sizes
+   stay light, per the scale rule this file's header still states. */
+.display--strong { font-weight: 600; }
 .display--italic { font-style: italic; }
 
 /* ---- Kicker ---------------------------------------------------------
@@ -170,5 +178,89 @@ input, select, textarea { font: inherit; color: inherit; }
 
 /* §7: the page must work at 360px with no horizontal scroll. The shell's
    own padding is a clamp() already; this is the backstop for anything a
-   band forgets to constrain (a wide table, a long unbroken token string). */
-body { overflow-x: hidden; }
+   band forgets to constrain (a wide table, a long unbroken token string).
+   On `<html>`, not `<body>`: setting `overflow-x` to anything but `visible`
+   on ONE axis makes the UA compute the other axis as `auto` if it was
+   `visible` (CSS Overflow §3) — on `<body>` that quietly turns body into
+   its own scroll container, and every `position: sticky` descendant then
+   sticks relative to THAT container instead of the real viewport, which
+   never receives its own scroll offset the same way. Found the hard way:
+   `.masthead__nav`'s `position: sticky; top: 0` computed correctly and did
+   nothing — its `getBoundingClientRect().top` kept tracking the raw
+   scroll delta instead of clamping at 0. `<html>` is already the
+   document's root scroller in standard mode, so constraining its overflow
+   does not create a second, competing one. */
+html { overflow-x: clip; }
+
+/* ---- Reveal-on-scroll (Edition 2, corrected) ------------------------------
+   "Progressive enhancement is mandatory: content is visible without JS.
+   Never ship CSS that hides content unless a class set by JS says so."
+
+   The first version read that rule correctly and still broke it, by a
+   route that rule does not name: `animation-timeline: view()` holds any
+   element that has not yet ENTERED the viewport at its `from` keyframe —
+   opacity 0 — forever, if it never enters. A full-page screenshot, a
+   print, a reader mode, and some crawlers and renderers never scroll a
+   real viewport past the element at all, so "content visible without JS"
+   was true and "content visible without SCROLLING" was not, and the
+   result was a page that was blank from the fold down in exactly those
+   contexts. Found in review: `bali-home-1440-v2.png` was blank from
+   y≈900 to the newsletter foot.
+
+   So the mechanism is inverted. `[data-reveal]` is opacity 1 — visible —
+   UNCONDITIONALLY below. Nothing hides an element unless BOTH of two
+   things a script sets are true: `<html>` carries `.reveal-ready` (added
+   once, on mount, by `RevealObserver.tsx`, and never added at all under
+   `prefers-reduced-motion` or with JavaScript absent) AND the element
+   itself carries `.reveal-pending`.
+
+   That second class is applied ONLY from inside an IntersectionObserver
+   callback that has positively confirmed the element is off-screen right
+   now — never pre-emptively from a synchronous measurement before the
+   observer exists. That distinction mattered in practice: an earlier fix
+   measured each element's position with `getBoundingClientRect` up front
+   and hid anything below the fold immediately, and a REAL full-page
+   screenshot (which resizes the viewport to the whole page's height and
+   captures it, rather than scrolling one) still came back blank — the
+   resize can happen, and the capture can complete, before the observer's
+   asynchronous first callback ever runs, so a synchronously pre-hidden
+   element had no path back to visible in time. Deciding only inside the
+   callback closes that: until it runs, every element is still at its
+   unconditional `opacity: 1`, and if it never runs at all, that is where
+   it stays. `.is-visible` — added the moment an element is confirmed
+   in view, whether that is on the first callback or after a later scroll
+   — is what plays the actual reveal, and is also how an element already on
+   screen at load is shown immediately with no animation: it goes straight
+   to `.is-visible` and never passes through `.reveal-pending` at all. A
+   print stylesheet forces every state back to visible regardless, because
+   a print or export is exactly the kind of "never scrolls, may not even
+   yield a frame" case the bug above was found in. */
+[data-reveal] { opacity: 1; }
+
+html.reveal-ready [data-reveal].reveal-pending {
+  opacity: 0;
+  transform: translateY(var(--reveal-y));
+  transition: opacity var(--dur-reveal) var(--ease), transform var(--dur-reveal) var(--ease);
+}
+html.reveal-ready [data-reveal].reveal-pending.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media print {
+  /* `transition: none` matters as much as the other two here: without it,
+     forcing `opacity` from 0 to 1 is still a value change on a
+     transitionable property, so the browser ANIMATES it under the existing
+     `transition: opacity 420ms ...` rule rather than snapping instantly —
+     found by a Playwright check that sampled a computed opacity of 0.088
+     immediately after `emulateMedia('print')`, mid-transition. A real print
+     or export can rasterize at any point relative to that animation, so
+     the fix is to remove the transition under this media query entirely,
+     not to wait it out. */
+  [data-reveal],
+  [data-reveal].reveal-pending {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

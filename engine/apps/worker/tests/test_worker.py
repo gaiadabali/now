@@ -260,6 +260,104 @@ async def test_drop_old_partitions_is_a_noop_without_retention():
     assert "skipped" in result
 
 
+async def test_recompute_hidden_rival_flags_job_reports_per_site_diffs(monkeypatch):
+    """WS1 third pass: the nightly safety net under `app/consumer.py`'s
+    per-article recompute. A non-zero added/removed count for a site is
+    the signal the docstring promises ("the event path missed
+    something") — this proves the job actually surfaces that, per site,
+    rather than collapsing it into a single boolean."""
+    from app import jobs
+    from now_filters.hidden_rival_recompute import RecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("beta")])
+
+    def fake_recompute(s: Site) -> RecomputeReport:
+        if s.slug == "alpha":
+            return RecomputeReport(featured_mention_rows=5, title_rows=1, total_rows=6, added=2, removed=0, unchanged=4)
+        return RecomputeReport(featured_mention_rows=3, title_rows=0, total_rows=3, added=0, removed=0, unchanged=3)
+
+    monkeypatch.setattr(jobs, "_recompute_hidden_rival_flags_for", fake_recompute)
+
+    ctx = {"settings": Settings()}
+    result = await jobs.recompute_hidden_rival_flags_job(ctx)
+
+    assert result["sites"]["alpha"] == {"added": 2, "removed": 0, "unchanged": 4}
+    assert result["sites"]["beta"] == {"added": 0, "removed": 0, "unchanged": 3}
+    assert result["failed"] == {}
+
+
+async def test_recompute_hidden_rival_flags_job_isolates_a_failing_site(monkeypatch):
+    from app import jobs
+    from now_filters.hidden_rival_recompute import RecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("broken")])
+
+    def fake_recompute(s: Site) -> RecomputeReport:
+        if s.slug == "broken":
+            raise RuntimeError("database is not accepting connections")
+        return RecomputeReport(featured_mention_rows=0, title_rows=0, total_rows=0, added=0, removed=0, unchanged=0)
+
+    monkeypatch.setattr(jobs, "_recompute_hidden_rival_flags_for", fake_recompute)
+
+    result = await jobs.recompute_hidden_rival_flags_job({"settings": Settings()})
+    assert "alpha" in result["sites"]
+    assert "broken" in result["failed"]
+
+
+async def test_recompute_covisitation_job_reports_per_site_counts(monkeypatch):
+    """WS1 fourth pass, item 4: `engine.covisitation` was real, readable,
+    and always empty because nothing ever wrote to it. This proves the
+    new cron job actually calls the writer per site and surfaces its
+    added/removed/unchanged counts, the same shape the rival-flags job
+    already reports in."""
+    from app import jobs
+    from now_filters.covisitation_recompute import CovisitationRecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("beta")])
+
+    def fake_recompute(s: Site) -> CovisitationRecomputeReport:
+        if s.slug == "alpha":
+            return CovisitationRecomputeReport(pairs_considered=10, added=4, removed=1, unchanged=5)
+        return CovisitationRecomputeReport(pairs_considered=0, added=0, removed=0, unchanged=0)
+
+    monkeypatch.setattr(jobs, "_recompute_covisitation_for", fake_recompute)
+
+    result = await jobs.recompute_covisitation_job({"settings": Settings()})
+
+    assert result["sites"]["alpha"] == {"pairs_considered": 10, "added": 4, "removed": 1, "unchanged": 5}
+    assert result["sites"]["beta"] == {"pairs_considered": 0, "added": 0, "removed": 0, "unchanged": 0}
+    assert result["failed"] == {}
+
+
+async def test_recompute_covisitation_job_isolates_a_failing_site(monkeypatch):
+    from app import jobs
+    from now_filters.covisitation_recompute import CovisitationRecomputeReport
+
+    monkeypatch.setattr(jobs, "load_sites", lambda dsn: [site("alpha"), site("broken")])
+
+    def fake_recompute(s: Site) -> CovisitationRecomputeReport:
+        if s.slug == "broken":
+            raise RuntimeError("database is not accepting connections")
+        return CovisitationRecomputeReport(pairs_considered=0, added=0, removed=0, unchanged=0)
+
+    monkeypatch.setattr(jobs, "_recompute_covisitation_for", fake_recompute)
+
+    result = await jobs.recompute_covisitation_job({"settings": Settings()})
+    assert "alpha" in result["sites"]
+    assert "broken" in result["failed"]
+
+
+def test_recompute_covisitation_job_is_registered_on_the_worker():
+    """A cron job that exists but is never registered on `WorkerSettings`
+    never runs — the exact failure this app's own docstring calls out for
+    `run_forever` vs `run`. Proves the registration, not just the
+    function's existence."""
+    assert main.jobs.recompute_covisitation_job in main.WorkerSettings.functions
+    assert any(
+        getattr(j, "coroutine", None) is main.jobs.recompute_covisitation_job for j in main.WorkerSettings.cron_jobs
+    )
+
+
 # ---------------------------------------------------------------------------
 # The consumer entry point
 # ---------------------------------------------------------------------------

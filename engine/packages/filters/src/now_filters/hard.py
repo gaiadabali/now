@@ -36,6 +36,7 @@ from now_filters.type_relations import TypeRelation, excluded_types_for
 DEFAULT_PLACES_TABLE = "public.places"
 DEFAULT_ARTICLES_TABLE = "public.articles"
 DEFAULT_EVENTS_TABLE = "public.events"
+DEFAULT_PLACE_MENTIONS_TABLE = "public.place_mentions"
 
 # Sec.8.A "Quality floor": one source of truth, borrowed from now-quality
 # (E2.6's own reference constant) rather than a second hardcoded 0.35 --
@@ -170,6 +171,9 @@ class ArticlesHardFilterQuery:
     params: dict
 
 
+DEFAULT_HIDDEN_RIVAL_FLAGS_TABLE = "engine.hidden_rival_flags"
+
+
 def build_articles_hard_filter_sql(
     *,
     subject_type: str | None,
@@ -178,6 +182,8 @@ def build_articles_hard_filter_sql(
     quality_floor: float = QUALITY_FLOOR,
     series_dedup: bool = True,
     articles_table: str = DEFAULT_ARTICLES_TABLE,
+    apply_hidden_rival_guard: bool = True,
+    hidden_rival_flags_table: str = DEFAULT_HIDDEN_RIVAL_FLAGS_TABLE,
 ) -> ArticlesHardFilterQuery:
     """Sec.8.A hard filters over `articles`: status (published only --
     `_status = 'published'`, Payload's draft/publish lifecycle; embargo
@@ -194,6 +200,25 @@ def build_articles_hard_filter_sql(
     version of a re-published "New Restaurants in Jakarta 2024/2025"
     cluster rather than an arbitrary one. Rows with `series_key IS NULL`
     are each their own group (never deduped against each other).
+
+    `apply_hidden_rival_guard` (Edition 2, `now_filters.hidden_rival`) is
+    the SECOND, independent competitor check: a candidate whose DECLARED
+    `primary_type` already survived the `excluded_types_for` predicate
+    above may still be centrally about a competing venue that the
+    classifier filed under a different type entirely (the Westin/Kimpton
+    case -- a hotel's wellness event, typed `event`). `engine
+    .hidden_rival_flags` (migration 0009) is a PRECOMPUTED table of
+    (article_id, matched_type) pairs -- offline, via `now_filters
+    .hidden_rival_recompute`, not a live regex join: `EXPLAIN (ANALYZE,
+    BUFFERS)` against real data showed the live join costing ~40ms of a
+    150ms page budget, repeated per rail query, for a signal that only
+    changes when an article is edited. This reuses the SAME
+    `:excluded_types` binding as the primary-type predicate above (a
+    `matched_type` is only ever a competitor risk if it is one of the
+    types the subject already excludes) -- no separate pattern parameter
+    to keep in step with it. `apply_hidden_rival_guard=False` (never the
+    caller default; only a test that wants the predicate isolated) drops
+    the clause entirely, byte-identical to before this guard existed.
     """
     where: list[str] = [
         "_status = 'published'",
@@ -221,6 +246,18 @@ def build_articles_hard_filter_sql(
         # this is what the predicate already did.
         where.append("primary_type IS NOT NULL AND primary_type::text != ALL(:excluded_types)")
         params["excluded_types"] = list(excluded)
+
+        if apply_hidden_rival_guard:
+            # Reuses the SAME `:excluded_types` binding above -- a
+            # `matched_type` is a risk only when it is a type this
+            # subject already excludes. See docstring for why this reads
+            # a precomputed table rather than joining place_mentions/
+            # places live.
+            where.append(
+                f"NOT EXISTS (SELECT 1 FROM {hidden_rival_flags_table} hrf "
+                f"WHERE hrf.article_id = {articles_table}.id::text "
+                "AND hrf.matched_type = ANY(:excluded_types))"
+            )
 
     if quality_floor is not None:
         where.append(

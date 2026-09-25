@@ -18,3 +18,12 @@ export const CONSOLE_ROOT = '/team-editor/commerce'
 export const EDITOR_ROOT = '/team-editor'
 
 export const consoleHref = (path = ''): string => `${CONSOLE_ROOT}${path}`
+
+export const orgHref = (orgId: string): string => consoleHref(`/orgs/${encodeURIComponent(orgId)}`)
+
+/** S5.2 — the new-partnership form for one org. */
+export const newPartnershipHref = (orgId: string): string => consoleHref(`/orgs/${encodeURIComponent(orgId)}/partnerships`)
+
+/** S5.2 — the edit form for one existing partnership. */
+export const partnershipHref = (orgId: string, partnershipId: string): string =>
+  consoleHref(`/orgs/${encodeURIComponent(orgId)}/partnerships/${encodeURIComponent(partnershipId)}`)

@@ -216,6 +216,12 @@ export function toArticle(doc: PayloadDoc): Article {
     // working kicker link instead of 'more', which resolved to no route and
     // rendered a link to a 404 on every untyped card.
     section: sectionForType(primaryType) ?? 'unclassified',
+    // Edition 2 (WS1): the §4 L1 type, exposed directly rather than only
+    // implicitly through `categories[0]` — `getArticleRails`'s competitor
+    // guard (`lib/competitorPolicy.ts`) needs it to check a rail candidate's
+    // own type, and `categories` is a display list a future edit could
+    // reorder or extend without anyone noticing it was secretly load-bearing.
+    primaryType,
     categories: primaryType ? [primaryType] : [],
     tags: [],
     image: heroUrl(doc),

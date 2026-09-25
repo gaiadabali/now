@@ -6,6 +6,7 @@ import { slugField } from '../fields/slug'
 import { vocabularySelectField } from '../fields/vocabularySelect'
 import { enforcePublishRole } from '../hooks/enforcePublishRole'
 import { publishArticleEvent } from '../hooks/publishArticleEvent'
+import { stampCreatedBy } from '../hooks/stampCreatedBy'
 import type { VocabularyMap } from '../lib/vocabulary'
 import { GROUPS } from './groups'
 
@@ -80,7 +81,7 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
       maxPerDoc: 50,
     },
     hooks: {
-      beforeChange: [enforcePublishRole],
+      beforeChange: [enforcePublishRole, stampCreatedBy],
       afterChange: [publishArticleEvent],
     },
     /**
@@ -168,6 +169,24 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
         admin: {
           position: 'sidebar',
           description: 'Leave this as "article" unless you mean otherwise.',
+        },
+      },
+      /**
+       * Edition 2, WS3 — "the writing screen, for non-developers". A `ui`
+       * field stores nothing (no column, no migration): it is purely a slot
+       * for `PublishChecklist.tsx`, which reads the sidebar/tab fields above
+       * through Payload's own form state and answers one question a writer
+       * actually asks while working — "is this ready, and what will it look
+       * like out there" — instead of the twelve stored columns this sidebar
+       * used to be. See that component's header for what it does and does
+       * not check, and why two of its checks need a fetch.
+       */
+      {
+        name: 'publishChecklist',
+        type: 'ui',
+        admin: {
+          position: 'sidebar',
+          components: { Field: '/fields/PublishChecklist#PublishChecklist' },
         },
       },
 
@@ -283,6 +302,33 @@ export function buildArticlesCollection(vocabulary: VocabularyMap): CollectionCo
                     'Groups annual repeats of the same piece together — "Best Beach Clubs 2024", ' +
                     '2025, 2026. Usually blank; give the whole run the same short word to link ' +
                     'them.',
+                },
+              },
+              /**
+               * Approved as a follow-up to the desk home's "my drafts", which
+               * had no reliable way to answer "is this yours" — `author`
+               * above is the public byline, not the login (`Authors.ts`'s
+               * own header). Placed here rather than fully hidden: it is
+               * read-only bookkeeping, not something to hide from an editor
+               * who is curious who started a piece, and this tab is already
+               * where the other "nothing to change here" fields live.
+               * `stampCreatedBy` sets it once, on create, and never again —
+               * see that hook for why re-deriving on every save would be
+               * wrong. Rows from before this field existed are NULL; there
+               * is no honest backfill, which is why the desk home says so in
+               * plain words rather than guessing.
+               */
+              {
+                name: 'createdBy',
+                label: 'Started by',
+                type: 'relationship',
+                relationTo: 'users',
+                admin: {
+                  readOnly: true,
+                  description:
+                    'Who started this story. Set automatically the moment it was first created ' +
+                    'and never changed after — stories from before this existed have nobody ' +
+                    'recorded here.',
                 },
               },
             ],
