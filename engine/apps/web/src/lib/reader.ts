@@ -76,7 +76,18 @@ export function readerSecret(): string {
  */
 export async function siteBaseUrl(): Promise<string> {
   const configured = process.env.SITE_BASE_URL
-  if (configured) return configured
+  if (configured) return configured.replace(/\/+$/, '')
+  // Outside production, refuse to guess. The registry's `hostname` is the
+  // city's PUBLIC domain -- today the live WordPress site -- so a dev server
+  // without SITE_BASE_URL minted verification links to nowbali.co.id, and a
+  // browser following one sent a real single-use token to a site that is not
+  // this code (QA, 2026-09-25). Same stance as readerSecret(): fail loudly.
+  if (process.env.NODE_ENV !== 'production') {
+    throw new Error(
+      'SITE_BASE_URL is not set. Reader emails link to it; set it to the origin this ' +
+        'server is reached on (e.g. http://localhost:3100) in .env.local.',
+    )
+  }
   const site = await getSiteConfig()
   return `https://${site.hostname}`
 }

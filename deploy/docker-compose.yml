@@ -366,6 +366,9 @@ services:
     environment:
       <<: *web-shared
       SITE_SLUG: jakarta
+      # Where reader emails (verify, reset) link to. Without it they fell back
+      # to the registry hostname -- the live WordPress domain, not this stack.
+      SITE_BASE_URL: https://${NOW_JAKARTA_HOSTNAME:?set NOW_JAKARTA_HOSTNAME}
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_jakarta
     depends_on:
       engine-api:
@@ -394,6 +397,9 @@ services:
     environment:
       <<: *web-shared
       SITE_SLUG: bali
+      # Where reader emails (verify, reset) link to. Without it they fell back
+      # to the registry hostname -- the live WordPress domain, not this stack.
+      SITE_BASE_URL: https://${NOW_BALI_HOSTNAME:?set NOW_BALI_HOSTNAME}
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/now_bali
     depends_on:
       engine-api:
