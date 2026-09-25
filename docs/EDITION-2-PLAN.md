@@ -952,3 +952,21 @@ session-local and dropped.
   took the shared Postgres into crash recovery once (container `/dev/shm`
   is 64 MB). The script now builds serially. The container was later found
   exited (137); it is not known what caused that.
+### 11a. Two production steps found after the release candidate
+
+Both are data, not schema, and both are owed on production as well as locally.
+
+1. **Bali has no keyword search.** `now_bali.engine.article_search` held 0
+   rows locally AND on production (Jakarta: 4,772), so Bali's hybrid search
+   has been semantic-only. The initial backfill was never run for Bali; the
+   tsv worker only keeps an existing index fresh. Fixed locally in 30 s:
+   `uv run python -m now_search.cli backfill-tsv --db now_bali` → 4,429 rows.
+   Run the same on production.
+2. **Stored bge-small vectors are stale** (WS6): ~96% of article rows predate
+   the classification fill, and WS5's facet tags change the embedded text
+   again. Re-embed every city AFTER tagging, with the default model:
+   `uv run now-embeddings backfill --city <db>` (from `engine/packages/embeddings`),
+   then re-run `verify:competitor-policy`.
+
+Updated production order: migrations → rival flags → `tag-facets` → re-embed
+→ `backfill-tsv` (Bali) → images → smoke → `verify:competitor-policy`.
