@@ -28,7 +28,7 @@ jobs:
           version: "latest"
 
       - name: Install deps
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra calibration
 
       - name: Unit tests (metrics + dataset builders + harness + baseline gate logic)
         run: uv run pytest -v
