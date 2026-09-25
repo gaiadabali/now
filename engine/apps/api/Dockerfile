@@ -69,6 +69,15 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app/engine/apps/api /app
 ENV PATH="/opt/venv/bin:$PATH"
 
+# The taxonomy seed is DATA the competitor guard reads at run time: the
+# hidden-rival lexicon (terms/type.json + hidden_rival_lexicon_overrides.json).
+# `now_db.provisioning.TAXONOMY_SEED_DIR` defaults to a path under the repo
+# root, which does not exist in this image — the venv holds the packages, not
+# the repo — so without these two lines every per-publish and nightly flag
+# rebuild would fail on a missing file, and the flags would silently go stale.
+COPY --from=builder /app/engine/packages/taxonomy/seed /app/taxonomy-seed
+ENV NOW_TAXONOMY_SEED_DIR=/app/taxonomy-seed
+
 USER app
 EXPOSE 8000
 
