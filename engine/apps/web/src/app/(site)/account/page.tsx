@@ -3,9 +3,13 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, EmptyState, Panel, StatusBanner, type StatusMessage } from '@/components/account'
+import { StoryCard } from '@/components/StoryCard'
 import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signOut } from '@/lib/readerActions'
+import { toggleSaved } from '@/lib/savedActions'
+import { getSavedArticles } from '@/lib/savedItems'
 import { describePrefs, hasChosen, loadPrefs, loadVocabulary } from '@/lib/preferences'
+import { getForYou, readerContextFromRequest } from '@/lib/recommend'
 import { getSiteConfig } from '@/lib/site'
 
 export const metadata: Metadata = {
@@ -77,10 +81,16 @@ export default async function AccountPage({
   const flag = typeof query.status === 'string' ? query.status : undefined
   const status = flag ? STATUS[flag] : undefined
 
-  const [vocabulary, prefs, site] = await Promise.all([
+  // Resolved once, ahead of the batch below: `getForYou` needs it as an
+  // argument rather than a promise, and it is cheap (a cookie read plus the
+  // already-`cache()`-wrapped `currentReader()` — see lib/reader.ts).
+  const readerContext = await readerContextFromRequest()
+  const [vocabulary, prefs, site, forYou, savedArticles] = await Promise.all([
     loadVocabulary(),
     loadPrefs(reader.id),
     getSiteConfig(),
+    getForYou(readerContext),
+    getSavedArticles(reader.id),
   ])
   const likes = describePrefs(prefs, vocabulary)
   const chosen = hasChosen(prefs)
@@ -135,49 +145,127 @@ export default async function AccountPage({
       ) : null}
 
       <div className="shell acct-layout">
-        <div className="acct-panels">
-          <Panel
-            title="We think you like"
-            action={chosen ? { href: '/account/preferences', label: 'Correct this →' } : undefined}
-          >
-            {chosen ? (
-              <div className="acct-chips">
-                {likes.map((label) => (
-                  <span className="acct-chip" key={label}>
-                    {label}
-                  </span>
-                ))}
-              </div>
+        <div className="acct-main">
+          {/* The dashboard's lead (§4 update — "the dashboard shows no
+              stories at all" was the specific complaint this panel answers).
+              `getForYou` already excludes competitor rivals, diversifies by
+              series and carries its own honest label — "Because you like
+              Ubud and Wellness" or "Because of what you read" — which is
+              rendered here as the panel's own subtitle rather than invented
+              copy of this page's own. */}
+          <Panel title="Picked for you">
+            {forYou ? (
+              <>
+                <p className="acct-foryou__reason">{forYou.title}</p>
+                <div className="acct-card-grid">
+                  {forYou.items.map((a) => (
+                    <StoryCard
+                      key={a.id}
+                      article={a}
+                      variant="horizontal"
+                      showDek={false}
+                      locale={site.locale}
+                      timeZone={site.timezone}
+                      rail={a.rail}
+                      position={a.position}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
               <EmptyState
-                lede="Nothing yet — we have not asked, and you have not said."
+                lede="Nothing picked for you yet."
                 hint={
                   <>
-                    Pick a few things on the <Link href="/account/preferences">preferences page</Link> and
-                    the site starts adjusting.
+                    Tell us what you are into on the <Link href="/account/preferences">preferences page</Link>{' '}
+                    and this fills in — or keep reading, and it will fill in on its own.
                   </>
                 }
               />
             )}
           </Panel>
 
-          <Panel title="Continue reading">
-            <EmptyState
-              lede="Nothing picked up yet."
-              hint="Stories you read while signed in appear here."
-            />
-          </Panel>
+          <div className="acct-panels">
+            <Panel
+              title="We think you like"
+              action={chosen ? { href: '/account/preferences', label: 'Correct this →' } : undefined}
+            >
+              {chosen ? (
+                <div className="acct-chips">
+                  {likes.map((label) => (
+                    <span className="acct-chip" key={label}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  lede="Nothing yet — we have not asked, and you have not said."
+                  hint={
+                    <>
+                      Pick a few things on the <Link href="/account/preferences">preferences page</Link> and
+                      the site starts adjusting.
+                    </>
+                  }
+                />
+              )}
+            </Panel>
 
-          <Panel title="Saved">
-            <EmptyState lede="Nothing kept yet." hint="The bookmark on any story keeps it here." />
-          </Panel>
+            <Panel title="Continue reading">
+              <EmptyState
+                lede="Nothing picked up yet."
+                hint="Stories you read while signed in appear here."
+              />
+            </Panel>
 
-          <Panel title="Your itineraries">
-            <EmptyState
-              lede="No trips planned yet."
-              hint="Build one from any place page and it will keep here."
-            />
-          </Panel>
+            {/* Real now: `getSavedArticles` reads `engine.saved_items`
+                (lib/savedItems.ts), which the article page's Save toggle
+                writes to. Given the full row §4's removed itineraries panel
+                left behind (see below) — it is the one main panel likely to
+                hold more than one or two items, and a compact grid reads
+                better across the whole column than squeezed into half of
+                it. */}
+            <Panel title="Saved" className="acct-panel--wide">
+              {savedArticles.length > 0 ? (
+                <div className="acct-card-grid">
+                  {savedArticles.map((a) => (
+                    <div className="acct-saved-item" key={a.id}>
+                      <StoryCard
+                        article={a}
+                        variant="horizontal"
+                        showDek={false}
+                        locale={site.locale}
+                        timeZone={site.timezone}
+                      />
+                      <form action={toggleSaved}>
+                        <input type="hidden" name="entityId" value={a.id} />
+                        <input type="hidden" name="intent" value="unsave" />
+                        <input type="hidden" name="returnTo" value="/account" />
+                        <button className="acct-remove-btn" type="submit">
+                          Remove from saved
+                        </button>
+                      </form>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState lede="Nothing kept yet." hint="The bookmark on any story keeps it here." />
+              )}
+            </Panel>
+
+            {/* "Your itineraries" is gone, not emptied. §4's own rule —
+                "an empty panel still renders, with an invitation" — assumes
+                the invitation is honest, and this one was not: "Build one
+                from any place page and it will keep here" promised a
+                mechanism (an itinerary builder, reachable from a place page)
+                that does not exist. `/places` itself is "coming soon" today,
+                so the panel was inviting a reader to a page that cannot do
+                what the copy says. E5.4 is the itinerary builder; this
+                panel returns the day that ships, with the same honesty
+                every other panel here already gets. Until then the extra
+                width above went to Saved, which now has real content to use
+                it for. */}
+          </div>
         </div>
 
         <aside className="acct-aside">

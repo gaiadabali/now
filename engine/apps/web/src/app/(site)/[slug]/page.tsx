@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 
 import { ReadNextBand, PlanAroundBand } from '@/components/ArticleRails'
 import { EntityBeacon } from '@/components/Beacon'
+import { SaveButton } from '@/components/SaveButton'
 import { StoryCard } from '@/components/StoryCard'
 import { Signup } from '@/components/primitives'
 import {
@@ -18,7 +19,9 @@ import {
 } from '@/lib/content'
 import { formatCount, formatDate, readingTime } from '@/lib/format'
 import { firstWholeSentence, stripTags } from '@/lib/html'
+import { accountsEnabled, currentReader } from '@/lib/reader'
 import { getArticleRails } from '@/lib/recommend'
+import { isSaved } from '@/lib/savedItems'
 import { getSiteConfig } from '@/lib/site'
 
 /**
@@ -86,6 +89,14 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
   // Tells the layout's single beacon tag which article this page is (E8.5).
   const beacon = <EntityBeacon entity={String(article.id)} entityType="article" surface="article" />
   const section = sectionOf(article)
+
+  // The Save toggle (DESIGN-SYSTEM §3's "must not appear" list: "a Save
+  // affordance with no persistence behind it" — this is the write path that
+  // rule was waiting on). `currentReader()` is `cache()`-wrapped
+  // (lib/reader.ts), so this costs nothing extra when the layout above has
+  // already read it for the masthead.
+  const reader = await currentReader()
+  const saved = reader ? await isSaved(reader.id, article.id) : false
 
   // Pull quote is lifted from the body rather than authored separately, the
   // way a sub-editor would. In production this comes from a `pullquote`
@@ -243,9 +254,22 @@ async function ArticlePage({ slug, draft = false }: { slug: string; draft?: bool
                 `top` backs off when the header condenses (magazine.css),
                 so it never overlaps the smaller header either. */}
             <div className="aside-sticky">
-              <div className="share">
+              <div className="share" id="share">
                 <p className="bandhead__kicker">Share this story</p>
                 <div className="share__list">
+                  {/* The Save toggle leads the list — the reader's own copy
+                      of the story, above sending it to someone else.
+                      Renders nothing when accounts are unreachable
+                      (F141: the site must never show a control that leads
+                      to a 404), and a plain sign-in link (with a way back
+                      to right here) rather than a form when signed out. */}
+                  <SaveButton
+                    articleId={article.id}
+                    articlePath={`/${article.slug}`}
+                    saved={saved}
+                    accountsEnabled={accountsEnabled()}
+                    signedIn={Boolean(reader)}
+                  />
                   {/* Real, zero-JS shares — no Web Share API plumbing to
                       hydrate for two links. WhatsApp first: the highest-
                       traffic share channel for a reader in either city. */}

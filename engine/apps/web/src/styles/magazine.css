@@ -977,6 +977,32 @@
 }
 .share__link:hover { color: var(--red); }
 
+/* The Save toggle (components/SaveButton.tsx) — same row treatment as a
+   share link above, since it lives in the same list, but rendered as a
+   `<button>` for the signed-in (real toggle) state rather than an `<a>`
+   navigating away, so the browser's own button chrome needs resetting to
+   match. `aria-pressed="true"` — the saved state — reads in `--red`, the
+   same colour §1 reserves for the site's one primary action per screen. */
+.share__save {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: 0;
+  border-bottom: var(--hair);
+  padding-block: var(--space-2xs);
+  font-family: var(--font-sans);
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--type);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--dur) var(--ease);
+}
+.share__save:hover { color: var(--red); }
+.share__save[aria-pressed='true'] { color: var(--red); }
+
 /* ==========================================================================
    10. FACET BAR / PAGER — the engine made visible
    ========================================================================== */

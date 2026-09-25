@@ -9,6 +9,7 @@ import {
 import { Mailer, createTransportFromEnv } from '@now/mailer'
 import { cookies } from 'next/headers'
 import pg from 'pg'
+import { cache } from 'react'
 
 import { getSiteConfig } from '@/lib/site'
 
@@ -168,8 +169,19 @@ export type SignedInReader = {
  * because a 30-day token would otherwise keep a deleted or suspended account
  * signed in for a month. That is the same reasoning the staff side applies to
  * re-reading roles at sign-in, applied to a longer-lived token.
+ *
+ * `cache()`-wrapped (React's request-scoped memoization, the same primitive
+ * `fetch` gets for free) so "the database" above means once per request, not
+ * once per caller. `(site)/layout.tsx` reads this for the masthead and says
+ * so explicitly — "one session read per request… not a second
+ * `currentReader()` call inside Masthead itself" — but that was a rule about
+ * call DISCIPLINE, and `/account`'s own page already breaks it today (it
+ * reads the reader again for its own body). The article page reading it a
+ * third time, to know whether to render a Save toggle and in which state,
+ * is the same legitimate need with the same fix: memoize the read itself
+ * rather than asking every future caller to remember not to.
  */
-export async function currentReader(): Promise<SignedInReader | null> {
+export const currentReader = cache(async (): Promise<SignedInReader | null> => {
   const jar = await cookies()
   const token = jar.get(READER_SESSION_COOKIE)?.value
   if (!token) return null
@@ -194,7 +206,7 @@ export async function currentReader(): Promise<SignedInReader | null> {
     emailVerified: record.emailVerifiedAt !== null,
     joinedAt: record.createdAt,
   }
-}
+})
 
 export async function isSignedIn(): Promise<boolean> {
   return (await currentReader()) !== null

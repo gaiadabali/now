@@ -29,6 +29,7 @@ import {
   readerStore,
   siteBaseUrl,
 } from '@/lib/reader'
+import { safeInternalPath } from '@/lib/internalPath'
 import { savePrefs } from '@/lib/preferences'
 import { rateLimit } from '@/lib/rateLimit'
 import { stitchAnonymousHistory } from '@/lib/stitch'
@@ -173,9 +174,17 @@ export async function signIn(form: FormData): Promise<void> {
   const email = field(form, 'email')
   const password = field(form, 'password')
   const emailNorm = normaliseReaderEmail(email)
+  // Where to land after a successful sign-in — the Save toggle's own
+  // sign-in link (`components/SaveButton.tsx`) is the first caller, so a
+  // reader saving a story while signed out comes back to that article
+  // rather than always landing on the dashboard. `safeInternalPath` refuses
+  // anything that is not a same-site path (open-redirect: this field is an
+  // ordinary hand-postable form value), so an invalid or absent one falls
+  // back to the dashboard exactly as before this existed.
+  const next = safeInternalPath(field(form, 'next'))
 
   if (!(await rateLimit(`login:${emailNorm}`, 15, 15 * 60_000))) {
-    redirect('/account/login?status=slow_down')
+    redirect(`/account/login?status=slow_down${next ? `&next=${encodeURIComponent(next)}` : ''}`)
   }
 
   const result = await authenticateReader(readerStore(), email, password)
@@ -188,11 +197,11 @@ export async function signIn(form: FormData): Promise<void> {
     // is in fact correct.
     const status =
       result.reason === 'locked' ? 'locked' : result.reason === 'suspended' ? 'suspended' : 'invalid'
-    redirect(`/account/login?status=${status}`)
+    redirect(`/account/login?status=${status}${next ? `&next=${encodeURIComponent(next)}` : ''}`)
   }
 
   await establishSession(result.reader.id, result.reader.email)
-  redirect('/account')
+  redirect(next ?? '/account')
 }
 
 async function establishSession(identityId: string, email: string): Promise<void> {

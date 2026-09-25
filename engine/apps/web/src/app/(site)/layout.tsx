@@ -91,8 +91,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     timeZone: site.timezone,
   }).format(new Date())
   // Read once, here, and handed down — not a second `currentReader()` call
-  // inside Masthead itself. One session read per request keeps it obvious
-  // where the cookie is ever inspected on this layout's render path.
+  // inside Masthead itself. Other pages below this layout (account/page.tsx,
+  // and now the article page's Save toggle) do call it again for their own
+  // needs, which is legitimate and no longer a second database hit either
+  // way: `currentReader()` is `cache()`-wrapped (lib/reader.ts) so every call
+  // within one request shares this same read.
   const reader = await currentReader()
 
   return (

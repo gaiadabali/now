@@ -735,15 +735,21 @@ async function fetchWeightedTasteInputs(reader: ReaderContext): Promise<Weighted
   }
 
   // `saved_items` — signed-in only, `engine.saved_items` (READER-IDENTITY.md).
+  //
+  // This used to query `cityPool()` — the CITY database — for a table that
+  // only exists in `now_platform`. Every call therefore threw
+  // "relation engine.saved_items does not exist", was swallowed by the
+  // catch below, and logged; the doc's claim that a save feeds this rail at
+  // weight 1.0 has never actually been true. Found while wiring the Save
+  // toggle itself (E8: `lib/savedItems.ts` is the one place that now reads
+  // and writes this table, on the correct pool, scoped to this site — see
+  // that module for why `site_id` matters here: a saved id is only
+  // meaningful alongside the city it was saved under).
   if (reader.identityId) {
-    const savedSql = `
-      SELECT entity_id::int AS entity_id FROM engine.saved_items
-       WHERE identity_id = $1::uuid AND entity_type = 'article'
-       ORDER BY created_at DESC LIMIT $2
-    `
     try {
-      const result = await cityPool().query<{ entity_id: number }>(savedSql, [reader.identityId, MAX_TASTE_INPUTS])
-      for (const row of result.rows) weighted.set(row.entity_id, SAVED_ITEM_WEIGHT)
+      const { listSavedArticles } = await import('@/lib/savedItems')
+      const saved = await listSavedArticles(reader.identityId, MAX_TASTE_INPUTS)
+      for (const { entityId } of saved) weighted.set(entityId, SAVED_ITEM_WEIGHT)
     } catch (error) {
       console.error('[recommend] getForYou: saved_items query failed:', error instanceof Error ? error.message : error)
     }
