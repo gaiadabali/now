@@ -119,7 +119,7 @@ def _cache_key(cfg: LLMConfig, user_prompt: str) -> Path:
     return CACHE_DIR / f"{h}.json"
 
 
-def _chat_ollama(cfg: LLMConfig, user_prompt: str, timeout: int = 60) -> str | None:
+def _chat_ollama(cfg: LLMConfig, user_prompt: str, timeout: int | None = None) -> str | None:
     import requests
     payload = {
         "model": cfg.model,
@@ -127,6 +127,16 @@ def _chat_ollama(cfg: LLMConfig, user_prompt: str, timeout: int = 60) -> str | N
         "max_tokens": 100,
         "temperature": 0,
     }
+    # A local reasoning model (gemma4 on a laptop's Ollama, the only provider
+    # that worked on 2026-09-25) spends a 100-token budget "thinking" and
+    # returns empty content. `NOW_LLM_REASONING_EFFORT=none` turns that off
+    # on OpenAI-compatible servers that honour it; unset, the request is
+    # unchanged. The first local call also loads the model (~60 s), hence
+    # the overridable timeout.
+    effort = os.environ.get("NOW_LLM_REASONING_EFFORT")
+    if effort:
+        payload["reasoning_effort"] = effort
+    timeout = timeout or int(os.environ.get("NOW_LLM_TIMEOUT_S", "60"))
     for attempt in range(3):
         try:
             r = requests.post(
@@ -199,7 +209,12 @@ def judge_one(cfg: LLMConfig, facet: str, term_label: str, title: str, lead: str
     user_prompt = (
         f"Facet: {facet}\nCandidate term: {term_label}\n"
         f"Article title: {title}\nArticle opening text: {lead[:600]}\n\n"
-        'Does "{0}" genuinely apply to this article? Answer as JSON: {{"applies": true|false}}'.format(term_label)
+        # An f-string, not `.format()`: Python binds `.format()` to the WHOLE
+        # implicitly concatenated literal above, already-substituted title and
+        # lead included, so an article whose text held a "}" crashed the run
+        # (Jakarta, 2026-09-25). The rendered prompt is byte-identical for every
+        # other article, so the on-disk verdict cache stays valid.
+        f'Does "{term_label}" genuinely apply to this article? Answer as JSON: {{"applies": true|false}}'
     )
     cache = _cache_key(cfg, user_prompt)
     if cache.is_file():

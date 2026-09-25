@@ -121,37 +121,45 @@ export function StoryCard({
         </>
       ) : null}
       <time dateTime={article.date}>{formatDate(article.date, locale, timeZone)}</time>
-      {variant === 'standard' ? (
+      {variant === 'standard' || variant === 'horizontal' ? (
         <>
           <span className="sep">·</span>
-          <span>{readingTime(article.paras)} min</span>
+          <span>{readingTime(article.paras)} min read</span>
         </>
       ) : null}
       {partner ? <PartnerBadge /> : null}
     </div>
   )
 
-  // `row` — Latest's index (§2, §3): no thumbnail, the date pinned to the far
-  // right of the row rather than folded into the meta line, because a
-  // three-column index needs every row's date to line up at a glance.
+  // `row` — Latest's index (§2, §3): no thumbnail. The meta sits on its own
+  // line ABOVE the headline. It used to share the headline's line, pinned
+  // right, which squeezed every headline into a narrow 3–4-line ragged wrap
+  // and left a hole wherever a story had no section. Above, the date is in
+  // the same place on every row and the headline gets the whole column.
   if (variant === 'row') {
     return (
       <article className="card card--row">
-        <h3 className={`card__headline display ${headlineWeight}`}>
-          <Link href={href} {...attribution}>
-            {article.title}
-          </Link>
-        </h3>
         <span className="card--row__meta">
           {showSection ? (
-            <Link className="card__section" href={`/${section}`}>
-              {sectionLabel(section)}
-            </Link>
+            <>
+              <Link className="card__section" href={`/${section}`}>
+                {sectionLabel(section)}
+              </Link>
+              <span className="sep">·</span>
+            </>
           ) : null}
           <time className="card--row__date" dateTime={article.date}>
             {formatDate(article.date, locale, timeZone)}
           </time>
+          <span className="sep">·</span>
+          <span className="card--row__date">{readingTime(article.paras)} min read</span>
         </span>
+        <h3 className="card__headline display display--medium">
+          <Link href={href} {...attribution}>
+            {article.title}
+          </Link>
+        </h3>
+        {showDek && article.dek ? <p className="card__dek card__dek--clamp">{article.dek}</p> : null}
       </article>
     )
   }
