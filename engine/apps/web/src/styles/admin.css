@@ -4428,3 +4428,209 @@ html[data-theme='dark'] .graphic-icon {
   color: var(--theme-elevation-600);
   font-size: 0.8125rem;
 }
+
+/* ---------------------------------------------------------------------------
+   The place desk (plan P1.6) — `team-editor/place-desk/`. Rides on the
+   classification desk's `classify__*` vocabulary (the wrapper carries both
+   `classify__main` and `place-desk`), adding only what a two-column
+   evidence-and-decision screen needs. DESIGN-SYSTEM.md §5: state is form and
+   colour, rules do the work, red stays for focus and the gate.
+   ------------------------------------------------------------------------ */
+
+.place-desk .place-desk__name {
+  display: block;
+  font-weight: 500;
+}
+
+.place-desk .place-desk__meta {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-500);
+}
+
+.place-desk .place-desk__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.place-desk .place-desk__flags .classify__pill {
+  white-space: normal;
+}
+
+.place-desk .place-desk__pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.place-desk .place-desk__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+/* Status as form: filled pill, per DESIGN-SYSTEM.md "Status, as form". */
+.place-desk .place-desk__state {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--style-radius-l);
+  background: var(--theme-elevation-100);
+  color: var(--theme-elevation-800);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.place-desk .place-desk__state--active {
+  background: var(--ok);
+  color: #fff;
+}
+
+.place-desk .place-desk__state--junk {
+  background: var(--theme-elevation-800);
+  color: var(--theme-elevation-0);
+}
+
+.place-desk .place-desk__pill--featured {
+  border-color: var(--theme-elevation-1000);
+  color: var(--theme-elevation-1000);
+}
+
+.place-desk .place-desk__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--base) * 1.2);
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .place-desk .place-desk__layout {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
+  }
+
+  .place-desk .place-desk__decisions {
+    position: sticky;
+    top: calc(var(--base) * 1);
+  }
+}
+
+.place-desk .place-desk__decisions {
+  padding: 0.25rem 1rem 1rem;
+  border-top: 1px solid var(--theme-elevation-1000);
+  background: var(--theme-elevation-50);
+}
+
+.place-desk .place-desk__step {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--theme-elevation-150);
+}
+
+.place-desk .place-desk__step h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.place-desk .place-desk__buttons,
+.place-desk .place-desk__inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.place-desk .place-desk__inline-form .classify__decide-note,
+.place-desk .place-desk__decide .classify__decide-note,
+.place-desk .place-desk__merge .classify__decide-note {
+  flex-basis: 100%;
+  margin: 0.35rem 0 0;
+}
+
+.place-desk .place-desk__hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+}
+
+.place-desk .place-desk__label {
+  font-size: 0.8125rem;
+  color: var(--theme-elevation-600);
+}
+
+.place-desk .place-desk__number {
+  width: 7rem;
+}
+
+.place-desk .place-desk__dupes {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.place-desk .place-desk__dupes li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--theme-elevation-100);
+}
+
+.place-desk .place-desk__merge {
+  margin-top: 0.35rem;
+}
+
+.place-desk .place-desk__facts {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+.place-desk .place-desk__facts dt {
+  color: var(--theme-elevation-600);
+}
+
+.place-desk .place-desk__facts dd {
+  margin: 0;
+}
+
+.place-desk .place-desk__map {
+  margin: 0 0 1.25rem;
+}
+
+.place-desk .place-desk__map iframe {
+  display: block;
+  width: 100%;
+  height: 260px;
+  border: 1px solid var(--theme-elevation-150);
+}
+
+.place-desk .place-desk__map figcaption {
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--theme-elevation-500);
+}
+
+.place-desk .place-desk__aliases {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+}
+
+.place-desk .place-desk__bulk table {
+  margin-top: 0.75rem;
+}
+
+.place-desk .place-desk__tick {
+  width: 2.25rem;
+  text-align: center;
+}
+
+.place-desk .place-desk__tick input:focus-visible {
+  outline: 2px solid var(--now-accent);
+  outline-offset: 2px;
+}

@@ -210,6 +210,18 @@ export default buildConfig({
             description: 'What the engine decided about an article, and how sure it was',
           },
         },
+        // Plan P1.6 — the place desk: the place catalogue's review queue in
+        // evidence order, and one place's evidence and decisions. Reviewer-
+        // gated in the view and in every action; see
+        // `app/(payload)/team-editor/place-desk/PlaceDeskView.tsx`.
+        placeDesk: {
+          Component: '@/app/(payload)/team-editor/place-desk/PlaceDeskView#PlaceDeskView',
+          path: '/place-desk',
+          meta: {
+            title: 'Place desk',
+            description: 'Approve, merge or junk the places the magazine has named',
+          },
+        },
         commerce: {
           Component: '@/app/(payload)/team-editor/commerce/CommerceView#CommerceView',
           path: '/commerce',

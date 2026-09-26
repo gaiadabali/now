@@ -28,9 +28,11 @@ import { RailLink } from './RailLink'
  * `classification-reviews`' own `access` is what finally decides the write.
  */
 
-const LINKS = [
+const LINKS: Array<{ href: string; label: string; activeMatch?: 'exact' | 'prefix' }> = [
   { href: '/team-editor/classification/review', label: 'Review desk' },
   { href: '/team-editor/classification', label: 'By article' },
+  // Plan P1.6: the place catalogue's own review queue.
+  { href: '/team-editor/place-desk', label: 'Place desk', activeMatch: 'prefix' },
 ]
 
 export function NavReview() {
@@ -52,7 +54,7 @@ export function NavReview() {
                 pages, which is exactly why a real navigation used to be the
                 only option. It also carries the active-state edge every
                 other rail item gets (see `RailLink`'s own comment). */}
-            <RailLink className="nav__link" href={link.href}>
+            <RailLink className="nav__link" href={link.href} activeMatch={link.activeMatch}>
               {link.label}
             </RailLink>
           </li>
