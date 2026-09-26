@@ -1,5 +1,5 @@
 {
-  "hash": "049fef15ac1d31c5d7fa52373b3315f06199142f4da7a413323f8a84c70493ab",
+  "hash": "35711b456391147b85ab5d9a3dfc5d3d4019372ae857beab5c3a11dddd14b649",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -3266,7 +3266,7 @@
           {
             "default": null,
             "name": "identity_id",
-            "nullable": "NO",
+            "nullable": "YES",
             "type": "uuid",
             "udt": "uuid"
           },
@@ -3537,7 +3537,7 @@
           {
             "default": null,
             "name": "identity_id",
-            "nullable": "NO",
+            "nullable": "YES",
             "type": "uuid",
             "udt": "uuid"
           },
@@ -3611,7 +3611,7 @@
               "identity_id"
             ],
             "name": "print_subscriptions_identity_id_fkey",
-            "on_delete": "RESTRICT",
+            "on_delete": "SET NULL",
             "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },

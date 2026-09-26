@@ -26,25 +26,47 @@ a webhook handler needs regardless of which provider sends it.
 one webhook-ledger shape for every provider that will ever exist behind
 this interface.
 
-## No guest checkout — §11a answer 5, enforced here, not just in the app
+## No guest checkout — §11a answer 5, enforced by a trigger, not a NOT NULL
 
-"An account is required to buy print. No guest checkout." `print_orders.
-identity_id` is therefore `NOT NULL` (the plan's own sketch had it nullable
-for a guest-checkout design the owner rejected) — the schema does not leave
-the door open for a code path that forgets to check for a session. It is
-`ON DELETE SET NULL` even so: an order is a financial record with retention
-obligations distinct from the account rules (P2.9, plan roadmap: "deleting
-an account leaves zero rows in the new tables except orders (retained per
-finance, anonymised)"), so a deleted reader's past orders survive,
-un-attributed, exactly as `itineraries.user_id` already does (0008).
-`email`/`email_norm` stay on the row regardless, matching that "anonymised,
-not erased" plan for the delivery/finance record — export/delete (P2.9)
-scrubs identity, not the fact that an order existed. Note this is
-deliberately NOT what 0007 chose for `identities` itself (hard delete of
-credentials on account deletion) — a person's login and a finished sale are
-different kinds of record with different retention reasons, and treating
-them alike would either keep credentials too long or lose finance history
-too early.
+"An account is required to buy print. No guest checkout." An earlier
+version of this migration tried to make that a `NOT NULL` on
+`print_orders.identity_id` (and `print_subscriptions.identity_id`) —
+which is self-contradicting the moment it meets P2.9's retention promise
+one paragraph below: "deleting an account leaves zero rows in the new
+tables except orders (retained per finance, anonymised)" means
+`ON DELETE SET NULL` has to be able to actually set the column to `NULL`,
+and a `NOT NULL` column rejects that with a not-null violation the instant
+anyone deletes a reader who has ever bought print. `print_subscriptions`
+had the same defect the other way round: `ON DELETE RESTRICT` on a
+`NOT NULL` column means a reader who has ever subscribed can **never**
+delete their account, full stop — the exact opposite of P2.9's guarantee.
+
+Both columns are therefore nullable, both keep (`print_subscriptions`
+gains) `ON DELETE SET NULL`, matching `itineraries.user_id` (0008) and
+`print_orders`'s own original reasoning below. "No guest checkout" is
+enforced at the point that actually matters — creation, not survival —
+with `engine.require_identity_on_insert()`, a `BEFORE INSERT` trigger
+that raises unless `identity_id` is already set. This is the same shape
+0012's `offers_require_paid_partnership_trg` uses for a different rule: a
+business fact that must hold at the moment a row is created, expressed
+as a trigger because a `CHECK`/`NOT NULL` on the column cannot
+distinguish "created without one" from "the owner left, anonymised" —
+only a trigger scoped to `INSERT` can. Postgres never fires a
+row's `BEFORE INSERT` trigger for an `UPDATE` (including the system
+`ON DELETE SET NULL` update), so anonymisation on account deletion is
+completely unaffected by this trigger.
+
+An order/subscription is a financial record with retention obligations
+distinct from the account rules (P2.9): a deleted reader's past orders
+and subscriptions survive, un-attributed, exactly as `itineraries.user_id`
+already does. `email`/`email_norm` stay on the `print_orders` row
+regardless, matching that "anonymised, not erased" plan for the delivery/
+finance record — export/delete (P2.9) scrubs identity, not the fact that
+an order existed. Note this is deliberately NOT what 0007 chose for
+`identities` itself (hard delete of credentials on account deletion) — a
+person's login and a finished sale are different kinds of record with
+different retention reasons, and treating them alike would either keep
+credentials too long or lose finance history too early.
 
 ## Nothing here is ever `DELETE`d by the runtime role
 
@@ -106,8 +128,12 @@ def upgrade() -> None:
         """
         CREATE TABLE engine.print_orders (
             id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            -- §11a answer 5: no guest checkout. An order always has a reader.
-            identity_id       uuid NOT NULL REFERENCES engine.identities(id) ON DELETE SET NULL,
+            -- §11a answer 5: no guest checkout, enforced by
+            -- require_identity_on_insert_trg below, not by NOT NULL --
+            -- nullable so ON DELETE SET NULL can anonymise the row on
+            -- account deletion (P2.9) instead of failing with a
+            -- not-null violation.
+            identity_id       uuid REFERENCES engine.identities(id) ON DELETE SET NULL,
             site_id           uuid NOT NULL REFERENCES engine.sites(id),
             email             text NOT NULL,
             email_norm        text NOT NULL,
@@ -140,6 +166,37 @@ def upgrade() -> None:
         """
     )
 
+    # §11a answer 5 — enforced here, at creation, not by a column
+    # constraint that would also block anonymisation on delete (see
+    # "No guest checkout" above). One function, two triggers (this table
+    # and print_subscriptions below): a BEFORE INSERT trigger never fires
+    # for the UPDATE that ON DELETE SET NULL performs, so this cannot
+    # conflict with P2.9's anonymise-on-delete promise.
+    op.execute(
+        """
+        CREATE OR REPLACE FUNCTION engine.require_identity_on_insert()
+        RETURNS trigger AS $$
+        BEGIN
+            IF NEW.identity_id IS NULL THEN
+                RAISE EXCEPTION
+                    '%.identity_id is required at creation -- no guest checkout '
+                    '(owner ruling, ITINERARY-AND-READER-PRODUCTS-PLAN.md section 11a.5)',
+                    TG_TABLE_NAME
+                    USING ERRCODE = 'not_null_violation';
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER print_orders_require_identity_trg
+            BEFORE INSERT ON engine.print_orders
+            FOR EACH ROW EXECUTE FUNCTION engine.require_identity_on_insert()
+        """
+    )
+
     op.execute(
         """
         CREATE TABLE engine.print_order_items (
@@ -159,7 +216,11 @@ def upgrade() -> None:
         """
         CREATE TABLE engine.print_subscriptions (
             id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            identity_id       uuid NOT NULL REFERENCES engine.identities(id) ON DELETE RESTRICT,
+            -- Nullable + SET NULL, not NOT NULL + RESTRICT -- see the
+            -- "No guest checkout" section above. RESTRICT here would have
+            -- meant a reader who ever subscribed could never delete their
+            -- account, the exact opposite of P2.9's promise.
+            identity_id       uuid REFERENCES engine.identities(id) ON DELETE SET NULL,
             site_id           uuid NOT NULL REFERENCES engine.sites(id),
             plan_id           uuid NOT NULL REFERENCES engine.print_plans(id),
             order_id          uuid REFERENCES engine.print_orders(id),
@@ -175,6 +236,13 @@ def upgrade() -> None:
             created_at        timestamptz NOT NULL DEFAULT now(),
             updated_at        timestamptz NOT NULL DEFAULT now()
         )
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER print_subscriptions_require_identity_trg
+            BEFORE INSERT ON engine.print_subscriptions
+            FOR EACH ROW EXECUTE FUNCTION engine.require_identity_on_insert()
         """
     )
     op.execute("CREATE INDEX ix_print_subscriptions_identity ON engine.print_subscriptions (identity_id)")
@@ -235,7 +303,10 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS engine.payment_events")
     op.execute("DROP TABLE IF EXISTS engine.shipments")
+    op.execute("DROP TRIGGER IF EXISTS print_subscriptions_require_identity_trg ON engine.print_subscriptions")
     op.execute("DROP TABLE IF EXISTS engine.print_subscriptions")
     op.execute("DROP TABLE IF EXISTS engine.print_order_items")
+    op.execute("DROP TRIGGER IF EXISTS print_orders_require_identity_trg ON engine.print_orders")
+    op.execute("DROP FUNCTION IF EXISTS engine.require_identity_on_insert()")
     op.execute("DROP TABLE IF EXISTS engine.print_orders")
     op.execute("DROP TABLE IF EXISTS engine.print_plans")

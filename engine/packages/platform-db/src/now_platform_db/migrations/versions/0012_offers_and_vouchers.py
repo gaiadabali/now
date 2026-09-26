@@ -71,6 +71,22 @@ follows the same hash-not-raw-address convention as 0011's consent columns
 — it exists for the "20 claims/day/IP-hash" rate limit (§7.3) and the daily
 anomaly line, not as a re-identifiable record.
 
+## The per-reader cap is enforced by a trigger, not only by the app
+
+`ix_voucher_claims_cap_check` makes an app-level "count existing claims,
+then insert if under cap" query cheap, but under ordinary READ COMMITTED
+two concurrent claims for the same (offer, identity) can both run that
+count before either has inserted, both see zero, and both insert — a
+`per_reader_cap = 1` offer silently double-claimed. Fixed with
+`voucher_claims_enforce_per_reader_cap_trg`, a `BEFORE INSERT` trigger
+that takes `SELECT ... FOR UPDATE` on the referenced `engine.offers` row
+before re-counting: the lock is what serialises two concurrent claimants
+instead of letting both read a stale count, the same shape
+`offers_require_paid_partnership_trg` (above) already uses for a
+different at-creation business rule. Locking the *offer* row rather than
+a prior claim is deliberate — it is what makes the very first claim
+correct too, when there is no existing claim row to lock.
+
 ## `offer_events` is partitioned like `ad_events`, and NOT reused as it
 
 §7.2's own note: `ad_events` requires a `placement_id` and models a booked
@@ -257,6 +273,69 @@ def upgrade() -> None:
         """
     )
 
+    # §7.3's cap enforcement, made race-proof. `ix_voucher_claims_cap_check`
+    # (above) makes an app-level "count, then insert" check cheap, but two
+    # concurrent claims can both run that count before either commits —
+    # ordinary READ COMMITTED lets each see zero prior claims and both
+    # insert, defeating even a `per_reader_cap = 1` offer. The fix is the
+    # same shape as `offers_require_paid_partnership_trg` above: a
+    # `BEFORE INSERT` trigger that does the count itself, inside the
+    # transaction that is about to insert, after taking a lock that forces
+    # concurrent claimants to queue rather than race.
+    #
+    # `SELECT ... FOR UPDATE` on the referenced `offers` row is the lock:
+    # it is held until the inserting transaction commits or rolls back, so
+    # a second concurrent INSERT's trigger blocks on that same SELECT
+    # until the first is done — at which point it re-counts and sees the
+    # first claim, which the cap-check line below then correctly rejects.
+    # Locking the *offer* row (not a claim row, which doesn't exist yet)
+    # is what makes this correct for the very first claim too, when there
+    # is nothing else to lock.
+    op.execute(
+        """
+        CREATE OR REPLACE FUNCTION engine.voucher_claims_enforce_per_reader_cap()
+        RETURNS trigger AS $$
+        DECLARE
+            cap             integer;
+            existing_claims integer;
+        BEGIN
+            SELECT per_reader_cap INTO cap
+              FROM engine.offers
+             WHERE id = NEW.offer_id
+             FOR UPDATE;
+
+            IF NOT FOUND THEN
+                RAISE EXCEPTION 'engine.voucher_claims.offer_id % does not reference an existing offer',
+                    NEW.offer_id
+                    USING ERRCODE = 'foreign_key_violation';
+            END IF;
+
+            SELECT count(*) INTO existing_claims
+              FROM engine.voucher_claims
+             WHERE offer_id = NEW.offer_id
+               AND identity_id = NEW.identity_id
+               AND status IN ('claimed', 'redeemed');
+
+            IF existing_claims >= cap THEN
+                RAISE EXCEPTION
+                    'engine.voucher_claims: identity % is already at the per-reader cap of % claim(s) for offer %',
+                    NEW.identity_id, cap, NEW.offer_id
+                    USING ERRCODE = 'check_violation';
+            END IF;
+
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER voucher_claims_enforce_per_reader_cap_trg
+            BEFORE INSERT ON engine.voucher_claims
+            FOR EACH ROW EXECUTE FUNCTION engine.voucher_claims_enforce_per_reader_cap()
+        """
+    )
+
     op.execute(
         """
         CREATE TABLE engine.offer_events (
@@ -292,6 +371,10 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS engine.offer_audit")
     op.execute("DROP TABLE IF EXISTS engine.offer_events")
+    op.execute(
+        "DROP TRIGGER IF EXISTS voucher_claims_enforce_per_reader_cap_trg ON engine.voucher_claims"
+    )
+    op.execute("DROP FUNCTION IF EXISTS engine.voucher_claims_enforce_per_reader_cap()")
     op.execute("DROP TABLE IF EXISTS engine.voucher_claims")
     op.execute("DROP TABLE IF EXISTS engine.offer_places")
     op.execute("DROP TRIGGER IF EXISTS offers_require_paid_partnership_trg ON engine.offers")
