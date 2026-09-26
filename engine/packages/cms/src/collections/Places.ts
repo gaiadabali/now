@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove, isLoggedIn } from '../access'
 import { vocabularySelectField } from '../fields/vocabularySelect'
+import { placeReviewGate } from '../hooks/placeReviewGate'
 import type { VocabularyMap } from '../lib/vocabulary'
 import { GROUPS } from './groups'
 
@@ -56,6 +57,10 @@ export function buildPlacesCollection(vocabulary: VocabularyMap): CollectionConf
     // pending_review), not an editorial workflow state — so plain version
     // history (no drafts) is the correct fit, not just a workaround.
     versions: { maxPerDoc: 20 },
+    // Approving, junking and merging a place are desk decisions: editor or
+    // admin only, stamped with who made them (plan P1.6). See
+    // hooks/placeReviewDecision.ts.
+    hooks: { beforeChange: [placeReviewGate] },
     fields: [
       { name: 'name', type: 'text', required: true },
       { name: 'slug', type: 'text', required: true, unique: true, index: true },
