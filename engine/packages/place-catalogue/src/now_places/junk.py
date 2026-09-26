@@ -514,7 +514,7 @@ def classify(name: str) -> JunkVerdict:
         return JunkVerdict(True, "recurring event, not a venue")
     if _gathering_hit(raw):
         return JunkVerdict(True, "competition/gathering, not a venue")
-    if _ENDS_WITH_DAY_RE.search(raw) and words[-2] not in {"all", "every", "the"}:
+    if _ENDS_WITH_DAY_RE.search(raw) and len(words) > 1 and words[-2] not in {"all", "every", "the"}:
         return JunkVerdict(True, "a date or observance ('... Day')")
     if _PRICE_RE.search(raw) or _DURATION_RE.search(raw):
         return JunkVerdict(True, "an offer (price or duration)")

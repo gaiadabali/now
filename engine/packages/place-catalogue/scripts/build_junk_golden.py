@@ -15,6 +15,7 @@ from pathlib import Path
 from now_places.junk import classify
 
 HERE = Path(__file__).resolve().parent
+NL = chr(10)
 FIX = HERE.parent / "tests" / "fixtures"
 SOURCES = [
     "junk_hand_labeled_100.jsonl",
@@ -41,6 +42,7 @@ PROBES = [
     "Executive Chef of Kilo Kitchen Jakarta", "Chef Gilles Marx of Amuz Restaurant", "The Best Hotel",
     "Grand Two-Bedroom Villa", "DELUXE SUITE For 2", "Meritus Club Floors", "Bene Italian Kitchen Exterior",
     "Whisky Bar", "24-Hour Gym", "Emergency & Medical Centre", "Kids Water Park",
+    "Caféfest Lounge", "Café Fest", "Hotel ٢٠٢٣ Edition", "! day",
 ]
 
 
@@ -64,6 +66,20 @@ def main() -> None:
             v = classify(n)
             f.write(json.dumps({"name": n, "tier": v.tier, "reason": v.reason}, ensure_ascii=False) + "\n")
     print(f"wrote {len(names)} verdicts to {out}")
+
+    # The area phrases junk.py's area rule compares against (the extractor's
+    # copy of `enum_places_area_term`). The desk reads the same enum from
+    # its own city database at runtime; its golden test reads this file so
+    # both suites classify with identical inputs.
+    from now_place_extraction.extract import _AREA_TERM_PHRASES, _SUPPLEMENTARY_NON_VENUE_PHRASES
+
+    phrases = FIX / "junk_area_phrases.json"
+    phrases.write_text(
+        json.dumps({"areaPhrases": sorted(_AREA_TERM_PHRASES), "supplementary": sorted(_SUPPLEMENTARY_NON_VENUE_PHRASES)}, indent=0) + NL,
+        encoding="utf-8",
+        newline=NL,
+    )
+    print(f"wrote {phrases}")
 
 
 if __name__ == "__main__":

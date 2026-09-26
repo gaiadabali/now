@@ -438,3 +438,7 @@
 {"name": "Chef Gilles Marx of Amuz Restaurant", "tier": "junk", "reason": "a person's job title, not a venue"}
 {"name": "The Best Hotel", "tier": "junk", "reason": "leading descriptive word ('best')"}
 {"name": "Grand Two-Bedroom Villa", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Caféfest Lounge", "tier": null, "reason": null}
+{"name": "Café Fest", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Hotel ٢٠٢٣ Edition", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "! day", "tier": null, "reason": null}
