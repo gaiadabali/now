@@ -74,13 +74,14 @@ export type RegistrySite = {
   brand_tokens: unknown
   home_rails: unknown
   ranking_weights: unknown
+  enabled_modules: string[]
   updated_at: string
 }
 
 export async function listRegistrySites(): Promise<RegistrySite[]> {
   return query<RegistrySite>(
     `SELECT id::text, slug, name, hostname, status, nav, brand_tokens, home_rails, ranking_weights,
-            updated_at::text
+            enabled_modules, updated_at::text
        FROM engine.sites
       ORDER BY slug`,
   )
@@ -89,7 +90,7 @@ export async function listRegistrySites(): Promise<RegistrySite[]> {
 export async function getRegistrySite(slug: string): Promise<RegistrySite | null> {
   const rows = await query<RegistrySite>(
     `SELECT id::text, slug, name, hostname, status, nav, brand_tokens, home_rails, ranking_weights,
-            updated_at::text
+            enabled_modules, updated_at::text
        FROM engine.sites
       WHERE slug = $1`,
     [slug],
@@ -128,6 +129,21 @@ export async function updateSiteBrandTokens(slug: string, brandTokens: unknown):
 export async function updateSiteHomeRails(slug: string, homeRails: unknown): Promise<void> {
   await query(`UPDATE engine.sites SET home_rails = $1::jsonb, updated_at = now() WHERE slug = $2`, [
     JSON.stringify(homeRails),
+    slug,
+  ])
+}
+
+/**
+ * `enabled_modules` (P0.3) — a plain `text[]`, unlike the three jsonb writes
+ * above, so there is no `::jsonb` cast and no partial-merge question: this
+ * writes exactly the array `saveModules`
+ * (`team-editor/platform/sites/[slug]/actions.ts`) passes in — which is the
+ * current column with only its P0.3 part replaced (`mergeModuleSelection`),
+ * so the non-P0.3 entries (`feed`, `search`, `events`) survive a save.
+ */
+export async function updateSiteEnabledModules(slug: string, modules: string[]): Promise<void> {
+  await query(`UPDATE engine.sites SET enabled_modules = $1::text[], updated_at = now() WHERE slug = $2`, [
+    modules,
     slug,
   ])
 }

@@ -3,8 +3,16 @@
 import { revalidatePath } from 'next/cache'
 
 import { requireStaffAdmin } from '@/lib/auth'
-import { getRegistrySite, updateSiteBrandTokens, updateSiteHomeRails, updateSiteNav } from '@/lib/queries'
-import { brandTokensFrom, navFrom, railsFrom } from '@/lib/site'
+import { mergeModuleSelection } from '@/lib/moduleNames'
+import type { ModuleName } from '@/lib/moduleNames'
+import {
+  getRegistrySite,
+  updateSiteBrandTokens,
+  updateSiteEnabledModules,
+  updateSiteHomeRails,
+  updateSiteNav,
+} from '@/lib/queries'
+import { brandTokensFrom, modulesFrom, navFrom, railsFrom } from '@/lib/site'
 import type { HomeRail, NavItem, SiteConfig } from '@/lib/site'
 
 import { PLATFORM_ROOT, siteHref } from '../../paths'
@@ -151,4 +159,53 @@ export async function saveHomeRails(slug: string, rails: HomeRail[]): Promise<Pl
   revalidatePath(siteHref(slug))
   revalidatePath(PLATFORM_ROOT)
   return { ok: true, message: `Saved the rail order (${validated.length} item(s)) for ${site.name}.` }
+}
+
+/**
+ * `enabled_modules` (P0.3) — the toggle screen for the flags `lib/modules.ts`'s
+ * `moduleEnabled()`/`requireModule()` read. Same shape as the three writes
+ * above: re-check `requireStaffAdmin()`, re-validate through the reader's own
+ * predicate (`modulesFrom`, `lib/site.ts`) rather than trusting the checkbox
+ * list the client sent, log the write, revalidate both this page and the
+ * index.
+ *
+ * Entries that are not P0.3 module names (`feed`, `search`, `events`) are
+ * preserved as-is — see `mergeModuleSelection` (`lib/moduleNames.ts`).
+ *
+ * No "refuse empty" rule, like `saveBrand` and unlike `saveNav` — turning
+ * every module off is a real, intentional state (every new reader surface
+ * ships dark until a console toggle turns it on), not a broken one.
+ */
+export async function saveModules(slug: string, modules: ModuleName[]): Promise<PlatformActionResult> {
+  const actor = await requireStaffAdmin()
+
+  const site = await getRegistrySite(slug)
+  if (!site) return { ok: false, message: 'That site no longer exists.' }
+
+  // The real gate — `getSiteConfig()` runs the column through this exact
+  // function, so nothing can be written here that a reader would then
+  // silently drop on the next request.
+  const validated = modulesFrom(modules)
+
+  // The column is shared with entries this screen does not own
+  // (`{feed,search,events}`, the Python side's vocabulary) — replace only
+  // the P0.3 part of it, never the whole array.
+  const next = mergeModuleSelection(site.enabled_modules, validated)
+
+  await updateSiteEnabledModules(slug, next)
+  console.info(
+    '[platform] %s set enabled_modules for %s: [%s]',
+    actor.email,
+    slug,
+    next.join(', '),
+  )
+  revalidatePath(siteHref(slug))
+  revalidatePath(PLATFORM_ROOT)
+  return {
+    ok: true,
+    message:
+      validated.length === 0
+        ? `Cleared every module flag for ${site.name} — every new reader surface stays off.`
+        : `Saved ${validated.length} module(s) for ${site.name}: ${validated.join(', ')}. Live within 30 seconds.`,
+  }
 }

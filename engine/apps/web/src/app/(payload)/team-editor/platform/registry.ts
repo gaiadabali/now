@@ -1,4 +1,6 @@
-import { brandTokensFrom, navFrom, railsFrom } from '@/lib/site'
+import { MODULE_LIST } from '@/lib/moduleNames'
+import type { ModuleName } from '@/lib/moduleNames'
+import { brandTokensFrom, modulesFrom, navFrom, railsFrom } from '@/lib/site'
 import type { HomeRail, NavItem, SiteConfig } from '@/lib/site'
 
 /**
@@ -68,4 +70,19 @@ export function jsonColumnGoverned(raw: unknown): boolean {
   if (raw === null || raw === undefined) return false
   if (typeof raw !== 'object') return false
   return Array.isArray(raw) ? raw.length > 0 : Object.keys(raw).length > 0
+}
+
+/**
+ * `enabled_modules` (P0.3) — no governed/ungoverned distinction to report,
+ * unlike the jsonb columns above: it is a plain `text[]` with one meaning,
+ * "exactly these modules are on", so the index and detail screens just need
+ * which of `MODULE_LIST` are set. `modulesFrom` is the same filter
+ * `getSiteConfig()` runs the column through, so an unrecognised entry (a
+ * stale name, a manual `UPDATE` typo) is silently excluded here too, rather
+ * than this screen showing a flag the reader would never actually honour.
+ */
+export type ModulesReport = { enabled: ModuleName[]; all: ModuleName[] }
+
+export function modulesReport(raw: unknown): ModulesReport {
+  return { enabled: modulesFrom(raw), all: MODULE_LIST }
 }
