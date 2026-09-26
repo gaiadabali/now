@@ -51,15 +51,33 @@ import { sql } from '@payloadcms/db-postgres'
  * ## Every other new column is nullable, by design, not oversight
  *
  * `merged_into`, `quality_score`, `business_status`, `external_types`,
- * `geo_source`, `geo_confidence`, `hours_source`, `hours_checked_at` are
- * all populated by a pipeline stage (P1.2-P1.5) that has not run yet on
- * this archive — a `NOT NULL` on any of them would either need a
- * meaningless backfill value (a `geo_confidence` of `0` is not "unknown",
- * it is a false claim of certainty) or block this migration on work that
- * belongs to Phase 1, not Phase 0. `region_ok` is the one exception:
- * `NOT NULL DEFAULT false` because the field itself is a computed boolean
- * with a stated meaning for its absence ("false = mention-only") that a
- * NULL would blur into a third, undocumented state.
+ * `geo_source`, `geo_confidence`, `region_ok`, `hours_source`,
+ * `hours_checked_at` are all populated by a pipeline stage (P1.2-P1.5)
+ * that has not run yet on this archive — a `NOT NULL` on any of them
+ * would either need a meaningless backfill value (a `geo_confidence` of
+ * `0` is not "unknown", it is a false claim of certainty) or block this
+ * migration on work that belongs to Phase 1, not Phase 0.
+ *
+ * `region_ok` was briefly the one deliberate exception (`NOT NULL DEFAULT
+ * false`) on the reasoning that a computed boolean's absence should not
+ * blur into a third, undocumented state — caught in review as
+ * inconsistent with its own field instead: `Places.ts`'s `regionOk` is
+ * not `required: true`, and Payload's mirrored version-table column,
+ * `_places_v.version_region_ok`, was correctly generated nullable (a
+ * required field's `NOT NULL` propagates to the version table too — see
+ * `Editions.ts`'s docstring for where that was checked directly against a
+ * live `_places_v`), so the live table's `NOT NULL` was the one column in
+ * this migration that did not match what the collection config actually
+ * declares — the exact "migration and config must land together, and
+ * must agree" rule this file's own top comment states. Fixed to
+ * nullable, `DEFAULT false` kept for the same reason every other
+ * `DEFAULT` in this migration is kept alongside a dropped/absent
+ * `NOT NULL`: existing and newly-inserted rows that omit the column still
+ * get `false` from the column default (a `DEFAULT` fires whenever a
+ * column is left out of an `INSERT`, regardless of nullability) — only an
+ * explicit `NULL` write, which nothing in this migration performs, would
+ * ever produce one. Nullable only widens what CAN be stored; it changes
+ * nothing about what actually gets stored today.
  *
  * ## `merged_into` is a self-relation, `ON DELETE SET NULL`
  *
@@ -89,7 +107,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       ADD COLUMN "external_types" jsonb,
       ADD COLUMN "geo_source" "public"."enum_places_geo_source",
       ADD COLUMN "geo_confidence" numeric,
-      ADD COLUMN "region_ok" boolean DEFAULT false NOT NULL,
+      ADD COLUMN "region_ok" boolean DEFAULT false,
       ADD COLUMN "hours_source" "public"."enum_places_hours_source",
       ADD COLUMN "hours_checked_at" timestamp(3) with time zone;
 

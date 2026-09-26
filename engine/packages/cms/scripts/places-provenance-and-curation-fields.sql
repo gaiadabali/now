@@ -39,7 +39,7 @@ ALTER TABLE "places"
   ADD COLUMN "external_types" jsonb,
   ADD COLUMN "geo_source" "public"."enum_places_geo_source",
   ADD COLUMN "geo_confidence" numeric,
-  ADD COLUMN "region_ok" boolean DEFAULT false NOT NULL,
+  ADD COLUMN "region_ok" boolean DEFAULT false,
   ADD COLUMN "hours_source" "public"."enum_places_hours_source",
   ADD COLUMN "hours_checked_at" timestamp(3) with time zone;
 
