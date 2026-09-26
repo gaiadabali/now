@@ -13,6 +13,7 @@ import * as migration_20260926_090000_places_junk_status_enum_value from './2026
 import * as migration_20260926_090100_places_provenance_and_curation_fields from './20260926_090100_places_provenance_and_curation_fields';
 import * as migration_20260926_100000_editions_collection from './20260926_100000_editions_collection';
 import * as migration_20260927_090000_places_aliases_and_reviewed_by from './20260927_090000_places_aliases_and_reviewed_by';
+import * as migration_20260927_090100_locked_documents_editions_rel from './20260927_090100_locked_documents_editions_rel';
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20260927_090000_places_aliases_and_reviewed_by.up,
     down: migration_20260927_090000_places_aliases_and_reviewed_by.down,
     name: '20260927_090000_places_aliases_and_reviewed_by',
+  },
+  {
+    up: migration_20260927_090100_locked_documents_editions_rel.up,
+    down: migration_20260927_090100_locked_documents_editions_rel.down,
+    name: '20260927_090100_locked_documents_editions_rel',
   },
 ];
