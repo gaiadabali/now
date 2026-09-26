@@ -97,3 +97,90 @@ and those `remotePatterns` entries are deleted — that is the whole change.
 Article and index pages ship **zero page-level client JS**. `'use client'` is
 allowed only for the nav drawer, facet panel, search box and map. Check with
 `npm run build` and read the per-route Size column; it is currently 181 B.
+
+## Site config & module flags (P0.3)
+
+`getSiteConfig()` (`lib/site.ts`) is the one place this app reads a city's
+identity — see its own doc comment for the registry/file merge. `enabled_modules`
+(`engine.sites.enabled_modules text[]`, already shipped in Phase 0 and wired
+through `now_config.SiteConfig.has_module()` on the Python side) is one field
+on that same object: `SiteConfig.enabledModules`, a `ModuleName[]`.
+
+**The vocabulary.** `lib/moduleNames.ts` is the one file that spells a module
+name as a string — `MODULE_LIST`: `itineraries`, `reading`, `print`, `offers`,
+`newsletter`, `partner_portal`. A route, action or panel that inlines one of
+these as a literal instead of importing `MODULES.print` (etc.) from
+`lib/modules.ts` is the one way this drifts from the platform admin toggle
+screen, which reads the exact same list.
+
+**The gates** (`lib/modules.ts`):
+
+```ts
+moduleEnabled(site: Pick<SiteConfig, 'enabledModules'>, module: ModuleName): boolean
+
+// Server components / route handlers — 404s via notFound(), exactly like
+// accountsEnabled() + notFound() in every (site)/account route (F141).
+requireModule(module: ModuleName): Promise<void>
+
+// Server actions — returns { ok: false, message } instead of throwing,
+// matching PlatformActionResult and every other reader action's shape.
+// Returns null (proceed) when the module is on.
+requireModuleForAction(module: ModuleName): Promise<{ ok: false; message: string } | null>
+```
+
+A gated page:
+
+```ts
+export default async function ItineraryPage() {
+  await requireModule(MODULES.itineraries)
+  // ...
+}
+```
+
+A gated server action:
+
+```ts
+export async function saveItineraryDay(...): Promise<PlatformActionResult> {
+  const gate = await requireModuleForAction(MODULES.itineraries)
+  if (gate) return gate
+  // ...
+}
+```
+
+A dashboard panel that should hide, not 404, when its module is off (an
+account page has no 404 to fall back to for one panel among several) reads
+`moduleEnabled()` directly — see `(site)/account/page.tsx`'s "Continue
+reading" (`reading`) and "This month's edition" (`print`) panels.
+
+**The toggle.** `/team-editor/platform/sites/[slug]` has a Modules section —
+one checkbox per `MODULE_LIST` entry, written by `saveModules()`
+(`team-editor/platform/sites/[slug]/actions.ts`) through
+`updateSiteEnabledModules()` (`lib/queries.ts`). A save replaces only the
+P0.3 part of the array (`mergeModuleSelection()`, `lib/moduleNames.ts`) —
+the `feed`/`search`/`events` entries the Python side already uses are kept.
+Logged the same way every
+other platform-admin write is (`console.info('[platform] %s set
+enabled_modules for %s: [...]', ...)`). Live within `getSiteConfig()`'s
+existing registry TTL (`SITE_CONFIG_TTL_MS`, 30s default) — no deploy.
+
+**Local defaults are OFF, on both cities.** `engine.sites.enabled_modules` is
+`{feed,search,events}` for `bali` and `jakarta` in this checkout's seed — none
+of the six P0.3 modules. To exercise one locally without touching the
+platform admin UI:
+
+```sql
+UPDATE engine.sites
+   SET enabled_modules = enabled_modules || '{print}'
+ WHERE slug = 'bali';
+```
+
+and to turn it back off afterwards:
+
+```sql
+UPDATE engine.sites
+   SET enabled_modules = array_remove(enabled_modules, 'print')
+ WHERE slug = 'bali';
+```
+
+Never leave a local `now-postgres` row toggled after testing — restore it to
+what it was.

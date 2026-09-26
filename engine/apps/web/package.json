@@ -18,7 +18,8 @@
     "predev": "node scripts/sync-beacon.mjs",
     "lint:account-gate": "node scripts/lint-account-gate.mjs",
     "verify:site-config": "node --conditions react-server --experimental-strip-types scripts/verify-site-config.mjs",
-    "verify:competitor-policy": "node --conditions react-server --experimental-strip-types scripts/verify-competitor-policy.mjs"
+    "verify:competitor-policy": "node --conditions react-server --experimental-strip-types scripts/verify-competitor-policy.mjs",
+    "verify:module-flags": "node --conditions react-server --experimental-strip-types scripts/verify-module-flags.mjs"
   },
   "dependencies": {
     "next": "15.4.11",

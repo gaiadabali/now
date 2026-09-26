@@ -7,8 +7,8 @@ import { loadSiteConfigFile } from '@/lib/site'
 import type { SiteConfig } from '@/lib/site'
 
 import { PLATFORM_ROOT } from '../../paths'
-import { brandReport, navReport, railsReport } from '../../registry'
-import { BrandForm, NavForm, RailsForm } from './SiteEditor'
+import { brandReport, modulesReport, navReport, railsReport } from '../../registry'
+import { BrandForm, ModulesForm, NavForm, RailsForm } from './SiteEditor'
 
 /**
  * `/team-editor/platform/sites/[slug]` — edit one site's governed config.
@@ -41,6 +41,7 @@ export async function SiteDetailView({ slug }: { slug: string }) {
   const nav = navReport(site.nav)
   const brand = brandReport(site.brand_tokens)
   const rails = railsReport(site.home_rails)
+  const modules = modulesReport(site.enabled_modules)
 
   return (
     <>
@@ -105,6 +106,14 @@ export async function SiteDetailView({ slug }: { slug: string }) {
         hasFileField={false}
       />
       <RailsForm slug={site.slug} siteName={site.name} initial={rails.effective ?? []} />
+
+      <h2>Modules (P0.3)</h2>
+      <p className="platform__sub">
+        Registry-only, like the rail order — there is no config-file equivalent. Every module a
+        reader route or dashboard panel gates on (<code>lib/modules.ts</code>&rsquo;s{' '}
+        <code>moduleEnabled()</code>) is listed here; nothing is enabled that is not one of these.
+      </p>
+      <ModulesForm slug={site.slug} siteName={site.name} all={modules.all} initial={modules.enabled} />
     </>
   )
 }

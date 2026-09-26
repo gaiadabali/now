@@ -33,6 +33,8 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 import { platformConnectionString, query } from '@/lib/db'
+import { isModuleName } from '@/lib/moduleNames'
+import type { ModuleName } from '@/lib/moduleNames'
 
 export type NavItem = { label: string; href: string }
 export type FooterColumn = { head: string; links: NavItem[] }
@@ -107,6 +109,15 @@ export type SiteConfig = {
    * homepage uses its own built-in order, which is what it does today.
    */
   homeRails?: HomeRail[]
+  /**
+   * `engine.sites.enabled_modules` (P0.3) — registry-only, like `homeRails`:
+   * there is no config-file column for it, so an unreachable/rowless site
+   * gets `[]` rather than a guess. `lib/modules.ts`'s `moduleEnabled()` /
+   * `requireModule()` are the only things meant to read this; a page or
+   * action that inlines `site.enabledModules.includes('print')` instead of
+   * calling `moduleEnabled()` is the one way the two drift.
+   */
+  enabledModules: ModuleName[]
 }
 
 /**
@@ -192,6 +203,7 @@ type RegistryRow = {
   nav: unknown
   brand_tokens: unknown
   home_rails: unknown
+  enabled_modules: string[] | null
 }
 
 /**
@@ -278,6 +290,23 @@ export function railsFrom(value: unknown): HomeRail[] | null {
   return rails.length === value.length ? rails : null
 }
 
+/**
+ * `engine.sites.enabled_modules` — a plain `text[]`, not a jsonb shape, so
+ * there is no "rejected on read" outcome the way `navFrom`/`railsFrom` have:
+ * anything that is not a known module name (`lib/modules.ts`'s `MODULE_LIST`)
+ * is silently dropped rather than voiding the whole column, and a `null`
+ * column (a row from before this migration touched it, or one the console
+ * never wrote) reads as "nothing enabled" — the same value an explicit `{}`
+ * would produce. **Exported** for the same reason as `navFrom`: the platform
+ * admin toggle screen filters a submission through this exact function
+ * before writing, so a module name it does not recognise cannot silently
+ * land in the column.
+ */
+export function modulesFrom(value: unknown): ModuleName[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((v): v is ModuleName => isModuleName(v))
+}
+
 /** A non-empty string wins over the file; anything else does not. */
 const scalar = (v: string | null | undefined, fallback: string): string =>
   typeof v === 'string' && v.trim() !== '' ? v : fallback
@@ -285,7 +314,7 @@ const scalar = (v: string | null | undefined, fallback: string): string =>
 async function loadRegistry(slug: string): Promise<RegistryRow | null> {
   if (!platformConnectionString()) return null
   const rows = await query<RegistryRow>(
-    `SELECT name, hostname, locale, timezone, currency, nav, brand_tokens, home_rails
+    `SELECT name, hostname, locale, timezone, currency, nav, brand_tokens, home_rails, enabled_modules
        FROM engine.sites
       WHERE slug = $1 AND status <> 'disabled'
       LIMIT 1`,
@@ -310,6 +339,15 @@ const REGISTRY_ONLY_DEFAULTS = {
   tagline: '',
   footer: [] as FooterColumn[],
 }
+
+/**
+ * The baked file predates `enabled_modules` and has no field for it —
+ * exactly like `homeRails`. A site read from the file alone (registry
+ * unreachable, or a config-file-only fixture such as `test/`) gets every
+ * module off, which is the same "ship dark" default an untouched registry
+ * row gives, not a special case.
+ */
+const NO_MODULES: ModuleName[] = []
 
 /**
  * The registry over the file.
@@ -381,6 +419,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       // an absent value means "the homepage decides", which is what it does
       // today. S6.3 is what starts reading this.
       homeRails: railsFrom(row.home_rails) ?? undefined,
+      enabledModules: modulesFrom(row.enabled_modules),
     }
   } else if (row) {
     // Registry only. `brandFrom` needs a fallback for `logo`, and there is no
@@ -399,9 +438,10 @@ export async function getSiteConfig(): Promise<SiteConfig> {
       brand: brandFrom(row.brand_tokens, { logo: '', logoAlt: scalar(row.name, slug) }),
       nav: navFrom(row.nav) ?? [],
       homeRails: railsFrom(row.home_rails) ?? undefined,
+      enabledModules: modulesFrom(row.enabled_modules),
     }
   } else {
-    value = file as SiteConfig
+    value = { ...(file as SiteConfig), enabledModules: NO_MODULES }
   }
 
   cached = { at: now, value }

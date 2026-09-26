@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useTransition } from 'react'
 
+import { MODULE_LABELS } from '@/lib/moduleNames'
+import type { ModuleName } from '@/lib/moduleNames'
 import type { HomeRail, NavItem, SiteConfig } from '@/lib/site'
 
-import { saveBrand, saveHomeRails, saveNav } from './actions'
+import { saveBrand, saveHomeRails, saveModules, saveNav } from './actions'
 import type { PlatformActionResult } from './actions'
 
 /**
@@ -209,6 +211,87 @@ export function BrandForm({
         <div className="platform__row-actions">
           <button className="platform__btn platform__btn--primary" disabled={pending} type="submit">
             {pending ? 'Saving…' : `Save marks for ${siteName}`}
+          </button>
+        </div>
+      </form>
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------- modules */
+
+/**
+ * `enabled_modules` (P0.3) toggles — one checkbox per known module, in the
+ * fixed order `MODULE_LIST` gives (`lib/moduleNames.ts`), so the screen never
+ * shows a flag `getSiteConfig()`/`moduleEnabled()` would not also recognise.
+ * Saving always writes the whole set (checked = in the array), the same
+ * "replace, don't merge" rule `saveModules` and `updateSiteEnabledModules`
+ * (`lib/queries.ts`) follow — there is no per-module save button, unlike nav
+ * or rails, because there is nothing per-item to reorder or validate.
+ */
+export function ModulesForm({
+  slug,
+  siteName,
+  all,
+  initial,
+}: {
+  slug: string
+  siteName: string
+  all: ModuleName[]
+  initial: ModuleName[]
+}) {
+  const [checked, setChecked] = useState<Set<ModuleName>>(new Set(initial))
+  const [notice, setNotice] = useState<PlatformActionResult | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  function toggle(module: ModuleName) {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(module)) next.delete(module)
+      else next.add(module)
+      return next
+    })
+  }
+
+  function onSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    startTransition(async () => {
+      try {
+        setNotice(await saveModules(slug, Array.from(checked)))
+      } catch {
+        setNotice({ ok: false, message: 'That did not reach the server. Try again.' })
+      }
+    })
+  }
+
+  return (
+    <section>
+      <p className="platform__sub">
+        Every new reader surface (itineraries, reading state, print, offers, the newsletter, the
+        partner portal) ships behind one of these flags and stays off until toggled on here — an
+        unchecked module 404s its routes and hides its dashboard panels, the same way a route that
+        was never built would.
+      </p>
+      <Notice result={notice} onDismiss={() => setNotice(null)} />
+      <form className="platform__form" onSubmit={onSubmit}>
+        <ul className="platform__nav-list">
+          {all.map((module) => (
+            <li className="platform__nav-item" key={module}>
+              <label>
+                <input
+                  checked={checked.has(module)}
+                  onChange={() => toggle(module)}
+                  type="checkbox"
+                />
+                {' '}
+                {MODULE_LABELS[module]} <code>({module})</code>
+              </label>
+            </li>
+          ))}
+        </ul>
+        <div className="platform__row-actions">
+          <button className="platform__btn platform__btn--primary" disabled={pending} type="submit">
+            {pending ? 'Saving…' : `Save modules for ${siteName}`}
           </button>
         </div>
       </form>

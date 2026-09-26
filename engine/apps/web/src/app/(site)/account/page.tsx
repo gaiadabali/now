@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 
 import { AccountShell, EmptyState, Panel, StatusBanner, type StatusMessage } from '@/components/account'
 import { StoryCard } from '@/components/StoryCard'
+import { MODULES, moduleEnabled } from '@/lib/modules'
 import { currentReader, accountsEnabled } from '@/lib/reader'
 import { signOut } from '@/lib/readerActions'
 import { toggleSaved } from '@/lib/savedActions'
@@ -211,12 +212,18 @@ export default async function AccountPage({
               )}
             </Panel>
 
-            <Panel title="Continue reading">
-              <EmptyState
-                lede="Nothing picked up yet."
-                hint="Stories you read while signed in appear here."
-              />
-            </Panel>
+            {/* P0.3: gated on `reading` — P2.6 is what actually populates this
+                panel. Until that module is on, no site should invite a
+                reader to a feature that does not exist yet (the same
+                dishonesty the removed itineraries panel below was cut for). */}
+            {moduleEnabled(site, MODULES.reading) ? (
+              <Panel title="Continue reading">
+                <EmptyState
+                  lede="Nothing picked up yet."
+                  hint="Stories you read while signed in appear here."
+                />
+              </Panel>
+            ) : null}
 
             {/* Real now: `getSavedArticles` reads `engine.saved_items`
                 (lib/savedItems.ts), which the article page's Save toggle
@@ -269,16 +276,24 @@ export default async function AccountPage({
         </div>
 
         <aside className="acct-aside">
-          <Panel title="Membership">
-            <EmptyState lede="Membership is not open yet." hint="We will tell you here first." />
-          </Panel>
+          {/* Membership panel retired per §11a.2 — the owner's answer is that
+              there is no membership product distinct from the print
+              subscription and the newsletter, so a placeholder inviting a
+              reader to "membership" would be advertising something that
+              will never exist under that name. Its two replacements
+              (Newsletter, Your print subscription) are P0.3's job to gate,
+              not to build — they arrive with P4/P5 behind the `newsletter`/
+              `print` flags below. */}
 
-          <Panel title="This month's edition">
-            <EmptyState
-              lede="The edition is not live yet."
-              hint="It will appear here the day it is."
-            />
-          </Panel>
+          {/* P0.3: gated on `print` — P5.1 is what actually builds this. */}
+          {moduleEnabled(site, MODULES.print) ? (
+            <Panel title="This month's edition">
+              <EmptyState
+                lede="The edition is not live yet."
+                hint="It will appear here the day it is."
+              />
+            </Panel>
+          ) : null}
 
           <Panel title="Account">
             <dl className="acct-dl">

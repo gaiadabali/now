@@ -156,6 +156,13 @@ jobs:
         working-directory: engine/apps/web
         run: npm run verify:site-config
 
+      # P0.3: moduleEnabled / requireModule (notFound) / requireModuleForAction
+      # agree with modulesFrom, the filter getSiteConfig() reads the column with.
+      # No database needed — the gates take a fixed enabledModules override.
+      - name: Verify — module flag gates
+        working-directory: engine/apps/web
+        run: npm run verify:module-flags
+
   build:
     name: build
     runs-on: ubuntu-latest
