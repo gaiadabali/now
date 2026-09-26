@@ -141,9 +141,97 @@ export function buildPlacesCollection(vocabulary: VocabularyMap): CollectionConf
         type: 'select',
         required: true,
         defaultValue: 'active',
-        options: ['active', 'closed', 'pending_review'],
+        // 'junk' — ITINERARY-AND-READER-PRODUCTS-PLAN.md §9.2. A fourth
+        // outcome, not a flag on 'closed': a junk row is a fragment the
+        // extractor produced ("at Sunset Beach", a possessive, an award
+        // title), never a real venue, never rendered and never a
+        // candidate anywhere, but its `place_mentions` are kept as
+        // evidence of what the extractor did. See migration
+        // `20260926_090000_places_junk_status_enum_value.ts` for why the
+        // enum label is added in its own migration, separate from the one
+        // that adds these fields.
+        options: ['active', 'closed', 'pending_review', 'junk'],
       },
       { name: 'verifiedAt', type: 'date' },
+      // --- §9.2 provenance, geocoding and curation fields -----------------
+      // Payload selects every declared column (README.md, this file's own
+      // top comment), so this block and
+      // `20260926_090100_places_provenance_and_curation_fields.ts` must ship
+      // together — landing one without the other is a 500 on every place
+      // read, not a missing feature.
+      {
+        name: 'source',
+        type: 'select',
+        required: true,
+        admin: { description: 'Who created this row. Read-only in practice; set by the pipeline, not an editor.' },
+        options: ['extracted', 'legacy_venue', 'editor', 'partner'],
+      },
+      {
+        name: 'mergedInto',
+        label: 'Merged into',
+        type: 'relationship',
+        relationTo: 'places',
+        admin: {
+          description:
+            'Set when this row is a duplicate: points at the surviving place. A merged row is hidden ' +
+            'everywhere (place page, candidates, rails) regardless of `status`.',
+        },
+      },
+      {
+        name: 'qualityScore',
+        label: 'Quality score',
+        type: 'number',
+        admin: { readOnly: true, description: 'Computed nightly from evidence, completeness and freshness. Not editable.' },
+      },
+      {
+        name: 'businessStatus',
+        label: 'Business status',
+        type: 'select',
+        options: ['operational', 'temporarily_closed', 'permanently_closed', 'unknown'],
+        admin: {
+          description:
+            'From the open gazetteers (FSQ/Overture) or an editor’s own confirmation — ' +
+            'ARCHITECTURE.md/§9.4: never written from Google’s live business-status field.',
+        },
+      },
+      {
+        name: 'externalTypes',
+        label: 'External types',
+        type: 'json',
+        admin: { description: 'The category list from the open gazetteers (FSQ/Overture) — typing evidence, not the type of record.' },
+      },
+      {
+        name: 'geoSource',
+        label: 'Geo source',
+        type: 'select',
+        options: ['fsq', 'overture', 'osm', 'mappress', 'editor', 'partner'],
+        admin: {
+          description:
+            'The licence of THIS row’s coordinates — §9.4: OSM is ODbL (attribution required), ' +
+            'FSQ/Overture carry their own notices. Set by the resolver, never blank on a geocoded row.',
+        },
+      },
+      { name: 'geoConfidence', label: 'Geo confidence', type: 'number' },
+      {
+        name: 'regionOk',
+        label: 'In region',
+        type: 'checkbox',
+        defaultValue: false,
+        admin: {
+          description:
+            'Computed: do this row’s coordinates fall inside the site’s own region? false = ' +
+            'mention-only — a venue from a neighbouring city, kept because a story here mentions ' +
+            'it, but never a candidate for this site.',
+        },
+      },
+      {
+        name: 'hoursSource',
+        label: 'Hours source',
+        type: 'select',
+        options: ['editor', 'partner'],
+        admin: { description: 'Never `google` — §9.4 forbids storing Google’s hours. Editor-entered or partner-maintained only.' },
+      },
+      { name: 'hoursCheckedAt', label: 'Hours checked', type: 'date' },
       {
         name: 'legacyWpId',
         label: 'Legacy WP ID',

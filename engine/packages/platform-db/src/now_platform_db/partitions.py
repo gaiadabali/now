@@ -1,14 +1,21 @@
-"""Daily range-partition management for `engine.ad_events`.
+"""Daily range-partition management for `engine`'s partitioned tables.
 
 Mirrors `now_db.partitions` (city DB `interactions`/`impressions`) exactly —
 same function shapes, same naming convention (`<table>_pYYYY_MM_DD`) — so an
 operator only has to learn one mental model for both packages. See that
-module's docstring for the full rationale; this file only lists the one
-partitioned table platform-side.
+module's docstring for the full rationale.
 
 Deliberately duplicated rather than shared: this package and `now-db` target
 different databases and have no other reason to depend on each other. ~40
 lines of duplication is cheaper than a third shared package for one function.
+
+`offer_events` (migration 0012, ITINERARY-AND-READER-PRODUCTS-PLAN.md §7.2)
+joined `ad_events` here the day it was created — same reasoning `ad_events`
+had at baseline: a high write volume, append-only funnel table partitioned
+by `ts`, needing the same daily-partition creation and retention-drop
+lifecycle. `schema_hash._PARTITION_RE` is widened in the same commit so the
+drift gate keeps treating both tables' daily children as expected, wall-clock
+churn rather than an unexpected new table.
 """
 
 from __future__ import annotations
@@ -18,7 +25,7 @@ import datetime as dt
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-PARTITIONED_TABLES: tuple[str, ...] = ("ad_events",)
+PARTITIONED_TABLES: tuple[str, ...] = ("ad_events", "offer_events")
 
 
 def _partition_name(table: str, day: dt.date) -> str:

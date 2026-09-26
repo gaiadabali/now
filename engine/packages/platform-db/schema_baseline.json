@@ -1,5 +1,5 @@
 {
-  "hash": "66a6c5b22efe672f4d000c5ab33b6a53620a4525b8beccd4505df4d96d2abf3c",
+  "hash": "35711b456391147b85ab5d9a3dfc5d3d4019372ae857beab5c3a11dddd14b649",
   "structure": {
     "schema": "engine",
     "tables": {
@@ -251,6 +251,155 @@
             "def": "CREATE INDEX ix_campaigns_site ON engine.campaigns USING btree (site_id)",
             "method": "btree",
             "name": "ix_campaigns_site"
+          }
+        ],
+        "partitioned": false
+      },
+      "destinations": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['place'::text, 'article'::text, 'event'::text, 'offer'::text])))",
+            "name": "destinations_kind_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "area_term",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "entity_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "note",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "offer_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "place_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "destinations_identity_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "destinations_offer_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "destinations_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "destinations_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "identity_id",
+              "site_id",
+              "kind",
+              "entity_id"
+            ],
+            "name": "uq_destinations_identity_entity",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX destinations_pkey ON engine.destinations USING btree (id)",
+            "method": "btree",
+            "name": "destinations_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_destinations_identity_site ON engine.destinations USING btree (identity_id, site_id, created_at DESC)",
+            "method": "btree",
+            "name": "ix_destinations_identity_site"
+          },
+          {
+            "def": "CREATE INDEX ix_destinations_place ON engine.destinations USING btree (site_id, place_id) WHERE (place_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_destinations_place"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_destinations_identity_entity ON engine.destinations USING btree (identity_id, site_id, kind, entity_id)",
+            "method": "btree",
+            "name": "uq_destinations_identity_entity"
           }
         ],
         "partitioned": false
@@ -572,7 +721,24 @@
         "partitioned": false
       },
       "itineraries": {
-        "checks": [],
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['reader'::text, 'curated'::text])))",
+            "name": "itineraries_kind_check"
+          },
+          {
+            "clause": "CHECK ((mode = ANY (ARRAY['loose'::text, 'planned'::text])))",
+            "name": "itineraries_mode_check"
+          },
+          {
+            "clause": "CHECK (((plan_status IS NULL) OR (plan_status = ANY (ARRAY['solved'::text, 'edited'::text, 'stale'::text, 'infeasible'::text]))))",
+            "name": "itineraries_plan_status_check"
+          },
+          {
+            "clause": "CHECK ((visibility = ANY (ARRAY['private'::text, 'link'::text, 'public'::text])))",
+            "name": "itineraries_visibility_check"
+          }
+        ],
         "columns": [
           {
             "default": "now()",
@@ -582,11 +748,46 @@
             "udt": "timestamptz"
           },
           {
+            "default": null,
+            "name": "end_date",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
+            "name": "forked_from_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
             "default": "gen_random_uuid()",
             "name": "id",
             "nullable": "NO",
             "type": "uuid",
             "udt": "uuid"
+          },
+          {
+            "default": "'reader'::text",
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{}'::text[]",
+            "name": "labels",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": "'loose'::text",
+            "name": "mode",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": "'{}'::jsonb",
@@ -596,11 +797,32 @@
             "udt": "jsonb"
           },
           {
+            "default": null,
+            "name": "plan_report",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "plan_status",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
             "default": "'{}'::jsonb",
             "name": "prefs",
             "nullable": "NO",
             "type": "jsonb",
             "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "published_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
           },
           {
             "default": null,
@@ -612,9 +834,16 @@
           {
             "default": null,
             "name": "site_id",
-            "nullable": "NO",
+            "nullable": "YES",
             "type": "uuid",
             "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "slug",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": null,
@@ -643,9 +872,25 @@
             "nullable": "YES",
             "type": "uuid",
             "udt": "uuid"
+          },
+          {
+            "default": "'private'::text",
+            "name": "visibility",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
           }
         ],
         "constraints": [
+          {
+            "columns": [
+              "forked_from_id"
+            ],
+            "name": "itineraries_forked_from_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
           {
             "columns": [
               "site_id"
@@ -686,6 +931,11 @@
             "name": "itineraries_pkey"
           },
           {
+            "def": "CREATE INDEX ix_itineraries_forked_from ON engine.itineraries USING btree (forked_from_id) WHERE (forked_from_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_itineraries_forked_from"
+          },
+          {
             "def": "CREATE INDEX ix_itineraries_site ON engine.itineraries USING btree (site_id)",
             "method": "btree",
             "name": "ix_itineraries_site"
@@ -694,6 +944,11 @@
             "def": "CREATE INDEX ix_itineraries_user ON engine.itineraries USING btree (user_id)",
             "method": "btree",
             "name": "ix_itineraries_user"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_itineraries_curated_slug ON engine.itineraries USING btree (site_id, slug) WHERE ((kind = 'curated'::text) AND (slug IS NOT NULL))",
+            "method": "btree",
+            "name": "uq_itineraries_curated_slug"
           },
           {
             "def": "CREATE UNIQUE INDEX uq_itineraries_share_token ON engine.itineraries USING btree (share_token)",
@@ -715,6 +970,13 @@
           },
           {
             "default": null,
+            "name": "date",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
             "name": "day_index",
             "nullable": "NO",
             "type": "integer",
@@ -731,6 +993,27 @@
             "default": null,
             "name": "itinerary_id",
             "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "stay_place_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "stay_site_id",
+            "nullable": "YES",
             "type": "uuid",
             "udt": "uuid"
           }
@@ -751,6 +1034,24 @@
             ],
             "name": "itinerary_days_itinerary_id_fkey",
             "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "itinerary_days_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "stay_site_id"
+            ],
+            "name": "itinerary_days_stay_site_id_fkey",
+            "on_delete": "NO ACTION",
             "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
@@ -784,6 +1085,99 @@
         ],
         "partitioned": false
       },
+      "itinerary_items": {
+        "checks": [],
+        "columns": [
+          {
+            "default": "now()",
+            "name": "added_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "destination_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "itinerary_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "note",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "true",
+            "name": "pinned",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": null,
+            "name": "position",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "destination_id"
+            ],
+            "name": "itinerary_items_destination_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "itinerary_id"
+            ],
+            "name": "itinerary_items_itinerary_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "itinerary_id",
+              "destination_id"
+            ],
+            "name": "itinerary_items_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE UNIQUE INDEX itinerary_items_pkey ON engine.itinerary_items USING btree (itinerary_id, destination_id)",
+            "method": "btree",
+            "name": "itinerary_items_pkey"
+          },
+          {
+            "def": "CREATE INDEX ix_itinerary_items_destination ON engine.itinerary_items USING btree (destination_id)",
+            "method": "btree",
+            "name": "ix_itinerary_items_destination"
+          },
+          {
+            "def": "CREATE INDEX ix_itinerary_items_itinerary_position ON engine.itinerary_items USING btree (itinerary_id, \"position\")",
+            "method": "btree",
+            "name": "ix_itinerary_items_itinerary_position"
+          }
+        ],
+        "partitioned": false
+      },
       "itinerary_stops": {
         "checks": [],
         "columns": [
@@ -803,10 +1197,24 @@
           },
           {
             "default": null,
+            "name": "destination_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
             "name": "duration_min",
             "nullable": "YES",
             "type": "integer",
             "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "end_time",
+            "nullable": "YES",
+            "type": "time without time zone",
+            "udt": "time"
           },
           {
             "default": "gen_random_uuid()",
@@ -824,6 +1232,13 @@
           },
           {
             "default": null,
+            "name": "offer_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
             "name": "place_id",
             "nullable": "NO",
             "type": "text",
@@ -835,6 +1250,13 @@
             "nullable": "NO",
             "type": "integer",
             "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
           },
           {
             "default": null,
@@ -856,6 +1278,13 @@
             "nullable": "YES",
             "type": "time without time zone",
             "udt": "time"
+          },
+          {
+            "default": null,
+            "name": "travel_min_from_previous",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
           }
         ],
         "constraints": [
@@ -874,6 +1303,33 @@
             ],
             "name": "itinerary_stops_day_id_fkey",
             "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "destination_id"
+            ],
+            "name": "itinerary_stops_destination_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "itinerary_stops_offer_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "itinerary_stops_site_id_fkey",
+            "on_delete": "NO ACTION",
             "on_update": "NO ACTION",
             "type": "FOREIGN KEY"
           },
@@ -900,6 +1356,11 @@
             "name": "itinerary_stops_pkey"
           },
           {
+            "def": "CREATE INDEX ix_itinerary_stops_destination ON engine.itinerary_stops USING btree (destination_id) WHERE (destination_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_itinerary_stops_destination"
+          },
+          {
             "def": "CREATE UNIQUE INDEX uq_itinerary_stops_seq ON engine.itinerary_stops USING btree (day_id, seq)",
             "method": "btree",
             "name": "uq_itinerary_stops_seq"
@@ -921,6 +1382,20 @@
             "nullable": "YES",
             "type": "timestamp with time zone",
             "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "consent_ip_hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "consent_user_agent",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
           },
           {
             "default": "now()",
@@ -952,6 +1427,41 @@
           },
           {
             "default": null,
+            "name": "identity_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "'{weekly}'::text[]",
+            "name": "lists",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_text"
+          },
+          {
+            "default": null,
+            "name": "manage_token_hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "promo_consent_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "promo_consent_source",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
             "name": "site_slug",
             "nullable": "NO",
             "type": "text",
@@ -975,6 +1485,15 @@
         "constraints": [
           {
             "columns": [
+              "identity_id"
+            ],
+            "name": "newsletter_subscribers_identity_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
               "id"
             ],
             "name": "newsletter_subscribers_pkey",
@@ -983,9 +1502,24 @@
         ],
         "indexes": [
           {
+            "def": "CREATE INDEX newsletter_subscribers_identity_ix ON engine.newsletter_subscribers USING btree (identity_id) WHERE (identity_id IS NOT NULL)",
+            "method": "btree",
+            "name": "newsletter_subscribers_identity_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX newsletter_subscribers_manage_token_uq ON engine.newsletter_subscribers USING btree (manage_token_hash) WHERE (manage_token_hash IS NOT NULL)",
+            "method": "btree",
+            "name": "newsletter_subscribers_manage_token_uq"
+          },
+          {
             "def": "CREATE UNIQUE INDEX newsletter_subscribers_pkey ON engine.newsletter_subscribers USING btree (id)",
             "method": "btree",
             "name": "newsletter_subscribers_pkey"
+          },
+          {
+            "def": "CREATE INDEX newsletter_subscribers_promo_consented_ix ON engine.newsletter_subscribers USING btree (site_slug) WHERE ((status = 'confirmed'::text) AND (promo_consent_at IS NOT NULL))",
+            "method": "btree",
+            "name": "newsletter_subscribers_promo_consented_ix"
           },
           {
             "def": "CREATE UNIQUE INDEX newsletter_subscribers_site_email_uq ON engine.newsletter_subscribers USING btree (site_slug, email_norm)",
@@ -996,6 +1530,589 @@
             "def": "CREATE INDEX newsletter_subscribers_site_status_ix ON engine.newsletter_subscribers USING btree (site_slug, status)",
             "method": "btree",
             "name": "newsletter_subscribers_site_status_ix"
+          }
+        ],
+        "partitioned": false
+      },
+      "offer_audit": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "actor_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "after",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "before",
+            "nullable": "YES",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "offer_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "offer_audit_offer_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "offer_audit_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_offer_audit_offer ON engine.offer_audit USING btree (offer_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_offer_audit_offer"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX offer_audit_pkey ON engine.offer_audit USING btree (id)",
+            "method": "btree",
+            "name": "offer_audit_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "offer_events": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['impression'::text, 'view'::text, 'claim'::text, 'redeem'::text, 'expire'::text, 'revoke'::text])))",
+            "name": "offer_events_kind_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "offer_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "session_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "surface",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "ts",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "offer_events_identity_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "offer_events_offer_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id",
+              "ts"
+            ],
+            "name": "offer_events_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_offer_events_offer ON ONLY engine.offer_events USING btree (offer_id, ts DESC)",
+            "method": "btree",
+            "name": "ix_offer_events_offer"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX offer_events_pkey ON ONLY engine.offer_events USING btree (id, ts)",
+            "method": "btree",
+            "name": "offer_events_pkey"
+          }
+        ],
+        "partitioned": true
+      },
+      "offer_places": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "name": "offer_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "place_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "offer_places_offer_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "offer_places_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "offer_id",
+              "site_id",
+              "place_id"
+            ],
+            "name": "offer_places_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_offer_places_place ON engine.offer_places USING btree (site_id, place_id)",
+            "method": "btree",
+            "name": "ix_offer_places_place"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX offer_places_pkey ON engine.offer_places USING btree (offer_id, site_id, place_id)",
+            "method": "btree",
+            "name": "offer_places_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "offers": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['percent_off'::text, 'amount_off'::text, 'freebie'::text, 'bundle'::text])))",
+            "name": "offers_kind_check"
+          },
+          {
+            "clause": "CHECK ((redemption_mode = ANY (ARRAY['shared_code'::text, 'reader_confirm'::text, 'unique_code'::text])))",
+            "name": "offers_redemption_mode_check"
+          },
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'live'::text, 'paused'::text, 'ended'::text, 'rejected'::text])))",
+            "name": "offers_status_check"
+          },
+          {
+            "clause": "CHECK ((valid_to > valid_from))",
+            "name": "offers_valid_window_ck"
+          },
+          {
+            "clause": "CHECK ((validity_kind = ANY (ARRAY['open'::text, 'fixed_date'::text])))",
+            "name": "offers_validity_kind_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "approved_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "approved_by",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "'{}'::date[]",
+            "name": "blackout_dates",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_date"
+          },
+          {
+            "default": null,
+            "name": "campaign_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "72",
+            "name": "claim_ttl_hours",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "created_by",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "daily_cap",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "fixed_date",
+            "nullable": "YES",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
+            "name": "hours_from",
+            "nullable": "YES",
+            "type": "time without time zone",
+            "udt": "time"
+          },
+          {
+            "default": null,
+            "name": "hours_to",
+            "nullable": "YES",
+            "type": "time without time zone",
+            "udt": "time"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "min_spend_idr",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "org_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "partnership_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "1",
+            "name": "per_reader_cap",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "redemption_mode",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "true",
+            "name": "requires_verified_email",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": null,
+            "name": "shared_code",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "'draft'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "summary",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "terms",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "title",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "total_cap",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "valid_from",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "valid_to",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'open'::text",
+            "name": "validity_kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "value_idr",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "value_pct",
+            "nullable": "YES",
+            "type": "numeric",
+            "udt": "numeric"
+          },
+          {
+            "default": null,
+            "name": "venue_pin_hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'{0,1,2,3,4,5,6}'::smallint[]",
+            "name": "weekdays",
+            "nullable": "NO",
+            "type": "ARRAY",
+            "udt": "_int2"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "campaign_id"
+            ],
+            "name": "offers_campaign_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "org_id"
+            ],
+            "name": "offers_org_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "partnership_id"
+            ],
+            "name": "offers_partnership_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "offers_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "offers_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_offers_live ON engine.offers USING btree (site_id, valid_from, valid_to) WHERE (status = 'live'::text)",
+            "method": "btree",
+            "name": "ix_offers_live"
+          },
+          {
+            "def": "CREATE INDEX ix_offers_org ON engine.offers USING btree (org_id) WHERE (org_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_offers_org"
+          },
+          {
+            "def": "CREATE INDEX ix_offers_partnership ON engine.offers USING btree (partnership_id)",
+            "method": "btree",
+            "name": "ix_offers_partnership"
+          },
+          {
+            "def": "CREATE INDEX ix_offers_site ON engine.offers USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_offers_site"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX offers_pkey ON engine.offers USING btree (id)",
+            "method": "btree",
+            "name": "offers_pkey"
           }
         ],
         "partitioned": false
@@ -1212,6 +2329,276 @@
             "def": "CREATE UNIQUE INDEX uq_orgs_slug ON engine.orgs USING btree (slug)",
             "method": "btree",
             "name": "uq_orgs_slug"
+          }
+        ],
+        "partitioned": false
+      },
+      "partner_user_tokens": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['invite'::text, 'verify_email'::text, 'reset_password'::text])))",
+            "name": "partner_user_tokens_kind_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "consumed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "expires_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "partner_user_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "token_hash",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "partner_user_id"
+            ],
+            "name": "partner_user_tokens_partner_user_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "partner_user_tokens_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX partner_user_tokens_expiry_ix ON engine.partner_user_tokens USING btree (expires_at) WHERE (consumed_at IS NULL)",
+            "method": "btree",
+            "name": "partner_user_tokens_expiry_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX partner_user_tokens_hash_uq ON engine.partner_user_tokens USING btree (token_hash)",
+            "method": "btree",
+            "name": "partner_user_tokens_hash_uq"
+          },
+          {
+            "def": "CREATE INDEX partner_user_tokens_partner_user_kind_ix ON engine.partner_user_tokens USING btree (partner_user_id, kind)",
+            "method": "btree",
+            "name": "partner_user_tokens_partner_user_kind_ix"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX partner_user_tokens_pkey ON engine.partner_user_tokens USING btree (id)",
+            "method": "btree",
+            "name": "partner_user_tokens_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "partner_users": {
+        "checks": [
+          {
+            "clause": "CHECK ((role = ANY (ARRAY['partner_user'::text, 'partner_admin'::text])))",
+            "name": "partner_users_role_check"
+          },
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['invited'::text, 'active'::text, 'suspended'::text, 'deleted'::text])))",
+            "name": "partner_users_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "email",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_verified_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "invited_by",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "last_login_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "lock_until",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "0",
+            "name": "login_attempts",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "name",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "org_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "'partner_user'::text",
+            "name": "role",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "salt",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "'invited'::text",
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "org_id"
+            ],
+            "name": "partner_users_org_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "partner_users_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "org_id",
+              "email_norm"
+            ],
+            "name": "uq_partner_users_org_email",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_partner_users_org ON engine.partner_users USING btree (org_id)",
+            "method": "btree",
+            "name": "ix_partner_users_org"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX partner_users_pkey ON engine.partner_users USING btree (id)",
+            "method": "btree",
+            "name": "partner_users_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_partner_users_org_email ON engine.partner_users USING btree (org_id, email_norm)",
+            "method": "btree",
+            "name": "uq_partner_users_org_email"
           }
         ],
         "partitioned": false
@@ -1491,6 +2878,116 @@
         ],
         "partitioned": false
       },
+      "payment_events": {
+        "checks": [
+          {
+            "clause": "CHECK ((gateway = ANY (ARRAY['simulated'::text, 'midtrans'::text, 'xendit'::text])))",
+            "name": "payment_events_gateway_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "event_ref",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "gateway",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "order_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "payload",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": "now()",
+            "name": "received_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "signature_ok",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "order_id"
+            ],
+            "name": "payment_events_order_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "payment_events_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "gateway",
+              "event_ref"
+            ],
+            "name": "uq_payment_events_gateway_ref",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_payment_events_order ON engine.payment_events USING btree (order_id) WHERE (order_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_payment_events_order"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX payment_events_pkey ON engine.payment_events USING btree (id)",
+            "method": "btree",
+            "name": "payment_events_pkey"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX uq_payment_events_gateway_ref ON engine.payment_events USING btree (gateway, event_ref)",
+            "method": "btree",
+            "name": "uq_payment_events_gateway_ref"
+          }
+        ],
+        "partitioned": false
+      },
       "placements": {
         "checks": [],
         "columns": [
@@ -1579,6 +3076,739 @@
             "def": "CREATE UNIQUE INDEX placements_pkey ON engine.placements USING btree (id)",
             "method": "btree",
             "name": "placements_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "print_order_items": {
+        "checks": [
+          {
+            "clause": "CHECK ((qty > 0))",
+            "name": "print_order_items_qty_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "edition_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "edition_site_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "order_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "plan_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "qty",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "unit_price_idr",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "edition_site_id"
+            ],
+            "name": "print_order_items_edition_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "order_id"
+            ],
+            "name": "print_order_items_order_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "plan_id"
+            ],
+            "name": "print_order_items_plan_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "print_order_items_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_print_order_items_order ON engine.print_order_items USING btree (order_id)",
+            "method": "btree",
+            "name": "ix_print_order_items_order"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX print_order_items_pkey ON engine.print_order_items USING btree (id)",
+            "method": "btree",
+            "name": "print_order_items_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "print_orders": {
+        "checks": [
+          {
+            "clause": "CHECK (((gateway IS NULL) OR (gateway = ANY (ARRAY['simulated'::text, 'midtrans'::text, 'xendit'::text]))))",
+            "name": "print_orders_gateway_check"
+          },
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['pending_payment'::text, 'paid'::text, 'fulfilling'::text, 'shipped'::text, 'cancelled'::text, 'refunded'::text, 'expired'::text])))",
+            "name": "print_orders_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "'IDR'::text",
+            "name": "currency",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "delivery",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "email",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "email_norm",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "expires_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "gateway",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "gateway_order_ref",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "paid_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "shipping_idr",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "subtotal_idr",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "total_idr",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "print_orders_identity_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "print_orders_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "print_orders_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "gateway_order_ref"
+            ],
+            "name": "print_orders_gateway_order_ref_key",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_print_orders_identity ON engine.print_orders USING btree (identity_id)",
+            "method": "btree",
+            "name": "ix_print_orders_identity"
+          },
+          {
+            "def": "CREATE INDEX ix_print_orders_pending_expiry ON engine.print_orders USING btree (expires_at) WHERE (status = 'pending_payment'::text)",
+            "method": "btree",
+            "name": "ix_print_orders_pending_expiry"
+          },
+          {
+            "def": "CREATE INDEX ix_print_orders_site ON engine.print_orders USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_print_orders_site"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX print_orders_gateway_order_ref_key ON engine.print_orders USING btree (gateway_order_ref)",
+            "method": "btree",
+            "name": "print_orders_gateway_order_ref_key"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX print_orders_pkey ON engine.print_orders USING btree (id)",
+            "method": "btree",
+            "name": "print_orders_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "print_plans": {
+        "checks": [
+          {
+            "clause": "CHECK ((kind = ANY (ARRAY['single_issue'::text, 'term'::text])))",
+            "name": "print_plans_kind_check"
+          },
+          {
+            "clause": "CHECK ((((kind = 'term'::text) AND (term_issues IS NOT NULL) AND (term_issues > 0)) OR ((kind = 'single_issue'::text) AND (term_issues IS NULL))))",
+            "name": "print_plans_term_issues_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": "true",
+            "name": "active",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "delivery_zone",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "kind",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "price_idr",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "term_issues",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "print_plans_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "print_plans_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_print_plans_site_active ON engine.print_plans USING btree (site_id) WHERE active",
+            "method": "btree",
+            "name": "ix_print_plans_site_active"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX print_plans_pkey ON engine.print_plans USING btree (id)",
+            "method": "btree",
+            "name": "print_plans_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "print_subscriptions": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['active'::text, 'expiring'::text, 'expired'::text, 'cancelled'::text])))",
+            "name": "print_subscriptions_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": "false",
+            "name": "auto_renew",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "delivery",
+            "nullable": "NO",
+            "type": "jsonb",
+            "udt": "jsonb"
+          },
+          {
+            "default": null,
+            "name": "ends_after_issue",
+            "nullable": "NO",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "0",
+            "name": "issues_sent",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "issues_total",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "order_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "payment_token_ref",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "plan_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "starts_with_issue",
+            "nullable": "NO",
+            "type": "date",
+            "udt": "date"
+          },
+          {
+            "default": null,
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "updated_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "print_subscriptions_identity_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "order_id"
+            ],
+            "name": "print_subscriptions_order_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "plan_id"
+            ],
+            "name": "print_subscriptions_plan_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "print_subscriptions_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "print_subscriptions_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_print_subscriptions_active_end ON engine.print_subscriptions USING btree (ends_after_issue) WHERE (status = ANY (ARRAY['active'::text, 'expiring'::text]))",
+            "method": "btree",
+            "name": "ix_print_subscriptions_active_end"
+          },
+          {
+            "def": "CREATE INDEX ix_print_subscriptions_identity ON engine.print_subscriptions USING btree (identity_id)",
+            "method": "btree",
+            "name": "ix_print_subscriptions_identity"
+          },
+          {
+            "def": "CREATE INDEX ix_print_subscriptions_site ON engine.print_subscriptions USING btree (site_id)",
+            "method": "btree",
+            "name": "ix_print_subscriptions_site"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX print_subscriptions_pkey ON engine.print_subscriptions USING btree (id)",
+            "method": "btree",
+            "name": "print_subscriptions_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "reading_progress": {
+        "checks": [
+          {
+            "clause": "CHECK (((progress_pct >= 0) AND (progress_pct <= 100)))",
+            "name": "reading_progress_progress_pct_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "article_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "block_index",
+            "nullable": "YES",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "dismissed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "0",
+            "name": "dwell_ms",
+            "nullable": "NO",
+            "type": "integer",
+            "udt": "int4"
+          },
+          {
+            "default": null,
+            "name": "finished_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "now()",
+            "name": "last_read_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "progress_pct",
+            "nullable": "NO",
+            "type": "smallint",
+            "udt": "int2"
+          },
+          {
+            "default": "false",
+            "name": "seeded",
+            "nullable": "NO",
+            "type": "boolean",
+            "udt": "bool"
+          },
+          {
+            "default": null,
+            "name": "site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "now()",
+            "name": "started_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "reading_progress_identity_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "site_id"
+            ],
+            "name": "reading_progress_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "identity_id",
+              "site_id",
+              "article_id"
+            ],
+            "name": "reading_progress_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_reading_progress_continue ON engine.reading_progress USING btree (identity_id, last_read_at DESC) WHERE ((finished_at IS NULL) AND (dismissed_at IS NULL))",
+            "method": "btree",
+            "name": "ix_reading_progress_continue"
+          },
+          {
+            "def": "CREATE INDEX ix_reading_progress_last_read_at ON engine.reading_progress USING btree (last_read_at)",
+            "method": "btree",
+            "name": "ix_reading_progress_last_read_at"
+          },
+          {
+            "def": "CREATE INDEX ix_reading_progress_recently_read ON engine.reading_progress USING btree (identity_id, site_id, last_read_at DESC) WHERE (finished_at IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_reading_progress_recently_read"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX reading_progress_pkey ON engine.reading_progress USING btree (identity_id, site_id, article_id)",
+            "method": "btree",
+            "name": "reading_progress_pkey"
           }
         ],
         "partitioned": false
@@ -1674,6 +3904,133 @@
             "def": "CREATE INDEX saved_items_reader_recent_ix ON engine.saved_items USING btree (identity_id, site_id, created_at DESC)",
             "method": "btree",
             "name": "saved_items_reader_recent_ix"
+          }
+        ],
+        "partitioned": false
+      },
+      "shipments": {
+        "checks": [
+          {
+            "clause": "CHECK ((num_nonnulls(order_id, subscription_id) = 1))",
+            "name": "shipments_order_or_subscription_ck"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "courier",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "created_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "edition_id",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "edition_site_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "order_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "shipped_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "subscription_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "tracking_no",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "edition_site_id"
+            ],
+            "name": "shipments_edition_site_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "order_id"
+            ],
+            "name": "shipments_order_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "subscription_id"
+            ],
+            "name": "shipments_subscription_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "shipments_pkey",
+            "type": "PRIMARY KEY"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_shipments_order ON engine.shipments USING btree (order_id) WHERE (order_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_shipments_order"
+          },
+          {
+            "def": "CREATE INDEX ix_shipments_subscription ON engine.shipments USING btree (subscription_id) WHERE (subscription_id IS NOT NULL)",
+            "method": "btree",
+            "name": "ix_shipments_subscription"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX shipments_pkey ON engine.shipments USING btree (id)",
+            "method": "btree",
+            "name": "shipments_pkey"
           }
         ],
         "partitioned": false
@@ -2209,6 +4566,190 @@
             "def": "CREATE UNIQUE INDEX user_profiles_pkey ON engine.user_profiles USING btree (user_id, site_id)",
             "method": "btree",
             "name": "user_profiles_pkey"
+          }
+        ],
+        "partitioned": false
+      },
+      "voucher_claims": {
+        "checks": [
+          {
+            "clause": "CHECK ((status = ANY (ARRAY['claimed'::text, 'redeemed'::text, 'expired'::text, 'revoked'::text])))",
+            "name": "voucher_claims_status_check"
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "name": "claim_anon_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "claim_ip_hash",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": "now()",
+            "name": "claimed_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "code",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "expires_at",
+            "nullable": "NO",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": "gen_random_uuid()",
+            "name": "id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "identity_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "itinerary_id",
+            "nullable": "YES",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "offer_id",
+            "nullable": "NO",
+            "type": "uuid",
+            "udt": "uuid"
+          },
+          {
+            "default": null,
+            "name": "redeemed_at",
+            "nullable": "YES",
+            "type": "timestamp with time zone",
+            "udt": "timestamptz"
+          },
+          {
+            "default": null,
+            "name": "redeemed_by",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "redeemed_place_id",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "redeemed_via",
+            "nullable": "YES",
+            "type": "text",
+            "udt": "text"
+          },
+          {
+            "default": null,
+            "name": "status",
+            "nullable": "NO",
+            "type": "text",
+            "udt": "text"
+          }
+        ],
+        "constraints": [
+          {
+            "columns": [
+              "identity_id"
+            ],
+            "name": "voucher_claims_identity_id_fkey",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "itinerary_id"
+            ],
+            "name": "voucher_claims_itinerary_id_fkey",
+            "on_delete": "SET NULL",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "offer_id"
+            ],
+            "name": "voucher_claims_offer_id_fkey",
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "type": "FOREIGN KEY"
+          },
+          {
+            "columns": [
+              "id"
+            ],
+            "name": "voucher_claims_pkey",
+            "type": "PRIMARY KEY"
+          },
+          {
+            "columns": [
+              "code"
+            ],
+            "name": "voucher_claims_code_key",
+            "type": "UNIQUE"
+          }
+        ],
+        "indexes": [
+          {
+            "def": "CREATE INDEX ix_voucher_claims_cap_check ON engine.voucher_claims USING btree (offer_id, identity_id) WHERE (status = ANY (ARRAY['claimed'::text, 'redeemed'::text]))",
+            "method": "btree",
+            "name": "ix_voucher_claims_cap_check"
+          },
+          {
+            "def": "CREATE INDEX ix_voucher_claims_expiry ON engine.voucher_claims USING btree (expires_at) WHERE (status = 'claimed'::text)",
+            "method": "btree",
+            "name": "ix_voucher_claims_expiry"
+          },
+          {
+            "def": "CREATE INDEX ix_voucher_claims_identity_wallet ON engine.voucher_claims USING btree (identity_id, expires_at) WHERE (status = 'claimed'::text)",
+            "method": "btree",
+            "name": "ix_voucher_claims_identity_wallet"
+          },
+          {
+            "def": "CREATE INDEX ix_voucher_claims_offer ON engine.voucher_claims USING btree (offer_id)",
+            "method": "btree",
+            "name": "ix_voucher_claims_offer"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX voucher_claims_code_key ON engine.voucher_claims USING btree (code)",
+            "method": "btree",
+            "name": "voucher_claims_code_key"
+          },
+          {
+            "def": "CREATE UNIQUE INDEX voucher_claims_pkey ON engine.voucher_claims USING btree (id)",
+            "method": "btree",
+            "name": "voucher_claims_pkey"
           }
         ],
         "partitioned": false

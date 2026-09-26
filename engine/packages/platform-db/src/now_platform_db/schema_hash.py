@@ -4,10 +4,11 @@ Introspects tables/columns/types/nullability/defaults, primary keys, unique
 constraints, check constraints and indexes (including partial-index
 predicates and access methods, so a GiST/HNSW index silently dropped or
 narrowed is caught) via `information_schema` + `pg_catalog`. Daily partitions
-of `ad_events` are excluded by name pattern (`ad_events_pYYYY_MM_DD`) — they
-are expected to differ by wall-clock time between two otherwise-identical
-databases and are not part of the structural contract; the *parent* table
-and its partitioning strategy are still hashed.
+of `ad_events` and `offer_events` (migration 0012 added the second
+partitioned table) are excluded by name pattern (`<table>_pYYYY_MM_DD`) —
+they are expected to differ by wall-clock time between two otherwise-
+identical databases and are not part of the structural contract; the
+*parent* table and its partitioning strategy are still hashed.
 
 Deliberately independent of `now_db.schema_hash` (see `partitions.py` for
 why these two packages don't share code) but structurally identical — a
@@ -25,7 +26,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
-_PARTITION_RE = re.compile(r"^ad_events_p\d{4}_\d{2}_\d{2}$")
+_PARTITION_RE = re.compile(r"^(?:ad_events|offer_events)_p\d{4}_\d{2}_\d{2}$")
 
 
 def _is_partition_child(name: str) -> bool:

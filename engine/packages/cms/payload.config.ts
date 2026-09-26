@@ -17,6 +17,7 @@ import sharp from 'sharp'
 import { buildArticlesCollection } from './src/collections/Articles'
 import { Authors } from './src/collections/Authors'
 import { buildClassificationReviewsCollection } from './src/collections/ClassificationReviews'
+import { Editions } from './src/collections/Editions'
 import { Events } from './src/collections/Events'
 import { Media } from './src/collections/Media'
 import { buildPlacesCollection } from './src/collections/Places'
@@ -300,6 +301,7 @@ export default buildConfig({
   // Editorial again. Groups are not re-entrant.
   collections: [
     buildArticlesCollection(vocabulary), // ── Editorial
+    Editions,
     Events,
     Media,
     Authors,
