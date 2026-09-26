@@ -1470,23 +1470,43 @@ Nothing in this PR touches production. When it is time to roll these migrations 
    `psql "$NOW_PLATFORM_MIGRATOR_DATABASE_URL" -c "CREATE TABLE engine._rollout_probe(id int); DROP TABLE engine._rollout_probe;"`
    (must succeed) and
    `psql "$NOW_PLATFORM_RUNTIME_DATABASE_URL" -c "CREATE TABLE engine._rollout_probe(id int);"`
-   (must fail: `permission denied for schema engine`).
-5. **Cut the application over to `now_runtime`**, one service at a time, each verified
+   (must fail: `permission denied for schema engine`). Then, as part of this same verification
+   step and BEFORE step 5 below, smoke-test the console's actual read and write paths against
+   `now_runtime` directly (not yet through the app): a partnerships `SELECT` scoped to one
+   `app.site_id` and an `INSERT`/`UPDATE` of a partnership row, both over `psql` or a one-off
+   script — this is what catches a missing `SET LOCAL app.site_id` call before it reaches a
+   real request, rather than after.
+5. **Hard prerequisite, tracked as its own ticket, checked before this step is attempted at
+   all**: nothing in the application sets `app.site_id` today.
+   `git grep "app.site_id\|SET LOCAL\|current_site_id" engine/apps` returns zero hits, and
+   `engine/apps/web/src/lib/db.ts` — the console's entire data layer — is a bare `pg.Pool`:
+   one query per call, no per-request transaction, nowhere a `SET LOCAL` could even be placed
+   today. Cutting the console over to `now_runtime` in this state does not degrade gracefully —
+   every RLS-covered table (§ above) reads as zero rows and every write is rejected, for every
+   request, immediately, because `engine.current_site_id()` reads an `app.site_id` that is
+   simply never set. This is not a corner case step 5 might hit; it is the certain outcome of
+   running step 5 (below) before this prerequisite ships. That prerequisite is: `lib/db.ts`
+   moves from "one pool, checkout-per-query" to "one transaction per request", opened with
+   `SET LOCAL app.site_id = '<the resolved site's uuid>'` as its first statement, using
+   whatever site-resolution the console already does for that request. This is an application
+   change, scoped to its own ticket — **not made by this PR**, which is schema and roles only.
+6. **Cut the application over to `now_runtime`**, one service at a time, each verified
    immediately after: `docker exec <container> printenv NOW_PLATFORM_DATABASE_URL` shows the new
    DSN (DEPLOY.md's own rule — verify inside the container, never trust the `.env` file alone),
    then exercise one read and one write path per service (e.g. the reader dashboard's saved
    items, a partnership edit in the console) and confirm they still work. This is the step that
-   makes RLS load-bearing for the first time — any query anywhere in that service that forgot to
-   set `app.site_id` will now see zero rows instead of every site's, which is the intended
-   fail-closed behaviour but will look like a bug report if a code path was missed. Roll back by
-   reverting the env var alone; nothing else has to change.
-6. **Retire the historical superuser's direct use** once every service is confirmed on
+   makes RLS load-bearing for the first time; because step 5 is a hard prerequisite, "a code path
+   forgot to set `app.site_id`" should no longer be a possible outcome by the time this runs — if
+   it still happens, that is a bug in step 5's ticket, not a surprise this step should have to
+   absorb. Roll back by reverting the env var alone; nothing else has to change.
+7. **Retire the historical superuser's direct use** once every service is confirmed on
    `now_runtime` and `now_migrator` — do not drop the `now` role itself (other tooling may still
    reference it), just stop pointing application/migration traffic at it.
 
-Nothing above is applied by this PR. Steps 2-6 are a separate, deliberate rollout the owner or
-devops runs when ready — this ticket's job was the schema, the roles, the policies and the proof
-they work, not the cutover itself.
+Nothing above is applied by this PR. Steps 2-7 are a separate, deliberate rollout the owner or
+devops runs when ready, and step 5 is itself a separate ticket's worth of application code before
+step 6 can safely run at all — this ticket's job was the schema, the roles, the policies and the
+proof they work, not the cutover itself.
 
 ### For the owner
 
