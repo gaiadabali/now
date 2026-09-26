@@ -23,6 +23,11 @@ const place = await payload.create({
     subtype: 'beach-club',
     priceBand: 'upscale',
     amenities: ['pool', 'ocean-view', 'wifi'],
+    // Required since ITINERARY-AND-READER-PRODUCTS-PLAN.md §9.2 (Phase 0):
+    // `source` records who created the row, and this script's row is
+    // created exactly the way an editor manually entering a test place
+    // would be.
+    source: 'editor',
     hours: [
       { day: 'mon', opens: '10:00', closes: '23:00' },
       { day: 'fri', opens: '10:00', closes: '01:00' },

@@ -9,6 +9,9 @@ import * as migration_20260910_060000_classification_reviews_no_clobber_trigger 
 import * as migration_20260910_095611_add_places_legacy_wp_id from './20260910_095611_add_places_legacy_wp_id';
 import * as migration_20260918_090000_articles_slug from './20260918_090000_articles_slug';
 import * as migration_20260924_111729_articles_created_by from './20260924_111729_articles_created_by';
+import * as migration_20260926_090000_places_junk_status_enum_value from './20260926_090000_places_junk_status_enum_value';
+import * as migration_20260926_090100_places_provenance_and_curation_fields from './20260926_090100_places_provenance_and_curation_fields';
+import * as migration_20260926_100000_editions_collection from './20260926_100000_editions_collection';
 
 export const migrations = [
   {
@@ -65,5 +68,20 @@ export const migrations = [
     up: migration_20260924_111729_articles_created_by.up,
     down: migration_20260924_111729_articles_created_by.down,
     name: '20260924_111729_articles_created_by'
+  },
+  {
+    up: migration_20260926_090000_places_junk_status_enum_value.up,
+    down: migration_20260926_090000_places_junk_status_enum_value.down,
+    name: '20260926_090000_places_junk_status_enum_value',
+  },
+  {
+    up: migration_20260926_090100_places_provenance_and_curation_fields.up,
+    down: migration_20260926_090100_places_provenance_and_curation_fields.down,
+    name: '20260926_090100_places_provenance_and_curation_fields',
+  },
+  {
+    up: migration_20260926_100000_editions_collection.up,
+    down: migration_20260926_100000_editions_collection.down,
+    name: '20260926_100000_editions_collection',
   },
 ];
