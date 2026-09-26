@@ -81,17 +81,37 @@ future Payload migration on `public` would need to reason about.
 ## Default privileges cover the transition period, not just the future
 
 Migrations continue to run as whatever role `NOW_PLATFORM_DATABASE_URL`
-resolves to today (`now`, per "Do NOT change production" / "keep existing
-runtime code working") until a deliberate, separate cutover. So this
-migration sets `ALTER DEFAULT PRIVILEGES` for *both* `now_migrator` (the
-role migrations should run as, going forward) and `now` (the role they
-still run as today) — a table created by either role in `engine` from this
-point on is automatically readable/writable by `now_runtime` at the
-standard CRUD level, without every future migration needing its own grant
-statement. The append-only/no-delete narrowing 0017 applies to specific
-tables (ledgers, financial records) is a *deliberate exception* to that
-default and has to be restated by hand for any such table added later —
-documented in this package's README under "Notes for later waves".
+resolves to today — `now` locally, `postgres` in this project's own CI
+containers (`schema-gate.yml`/`payload-entity-typing-gate.yml` both connect
+as `postgres`), something else again wherever this runs next — until a
+deliberate, separate cutover ("Do NOT change production" / "keep existing
+runtime code working"). **The name of that role cannot be hardcoded**: an
+earlier version of this migration wrote `ALTER DEFAULT PRIVILEGES FOR ROLE
+now ...` literally, which is exactly the local convenience default this
+package's own README documents (`now_platform_db.settings.DEFAULT_USER =
+"now"`) — and CI, which has no reason to share that default, failed with
+`role "now" does not exist` the first time this ran there. Fixed by reading
+`current_user` at migration time and using it as the role name, via a `DO`
+block and `format('%I', ...)`, so this migration sets `ALTER DEFAULT
+PRIVILEGES` for *both* `now_migrator` (the role migrations should run as,
+going forward) and *whichever role is actually connected running this
+migration right now* (skipped if that happens to already be `now_migrator`,
+to avoid a redundant no-op statement) — a table created by either role in
+`engine` from this point on is automatically readable/writable by
+`now_runtime` at the standard CRUD level, without every future migration
+needing its own grant statement. The append-only/no-delete narrowing 0017
+applies to specific tables (ledgers, financial records) is a *deliberate
+exception* to that default and has to be restated by hand for any such
+table added later — documented in this package's README under "Notes for
+later waves".
+
+The same fix applies to the downgrade's ownership reversal: it restores
+ownership to `current_user` (whoever is running the downgrade), not a
+hardcoded name — the closest generic approximation of "put it back the way
+it was" available without this migration recording who owned what before
+it ran. If the downgrade is ever run as `now_migrator` itself (e.g. after
+a full cutover), ownership simply stays with `now_migrator` — a reasonable
+no-op in that case, not a failure.
 """
 from __future__ import annotations
 
@@ -170,10 +190,25 @@ def upgrade() -> None:
             GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO now_runtime
         """
     )
+    # Whatever role is actually connected and running this migration right
+    # now — `now` locally, `postgres` in CI, potentially something else
+    # elsewhere — NOT a hardcoded name (see docstring: this exact line used
+    # to say `FOR ROLE now` and broke CI with "role \"now\" does not exist").
     op.execute(
         """
-        ALTER DEFAULT PRIVILEGES FOR ROLE now IN SCHEMA engine
-            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO now_runtime
+        DO $$
+        DECLARE
+            runner text := current_user;
+        BEGIN
+            IF runner <> 'now_migrator' THEN
+                EXECUTE format(
+                    'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA engine '
+                    'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO now_runtime',
+                    runner
+                );
+            END IF;
+        END
+        $$
         """
     )
 
@@ -192,15 +227,35 @@ def downgrade() -> None:
         "ALTER DEFAULT PRIVILEGES FOR ROLE now_migrator IN SCHEMA engine "
         "REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM now_runtime"
     )
+    # Mirrors the dynamic grant in upgrade() — whatever role is running the
+    # downgrade, not a hardcoded name.
     op.execute(
-        "ALTER DEFAULT PRIVILEGES FOR ROLE now IN SCHEMA engine "
-        "REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM now_runtime"
+        """
+        DO $$
+        DECLARE
+            runner text := current_user;
+        BEGIN
+            IF runner <> 'now_migrator' THEN
+                EXECUTE format(
+                    'ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA engine '
+                    'REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM now_runtime',
+                    runner
+                );
+            END IF;
+        END
+        $$
+        """
     )
+    # Ownership reverts to whoever is running the downgrade (current_user),
+    # not a hardcoded name — see docstring for why "put it back exactly as
+    # it was" isn't knowable in general, and why this is the closest
+    # sensible default.
     op.execute(
         """
         DO $$
         DECLARE
             r record;
+            runner text := current_user;
         BEGIN
             FOR r IN
                 SELECT c.relname
@@ -208,7 +263,7 @@ def downgrade() -> None:
                   JOIN pg_namespace n ON n.oid = c.relnamespace
                  WHERE n.nspname = 'engine' AND c.relkind IN ('r', 'p')
             LOOP
-                EXECUTE format('ALTER TABLE engine.%I OWNER TO now', r.relname);
+                EXECUTE format('ALTER TABLE engine.%I OWNER TO %I', r.relname, runner);
             END LOOP;
 
             FOR r IN
@@ -217,12 +272,13 @@ def downgrade() -> None:
                   JOIN pg_namespace n ON n.oid = p.pronamespace
                  WHERE n.nspname = 'engine'
             LOOP
-                EXECUTE format('ALTER FUNCTION %s OWNER TO now', r.signature);
+                EXECUTE format('ALTER FUNCTION %s OWNER TO %I', r.signature, runner);
             END LOOP;
+
+            EXECUTE format('ALTER SCHEMA engine OWNER TO %I', runner);
         END
         $$
         """
     )
-    op.execute("ALTER SCHEMA engine OWNER TO now")
     op.execute("REVOKE USAGE, CREATE ON SCHEMA engine FROM now_migrator")
     op.execute("REVOKE USAGE ON SCHEMA engine FROM now_runtime")
