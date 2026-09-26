@@ -65,6 +65,18 @@ now-platform-db drop-old-partitions --retention-days <n>
   0017 gave `now_runtime` `SELECT, INSERT` on it (no `UPDATE`/`DELETE`) but
   did **not** add an RLS policy to it (see the "role split and RLS" note
   below for why). Do not `UPDATE`/`DELETE` rows in it regardless.
+- `offer_events` (0012) is `ad_events`'s partitioned sibling and is granted
+  the same way. Query it by its parent name, `engine.offer_events` — Postgres
+  transparently routes to whichever daily child partition(s) the `WHERE ts
+  ...` predicate needs, and `now_runtime`'s grant is on the parent, which
+  Postgres also propagates to every existing and future child partition
+  automatically. A query against one partition directly (`engine.
+  offer_events_p2026_09_26`) does **not** inherit that grant — a partition
+  is its own object as far as `GRANT`/`REVOKE` is concerned, so reading one
+  by name needs its own grant, which nothing in this package issues. There
+  is no product reason to query a partition directly; this is a note for
+  whoever is tempted to, during an incident, before wondering why `now_runtime`
+  can suddenly not read something it could read yesterday.
 - `0001`'s `downgrade()` drops every table it created, in dependency order.
   Safe against an empty database; do not run it against a platform DB with
   real partnership/campaign/itinerary data without a backup. The same is
