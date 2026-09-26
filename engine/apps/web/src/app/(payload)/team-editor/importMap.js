@@ -13,6 +13,7 @@ import { NavMasthead as NavMasthead_5122c282b3359210927c31f70530cdf6 } from '../
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { DeskHome as DeskHome_449d37e9d5f07b50acab7ce2ab5d7d0a } from '@/app/(payload)/team-editor/desk/DeskHome'
 import { ClassificationView as ClassificationView_006f9995a1cc4dee8815ac4401789cae } from '@/app/(payload)/team-editor/classification/ClassificationView'
+import { PlaceDeskView as PlaceDeskView_f55c7174c51d44e7ed09d7c848703922 } from '@/app/(payload)/team-editor/place-desk/PlaceDeskView'
 import { CommerceView as CommerceView_9c532043405703185e71a20c7b89bcbe } from '@/app/(payload)/team-editor/commerce/CommerceView'
 import { StaffView as StaffView_2857c41a2a51c86fc02562b538bc43a4 } from '@/app/(payload)/team-editor/staff/StaffView'
 import { FrontPageView as FrontPageView_cbea9fde12e99bd51e10d9e3334f6c7f } from '@/app/(payload)/team-editor/front-page/FrontPageView'
@@ -36,6 +37,7 @@ export const importMap = {
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@/app/(payload)/team-editor/desk/DeskHome#DeskHome": DeskHome_449d37e9d5f07b50acab7ce2ab5d7d0a,
   "@/app/(payload)/team-editor/classification/ClassificationView#ClassificationView": ClassificationView_006f9995a1cc4dee8815ac4401789cae,
+  "@/app/(payload)/team-editor/place-desk/PlaceDeskView#PlaceDeskView": PlaceDeskView_f55c7174c51d44e7ed09d7c848703922,
   "@/app/(payload)/team-editor/commerce/CommerceView#CommerceView": CommerceView_9c532043405703185e71a20c7b89bcbe,
   "@/app/(payload)/team-editor/staff/StaffView#StaffView": StaffView_2857c41a2a51c86fc02562b538bc43a4,
   "@/app/(payload)/team-editor/front-page/FrontPageView#FrontPageView": FrontPageView_cbea9fde12e99bd51e10d9e3334f6c7f,

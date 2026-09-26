@@ -412,7 +412,7 @@ export async function activePlaces(limit = 120): Promise<PlaceRow[]> {
       `SELECT id::text AS id, slug, name, area_term::text AS area, type::text AS type,
               subtype::text AS subtype, price_band::text AS price_band, address
          FROM public.places
-        WHERE status = 'active' AND slug IS NOT NULL
+        WHERE status = 'active' AND merged_into_id IS NULL AND slug IS NOT NULL
         ORDER BY name
         LIMIT $1`,
       [limit],
@@ -451,7 +451,8 @@ export async function placeReviewCounts(): Promise<{ total: number; pending: num
  * One venue by slug — **only if it is `active`**.
  *
  * Returns null for a `pending_review` row so the profile 404s rather than
- * publishing unchecked facts. Same reasoning as `activePlaces`, and it has to
+ * publishing unchecked facts, and for a row merged into another (plan §9.2:
+ * a duplicate "points at its survivor; hidden everywhere"). Same reasoning as `activePlaces`, and it has to
  * be enforced here too: a directory that hides a venue while its profile
  * still serves the address has not hidden anything.
  */
@@ -461,7 +462,7 @@ export async function activePlaceBySlug(slug: string): Promise<PlaceRow | null> 
       `SELECT id::text AS id, slug, name, area_term::text AS area, type::text AS type,
               subtype::text AS subtype, price_band::text AS price_band, address
          FROM public.places
-        WHERE slug = $1 AND status = 'active'
+        WHERE slug = $1 AND status = 'active' AND merged_into_id IS NULL
         LIMIT 1`,
       [slug],
     )

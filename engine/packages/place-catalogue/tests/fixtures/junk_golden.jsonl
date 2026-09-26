@@ -1,0 +1,444 @@
+{"name": "The Grill Jl Raya Bunutan", "tier": "junk", "reason": "address/street fragment"}
+{"name": "The Restaurant at The Trans Resort Bali", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Menjangan West Bali National Park", "tier": null, "reason": null}
+{"name": "Sofitel Bali Nusa Dua Beach Resort", "tier": null, "reason": null}
+{"name": "JI Restaurant Bali at Hotel Tugu Bali 1st Runner Up", "tier": "junk", "reason": "award/ranking fragment"}
+{"name": "Blue Matcha Kitchen & Art Dining Jalan Raya Seminyak", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Wellness Resorts Jalan Desa Sawangan", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Planet Trekkers Children Club", "tier": null, "reason": null}
+{"name": "Quicksilver Beach Clean Up", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Kubu Beach Club", "tier": null, "reason": null}
+{"name": "Festival Club’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "SAKA Museum at AYANA Bali Jalan Karang Mas Sejahtera", "tier": "junk", "reason": "address/street fragment"}
+{"name": "The Beach Pool", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Kayuputi Champagne Bar", "tier": null, "reason": null}
+{"name": "Mantra Sakala Resort & Beach Club’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "The Evolution of Spa and Salon Culture", "tier": "junk", "reason": "concept/trend title, not a venue"}
+{"name": "Resolution Feast Market Brunch at Feast Restaurant", "tier": "junk", "reason": "leading descriptive/CTA word ('resolution')"}
+{"name": "Off GOLDUST Spa Packages", "tier": "junk", "reason": "leading descriptive/CTA word ('off')"}
+{"name": "Autograph Suite’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Balinese Restaurant", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Elephant Museum and Gallery", "tier": null, "reason": null}
+{"name": "Aryaduta’s Henry’s Grill & Bar", "tier": "junk", "reason": "possessive fragment (two possessives)"}
+{"name": "Crystal Bay Beach", "tier": null, "reason": null}
+{"name": "Sky Suite", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Canggu by Senin Bakery", "tier": null, "reason": null}
+{"name": "Genesis Creative Centre Tamora Gallery", "tier": null, "reason": null}
+{"name": "Golden Spa Escape", "tier": "junk", "reason": "product/caption word at the end ('escape')"}
+{"name": "Kids Water Park", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "South American-inspired Bar Arriba", "tier": null, "reason": null}
+{"name": "Bali Culinary Pastry School", "tier": null, "reason": null}
+{"name": "Garden Suite", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Seascape Luxury Resort & Spa Uluwatu by Ini Vie Hospitality Seascape Uluwatu Complex", "tier": "suspect", "reason": "long for a name (13 words)"}
+{"name": "CONRAD Hilton Hotel", "tier": "junk", "reason": "two hotel brands run together"}
+{"name": "Wolfgang Puck Kitchen", "tier": null, "reason": null}
+{"name": "Kahuna Restaurant", "tier": null, "reason": null}
+{"name": "Plataran Komodo Resort & Spa Waecicu Beach", "tier": null, "reason": null}
+{"name": "Regis Bali Resort Lot", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Pistachio Restaurant Ubud", "tier": null, "reason": null}
+{"name": "29 June 2024 at Double Six Beach", "tier": "junk", "reason": "dated edition/event"}
+{"name": "Bene Italian Kitchen Exterior", "tier": "junk", "reason": "product/caption word at the end ('exterior')"}
+{"name": "Bali's Bat Cave Temple", "tier": null, "reason": null}
+{"name": "Lembongan Beach Club by Tjendana Villas", "tier": null, "reason": null}
+{"name": "Denpasar High School", "tier": null, "reason": null}
+{"name": "Amble by the Beach", "tier": null, "reason": null}
+{"name": "Museum Buleleng", "tier": null, "reason": null}
+{"name": "Bar & Caf", "tier": "junk", "reason": "truncated after 'and'"}
+{"name": "Mall PTC", "tier": null, "reason": null}
+{"name": "The Griya’s Safka Restaurant & Terrace", "tier": null, "reason": null}
+{"name": "Jalan Elephant Safari Park", "tier": "junk", "reason": "address/street fragment"}
+{"name": "One-Bedroom Strand Villa at The St", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Outreach Centre", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Emergency & Medical Centre", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Death Temple’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "K-Club", "tier": null, "reason": null}
+{"name": "Temple Dances of Bali", "tier": "junk", "reason": "concept/trend title, not a venue"}
+{"name": "Galangal Spa", "tier": null, "reason": null}
+{"name": "Christmas Eve Cocktail Party at COMO Beach Club", "tier": "junk", "reason": "leading descriptive/CTA word ('christmas')"}
+{"name": "Ubud Centre", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Unwind Moment at the Pool Bar", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "Mall Bali Galeria", "tier": null, "reason": null}
+{"name": "December at Forty Five Downstairs Gallery", "tier": "junk", "reason": "leading descriptive/CTA word ('december')"}
+{"name": "L’Altitude Restaurant Royal Tulip Saranam Resort & Spa", "tier": "suspect", "reason": "two venue names run together"}
+{"name": "John Hardy Boutique & Gallery Seminyak Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Potato Head Beach Club", "tier": null, "reason": null}
+{"name": "Tejas Spa at Inara Alas Harum", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Baia Baia at Heavenly Spa", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Clay Craft Restaurant", "tier": null, "reason": null}
+{"name": "Timur Kitchen", "tier": null, "reason": null}
+{"name": "Azul Beach Club Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Villa Pangi Gita by The Luxe Nomad", "tier": null, "reason": null}
+{"name": "Shirley Temple", "tier": null, "reason": null}
+{"name": "Taum Resort Bali", "tier": null, "reason": null}
+{"name": "The Spa’s Signature Journeys", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Alaya Resort Jembawan", "tier": null, "reason": null}
+{"name": "Bvlgari Resort Bali and Alila Seminyak", "tier": "junk", "reason": "two hotel brands run together"}
+{"name": "The Gaya Dewata Foundation", "tier": null, "reason": null}
+{"name": "Bali Festival Park", "tier": null, "reason": null}
+{"name": "DELUXE SUITE For 2", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "W T-Party at W Lounge", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Four Seasons Resort Koh Samui", "tier": null, "reason": null}
+{"name": "Bali Mandira Beach Resort & Spa Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Nikki Beach Bali at Sofitel Bali Kawasan Pariwisata BTDC", "tier": "junk", "reason": "address/street fragment"}
+{"name": "World Luxury Spa Awards 2018", "tier": "junk", "reason": "award/ranking fragment"}
+{"name": "Nusa Dua Beach Hotel & Spa", "tier": null, "reason": null}
+{"name": "Join Potato Head Beach Club", "tier": "junk", "reason": "leading descriptive/CTA word ('join')"}
+{"name": "Manarai Beach Club", "tier": null, "reason": null}
+{"name": "One Bedroom Lagoon Villas", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Parma Resort Legian", "tier": null, "reason": null}
+{"name": "Alila Villas Uluwatu’s Cliff Edge Spa Cabana", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Executive Sous Chef Jean-Yves Leuranguer at Selasar Deli and Pala Restaurant", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "The Sandwich Bar Ubud", "tier": null, "reason": null}
+{"name": "February 28 at Jazz Cafe Ubud", "tier": "junk", "reason": "leading descriptive/CTA word ('february')"}
+{"name": "Kaamala Resort Ubud", "tier": null, "reason": null}
+{"name": "The Sofitel’s Beach Bar & Grill", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Their Community Health Clinic", "tier": "junk", "reason": "leading descriptive/CTA word ('their')"}
+{"name": "Paris Cat Jazz Club Bali", "tier": null, "reason": null}
+{"name": "Mamaka Rooftop & Swimming Pool", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Trans Studio Bali", "tier": null, "reason": null}
+{"name": "Masters of Wellness", "tier": "junk", "reason": "concept/trend title, not a venue"}
+{"name": "Beach Club Cruise’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "The Best Brew and The Eatery", "tier": "junk", "reason": "leading descriptive word ('best')"}
+{"name": "Meritus Club Floors", "tier": "junk", "reason": "hotel room/floor inventory"}
+{"name": "24-Hour Gym", "tier": "junk", "reason": "an offer (price or duration)"}
+{"name": "Lagoon Cafe's Ramadan Buffet Delight", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Artesian Bar Jakarta", "tier": null, "reason": null}
+{"name": "Horniman Museum", "tier": null, "reason": null}
+{"name": "Avalon Visionary Suite Ship", "tier": null, "reason": null}
+{"name": "Belga Rooftop Bar and Brasserie", "tier": null, "reason": null}
+{"name": "Bar Americano", "tier": null, "reason": null}
+{"name": "HKTDC at the Jakarta Convention Center", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Whisky Bar", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "Yara Pottery Studio", "tier": null, "reason": null}
+{"name": "Teratai Chinese Restaurant", "tier": null, "reason": null}
+{"name": "Residence Manager of Citadines Royal Bay Makassar", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "Creative Market at Tropical Garden", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "Meiji Shrine", "tier": null, "reason": null}
+{"name": "Jacobs School of Music and West Virginia University", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Marbella Hotel", "tier": null, "reason": null}
+{"name": "School Holiday Packag", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Thamrin 10 Food and Creative Park", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Mil’s Kitchen Yogyakarta", "tier": null, "reason": null}
+{"name": "Jackson Kilo Jakarta Kloud Senopati The Club House Pakubuwono Kurune Episode Hotel Serpong Greyhound Gunawarman Aroma Asian Bistro Southside Rooftop Bar & Lounge by Aloft South Jakarta The Room Il Sogno Juntos Junsei Subi Nearest", "tier": "junk", "reason": "run-on text (35 words)"}
+{"name": "Anti-Corruption Learning Center", "tier": null, "reason": null}
+{"name": "Pingoo Restaurant", "tier": null, "reason": null}
+{"name": "The Papandayan Hotel Bandung Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "The Haven Suites", "tier": null, "reason": null}
+{"name": "New Year’s Eve 2019 Rave at Hotel Borobudur Jakarta", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Located at Grand Whiz Poins Mall Simatupang Jakarta", "tier": "junk", "reason": "leading descriptive/CTA word ('located')"}
+{"name": "Citadines Berawa Beach Bali", "tier": null, "reason": null}
+{"name": "Central Park and Taman Anggrek", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Diner D’Epicure Coctail and at Amuz Gourmet", "tier": "junk", "reason": "two phrases run together ('and at')"}
+{"name": "Rustik Bistro & Bar", "tier": null, "reason": null}
+{"name": "Blow Bar Bali", "tier": null, "reason": null}
+{"name": "Bara Restaurant", "tier": null, "reason": null}
+{"name": "D’Barons at Ambhara Hotel Jakarta", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "The Gallery of Joy", "tier": "suspect", "reason": "'X of Y' (part of a place, a person or a title?)"}
+{"name": "Wellness Weekend 2019 Celebration", "tier": "junk", "reason": "dated edition/event"}
+{"name": "Novotel Lombok Resort & Villas", "tier": null, "reason": null}
+{"name": "2013 Serpentine Gallery Pavilion", "tier": "junk", "reason": "year-led title (an edition or vintage)"}
+{"name": "J Katamsi Gallery at the Indonesian Art Institute", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "May 2024 at the Central Park Mall", "tier": "junk", "reason": "leading descriptive/CTA word ('may')"}
+{"name": "Jambuluwuk Seminyak Boutique Hotel", "tier": null, "reason": null}
+{"name": "Imari Japanese Restaurant and Vis", "tier": "junk", "reason": "truncated after 'and'"}
+{"name": "Single-park", "tier": null, "reason": null}
+{"name": "Behind The Bar Series", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "The Spring Sunday Market", "tier": "junk", "reason": "recurring event, not a venue"}
+{"name": "Ciputra Artpreneur Centre and I", "tier": "junk", "reason": "truncated after 'and'"}
+{"name": "Plataran Canggu Bali Resort & Spa", "tier": null, "reason": null}
+{"name": "Museum Tekstil’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Citadines Gatot Subroto Jakarta's 2 BR Kitchen", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Semanggi Night Market", "tier": null, "reason": null}
+{"name": "Trans Mall Cibubur", "tier": null, "reason": null}
+{"name": "General Manager of Hilton Bandung Hotel", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "Indulge and Imbibe at Bayside Restaurant & Bar", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "Peppermint Lobby Lounge", "tier": null, "reason": null}
+{"name": "2014 Chateau Villa Bel Air", "tier": "junk", "reason": "year-led title (an edition or vintage)"}
+{"name": "Endless Buffet at Signatures Restaurant", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Paradiso Theatre", "tier": null, "reason": null}
+{"name": "Health Restaurant of 2016 NOW", "tier": "junk", "reason": "dated edition/event"}
+{"name": "General Manager of Hotel Borobudur Jakarta", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "The Westin Resort Nusa Dua Bali", "tier": null, "reason": null}
+{"name": "Beranda All Day Dining Restaurant", "tier": null, "reason": null}
+{"name": "Pullman Ciawi Vimala Hills Resort Spa & Convention Puncak Rd", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Deutsche Internationale Schule Jakarta Foundation", "tier": null, "reason": null}
+{"name": "Oakwood Hotel & Apartments Grand Batam", "tier": null, "reason": null}
+{"name": "New Year’s Eve Show Kitchen", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Mr Cake Bakery", "tier": null, "reason": null}
+{"name": "Bandung Historical Park", "tier": null, "reason": null}
+{"name": "Paragon Shopping Centre and Ascott Orchard Singapore", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "VIEW Restaurant", "tier": null, "reason": null}
+{"name": "Behave Clinic Gedung Permata Kuningan", "tier": null, "reason": null}
+{"name": "Modern Resort-Apartment Concept", "tier": "junk", "reason": "product/caption word at the end ('concept')"}
+{"name": "Sari Delicatessen and Caf", "tier": "junk", "reason": "truncated after 'and'"}
+{"name": "Wellness Experts", "tier": "junk", "reason": "product/caption word at the end ('experts')"}
+{"name": "Embers Open-Fire Grill’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Und Corner Bakery & Shop", "tier": null, "reason": null}
+{"name": "Natasha Skin Clinic", "tier": null, "reason": null}
+{"name": "Bedroom 4 Frangipani Suite", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Wae Rebo Restaurant and the Pool Side", "tier": "junk", "reason": "two venues run together ('X and the Y')"}
+{"name": "National Coffee Research Center", "tier": null, "reason": null}
+{"name": "The Residence ONFIVE", "tier": null, "reason": null}
+{"name": "Manisan Restaurant", "tier": null, "reason": null}
+{"name": "Shanaya Lounge", "tier": null, "reason": null}
+{"name": "Ramadan at Hotel Indigo Bandung Dago Pakar", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Wijaya Car Trunk Market", "tier": null, "reason": null}
+{"name": "In March Waringin Hospitality Hotel Group", "tier": "junk", "reason": "leading descriptive/CTA word ('in')"}
+{"name": "Museum Semedo", "tier": null, "reason": null}
+{"name": "Christmas Eve Buffet at The Bay Restaurant", "tier": "junk", "reason": "leading descriptive/CTA word ('christmas')"}
+{"name": "Creepy Case Club", "tier": null, "reason": null}
+{"name": "Butter Baby Central Park Tribeca Park", "tier": "junk", "reason": "the same venue noun twice (two venues run together)"}
+{"name": "Itsukushima Shinto Shrine", "tier": null, "reason": null}
+{"name": "General Manager of Hotel Indonesia Kempinski Jakarta", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "T’ang Court Restaurant", "tier": null, "reason": null}
+{"name": "Hard Rock Hotel Bali Jalan Pantai Kuta", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Century Park Hotel", "tier": null, "reason": null}
+{"name": "Krakatau Restaurant", "tier": null, "reason": null}
+{"name": "Spectrum and 1945 Restaurant", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Executive Chef of Kilo Kitchen Jakarta", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "Aeon Mall", "tier": null, "reason": null}
+{"name": "Shanaya Resort Malang", "tier": null, "reason": null}
+{"name": "IWA Restaurant", "tier": null, "reason": null}
+{"name": "Gazebo Pool and Bar", "tier": null, "reason": null}
+{"name": "Seminyak Italian Food at Double-Six Luxury Hotel Double Six Beach No", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Uluwatu's First Sunset Party at R Bar", "tier": "junk", "reason": "possessive + superlative (a description)"}
+{"name": "Alma Spa & Wellness", "tier": null, "reason": null}
+{"name": "Bar Manager Herry Kurniawan", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "Ini Vie Villa Seminyak", "tier": null, "reason": null}
+{"name": "Wellness Resort’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Amarea Resort Ubud Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Japanese Restaurant of the Year", "tier": "junk", "reason": "award/ranking fragment"}
+{"name": "River Villa", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Ang Pao' Resort Credit of IDR 600,000", "tier": "junk", "reason": "an offer (price or duration)"}
+{"name": "Three Days Bike Retreat", "tier": "junk", "reason": "an offer (price or duration)"}
+{"name": "Best Indonesian Restaurant", "tier": "junk", "reason": "leading descriptive/CTA word ('best')"}
+{"name": "Opening of Bali Screen Golf", "tier": "junk", "reason": "leading descriptive/CTA word ('opening')"}
+{"name": "Elephant Park", "tier": null, "reason": null}
+{"name": "The Bvlgari Bar and Sangkar Restaurant", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "TENKAI Japanese Nikkei Restaurant and Makan Place", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Pasir Putih Beach Club & Bar’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "BEST MEXICAN & LATIN RESTAURANT", "tier": "junk", "reason": "leading descriptive/CTA word ('best')"}
+{"name": "Ghost Kitchen & Record Bar", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Splash Water Park and Strike Ten Pin Bowling", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Spa at The Samaya", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Gaia Gym", "tier": null, "reason": null}
+{"name": "The Beach House Legian", "tier": null, "reason": null}
+{"name": "Global Wellness Day and International Yoga Day", "tier": "junk", "reason": "a date or observance ('... Day')"}
+{"name": "The Kitchen Cook Off", "tier": "junk", "reason": "competition/gathering, not a venue"}
+{"name": "From the Garden Suites", "tier": "junk", "reason": "leading descriptive/CTA word ('from')"}
+{"name": "Game Center", "tier": null, "reason": null}
+{"name": "Dahana Restaurant Level 2", "tier": "junk", "reason": "a floor/level locator"}
+{"name": "Waroeng Djamoe Spa", "tier": null, "reason": null}
+{"name": "BUCU Cafe", "tier": null, "reason": null}
+{"name": "Kurma Asih Sea Turtle Conservation Centre", "tier": null, "reason": null}
+{"name": "Bali’s Leading Lifestyle Hotel", "tier": "junk", "reason": "possessive + superlative (a description)"}
+{"name": "Indian Ocean at AYANA Resort and Spa Bali", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "8am at Sanur’s Mertasari Beach", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Wedang Jahe Restaurant", "tier": null, "reason": null}
+{"name": "Salon Bali at Hotel Indigo Bali Seminyak Beach", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "VasantiSeminyak Resort", "tier": null, "reason": null}
+{"name": "ITDC Resort Complex", "tier": null, "reason": null}
+{"name": "Five-star Resort Facilities", "tier": "junk", "reason": "product/caption word at the end ('facilities')"}
+{"name": "Mozaic Restaurant Jalan Raya Sangginan", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Mozaic Gastronomic Restaurant Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "International Buffet Dinner at DONBIU Restaurant & Plumeria Grand Ballroom", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Tango Community", "tier": "junk", "reason": "product/caption word at the end ('community')"}
+{"name": "Cafe Toya", "tier": null, "reason": null}
+{"name": "The Alaya Resort and Spa", "tier": null, "reason": null}
+{"name": "New Thai Restaurant", "tier": "junk", "reason": "leading descriptive word ('new')"}
+{"name": "Liu Li Palace Seafood Restaurant and RIMBA Lobby", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Nandini Jungle Resort & Spa and Elevate Bali by Hanging Gardens", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Bisma Eight Hotel", "tier": null, "reason": null}
+{"name": "Miniature Keliki & Wooden Egg Painting at Five Art Studio", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "A Leaf Creation Studio", "tier": null, "reason": null}
+{"name": "Seminyak Village Mall", "tier": null, "reason": null}
+{"name": "Annabel Crabb's Book Club", "tier": "junk", "reason": "possessive fragment (a venue's 'X's Y')"}
+{"name": "Hotel Taman Indrakila", "tier": null, "reason": null}
+{"name": "Ghost Kitchen", "tier": null, "reason": null}
+{"name": "Koko Bambu Restaurant", "tier": null, "reason": null}
+{"name": "Mudra Suwari Sarasvati Foundation", "tier": null, "reason": null}
+{"name": "One Night Stay at Movenpick Resort & Spa Jimbaran Bali", "tier": "junk", "reason": "an offer (price or duration)"}
+{"name": "Wanna Jungle Pool and Bar at The Kayon Jungle Resort", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Development Center’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "One-Bedroom Private Pool Villa", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "JIWA Wellness", "tier": null, "reason": null}
+{"name": "Bali Wildlife Rescue Centre", "tier": null, "reason": null}
+{"name": "ARYADUTA Bali Hotel", "tier": null, "reason": null}
+{"name": "Cocoon Spa Package at Mekar Spa", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "WHIM Bar & Restaurant at Prasana by Arjani Resorts", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "La Mira Villas", "tier": null, "reason": null}
+{"name": "Indus Restaurant", "tier": null, "reason": null}
+{"name": "Finns Recreation Club", "tier": null, "reason": null}
+{"name": "Best Fine Dining Restaurant", "tier": "junk", "reason": "leading descriptive/CTA word ('best')"}
+{"name": "Teppanyaki Restaurant at Aksari Resort Ubud Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "L’OH Pool Bar", "tier": null, "reason": null}
+{"name": "Spa Tenda", "tier": null, "reason": null}
+{"name": "Bias Tugel Beach and Blue Lagoon", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Nampu Japanese Restaurant", "tier": null, "reason": null}
+{"name": "Besaikh Temple", "tier": null, "reason": null}
+{"name": "Best Spanish Restaurant", "tier": "junk", "reason": "leading descriptive/CTA word ('best')"}
+{"name": "Aksari Suite", "tier": "junk", "reason": "hotel room category (<resort> Suite)"}
+{"name": "Studio Gelombang's", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Festive Buffet Theatre Dinner", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Pearl Farm", "tier": null, "reason": null}
+{"name": "Munduk Spices Restaurant", "tier": null, "reason": null}
+{"name": "Food Rescue Kitchen", "tier": null, "reason": null}
+{"name": "The Anvaya Suite", "tier": "junk", "reason": "hotel room category (<resort> Suite)"}
+{"name": "Private Pool One-Bedroom Villa", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "AKASA Restaurant & Bar", "tier": null, "reason": null}
+{"name": "Beachwalk Shopping Centre Jl", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Bali Children Foundation Office", "tier": null, "reason": null}
+{"name": "10pm at the Rooftop and Pool Deck", "tier": "junk", "reason": "a clock time, not a venue"}
+{"name": "A Lunar Feast of Prosperity at The Puhu Restaurant", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "Shambhala Retreat", "tier": null, "reason": null}
+{"name": "Banyan Tree Ungasan Resort", "tier": null, "reason": null}
+{"name": "Augustinus Bader at The Bvlgari Spa", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Opened by Hotel Tugu Bali", "tier": "junk", "reason": "leading descriptive/CTA word ('opened')"}
+{"name": "Mayo Resort", "tier": null, "reason": null}
+{"name": "Inside Villa Air Bali", "tier": "junk", "reason": "leading descriptive/CTA word ('inside')"}
+{"name": "Renaissance Bali Uluwatu Resort & Spa", "tier": null, "reason": null}
+{"name": "PancaMaya Wellness", "tier": null, "reason": null}
+{"name": "UNIQUE Rooftop Bar and Restaurant", "tier": null, "reason": null}
+{"name": "Rica Tapas Bar & Lounge", "tier": null, "reason": null}
+{"name": "Trizara Resort", "tier": null, "reason": null}
+{"name": "Santika Suite", "tier": "junk", "reason": "hotel room category (<resort> Suite)"}
+{"name": "Festive Dining at Vong Kitchen", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Genesis Creative Centre", "tier": null, "reason": null}
+{"name": "Jakarta AYANA MidPlaza Jakarta Mangkuluhur ARTOTEL Suites Hotel Episode Gading Serpong Pullman Jakarta Indonesia", "tier": "junk", "reason": "two hotel brands run together"}
+{"name": "DoubleTree Hotel by Hilton", "tier": null, "reason": null}
+{"name": "Li Lian at Park Hyatt Jakarta", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "The Westin Grand Ballroom & Convention Center", "tier": null, "reason": null}
+{"name": "Martha Tilaar Center Cikini", "tier": null, "reason": null}
+{"name": "Trans Resort Bali", "tier": null, "reason": null}
+{"name": "Fifa Club World Cup", "tier": null, "reason": null}
+{"name": "Pearls Clinic", "tier": null, "reason": null}
+{"name": "Copa Restaurant La Floriane Bistro", "tier": "suspect", "reason": "two venue names run together"}
+{"name": "Nusantara Nature Conservation Foundation", "tier": null, "reason": null}
+{"name": "Bogor Cafe By Hotel Borobudur", "tier": null, "reason": null}
+{"name": "Sinarmas and Bakti Budaya Djarum Foundation", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Jatinegara Market", "tier": null, "reason": null}
+{"name": "5 October 2025 at The Papandayan Hotel", "tier": "junk", "reason": "dated edition/event"}
+{"name": "Fraser Residence Menteng Jakarta and Fraser Place Setiabudi Jakarta", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "22 January at The American Club", "tier": "junk", "reason": "date + event-at phrase"}
+{"name": "Saraswati Lounge", "tier": null, "reason": null}
+{"name": "Ocean Park Water Adventure", "tier": null, "reason": null}
+{"name": "Coral Triangle Center", "tier": null, "reason": null}
+{"name": "Mischief and Cocktails at KITA Bar", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "Barossa Valley and the Simi Winery", "tier": "junk", "reason": "two venues run together ('X and the Y')"}
+{"name": "Artpreneur Theatre", "tier": null, "reason": null}
+{"name": "Business Centre", "tier": null, "reason": null}
+{"name": "The Maj Senayan National Golf", "tier": null, "reason": null}
+{"name": "Sheraton Mustika Yogyakarta Resort & Spa", "tier": null, "reason": null}
+{"name": "Word Museum", "tier": null, "reason": null}
+{"name": "At HARRIS Hotel & Convention Serpong", "tier": "junk", "reason": "leading descriptive/CTA word ('at')"}
+{"name": "Setu Babakan Betawi Museum", "tier": null, "reason": null}
+{"name": "Neka Museum", "tier": null, "reason": null}
+{"name": "ACG School Jakarta Alam Atelier Preschool Australian Independent School BINUS School Simprug Jakarta Montessori School New Zealand School Jakarta Nord Anglia School Jakarta SPH Kemang Village Jakarta InterCultural School SIS South Jakarta Tutor Time Indonesia", "tier": "junk", "reason": "run-on text (35 words)"}
+{"name": "Koran Mask Studio", "tier": null, "reason": null}
+{"name": "1 Health Centre'", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "Shrida Restaurant", "tier": null, "reason": null}
+{"name": "29 January at BUNK Lobby Lounge", "tier": "junk", "reason": "date + event-at phrase"}
+{"name": "Park Hyatt Bangkok", "tier": null, "reason": null}
+{"name": "As PARKROYAL Serviced Suites Jakarta", "tier": "suspect", "reason": "opens like a sentence ('as')"}
+{"name": "Bukit Baka Bukit Raya National Park", "tier": null, "reason": null}
+{"name": "Above Kitchen & Lounge", "tier": null, "reason": null}
+{"name": "Tokyo Disney Resort", "tier": null, "reason": null}
+{"name": "Bar Bites Made Better at BIKO", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Sentul City Cultural Park", "tier": null, "reason": null}
+{"name": "French Residence", "tier": "junk", "reason": "generic phrase, no proper noun"}
+{"name": "East Wing of Hotel Borobudur Jakarta", "tier": "suspect", "reason": "'X of Y' (part of a place, a person or a title?)"}
+{"name": "Mall Pacific Place", "tier": null, "reason": null}
+{"name": "Trevor Matheson at Ranch Market Pondok Indah", "tier": "junk", "reason": "event/description phrase ('... at ...')"}
+{"name": "OHD Museum and Museum MACAN", "tier": "junk", "reason": "the same venue noun twice (two venues run together)"}
+{"name": "Hotel Santika", "tier": null, "reason": null}
+{"name": "Market Street Clam Chowder", "tier": null, "reason": null}
+{"name": "Rick’s Bar", "tier": null, "reason": null}
+{"name": "Baba Nest Phuket and Alfresco 64 A Chivas Bar", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "The World’s Most Luxurious Hotel", "tier": "junk", "reason": "possessive + superlative (a description)"}
+{"name": "Yara Pottery Studio's", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Park’s", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Pavarotti Foundation", "tier": null, "reason": null}
+{"name": "Pullman Jakarta Central Park's", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Hotel Jakarta City Centre", "tier": null, "reason": null}
+{"name": "Batak and Deli Malay", "tier": null, "reason": null}
+{"name": "The Square Restaurant and Gourmet Bar", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "Deli Kingdom", "tier": null, "reason": null}
+{"name": "Funworld and Funspot Adventure Park", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "JIS Middle School Campus", "tier": null, "reason": null}
+{"name": "Pesona Alam Resort & Spa and The Botanica Sanctuary", "tier": "junk", "reason": "two venues run together ('X and the Y')"}
+{"name": "Pondok Indah Mall Street Gallery", "tier": null, "reason": null}
+{"name": "Mulia Resort & Villas", "tier": null, "reason": null}
+{"name": "Interactive Aquarium Tours", "tier": null, "reason": null}
+{"name": "10949593 Tanjung Kelayang Beach", "tier": "suspect", "reason": "contains a number"}
+{"name": "CGV Cinema", "tier": null, "reason": null}
+{"name": "Casa Luna", "tier": null, "reason": null}
+{"name": "Riverside Golf Course", "tier": null, "reason": null}
+{"name": "Authentic Flavors at Dago Street Kitchen", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "Grand Whiz Hotel Trawas Mojokerto", "tier": null, "reason": null}
+{"name": "Ghea Resort by Amanda Janna", "tier": null, "reason": null}
+{"name": "The Breakfast Club’", "tier": "junk", "reason": "trailing quote fragment"}
+{"name": "New Year BBQ Dinner at Fame Hotel Sunset Road Bali", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Grill Master", "tier": null, "reason": null}
+{"name": "Frank’s Bar", "tier": null, "reason": null}
+{"name": "Ambarrukmo Suite", "tier": "junk", "reason": "hotel room category (<resort> Suite)"}
+{"name": "Le Meridien Hotel Jalan Jendral Sudirman Kav", "tier": "junk", "reason": "address/street fragment"}
+{"name": "Jakarta Komodos Rugby Football Club", "tier": null, "reason": null}
+{"name": "Westin Family Kids Club and WestinWORKOUT", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "White Sand Beach and Blue Lagoon Beach", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "ARC Recovery Studio", "tier": null, "reason": null}
+{"name": "NYC Lounge & Bar and Central Park Restaurant at Manhattan Hotel Jakarta", "tier": "junk", "reason": "two venues run together ('X and Y')"}
+{"name": "International Conference Center", "tier": null, "reason": null}
+{"name": "Eric Kayser Le Restaurant Du Boulanger", "tier": null, "reason": null}
+{"name": "Pawon Temple", "tier": null, "reason": null}
+{"name": "Akasha Resort Hambalang", "tier": null, "reason": null}
+{"name": "The Lighthouse Lounge", "tier": null, "reason": null}
+{"name": "Rock Star Gym", "tier": null, "reason": null}
+{"name": "Padma Beach", "tier": null, "reason": null}
+{"name": "LIDI Foundation", "tier": null, "reason": null}
+{"name": "Green Hotel", "tier": null, "reason": null}
+{"name": "Lagoon Access Junior Suite", "tier": null, "reason": null}
+{"name": "", "tier": "junk", "reason": "empty name"}
+{"name": "   ", "tier": "junk", "reason": "empty name"}
+{"name": "Hotel's", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "Their Spa and Lunch", "tier": "junk", "reason": "leading descriptive/CTA word ('their')"}
+{"name": "Its Relish Bistro", "tier": "junk", "reason": "leading descriptive/CTA word ('its')"}
+{"name": "Nyanyi Beach's", "tier": "junk", "reason": "possessive fragment ('s with nothing after)"}
+{"name": "TS Suites", "tier": null, "reason": null}
+{"name": "Best Western Premier", "tier": null, "reason": null}
+{"name": "Holiday Inn Express", "tier": null, "reason": null}
+{"name": "Festival Walk", "tier": null, "reason": null}
+{"name": "1945 Restaurant", "tier": "suspect", "reason": "contains a number"}
+{"name": "1945 Restaurant at Fairmont", "tier": "suspect", "reason": "something 'at' a venue (event, outlet or person?)"}
+{"name": "1971 at Pike Place Market Seattle", "tier": "junk", "reason": "year-led title (an edition or vintage)"}
+{"name": "World Trade Centre", "tier": null, "reason": null}
+{"name": "New Kuta Golf Course", "tier": null, "reason": null}
+{"name": "Moon Rabbit Liquor Bar & Dim Sum", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Champagne Bar by Moet & Chandon", "tier": "suspect", "reason": "two names joined by 'and'/'&'"}
+{"name": "Mesa Hotel and Resorts", "tier": null, "reason": null}
+{"name": "Art Gallery of New South Wales", "tier": "suspect", "reason": "'X of Y' (part of a place, a person or a title?)"}
+{"name": "Hotel Santika Premiere", "tier": null, "reason": null}
+{"name": "International Conference Center Bali", "tier": null, "reason": null}
+{"name": "Mason Elephant Park and Lodge Desa Taro", "tier": null, "reason": null}
+{"name": "Bumbu Bali Restaurant & Cooking School", "tier": null, "reason": null}
+{"name": "After Seven Restaurant", "tier": null, "reason": null}
+{"name": "Resort Credit of IDR 600,000", "tier": "junk", "reason": "an offer (price or duration)"}
+{"name": "10pm at the Rooftop", "tier": "junk", "reason": "a clock time, not a venue"}
+{"name": "Bali's Leading Lifestyle Hotel", "tier": "junk", "reason": "possessive + superlative (a description)"}
+{"name": "Global Wellness Day", "tier": "junk", "reason": "a date or observance ('... Day')"}
+{"name": "All Day", "tier": null, "reason": null}
+{"name": "Presidential Suite", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "The Ritz-Carlton Ritz Carlton", "tier": null, "reason": null}
+{"name": "Central Park Tribeca Park", "tier": "junk", "reason": "the same venue noun twice (two venues run together)"}
+{"name": "Nusa Dua", "tier": "junk", "reason": "an area or region name, not a venue"}
+{"name": "South Jakarta", "tier": "junk", "reason": "an area or region name, not a venue"}
+{"name": "www.example.com", "tier": "junk", "reason": "URL or slug as name"}
+{"name": "Villa Air Bali", "tier": null, "reason": null}
+{"name": "Sunday Market at La Brisa", "tier": "junk", "reason": "recurring event, not a venue"}
+{"name": "Kuta Beach and 10", "tier": "junk", "reason": "truncated after 'and'"}
+{"name": "Chef Gilles Marx of Amuz Restaurant", "tier": "junk", "reason": "a person's job title, not a venue"}
+{"name": "The Best Hotel", "tier": "junk", "reason": "leading descriptive word ('best')"}
+{"name": "Grand Two-Bedroom Villa", "tier": "junk", "reason": "hotel room/rate-plan row"}
+{"name": "Caféfest Lounge", "tier": null, "reason": null}
+{"name": "Café Fest", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "Hotel ٢٠٢٣ Edition", "tier": "junk", "reason": "event/offer, not a venue"}
+{"name": "! day", "tier": null, "reason": null}

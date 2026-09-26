@@ -1,0 +1,100 @@
+{"id": 17733, "name": "The Grill Jl Raya Bunutan", "label": "junk", "reason": "address suffix (Jl Raya ...)"}
+{"id": 18297, "name": "The Restaurant at The Trans Resort Bali", "label": "ok", "reason": "legitimate 'The Restaurant at <hotel>' naming pattern"}
+{"id": 16590, "name": "Menjangan West Bali National Park", "label": "ok", "reason": "real national park"}
+{"id": 12528, "name": "Sofitel Bali Nusa Dua Beach Resort", "label": "ok", "reason": "real hotel brand name"}
+{"id": 16104, "name": "JI Restaurant Bali at Hotel Tugu Bali 1st Runner Up", "label": "junk", "reason": "award fragment (1st Runner Up)"}
+{"id": 15125, "name": "Blue Matcha Kitchen & Art Dining Jalan Raya Seminyak", "label": "junk", "reason": "address suffix (Jalan Raya ...)"}
+{"id": 18203, "name": "Wellness Resorts Jalan Desa Sawangan", "label": "junk", "reason": "generic + address suffix"}
+{"id": 14094, "name": "Planet Trekkers Children Club", "label": "ok", "reason": "real kids club name"}
+{"id": 17025, "name": "Quicksilver Beach Clean Up", "label": "junk", "reason": "activity/event, not a venue"}
+{"id": 13978, "name": "Kubu Beach Club", "label": "ok", "reason": "real beach club name"}
+{"id": 15643, "name": "Festival Club’", "label": "junk", "reason": "trailing possessive/quote fragment"}
+{"id": 17178, "name": "SAKA Museum at AYANA Bali Jalan Karang Mas Sejahtera", "label": "junk", "reason": "address suffix (Jalan ...)"}
+{"id": 14271, "name": "The Beach Pool", "label": "junk", "reason": "too generic, no proper noun"}
+{"id": 16257, "name": "Kayuputi Champagne Bar", "label": "ok", "reason": "real bar name"}
+{"id": 16526, "name": "Mantra Sakala Resort & Beach Club’s", "label": "junk", "reason": "trailing possessive fragment"}
+{"id": 17721, "name": "The Evolution of Spa and Salon Culture", "label": "junk", "reason": "essay/trend title, not a venue"}
+{"id": 14134, "name": "Resolution Feast Market Brunch at Feast Restaurant", "label": "junk", "reason": "event phrase (brunch/market)"}
+{"id": 16793, "name": "Off GOLDUST Spa Packages", "label": "junk", "reason": "spa package offer name"}
+{"id": 13690, "name": "Autograph Suite’s", "label": "junk", "reason": "trailing possessive, room type"}
+{"id": 14939, "name": "Balinese Restaurant", "label": "junk", "reason": "too generic, no proper noun"}
+{"id": 15577, "name": "Elephant Museum and Gallery", "label": "ok", "reason": "real museum/gallery name"}
+{"id": 14755, "name": "Aryaduta’s Henry’s Grill & Bar", "label": "junk", "reason": "possessive-lead fragment"}
+{"id": 15397, "name": "Crystal Bay Beach", "label": "ok", "reason": "real beach name"}
+{"id": 13562, "name": "Sky Suite", "label": "junk", "reason": "hotel room type, not a venue"}
+{"id": 15233, "name": "Canggu by Senin Bakery", "label": "ok", "reason": "real bakery name"}
+{"id": 13865, "name": "Genesis Creative Centre Tamora Gallery", "label": "ok", "reason": "real gallery name"}
+{"id": 15816, "name": "Golden Spa Escape", "label": "junk", "reason": "spa package/offer name"}
+{"id": 16286, "name": "Kids Water Park", "label": "junk", "reason": "generic feature, no brand"}
+{"id": 17400, "name": "South American-inspired Bar Arriba", "label": "ok", "reason": "real bar name (Arriba), descriptive prefix"}
+{"id": 13136, "name": "Bali Culinary Pastry School", "label": "ok", "reason": "real institution name"}
+{"id": 12697, "name": "Garden Suite", "label": "junk", "reason": "hotel room type, not a venue"}
+{"id": 17288, "name": "Seascape Luxury Resort & Spa Uluwatu by Ini Vie Hospitality Seascape Uluwatu Complex", "label": "ok", "reason": "real, if messy, property name"}
+{"id": 15208, "name": "CONRAD Hilton Hotel", "label": "junk", "reason": "two competing hotel brands concatenated"}
+{"id": 14413, "name": "Wolfgang Puck Kitchen", "label": "ok", "reason": "real in-resort restaurant brand"}
+{"id": 13451, "name": "Kahuna Restaurant", "label": "ok", "reason": "real restaurant name"}
+{"id": 16957, "name": "Plataran Komodo Resort & Spa Waecicu Beach", "label": "ok", "reason": "real resort name"}
+{"id": 17066, "name": "Regis Bali Resort Lot", "label": "junk", "reason": "truncated address suffix (Lot)"}
+{"id": 16949, "name": "Pistachio Restaurant Ubud", "label": "ok", "reason": "real restaurant name"}
+{"id": 14502, "name": "29 June 2024 at Double Six Beach", "label": "junk", "reason": "date + event-at phrase"}
+{"id": 15053, "name": "Bene Italian Kitchen Exterior", "label": "junk", "reason": "trailing image-caption word (Exterior)"}
+{"id": 14930, "name": "Bali's Bat Cave Temple", "label": "ok", "reason": "real landmark name (possessive is part of the name)"}
+{"id": 16395, "name": "Lembongan Beach Club by Tjendana Villas", "label": "ok", "reason": "real beach club name"}
+{"id": 15457, "name": "Denpasar High School", "label": "ok", "reason": "real institution, not touristic but a real place"}
+{"id": 14705, "name": "Amble by the Beach", "label": "ok", "reason": "real cafe name"}
+{"id": 13071, "name": "Museum Buleleng", "label": "ok", "reason": "real museum name"}
+{"id": 13726, "name": "Bar & Caf", "label": "junk", "reason": "truncated word fragment (Caf)"}
+{"id": 16503, "name": "Mall PTC", "label": "ok", "reason": "real mall abbreviation"}
+{"id": 17735, "name": "The Griya’s Safka Restaurant & Terrace", "label": "junk", "reason": "possessive-lead fragment"}
+{"id": 16115, "name": "Jalan Elephant Safari Park", "label": "junk", "reason": "leading address word (Jalan)"}
+{"id": 16813, "name": "One-Bedroom Strand Villa at The St", "label": "junk", "reason": "room type + truncated venue name"}
+{"id": 13228, "name": "Outreach Centre", "label": "junk", "reason": "too generic, no proper noun"}
+{"id": 15583, "name": "Emergency & Medical Centre", "label": "junk", "reason": "too generic, no proper noun"}
+{"id": 15441, "name": "Death Temple’", "label": "junk", "reason": "trailing quote fragment"}
+{"id": 16191, "name": "K-Club", "label": "ok", "reason": "real club name"}
+{"id": 17614, "name": "Temple Dances of Bali", "label": "junk", "reason": "cultural-practice description, not a venue"}
+{"id": 15749, "name": "Galangal Spa", "label": "ok", "reason": "real spa name"}
+{"id": 15304, "name": "Christmas Eve Cocktail Party at COMO Beach Club", "label": "junk", "reason": "event phrase (cocktail party)"}
+{"id": 13607, "name": "Ubud Centre", "label": "junk", "reason": "too generic, no proper noun"}
+{"id": 18060, "name": "Unwind Moment at the Pool Bar", "label": "junk", "reason": "event/moment phrase"}
+{"id": 13476, "name": "Mall Bali Galeria", "label": "ok", "reason": "real mall name"}
+{"id": 15442, "name": "December at Forty Five Downstairs Gallery", "label": "junk", "reason": "month + event-at phrase"}
+{"id": 14005, "name": "L’Altitude Restaurant Royal Tulip Saranam Resort & Spa", "label": "ok", "reason": "real, if long, resort name"}
+{"id": 12785, "name": "John Hardy Boutique & Gallery Seminyak Jl", "label": "junk", "reason": "trailing address suffix (Jl)"}
+{"id": 12527, "name": "Potato Head Beach Club", "label": "ok", "reason": "real, famous beach club"}
+{"id": 17610, "name": "Tejas Spa at Inara Alas Harum", "label": "ok", "reason": "spa-at-property naming, acceptable miss"}
+{"id": 14848, "name": "Baia Baia at Heavenly Spa", "label": "junk", "reason": "two things concatenated oddly"}
+{"id": 13374, "name": "Clay Craft Restaurant", "label": "ok", "reason": "real restaurant name"}
+{"id": 18398, "name": "Timur Kitchen", "label": "ok", "reason": "real restaurant name"}
+{"id": 13334, "name": "Azul Beach Club Jl", "label": "junk", "reason": "trailing address suffix (Jl)"}
+{"id": 18121, "name": "Villa Pangi Gita by The Luxe Nomad", "label": "ok", "reason": "real villa-by-operator name"}
+{"id": 14196, "name": "Shirley Temple", "label": "junk", "reason": "person/cocktail name, not a place"}
+{"id": 17597, "name": "Taum Resort Bali", "label": "ok", "reason": "real resort name"}
+{"id": 17841, "name": "The Spa’s Signature Journeys", "label": "junk", "reason": "possessive + package/journey name"}
+{"id": 12853, "name": "Alaya Resort Jembawan", "label": "ok", "reason": "real resort name"}
+{"id": 15179, "name": "Bvlgari Resort Bali and Alila Seminyak", "label": "junk", "reason": "two distinct resorts concatenated"}
+{"id": 13594, "name": "The Gaya Dewata Foundation", "label": "ok", "reason": "real foundation, non-touristic but real"}
+{"id": 13029, "name": "Bali Festival Park", "label": "ok", "reason": "real park name"}
+{"id": 15419, "name": "DELUXE SUITE For 2", "label": "junk", "reason": "room/offer descriptor"}
+{"id": 18151, "name": "W T-Party at W Lounge", "label": "junk", "reason": "event phrase (T-Party)"}
+{"id": 15712, "name": "Four Seasons Resort Koh Samui", "label": "ok", "reason": "real hotel brand (different city, still real)"}
+{"id": 14908, "name": "Bali Mandira Beach Resort & Spa Jl", "label": "junk", "reason": "trailing address suffix (Jl)"}
+{"id": 16733, "name": "Nikki Beach Bali at Sofitel Bali Kawasan Pariwisata BTDC", "label": "junk", "reason": "address suffix (Kawasan Pariwisata BTDC)"}
+{"id": 14416, "name": "World Luxury Spa Awards 2018", "label": "junk", "reason": "award fragment"}
+{"id": 12529, "name": "Nusa Dua Beach Hotel & Spa", "label": "ok", "reason": "real hotel name"}
+{"id": 16159, "name": "Join Potato Head Beach Club", "label": "junk", "reason": "CTA verb lead (Join)"}
+{"id": 16512, "name": "Manarai Beach Club", "label": "ok", "reason": "real beach club name"}
+{"id": 16807, "name": "One Bedroom Lagoon Villas", "label": "junk", "reason": "room type, not a venue"}
+{"id": 16901, "name": "Parma Resort Legian", "label": "ok", "reason": "real resort name"}
+{"id": 13664, "name": "Alila Villas Uluwatu’s Cliff Edge Spa Cabana", "label": "junk", "reason": "possessive-lead fragment"}
+{"id": 15608, "name": "Executive Sous Chef Jean-Yves Leuranguer at Selasar Deli and Pala Restaurant", "label": "junk", "reason": "person title + event-at phrase"}
+{"id": 13105, "name": "The Sandwich Bar Ubud", "label": "ok", "reason": "real restaurant name"}
+{"id": 15639, "name": "February 28 at Jazz Cafe Ubud", "label": "junk", "reason": "date + event-at phrase"}
+{"id": 12883, "name": "Kaamala Resort Ubud", "label": "ok", "reason": "real resort name"}
+{"id": 17832, "name": "The Sofitel’s Beach Bar & Grill", "label": "junk", "reason": "possessive-lead fragment"}
+{"id": 17890, "name": "Their Community Health Clinic", "label": "junk", "reason": "possessive-pronoun lead (Their)"}
+{"id": 13514, "name": "Paris Cat Jazz Club Bali", "label": "ok", "reason": "real jazz club name"}
+{"id": 16507, "name": "Mamaka Rooftop & Swimming Pool", "label": "ok", "reason": "real rooftop/pool name"}
+{"id": 12774, "name": "Trans Studio Bali", "label": "ok", "reason": "real, famous studio/theme park name"}
+{"id": 16553, "name": "Masters of Wellness", "label": "junk", "reason": "concept/award phrase (Masters of ...)"}
+{"id": 13743, "name": "Beach Club Cruise’", "label": "junk", "reason": "trailing quote fragment"}

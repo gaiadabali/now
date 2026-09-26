@@ -1,0 +1,44 @@
+name: place catalogue tests
+
+# P1.1/P1.2 (`now-places`). Pure tests only: junk-rule recall on the
+# hand-labelled fixtures, the golden verdicts the desk's TypeScript port
+# shares, ranking, triage and dedupe planning. The merge round-trip needs a
+# city database and runs locally against a scratch copy
+# (NOW_PLACES_TEST_DB); it skips here.
+
+on:
+  pull_request:
+    paths:
+      - "engine/packages/place-catalogue/**"
+      - "engine/packages/place-extraction/**"
+      - "engine/packages/geocode/**"
+      - "engine/packages/taxonomy/seed/terms/**"
+      - ".github/workflows/place-catalogue-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "engine/packages/place-catalogue/**"
+      - "engine/packages/place-extraction/**"
+      - "engine/packages/geocode/**"
+      - "engine/packages/taxonomy/seed/terms/**"
+      - ".github/workflows/place-catalogue-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine/packages/place-catalogue
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install deps
+        run: uv sync --extra dev
+
+      - name: Run tests
+        run: uv run pytest -q -s

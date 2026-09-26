@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { isAuthorOrAbove, isEditorOrAbove, isLoggedIn } from '../access'
 import { vocabularySelectField } from '../fields/vocabularySelect'
+import { placeReviewGate } from '../hooks/placeReviewGate'
 import type { VocabularyMap } from '../lib/vocabulary'
 import { GROUPS } from './groups'
 
@@ -56,6 +57,10 @@ export function buildPlacesCollection(vocabulary: VocabularyMap): CollectionConf
     // pending_review), not an editorial workflow state — so plain version
     // history (no drafts) is the correct fit, not just a workaround.
     versions: { maxPerDoc: 20 },
+    // Approving, junking and merging a place are desk decisions: editor or
+    // admin only, stamped with who made them (plan P1.6). See
+    // hooks/placeReviewDecision.ts.
+    hooks: { beforeChange: [placeReviewGate] },
     fields: [
       { name: 'name', type: 'text', required: true },
       { name: 'slug', type: 'text', required: true, unique: true, index: true },
@@ -232,6 +237,30 @@ export function buildPlacesCollection(vocabulary: VocabularyMap): CollectionConf
         admin: { description: 'Never `google` — §9.4 forbids storing Google’s hours. Editor-entered or partner-maintained only.' },
       },
       { name: 'hoursCheckedAt', label: 'Hours checked', type: 'date' },
+      // --- P1.2/P1.6 additions (migration
+      // `20260927_090000_places_aliases_and_reviewed_by.ts` — flagged
+      // prominently in that file and in the PR: neither field is in §9.2's
+      // own column list, both are needed by tickets §9.2 itself names). ---
+      {
+        name: 'aliases',
+        type: 'json',
+        admin: {
+          readOnly: true,
+          description:
+            'Other names this place has been called, kept when a duplicate merges into this row. ' +
+            'Each entry is also the merge’s audit record (what moved, who, when), so the merge can be reversed ' +
+            'exactly. Written only by merges (now-places, the place desk).',
+        },
+      },
+      {
+        name: 'reviewedBy',
+        label: 'Reviewed by',
+        type: 'relationship',
+        relationTo: 'users',
+        admin: {
+          description: 'Who made the place desk’s last keep/merge/junk/type/area/approve decision on this row.',
+        },
+      },
       {
         name: 'legacyWpId',
         label: 'Legacy WP ID',
