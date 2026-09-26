@@ -1524,3 +1524,98 @@ proof they work, not the cutover itself.
 - `payload migrate:create`'s output for the Editions/Places migrations was not diffed against
   this PR's hand-authored versions (environment limitation — see "Tables and migrations" above).
   Worth doing once a working Node install is available, before this merges.
+
+---
+
+## Phase 1 — shipped so far (P1.1, P1.2, P1.6)
+
+Delivered as `feat/p1-place-catalogue`. P1.3's Google rung, P1.4 (hours) and P1.5 (typing) are
+not in it.
+
+### Schema (city databases, Payload migrations with SQL twins)
+
+| Migration | Adds | Why |
+|---|---|---|
+| `20260927_090000_places_aliases_and_reviewed_by` | `places.aliases` (jsonb), `places.reviewed_by_id` (→ users) | §9.2 names `reviewedBy` in its text but not its column list; P1.2 needs the survivor to keep the loser's name, and each alias entry is also the merge's audit record |
+| `20260927_090100_locked_documents_editions_rel` | `payload_locked_documents_rels.editions_id` | **Phase 0 fix.** The Editions migration left out Payload's lock-table column, so since Phase 0 every signed-in save in the admin failed |
+
+Both are applied locally to `now_bali` and `now_jakarta` through `payload migrate`. The local
+city databases turned out to be missing all three Phase 0 city migrations as well; the same run
+applied them. Place and mention counts were identical before and after.
+
+### P1.1 — `now-places triage` / `now-places rank` (engine/packages/place-catalogue)
+
+- **Junk.** The rules are written as shapes, in two tiers. The **junk** tier is the only one
+  `--apply` writes, and only on `pending_review` rows. The **suspect** tier is listed for an
+  editor and never written. Recall was measured on four hand-labelled 100-row samples:
+
+  | sample | listed (junk + suspect) | junk tier | junk-tier false positives |
+  |---|---:|---:|---:|
+  | Bali, the ticket's fixture (tuning) | 96% | 95% | 0/45 |
+  | Jakarta (tuning) | 94% | 90% | 0/49 |
+  | Bali, labelled blind, then tuned on | 95% | 91% | 1/45 |
+  | **Jakarta, labelled blind, never tuned on** | **82%** | **57%** | 1/56 |
+
+  The last row is the honest generalisation figure. The gate is met on the ticket's fixture.
+  On unseen data, roughly one junk row in five reaches the desk unflagged.
+- **Dry run on the live local databases:**
+
+  | | Bali | Jakarta |
+  |---|---:|---:|
+  | proposed junk | 1,931 | 1,936 |
+  | suspect | 873 | 1,005 |
+  | names another region (kept, flagged) | 110 | 700 |
+  | proposed auto-merges | 15 | 28 |
+  | pairs queued for an editor | 1,453 | 1,459 |
+
+  Full reports: `bali/site/place-triage-report.md` and `jakarta/site/place-triage-report.md`.
+- **Top-500 coverage** uses §9.1's score (`3 × featured + articles + 2 × partnership +
+  recency`). It reaches **76.5% (Bali) and 73.8% (Jakarta)** of the featured mentions that sit
+  on real venues. Measured against all featured mentions it is 67.3% and 63.1%, because 170
+  and 207 featured mentions sit on junk rows. For example, Jakarta's "Hotel's" is featured 33
+  times. §1.1's 76%/70% was measured by featured count alone, before any junk was known.
+
+### P1.2 — dedupe / merge / unmerge
+
+- **Scoring.** Dedupe uses the extractor's scorer and its 0.85 and 0.55 thresholds. Guards
+  send high-scoring pairs to the queue when the score alone cannot settle them:
+  - a hotel and its spa or restaurant sharing a name;
+  - an outlet "at" a venue;
+  - an area name;
+  - distinct legacy records;
+  - approved rows.
+- **Applying a merge.** Each merge is one transaction. The mentions move, `merged_into` is set,
+  and an audit entry is added to the survivor's `aliases`. `unmerge` reverses a merge exactly.
+- **Proven on scratch copies.** Both cities were taken through the full apply and then the full
+  reversal. The mention checksum was identical afterwards.
+
+### P1.6 — the place desk (`/team-editor/place-desk`)
+
+- **Screens.** The queue is shown in rank order, with five filters: to review, looks like junk
+  (bulk confirm), needs a look, another region, and kept. Each place shows its evidence:
+  mentions with the story's own wording, the resolver fields, the region check, an
+  OpenStreetMap pin when it has coordinates, and duplicate candidates.
+- **Decisions.** The desk offers keep, merge, junk, kind of place, area and approve, plus a
+  throughput counter.
+- **Every decision is a Payload write** with the reviewer attached. The collection's
+  `placeReviewGate` hook makes approve, junk and merge editor- or admin-only, and stamps
+  `reviewedBy` and `verifiedAt`. `author` cannot approve. The desk redirects authors, and the
+  hook refuses them.
+- **Approval needs a real venue type.** The placeholder types (`editorial`/`unknown`) and the
+  `city-guide` subtype are refused. Merged rows are now hidden from `/places` and the place page.
+- **Driven end to end** on a scratch copy: set the kind, set the area, approve, and the place
+  page returns 200. A merge, a keep and a bulk junk were driven the same way.
+  `verify:competitor-policy` passes with 0 violations on both cities and on the scratch copy.
+
+### P1.3, open-data half — plan (not built)
+
+1. Load the Indonesia slices of FSQ OS Places and Overture Places (monthly Parquet) into a scratch
+   schema: `geo_fsq`, `geo_overture` (name, normalised name, lat/lng, categories, address,
+   `date_closed`/`operating_status`, source id). This needs one DDL decision from senior-db:
+   the schema should live in each city database, not in `now_platform`.
+2. For each queued place, block by `blocking_key` against both tables within the city's bounding
+   box, score with the same `similarity`, and require area agreement. At ≥ 0.85, write `lat`,
+   `lng`, `geo_source`, `geo_confidence`, `external_types` and `region_ok` through the same
+   dry-run/`--apply` CLI. At 0.55–0.85, send the candidate to the desk's "Where it is" panel.
+3. Rung B (Photon, then Nominatim) handles the residue. Rung C (Google) stays blocked on the
+   owner's key and budget.
