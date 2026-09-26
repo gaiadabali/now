@@ -1,0 +1,100 @@
+{"id": 170, "name": "UNIQUE Rooftop Bar and Restaurant", "label": "ok", "reason": "real rooftop bar"}
+{"id": 33012, "name": "Rica Tapas Bar & Lounge", "label": "ok", "reason": "real bar"}
+{"id": 29510, "name": "Trizara Resort", "label": "ok", "reason": "real resort"}
+{"id": 29359, "name": "Santika Suite", "label": "junk", "reason": "room category (<hotel> Suite)"}
+{"id": 30986, "name": "Festive Dining at Vong Kitchen", "label": "junk", "reason": "offer at restaurant"}
+{"id": 177, "name": "Genesis Creative Centre", "label": "ok", "reason": "real centre"}
+{"id": 31685, "name": "Jakarta AYANA MidPlaza Jakarta Mangkuluhur ARTOTEL Suites Hotel Episode Gading Serpong Pullman Jakarta Indonesia", "label": "junk", "reason": "run-on list of venues"}
+{"id": 30823, "name": "DoubleTree Hotel by Hilton", "label": "ok", "reason": "real hotel brand"}
+{"id": 29183, "name": "Li Lian at Park Hyatt Jakarta", "label": "ok", "reason": "restaurant-at-hotel naming"}
+{"id": 33793, "name": "The Westin Grand Ballroom & Convention Center", "label": "ok", "reason": "ballroom venue within hotel"}
+{"id": 32222, "name": "Martha Tilaar Center Cikini", "label": "ok", "reason": "real centre"}
+{"id": 35, "name": "Trans Resort Bali", "label": "ok", "reason": "real resort"}
+{"id": 29001, "name": "Fifa Club World Cup", "label": "junk", "reason": "an event"}
+{"id": 32742, "name": "Pearls Clinic", "label": "ok", "reason": "real clinic"}
+{"id": 30651, "name": "Copa Restaurant La Floriane Bistro", "label": "junk", "reason": "two venues run together"}
+{"id": 32540, "name": "Nusantara Nature Conservation Foundation", "label": "ok", "reason": "real foundation"}
+{"id": 28264, "name": "Bogor Cafe By Hotel Borobudur", "label": "ok", "reason": "real cafe"}
+{"id": 33277, "name": "Sinarmas and Bakti Budaya Djarum Foundation", "label": "junk", "reason": "two organisations run together"}
+{"id": 31766, "name": "Jatinegara Market", "label": "ok", "reason": "real market"}
+{"id": 29682, "name": "5 October 2025 at The Papandayan Hotel", "label": "junk", "reason": "date + at phrase"}
+{"id": 31067, "name": "Fraser Residence Menteng Jakarta and Fraser Place Setiabudi Jakarta", "label": "junk", "reason": "two hotels run together"}
+{"id": 29624, "name": "22 January at The American Club", "label": "junk", "reason": "date + at phrase"}
+{"id": 33150, "name": "Saraswati Lounge", "label": "ok", "reason": "real lounge"}
+{"id": 32560, "name": "Ocean Park Water Adventure", "label": "ok", "reason": "real attraction"}
+{"id": 30654, "name": "Coral Triangle Center", "label": "ok", "reason": "real centre"}
+{"id": 138, "name": "Timur Kitchen", "label": "ok", "reason": "real restaurant"}
+{"id": 32312, "name": "Mischief and Cocktails at KITA Bar", "label": "junk", "reason": "event at bar"}
+{"id": 30159, "name": "Barossa Valley and the Simi Winery", "label": "junk", "reason": "two places run together"}
+{"id": 29934, "name": "Artpreneur Theatre", "label": "ok", "reason": "real theatre"}
+{"id": 30369, "name": "Business Centre", "label": "junk", "reason": "generic, no proper noun"}
+{"id": 29472, "name": "The Maj Senayan National Golf", "label": "junk", "reason": "restaurant + golf run together"}
+{"id": 33248, "name": "Sheraton Mustika Yogyakarta Resort & Spa", "label": "ok", "reason": "real resort"}
+{"id": 34110, "name": "Word Museum", "label": "ok", "reason": "plausible museum"}
+{"id": 28120, "name": "At HARRIS Hotel & Convention Serpong", "label": "junk", "reason": "sentence fragment (At)"}
+{"id": 33231, "name": "Setu Babakan Betawi Museum", "label": "ok", "reason": "real museum"}
+{"id": 29249, "name": "Neka Museum", "label": "ok", "reason": "real museum"}
+{"id": 29723, "name": "ACG School Jakarta Alam Atelier Preschool Australian Independent School BINUS School Simprug Jakarta Montessori School New Zealand School Jakarta Nord Anglia School Jakarta SPH Kemang Village Jakarta InterCultural School SIS South Jakarta Tutor Time Indonesia", "label": "junk", "reason": "run-on list of schools"}
+{"id": 31930, "name": "Koran Mask Studio", "label": "ok", "reason": "real studio"}
+{"id": 29553, "name": "1 Health Centre'", "label": "junk", "reason": "trailing quote fragment"}
+{"id": 33261, "name": "Shrida Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 29651, "name": "29 January at BUNK Lobby Lounge", "label": "junk", "reason": "date + at phrase"}
+{"id": 32697, "name": "Park Hyatt Bangkok", "label": "ok", "reason": "real hotel (out of region)"}
+{"id": 29948, "name": "As PARKROYAL Serviced Suites Jakarta", "label": "junk", "reason": "sentence fragment (As)"}
+{"id": 30355, "name": "Bukit Baka Bukit Raya National Park", "label": "ok", "reason": "real national park"}
+{"id": 29769, "name": "Above Kitchen & Lounge", "label": "ok", "reason": "real restaurant"}
+{"id": 29502, "name": "Tokyo Disney Resort", "label": "ok", "reason": "real resort (out of region)"}
+{"id": 30136, "name": "Bar Bites Made Better at BIKO", "label": "junk", "reason": "slogan at restaurant"}
+{"id": 33223, "name": "Sentul City Cultural Park", "label": "ok", "reason": "real park"}
+{"id": 31076, "name": "French Residence", "label": "junk", "reason": "generic, no proper noun"}
+{"id": 28979, "name": "East Wing of Hotel Borobudur Jakarta", "label": "junk", "reason": "part of a hotel"}
+{"id": 29205, "name": "Mall Pacific Place", "label": "ok", "reason": "real mall"}
+{"id": 33857, "name": "Trevor Matheson at Ranch Market Pondok Indah", "label": "junk", "reason": "a person at a venue"}
+{"id": 32545, "name": "OHD Museum and Museum MACAN", "label": "junk", "reason": "two museums run together"}
+{"id": 28318, "name": "Hotel Santika", "label": "ok", "reason": "real hotel"}
+{"id": 32211, "name": "Market Street Clam Chowder", "label": "ok", "reason": "doubtful, stays ok"}
+{"id": 33014, "name": "Rick’s Bar", "label": "ok", "reason": "real bar"}
+{"id": 30077, "name": "Baba Nest Phuket and Alfresco 64 A Chivas Bar", "label": "junk", "reason": "two venues run together"}
+{"id": 33796, "name": "The World’s Most Luxurious Hotel", "label": "junk", "reason": "possessive + superlative description"}
+{"id": 34134, "name": "Yara Pottery Studio's", "label": "junk", "reason": "possessive fragment"}
+{"id": 29285, "name": "Park’s", "label": "junk", "reason": "possessive fragment"}
+{"id": 29289, "name": "Pavarotti Foundation", "label": "ok", "reason": "real foundation"}
+{"id": 32869, "name": "Pullman Jakarta Central Park's", "label": "junk", "reason": "possessive fragment"}
+{"id": 27797, "name": "Hotel Jakarta City Centre", "label": "ok", "reason": "real hotel"}
+{"id": 30169, "name": "Batak and Deli Malay", "label": "junk", "reason": "cuisines, not a venue"}
+{"id": 33762, "name": "The Square Restaurant and Gourmet Bar", "label": "ok", "reason": "doubtful, stays ok"}
+{"id": 30736, "name": "Deli Kingdom", "label": "ok", "reason": "real deli"}
+{"id": 31096, "name": "Funworld and Funspot Adventure Park", "label": "junk", "reason": "two parks run together"}
+{"id": 31664, "name": "JIS Middle School Campus", "label": "ok", "reason": "real campus"}
+{"id": 32758, "name": "Pesona Alam Resort & Spa and The Botanica Sanctuary", "label": "junk", "reason": "two venues run together"}
+{"id": 29297, "name": "Pondok Indah Mall Street Gallery", "label": "ok", "reason": "real gallery"}
+{"id": 28358, "name": "Mulia Resort & Villas", "label": "ok", "reason": "real resort"}
+{"id": 31614, "name": "Interactive Aquarium Tours", "label": "junk", "reason": "activity (tours)"}
+{"id": 29562, "name": "10949593 Tanjung Kelayang Beach", "label": "junk", "reason": "number prefix fragment"}
+{"id": 28489, "name": "CGV Cinema", "label": "ok", "reason": "real cinema"}
+{"id": 15, "name": "Casa Luna", "label": "ok", "reason": "real restaurant"}
+{"id": 33019, "name": "Riverside Golf Course", "label": "ok", "reason": "real golf course"}
+{"id": 30022, "name": "Authentic Flavors at Dago Street Kitchen", "label": "junk", "reason": "slogan at restaurant"}
+{"id": 28554, "name": "Grand Whiz Hotel Trawas Mojokerto", "label": "ok", "reason": "real hotel"}
+{"id": 31186, "name": "Ghea Resort by Amanda Janna", "label": "ok", "reason": "real resort"}
+{"id": 33602, "name": "The Breakfast Club’", "label": "junk", "reason": "trailing quote fragment"}
+{"id": 32484, "name": "New Year BBQ Dinner at Fame Hotel Sunset Road Bali", "label": "junk", "reason": "event at hotel"}
+{"id": 31261, "name": "Grill Master", "label": "junk", "reason": "generic / a person"}
+{"id": 31065, "name": "Frank’s Bar", "label": "ok", "reason": "real bar"}
+{"id": 29838, "name": "Ambarrukmo Suite", "label": "junk", "reason": "room category (<hotel> Suite)"}
+{"id": 32023, "name": "Le Meridien Hotel Jalan Jendral Sudirman Kav", "label": "junk", "reason": "address fragment"}
+{"id": 31705, "name": "Jakarta Komodos Rugby Football Club", "label": "ok", "reason": "real club"}
+{"id": 34051, "name": "Westin Family Kids Club and WestinWORKOUT", "label": "junk", "reason": "two facilities run together"}
+{"id": 34064, "name": "White Sand Beach and Blue Lagoon Beach", "label": "junk", "reason": "two beaches run together"}
+{"id": 29740, "name": "ARC Recovery Studio", "label": "ok", "reason": "real studio"}
+{"id": 32429, "name": "NYC Lounge & Bar and Central Park Restaurant at Manhattan Hotel Jakarta", "label": "junk", "reason": "venues run together"}
+{"id": 31622, "name": "International Conference Center", "label": "junk", "reason": "generic, no proper noun"}
+{"id": 28989, "name": "Eric Kayser Le Restaurant Du Boulanger", "label": "ok", "reason": "real restaurant"}
+{"id": 32737, "name": "Pawon Temple", "label": "ok", "reason": "real temple"}
+{"id": 29791, "name": "Akasha Resort Hambalang", "label": "ok", "reason": "real resort"}
+{"id": 33688, "name": "The Lighthouse Lounge", "label": "ok", "reason": "real lounge"}
+{"id": 33025, "name": "Rock Star Gym", "label": "ok", "reason": "real gym"}
+{"id": 32659, "name": "Padma Beach", "label": "ok", "reason": "real beach"}
+{"id": 31974, "name": "LIDI Foundation", "label": "ok", "reason": "real foundation"}
+{"id": 29047, "name": "Green Hotel", "label": "ok", "reason": "plausible hotel"}
+{"id": 31986, "name": "Lagoon Access Junior Suite", "label": "junk", "reason": "room type"}

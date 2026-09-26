@@ -1,0 +1,33 @@
+[project]
+name = "now-place-catalogue"
+version = "0.1.0"
+description = "P1.1/P1.2 -- place catalogue triage, ranking and dedupe. ITINERARY-AND-READER-PRODUCTS-PLAN.md Sec.9: junk detection over public.places (fragments, URL slugs, generic-lead words, possessive fragments, cross-city candidates), a per-city evidence score for queue order, and a merge CLI over now_place_extraction.match's similarity scorer (0.85 auto-merge, 0.55-0.85 queued for review, transactional, reversible via aliases + merged_into)."
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "sqlalchemy>=2.0,<3",
+    "psycopg[binary]>=3.1,<4",
+    "now-db",
+    "now-place-extraction",
+    "now-geocode",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+now-places = "now_places.cli:cli"
+
+[tool.uv.sources]
+now-db = { path = "../db", editable = true }
+now-place-extraction = { path = "../place-extraction", editable = true }
+now-geocode = { path = "../geocode", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/now_places"]

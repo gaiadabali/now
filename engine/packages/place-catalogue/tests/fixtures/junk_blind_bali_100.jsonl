@@ -1,0 +1,100 @@
+{"id": 13909, "name": "IWA Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 13863, "name": "Gazebo Pool and Bar", "label": "ok", "reason": "named hotel bar (Gazebo)"}
+{"id": 17312, "name": "Seminyak Italian Food at Double-Six Luxury Hotel Double Six Beach No", "label": "junk", "reason": "event at hotel + address"}
+{"id": 18047, "name": "Uluwatu's First Sunset Party at R Bar", "label": "junk", "reason": "possessive + event at bar"}
+{"id": 14684, "name": "Alma Spa & Wellness", "label": "ok", "reason": "real spa"}
+{"id": 14970, "name": "Bar Manager Herry Kurniawan", "label": "junk", "reason": "a person (job title + name)"}
+{"id": 13431, "name": "Ini Vie Villa Seminyak", "label": "ok", "reason": "real villa property"}
+{"id": 18204, "name": "Wellness Resort’s", "label": "junk", "reason": "possessive fragment"}
+{"id": 14695, "name": "Amarea Resort Ubud Jl", "label": "junk", "reason": "address suffix (Jl)"}
+{"id": 13441, "name": "Japanese Restaurant of the Year", "label": "junk", "reason": "award fragment"}
+{"id": 13530, "name": "River Villa", "label": "junk", "reason": "room type, no brand"}
+{"id": 14723, "name": "Ang Pao' Resort Credit of IDR 600,000", "label": "junk", "reason": "resort credit offer"}
+{"id": 14345, "name": "Three Days Bike Retreat", "label": "junk", "reason": "retreat package"}
+{"id": 15082, "name": "Best Indonesian Restaurant", "label": "junk", "reason": "award/descriptive lead"}
+{"id": 16826, "name": "Opening of Bali Screen Golf", "label": "junk", "reason": "event (opening of)"}
+{"id": 12783, "name": "Elephant Park", "label": "junk", "reason": "generic, no brand"}
+{"id": 14275, "name": "The Bvlgari Bar and Sangkar Restaurant", "label": "junk", "reason": "two venues run together"}
+{"id": 17552, "name": "TENKAI Japanese Nikkei Restaurant and Makan Place", "label": "junk", "reason": "two venues run together"}
+{"id": 14085, "name": "Pasir Putih Beach Club & Bar’", "label": "junk", "reason": "trailing quote fragment"}
+{"id": 14839, "name": "BEST MEXICAN & LATIN RESTAURANT", "label": "junk", "reason": "award/descriptive lead"}
+{"id": 13048, "name": "Ghost Kitchen & Record Bar", "label": "ok", "reason": "doubtful, stays ok"}
+{"id": 17443, "name": "Splash Water Park and Strike Ten Pin Bowling", "label": "junk", "reason": "two venues run together"}
+{"id": 17434, "name": "Spa at The Samaya", "label": "ok", "reason": "spa-at-property naming"}
+{"id": 13177, "name": "Gaia Gym", "label": "ok", "reason": "real gym"}
+{"id": 18428, "name": "The Beach House Legian", "label": "ok", "reason": "real hotel"}
+{"id": 13869, "name": "Global Wellness Day and International Yoga Day", "label": "junk", "reason": "two events run together"}
+{"id": 14296, "name": "The Kitchen Cook Off", "label": "junk", "reason": "event"}
+{"id": 15735, "name": "From the Garden Suites", "label": "junk", "reason": "sentence fragment (From the)"}
+{"id": 15753, "name": "Game Center", "label": "junk", "reason": "generic, no proper noun"}
+{"id": 15429, "name": "Dahana Restaurant Level 2", "label": "junk", "reason": "floor/level fragment"}
+{"id": 13622, "name": "Waroeng Djamoe Spa", "label": "ok", "reason": "real spa"}
+{"id": 14844, "name": "BUCU Cafe", "label": "ok", "reason": "real cafe"}
+{"id": 16331, "name": "Kurma Asih Sea Turtle Conservation Centre", "label": "ok", "reason": "real conservation centre"}
+{"id": 14949, "name": "Bali’s Leading Lifestyle Hotel", "label": "junk", "reason": "possessive + descriptive phrase"}
+{"id": 16043, "name": "Indian Ocean at AYANA Resort and Spa Bali", "label": "junk", "reason": "phrase (the ocean at a resort)"}
+{"id": 14564, "name": "8am at Sanur’s Mertasari Beach", "label": "junk", "reason": "time + event-at phrase"}
+{"id": 13115, "name": "Wedang Jahe Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 17211, "name": "Salon Bali at Hotel Indigo Bali Seminyak Beach", "label": "ok", "reason": "outlet at hotel naming"}
+{"id": 13112, "name": "VasantiSeminyak Resort", "label": "ok", "reason": "real resort (spacing aside)"}
+{"id": 13908, "name": "ITDC Resort Complex", "label": "ok", "reason": "real complex"}
+{"id": 15672, "name": "Five-star Resort Facilities", "label": "junk", "reason": "generic description"}
+{"id": 14032, "name": "Mozaic Restaurant Jalan Raya Sangginan", "label": "junk", "reason": "address suffix (Jalan)"}
+{"id": 16647, "name": "Mozaic Gastronomic Restaurant Jl", "label": "junk", "reason": "address suffix (Jl)"}
+{"id": 16088, "name": "International Buffet Dinner at DONBIU Restaurant & Plumeria Grand Ballroom", "label": "junk", "reason": "event at restaurant"}
+{"id": 18324, "name": "Tango Community", "label": "junk", "reason": "a community, not a venue"}
+{"id": 13782, "name": "Cafe Toya", "label": "ok", "reason": "real cafe"}
+{"id": 17660, "name": "The Alaya Resort and Spa", "label": "ok", "reason": "real resort"}
+{"id": 16718, "name": "New Thai Restaurant", "label": "junk", "reason": "descriptive lead (New)"}
+{"id": 16433, "name": "Liu Li Palace Seafood Restaurant and RIMBA Lobby", "label": "junk", "reason": "two venues run together"}
+{"id": 16690, "name": "Nandini Jungle Resort & Spa and Elevate Bali by Hanging Gardens", "label": "junk", "reason": "two venues run together"}
+{"id": 13359, "name": "Bisma Eight Hotel", "label": "ok", "reason": "real hotel"}
+{"id": 16621, "name": "Miniature Keliki & Wooden Egg Painting at Five Art Studio", "label": "junk", "reason": "workshop at studio"}
+{"id": 14578, "name": "A Leaf Creation Studio", "label": "ok", "reason": "real studio"}
+{"id": 17317, "name": "Seminyak Village Mall", "label": "ok", "reason": "real mall"}
+{"id": 14729, "name": "Annabel Crabb's Book Club", "label": "junk", "reason": "possessive + book club"}
+{"id": 13903, "name": "Hotel Taman Indrakila", "label": "ok", "reason": "real hotel"}
+{"id": 13867, "name": "Ghost Kitchen", "label": "ok", "reason": "real restaurant"}
+{"id": 12757, "name": "Koko Bambu Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 16654, "name": "Mudra Suwari Sarasvati Foundation", "label": "ok", "reason": "real foundation"}
+{"id": 16810, "name": "One Night Stay at Movenpick Resort & Spa Jimbaran Bali", "label": "junk", "reason": "stay offer at resort"}
+{"id": 18163, "name": "Wanna Jungle Pool and Bar at The Kayon Jungle Resort", "label": "ok", "reason": "outlet at hotel naming"}
+{"id": 15475, "name": "Development Center’", "label": "junk", "reason": "trailing quote fragment"}
+{"id": 14071, "name": "One-Bedroom Private Pool Villa", "label": "junk", "reason": "room type"}
+{"id": 16105, "name": "JIWA Wellness", "label": "ok", "reason": "real wellness venue"}
+{"id": 14924, "name": "Bali Wildlife Rescue Centre", "label": "ok", "reason": "real rescue centre"}
+{"id": 14604, "name": "ARYADUTA Bali Hotel", "label": "ok", "reason": "real hotel"}
+{"id": 15364, "name": "Cocoon Spa Package at Mekar Spa", "label": "junk", "reason": "spa package at spa"}
+{"id": 18153, "name": "WHIM Bar & Restaurant at Prasana by Arjani Resorts", "label": "ok", "reason": "outlet at resort naming"}
+{"id": 16356, "name": "La Mira Villas", "label": "ok", "reason": "real villas"}
+{"id": 13191, "name": "Indus Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 12580, "name": "Finns Recreation Club", "label": "ok", "reason": "real club"}
+{"id": 13752, "name": "Best Fine Dining Restaurant", "label": "junk", "reason": "award/descriptive lead"}
+{"id": 17634, "name": "Teppanyaki Restaurant at Aksari Resort Ubud Jl", "label": "junk", "reason": "address suffix (Jl)"}
+{"id": 16480, "name": "L’OH Pool Bar", "label": "ok", "reason": "real pool bar"}
+{"id": 17424, "name": "Spa Tenda", "label": "ok", "reason": "real spa"}
+{"id": 15099, "name": "Bias Tugel Beach and Blue Lagoon", "label": "junk", "reason": "two places run together"}
+{"id": 14049, "name": "Nampu Japanese Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 15065, "name": "Besaikh Temple", "label": "ok", "reason": "real temple (misspelt)"}
+{"id": 13760, "name": "Best Spanish Restaurant", "label": "junk", "reason": "award/descriptive lead"}
+{"id": 13318, "name": "Aksari Suite", "label": "junk", "reason": "room type at a resort"}
+{"id": 17469, "name": "Studio Gelombang's", "label": "junk", "reason": "possessive fragment"}
+{"id": 15644, "name": "Festive Buffet Theatre Dinner", "label": "junk", "reason": "event"}
+{"id": 14086, "name": "Pearl Farm", "label": "junk", "reason": "generic, no brand"}
+{"id": 13489, "name": "Munduk Spices Restaurant", "label": "ok", "reason": "real restaurant"}
+{"id": 13405, "name": "Food Rescue Kitchen", "label": "ok", "reason": "plausible venue"}
+{"id": 17663, "name": "The Anvaya Suite", "label": "junk", "reason": "room type at a resort"}
+{"id": 14109, "name": "Private Pool One-Bedroom Villa", "label": "junk", "reason": "room type"}
+{"id": 12927, "name": "AKASA Restaurant & Bar", "label": "ok", "reason": "real restaurant"}
+{"id": 15032, "name": "Beachwalk Shopping Centre Jl", "label": "junk", "reason": "address suffix (Jl)"}
+{"id": 14876, "name": "Bali Children Foundation Office", "label": "ok", "reason": "real office"}
+{"id": 14435, "name": "10pm at the Rooftop and Pool Deck", "label": "junk", "reason": "time + event-at phrase"}
+{"id": 14579, "name": "A Lunar Feast of Prosperity at The Puhu Restaurant", "label": "junk", "reason": "event at restaurant"}
+{"id": 14193, "name": "Shambhala Retreat", "label": "ok", "reason": "plausible retreat name"}
+{"id": 14963, "name": "Banyan Tree Ungasan Resort", "label": "ok", "reason": "real resort"}
+{"id": 14802, "name": "Augustinus Bader at The Bvlgari Spa", "label": "junk", "reason": "brand treatment at spa"}
+{"id": 16824, "name": "Opened by Hotel Tugu Bali", "label": "junk", "reason": "sentence fragment (Opened by)"}
+{"id": 12888, "name": "Mayo Resort", "label": "ok", "reason": "real resort"}
+{"id": 16076, "name": "Inside Villa Air Bali", "label": "junk", "reason": "sentence fragment (Inside)"}
+{"id": 12543, "name": "Renaissance Bali Uluwatu Resort & Spa", "label": "ok", "reason": "real resort"}
+{"id": 16878, "name": "PancaMaya Wellness", "label": "ok", "reason": "real wellness venue"}
