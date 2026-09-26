@@ -61,18 +61,68 @@ now-platform-db drop-old-partitions --retention-days <n>
 
 - `ad_events` is the billing ledger (ARCHITECTURE.md §11) and is
   RANGE-partitioned by day, same pattern as the city DB's
-  `interactions`/`impressions`. It is append-only by convention in this
-  wave — no role/grant enforcement yet (see `now-db`'s README, "Notes for
-  later waves"). Do not `UPDATE`/`DELETE` rows in it.
+  `interactions`/`impressions`. It is append-only by convention still —
+  0017 gave `now_runtime` `SELECT, INSERT` on it (no `UPDATE`/`DELETE`) but
+  did **not** add an RLS policy to it (see the "role split and RLS" note
+  below for why). Do not `UPDATE`/`DELETE` rows in it regardless.
 - `0001`'s `downgrade()` drops every table it created, in dependency order.
   Safe against an empty database; do not run it against a platform DB with
-  real partnership/campaign/itinerary data without a backup.
+  real partnership/campaign/itinerary data without a backup. The same is
+  true of every later migration's `downgrade()` in this package.
 - Cross-database references (`partnerships.place_id`, `itinerary_stops.place_id`,
-  `syndications.origin_article_id` — all pointing at a row in some city DB)
-  are plain `uuid` columns with **no foreign key**. Postgres cannot enforce
-  a constraint across databases, and DB-per-city means the referenced row
-  lives elsewhere by design. Referential integrity for these is an
-  application/worker responsibility, not the database's.
+  `syndications.origin_article_id`, `destinations.place_id`,
+  `offer_places.place_id`, and others added from migration 0012 onward —
+  all pointing at a row in some city DB) are plain `text` columns with
+  **no foreign key**. Postgres cannot enforce a constraint across
+  databases, and DB-per-city means the referenced row lives elsewhere by
+  design. Referential integrity for these is an application/worker
+  responsibility, not the database's. `text`, never `uuid` —
+  `scripts/check_no_payload_uuid_refs.py` is the CI gate for this (F69).
+
+## Role split and RLS (migrations 0016/0017 — F7/F6)
+
+- **Two roles beyond the historical single superuser**: `now_migrator`
+  (runs migrations, owns every object in `engine`, `BYPASSRLS`) and
+  `now_runtime` (what the application should connect as — no DDL rights on
+  `engine`, no `BYPASSRLS`, subject to every RLS policy below). Neither
+  migration sets a password; that is an out-of-band, per-environment step —
+  see this ticket's "Phase 0 — shipped" section in
+  `docs/ITINERARY-AND-READER-PRODUCTS-PLAN.md` for the exact rollout
+  checklist, including what changes in deploy `.env` and in which order.
+  **Production is not touched by shipping these migrations alone**: the app
+  still connects as the historical superuser until that separate cutover
+  step runs, and a superuser bypasses RLS and every grant unconditionally,
+  so nothing below changes behaviour until then.
+- **RLS (`FORCE ROW LEVEL SECURITY`) sits on**: `partnerships`, `campaigns`,
+  `placements`, `offers`, `offer_places`, `voucher_claims`, `offer_events`,
+  `offer_audit`, `print_plans`, `print_orders`, `print_order_items`,
+  `print_subscriptions`, `shipments`, `payment_events` — every table this
+  ticket's brief named plus every table one join away from a `site_id`
+  column, filtered by `engine.current_site_id()`, which reads a session GUC
+  (`SET LOCAL app.site_id = '<uuid>'`, set by the application per request/
+  transaction) and fails closed (NULL, not an error, not "every row") on
+  anything unset or unparseable. See migration 0017's docstring for the
+  full per-table reasoning and `tests/test_rls_site_isolation.py` for the
+  proof against a real connection.
+- **Deliberately not yet covered**: `ad_events` and `partnership_audit` are
+  exactly as site-scoped (via `campaign_id`/`partnership_id`) as the tables
+  above but sit outside this ticket's explicit brief — a fast-follow, not
+  an oversight; do not treat a clean run of `test_rls_site_isolation.py` as
+  proof they are protected. `partner_users`/`partner_user_tokens` (0015)
+  get an `org_id`-scoped policy when P8.1 (the partner portal) defines the
+  session/`aud` model that policy needs to reason about — writing one now
+  would be guessing. Reader-owned tables (`itineraries`, `destinations`,
+  `reading_progress`, `saved_items`, `newsletter_subscribers`) are scoped by
+  `identity_id`, not `site_id`, and are out of F6's stated scope.
+- **A new ledger-shaped table added after 0016** inherits `now_runtime`'s
+  standard `SELECT, INSERT, UPDATE, DELETE` by default (0016's `ALTER
+  DEFAULT PRIVILEGES`) and must have its grant narrowed to `SELECT, INSERT`
+  by hand in its own migration if it is meant to be append-only — the
+  default does not know which new tables are ledgers.
+- **Cross-site admin reads fan out at the application layer**, the same way
+  ARCHITECTURE.md §2 already describes cross-city reads working: loop the
+  known sites, `SET LOCAL app.site_id` to each in turn, merge the results.
+  No grant or policy in this package lets one query see two sites' rows.
 
 ## Notes for later waves
 
@@ -81,11 +131,6 @@ now-platform-db drop-old-partitions --retention-days <n>
   is a migration that does `ALTER TABLE engine.x SET SCHEMA public`, run
   once `public` exists, plus updating every consumer's assumed schema.
   Until then, treat `now_platform.engine` as authoritative for all of it.
-- `engine.partnerships` / `engine.campaigns` / `engine.placements` carry a
-  `site_id` and are logically tenant-scoped even though they live in one
-  shared database (unlike the DB-per-city split). No RLS is applied in this
-  wave — DB-per-city already isolates the highest-value tenancy boundary
-  (content), and adding RLS here would require agreeing a session-variable
-  convention with `engine-api` (E0.3) that hasn't been specified yet.
-  Revisit when the partner console (E4.4) needs enforceable per-partner
-  row access, not before.
+  Note this also means re-pointing `now_migrator`'s ownership and
+  `now_runtime`'s grants at whatever role ends up running that Payload
+  instance's own migrations.
