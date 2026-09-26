@@ -342,3 +342,44 @@ def test_offers_require_paid_partnership_trigger(conn, two_sites_with_paid_offer
     with pytest.raises(DBAPIError, match="not a paid partnership"):
         _make_offer(conn, partnership_id=listed_partnership, site_id=f["bali_site"])
     savepoint.rollback()
+
+
+def test_partnerships_active_view_is_site_isolated(conn, two_sites_with_paid_offers):
+    """Found in review: a plain view evaluates row-level security against
+    its OWNER, not its caller, unless `security_invoker = true` — without
+    that, granting `now_runtime` SELECT on `engine.partnerships_active`
+    would have handed it a way to read every site's partnerships straight
+    through the one table-level policy this whole migration set exists to
+    enforce. Proven the same way as the base table: query the view as
+    `now_runtime` with `app.site_id` set to Bali, and confirm Jakarta's
+    partnership is invisible through it too — not just through the table
+    directly (already proven above)."""
+    f = two_sites_with_paid_offers
+    _as_runtime(conn, f["bali_site"])
+    rows = conn.execute(text("SELECT site_id FROM engine.partnerships_active")).fetchall()
+    assert {str(r[0]) for r in rows} == {str(f["bali_site"])}
+    # And the Jakarta row specifically, by id, is not reachable through the
+    # view either — the direct-by-id check the base-table test already
+    # does, repeated here because a view can have its own, different
+    # blind spots (e.g. a security_invoker mistake that only manifests on
+    # an indexed lookup plan).
+    row = conn.execute(
+        text("SELECT id FROM engine.partnerships_active WHERE id = :id"),
+        {"id": f["jkt_partnership"]},
+    ).fetchone()
+    assert row is None
+    conn.execute(text("RESET ROLE"))
+
+
+def test_migrator_bypasses_rls_through_the_view_too(conn, two_sites_with_paid_offers):
+    """security_invoker makes the view defer to the CALLER's privileges —
+    for now_migrator (BYPASSRLS), that correctly means it still sees every
+    site through the view, the same as it does querying the table
+    directly. This is the control case for the test above: if this one
+    ever started failing, it would mean security_invoker had somehow made
+    the view MORE restrictive than intended, not less."""
+    f = two_sites_with_paid_offers
+    conn.execute(text("SET LOCAL ROLE now_migrator"))
+    rows = conn.execute(text("SELECT site_id FROM engine.partnerships_active")).fetchall()
+    assert {str(r[0]) for r in rows} == {str(f["bali_site"]), str(f["jkt_site"])}
+    conn.execute(text("RESET ROLE"))

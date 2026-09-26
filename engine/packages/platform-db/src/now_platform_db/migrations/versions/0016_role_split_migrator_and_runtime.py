@@ -147,9 +147,24 @@ def upgrade() -> None:
     op.execute("GRANT USAGE ON SCHEMA engine TO now_runtime")
 
     # Reassign ownership of every existing engine-schema table, partitioned
-    # table and function to now_migrator. Scoped to the `engine` namespace
-    # only — see docstring for why a blanket `REASSIGN OWNED BY` is wrong
-    # here.
+    # table, VIEW, materialized view, and function to now_migrator. Scoped
+    # to the `engine` namespace only — see docstring for why a blanket
+    # `REASSIGN OWNED BY` is wrong here.
+    #
+    # Views ('v') and materialized views ('m') are included, not just
+    # tables ('r') and partitioned tables ('p') — found in review: a plain
+    # view (0003's `engine.partnerships_active`) evaluates row-level
+    # security against its OWNER, not its caller, unless the view has
+    # `security_invoker = true` (0017 sets that too, on the one view that
+    # exists today). Leaving a view's ownership un-reassigned here would
+    # have left it silently owned by whatever role ran 0003 — today's
+    # ambient superuser, which bypasses RLS regardless of the view, so the
+    # gap is latent rather than exploitable yet, but it would become a live
+    # cross-site leak the moment any grant let `now_runtime` query the view
+    # without also getting this reassignment. `ALTER TABLE` cannot change a
+    # view's or materialized view's owner (Postgres: "... is not a table"),
+    # so the loop branches on `relkind` and issues the command each kind
+    # actually accepts.
     op.execute(
         """
         DO $$
@@ -157,12 +172,18 @@ def upgrade() -> None:
             r record;
         BEGIN
             FOR r IN
-                SELECT c.relname
+                SELECT c.relname, c.relkind
                   FROM pg_class c
                   JOIN pg_namespace n ON n.oid = c.relnamespace
-                 WHERE n.nspname = 'engine' AND c.relkind IN ('r', 'p')
+                 WHERE n.nspname = 'engine' AND c.relkind IN ('r', 'p', 'v', 'm')
             LOOP
-                EXECUTE format('ALTER TABLE engine.%I OWNER TO now_migrator', r.relname);
+                IF r.relkind = 'v' THEN
+                    EXECUTE format('ALTER VIEW engine.%I OWNER TO now_migrator', r.relname);
+                ELSIF r.relkind = 'm' THEN
+                    EXECUTE format('ALTER MATERIALIZED VIEW engine.%I OWNER TO now_migrator', r.relname);
+                ELSE
+                    EXECUTE format('ALTER TABLE engine.%I OWNER TO now_migrator', r.relname);
+                END IF;
             END LOOP;
 
             FOR r IN
@@ -219,10 +240,11 @@ def downgrade() -> None:
     # connection already open as one of them) — dropping them here would be
     # reaching outside this migration's own blast radius. The downgrade
     # undoes what this migration is actually responsible for: the ownership
-    # transfer and the schema-level grants, restoring `now` as owner and
-    # sole schema-privileged role. It deliberately does NOT `DROP ROLE`;
-    # an operator who wants the roles gone entirely does that by hand,
-    # after confirming nothing still depends on them.
+    # transfer and the schema-level grants, restoring current_user (whoever
+    # runs this downgrade) as owner and sole schema-privileged role. It
+    # deliberately does NOT `DROP ROLE`; an operator who wants the roles
+    # gone entirely does that by hand, after confirming nothing still
+    # depends on them.
     op.execute(
         "ALTER DEFAULT PRIVILEGES FOR ROLE now_migrator IN SCHEMA engine "
         "REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM now_runtime"
@@ -258,12 +280,18 @@ def downgrade() -> None:
             runner text := current_user;
         BEGIN
             FOR r IN
-                SELECT c.relname
+                SELECT c.relname, c.relkind
                   FROM pg_class c
                   JOIN pg_namespace n ON n.oid = c.relnamespace
-                 WHERE n.nspname = 'engine' AND c.relkind IN ('r', 'p')
+                 WHERE n.nspname = 'engine' AND c.relkind IN ('r', 'p', 'v', 'm')
             LOOP
-                EXECUTE format('ALTER TABLE engine.%I OWNER TO %I', r.relname, runner);
+                IF r.relkind = 'v' THEN
+                    EXECUTE format('ALTER VIEW engine.%I OWNER TO %I', r.relname, runner);
+                ELSIF r.relkind = 'm' THEN
+                    EXECUTE format('ALTER MATERIALIZED VIEW engine.%I OWNER TO %I', r.relname, runner);
+                ELSE
+                    EXECUTE format('ALTER TABLE engine.%I OWNER TO %I', r.relname, runner);
+                END IF;
             END LOOP;
 
             FOR r IN

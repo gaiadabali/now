@@ -245,6 +245,25 @@ def upgrade() -> None:
     # Migration bookkeeping — now_migrator only.
     op.execute("REVOKE ALL ON engine.alembic_version FROM now_runtime")
 
+    # `engine.partnerships_active` (0003) — a plain view over `partnerships`,
+    # which carries RLS as of this migration. Found in review: by default a
+    # view's row-security (and every other permission check inside its
+    # query) is evaluated against the VIEW'S OWNER, not the querying role —
+    # `security_invoker = true` (Postgres 15+) is what makes it evaluate
+    # against whoever is actually running the query instead. Without this,
+    # 0016's ownership reassignment (which now includes views) would still
+    # leave the view owned by `now_migrator` — a role with `BYPASSRLS` — so
+    # *any* grant of `SELECT` on this view to `now_runtime` would bypass
+    # every site-isolation policy on the underlying table entirely, through
+    # a path this migration's own table-level policies never touch. Setting
+    # `security_invoker` first, then granting, closes that before it opens:
+    # the console will need this view (it is exactly the "what's live right
+    # now, with no cron to go stale" read a partnerships list screen wants),
+    # so the grant is added now rather than left as a footgun for whichever
+    # ticket adds that screen.
+    op.execute("ALTER VIEW engine.partnerships_active SET (security_invoker = true)")
+    op.execute("GRANT SELECT ON engine.partnerships_active TO now_runtime")
+
     # Read-mostly configuration.
     op.execute("GRANT SELECT, UPDATE ON engine.sites TO now_runtime")
     op.execute("GRANT SELECT ON engine.terms, engine.facets TO now_runtime")
@@ -311,6 +330,10 @@ def downgrade() -> None:
         op.execute(f"ALTER TABLE engine.{table} NO FORCE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE engine.{table} DISABLE ROW LEVEL SECURITY")
 
+    # `REVOKE ALL ON ALL TABLES IN SCHEMA engine` already covers the view
+    # (Postgres's "ALL TABLES IN SCHEMA" includes views, just not
+    # sequences) — only the security_invoker setting needs its own reset.
+    op.execute("ALTER VIEW engine.partnerships_active SET (security_invoker = false)")
     op.execute("REVOKE ALL ON ALL TABLES IN SCHEMA engine FROM now_runtime")
     op.execute("REVOKE EXECUTE ON FUNCTION engine.current_site_id() FROM now_runtime")
     op.execute("DROP FUNCTION IF EXISTS engine.current_site_id()")
